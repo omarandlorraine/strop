@@ -62,7 +62,7 @@ const S_OPTS: [SOpt; 2] = [
 
 const V_OPTS: [VOpt; 4] = [
 	VOpt {name: "a", set: set_a, get: get_a, help: "The Accumulator"},
-	VOpt {name: "b", set: set_b, get: get_x, help: "The B register"},
+	VOpt {name: "b", set: set_b, get: get_b, help: "The B register"},
 	VOpt {name: "x", set: set_x, get: get_x, help: "The X register"},
 	VOpt {name: "y", set: set_y, get: get_y, help: "The Y register"},
 ];
