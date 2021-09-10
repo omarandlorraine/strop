@@ -58,7 +58,6 @@ fn disassemble(p: &Vec<Instruction>) {
 }
 
 pub fn exhaustive_search(d: &mut SearchData) {
-	let mut instrs: Vec<Instruction>;
 	// There's gotta be a less moronic way of doing this.
 
 	println!("Trying programs of length 1.");
