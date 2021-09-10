@@ -115,7 +115,7 @@ fn check_arities(data: &SearchData, m: String, ins: usize, outs: usize) {
 	}
 }
 
-fn function(m: String, mut data: &mut SearchData) {
+fn function(m: String, data: &mut SearchData) {
 	if m == "id" {
 		check_arities(data, m, 1, 1);
 		for n in -128..=127 {
@@ -127,7 +127,7 @@ fn function(m: String, mut data: &mut SearchData) {
 	process::exit(1);
 }
 
-fn search(m: String, mut data: &mut SearchData) {
+fn search(m: String, data: &mut SearchData) {
 	for s_opt in &S_OPTS {
 		if s_opt.name == m {
 			(s_opt.func)(data);
