@@ -313,47 +313,6 @@ fn decimal_adjust(a: i8) -> i8 {
 	bcd2
 }
 
-fn flags_sz(mut m: State, v: i8) {
-	m.zero = if v == 0 {
-		Some(true)
-	} else {
-		Some(false)
-	};
-	m.sign = if v < 0 {
-		Some(true)
-	} else {
-		Some(false)
-	};
-}
-
-fn add8(mut m: State, a: i8, b: i8, c: i8) -> i8 {
-
-	let a_before: i8 = a;
-	let a_after: i8 = a_before.wrapping_add(c).wrapping_add(b);
-
-	let result: i8 = if m.decimal.unwrap() {
-		decimal_adjust(a_after)
-	} else {
-		a_after
-	};
-
-	m.carry = if(result as u8) < (a_before as u8) {
-		Some(true)
-	} else {
-		Some(false)
-	};
-
-	m.overflow = if (a_before < 0 && b < 0 && a_after >= 0) || (a_before > 0 && b > 0 && a_after <= 0) {
-		Some(true)
-	} else {
-		Some(false)
-	};
-
-	flags_sz(m, result);
-	result
-
-}
-
 #[derive(Copy, Clone)]
 pub struct State {
 	accumulator: Option<i8>,
