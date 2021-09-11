@@ -24,24 +24,29 @@ pub struct Instruction {
 	addressingmode: AddressingMode,
 }
 
-pub fn add_to_reg8(reg: Option<i8>, c: i8) -> (Option<i8>, Option<bool>, Option<bool>, Option<bool>) {
-	// The return values are the result of the addition, the carry flag, the zero flag, the sign flag.
+pub fn add_to_reg8(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>, Option<bool>, Option<bool>, Option<bool>) {
+	// The return values are the result of the addition, the carry flag, the zero flag, the sign flag, overflow.
+	if let Some(v) = a {
 	if let Some(r) = reg {
-		let result = r.wrapping_add(c);
+		let result = r.wrapping_add(v);
 		let z = if result == 0 { true } else { false };
-		let c = if r.checked_add(c).is_none() { true } else { false };
+		let c = if r.checked_add(v).is_none() { true } else { false };
 		let n = if result < 0 { true } else { false };
-		(Some(result), Some(c), Some(z), Some(n))
+		let o = (r < 0 && v < 0 && result >= 0) || (r > 0 && v > 0 && result <= 0);
+		(Some(result), Some(c), Some(z), Some(n), Some(o))
 	} else {
-		(None, None, None, None)
+		(None, None, None, None, None)
+	}
+	} else {
+		(None, None, None, None, None)
 	}
 }
 
 #[test]
 fn add_to_reg8_test() {
-	assert_eq!(add_to_reg8(Some(3), 3), (Some(6), Some(false), Some(false), Some(false)));
-	assert_eq!(add_to_reg8(Some(127), 1), (Some(-128), Some(true), Some(false), Some(true)));
-	assert_eq!(add_to_reg8(None, 3), (None, None, None, None));
+	assert_eq!(add_to_reg8(Some(3), 3), (Some(6), Some(false), Some(false), Some(false), Some(false)));
+	assert_eq!(add_to_reg8(Some(127), 1), (Some(-128), Some(true), Some(false), Some(true), Some(false)));
+	assert_eq!(add_to_reg8(None, 3), (None, None, None, None, None));
 }
 
 impl Instruction {
@@ -59,22 +64,17 @@ impl Instruction {
 
 	fn operation_aba(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s {
-			let a: Option<i8> = 
-				if s.carry.is_none() || s.reg_b.is_none() || s.accumulator.is_none() {
-					None
-				} else {
-					Some(s.reg_b.unwrap() + s.accumulator.unwrap() + if s.carry.unwrap() { 1 } else { 0 })
-				};
+			let (result, c, z, n, o) = add_to_reg8(s.accumulator, s.reg_b);
 			Some(State {
-				accumulator: a,
+				accumulator: result,
 				reg_b: s.reg_b,
 				x8: s.x8,
 				y8: s.y8,
-				sign: s.sign, // TODO
-				carry: s.carry, // TODO
-				zero: s.zero, // TODO
+				sign: n,
+				carry: c,
+				zero: z,
 				decimal: s.decimal,
-				overflow: s.overflow,
+				overflow: o,
 			})
 		} else {
 			None
@@ -83,7 +83,7 @@ impl Instruction {
 
 		fn operation_dex(&self, s: &mut Option<State>) -> Option<State> {
 			if let Some(s) = s {
-				let (result, _c, z, n) = add_to_reg8(s.x8, -1);
+				let (result, _c, z, n, _o) = add_to_reg8(s.x8, Some(-1));
 				Some(State {
 					accumulator: s.accumulator,
 					reg_b: s.reg_b,
@@ -102,7 +102,7 @@ impl Instruction {
 
 		fn operation_dey(&self, s: &mut Option<State>) -> Option<State> {
 			if let Some(s) = s {
-				let (result, _c, z, n) = add_to_reg8(s.y8, -1);
+				let (result, _c, z, n, _o) = add_to_reg8(s.y8, Some(-1));
 				Some(State {
 					accumulator: s.accumulator,
 					reg_b: s.reg_b,
@@ -121,7 +121,7 @@ impl Instruction {
 
 		fn operation_inx(&self, s: &mut Option<State>) -> Option<State> {
 			if let Some(s) = s {
-				let (result, _c, z, n) = add_to_reg8(s.x8, 1);
+				let (result, _c, z, n, _o) = add_to_reg8(s.x8, Some(1));
 				Some(State {
 					accumulator: s.accumulator,
 					reg_b: s.reg_b,
@@ -140,7 +140,7 @@ impl Instruction {
 
 		fn operation_iny(&self, s: &mut Option<State>) -> Option<State> {
 			if let Some(s) = s {
-				let (result, _c, z, n) = add_to_reg8(s.y8, 1);
+				let (result, _c, z, n, _o) = add_to_reg8(s.y8, Some(1));
 				Some(State {
 					accumulator: s.accumulator,
 					reg_b: s.reg_b,
