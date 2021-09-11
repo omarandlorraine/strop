@@ -3,7 +3,6 @@ use std::process;
 extern crate argh;
 use argh::FromArgs;
 
-mod optimise;
 mod machine;
 mod search;
 mod functions;
