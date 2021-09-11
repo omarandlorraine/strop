@@ -2,8 +2,6 @@ use crate::machine::Instruction;
 use crate::State;
 
 pub struct SearchData<'a> {
-	current_length: usize,
-	cursor: usize,
 	prog: Vec<Instruction>,
 	pub constants: Vec<i8>,
 	pub instrs: Vec<Instruction>,
@@ -14,8 +12,6 @@ pub struct SearchData<'a> {
 
 pub fn empty_search_data() -> SearchData<'static>{
 	SearchData {
-		current_length: 0,
-		cursor: 0,
 		prog: Vec::new(),
 		constants: Vec::new(),
 		instrs: Vec::new(),
