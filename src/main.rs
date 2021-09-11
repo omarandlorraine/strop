@@ -16,9 +16,6 @@ use crate::machine::Instruction;
 use crate::machine::State;
 use crate::machine::{set_a, get_a, set_b, get_b, set_x, set_y, get_x, get_y};
 
-// TODO: instead of empty_search_data() function there should just be a ::new() method
-use crate::search::empty_search_data;
-
 use crate::search::SearchData;
 use crate::search::exhaustive_search;
 use crate::search::dead_code_elimination;
@@ -35,10 +32,6 @@ struct SOpt {
 
 struct VOpt {
 	name: &'static str, set: fn(&mut State, i8), get: fn(&State) -> Option<i8>, help: &'static str
-}
-
-struct FOpt {
-	name: &'static str, func: fn(Vec<i8>) -> Vec<i8>, inputs: i32, outputs: i32, help: &'static str
 }
 
 const M_OPTS: [MOpt; 10] = [
@@ -168,7 +161,7 @@ fn parse_live_out<'a>(arg: String) -> Box<dyn for<'r> Fn(&'r State) -> Option<i8
 
 fn main() {
 	let opts: Opts = argh::from_env();
-	let mut data = empty_search_data();
+	let mut data = SearchData::new();
 	data.instrs = mach(opts.arch);
 	data.live_in = opts.live_in.into_iter().map(|arg| parse_live_in(arg)).collect();
 	data.live_out = opts.live_out.into_iter().map(|arg| parse_live_out(arg)).collect();

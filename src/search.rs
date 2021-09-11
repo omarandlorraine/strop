@@ -10,14 +10,16 @@ pub struct SearchData<'a> {
 	pub test_cases: Vec<(Vec<i8>, Vec<i8>)>,
 }
 
-pub fn empty_search_data() -> SearchData<'static>{
-	SearchData {
-		prog: Vec::new(),
-		constants: Vec::new(),
-		instrs: Vec::new(),
-		live_in: Vec::new(),
-		live_out: Vec::new(),
-		test_cases: Vec::new(),
+impl SearchData<'_> {
+	pub fn new() -> SearchData<'static>{
+		SearchData {
+			prog: Vec::new(),
+			constants: Vec::new(),
+			instrs: Vec::new(),
+			live_in: Vec::new(),
+			live_out: Vec::new(),
+			test_cases: Vec::new(),
+		}
 	}
 }
 
