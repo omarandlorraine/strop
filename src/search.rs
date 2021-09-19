@@ -1,28 +1,6 @@
 use crate::machine::Instruction;
 use crate::State;
 
-pub struct SearchData<'a> {
-	prog: Vec<Instruction>,
-	pub constants: Vec<i8>,
-	pub instrs: Vec<Instruction>,
-	pub live_in: Vec<Box<dyn for<'r> Fn(&'r mut State, i8)>>,
-	pub live_out: Vec<Box<dyn for<'r> Fn(&'r State) -> Option<i8> + 'a >>,
-	pub test_cases: Vec<(Vec<i8>, Vec<i8>)>,
-}
-
-impl SearchData<'_> {
-	pub fn new() -> SearchData<'static>{
-		SearchData {
-			prog: Vec::new(),
-			constants: Vec::new(),
-			instrs: Vec::new(),
-			live_in: Vec::new(),
-			live_out: Vec::new(),
-			test_cases: Vec::new(),
-		}
-	}
-}
-
 pub struct Schema<'a> {
 	live_in: Vec<Box<dyn for<'r> Fn(&'r mut State, i8)>>,
 	live_out: Vec<Box<dyn for<'r> Fn(&'r State) -> Option<i8> + 'a >>,
@@ -102,7 +80,4 @@ pub fn exhaustive_search(test_cases: &Vec<(Vec<i8>, Vec<i8>)>, schema: Schema, i
 		}
 	}
 	
-}
-
-pub fn dead_code_elimination(d: &mut SearchData) {
 }

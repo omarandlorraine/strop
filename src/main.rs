@@ -15,16 +15,11 @@ use crate::machine::Instruction;
 use crate::machine::State;
 use crate::machine::{set_a, get_a, set_b, get_b, set_x, set_y, get_x, get_y};
 
-use crate::search::{Schema, SearchData};
+use crate::search::Schema;
 use crate::search::exhaustive_search;
-use crate::search::dead_code_elimination;
 
 struct MOpt {
 	name: &'static str, func: fn() -> Vec<Instruction>, help: &'static str
-}
-
-struct SOpt {
-	name: &'static str, func: fn(&mut SearchData), help: &'static str
 }
 
 struct VOpt {
@@ -88,12 +83,14 @@ fn mach(m: String) -> Vec<Instruction> {
 	process::exit(1);
 }
 
-fn function(m: String, data: &mut SearchData) {
+fn function(m: String) -> Vec<(Vec<i8>, Vec<i8>)> {
+	// TODO: test_cases does not need to be mutable..
+	let mut test_cases = Vec::new();
 	if m == "id" {
 		for n in -128..=127 {
-			data.test_cases.push((vec![n], vec![n]));
+			test_cases.push((vec![n], vec![n]));
 		}
-		return;
+		return test_cases;
 	}
 	if m[0..4] == "mult".to_string() {
 
@@ -103,19 +100,16 @@ fn function(m: String, data: &mut SearchData) {
 		if let Some(f) = a.ok() {
 			for n in -128_i8..=127 {
 				if let Some(res) = n.checked_mul(f) {
-					data.test_cases.push((vec![n], vec![res]));
+					test_cases.push((vec![n], vec![res]));
 				}
 			}
-			return;
+			return test_cases;
 		} else {
 			println!("Can't multiply by {}", arg);
 		}
 	}
 	println!("I don't understand what you mean by the argument {}", m);
 	process::exit(1);
-}
-
-fn search(m: String, data: &mut SearchData) {
 }
 
 fn parse_live_in<'a>(arg: String) -> Box<dyn for<'r> Fn(&'r mut State, i8) + 'a > {
@@ -146,14 +140,13 @@ fn parse_live_out<'a>(arg: String) -> Box<dyn for<'r> Fn(&'r State) -> Option<i8
 
 fn main() {
 	let opts: Opts = argh::from_env();
-	let mut data = SearchData::new();
-	data.instrs = Vec::new();
 	let schema =  Schema::new(
 		opts.live_in.into_iter().map(|arg| parse_live_in(arg)).collect(),
 		opts.live_out.into_iter().map(|arg| parse_live_out(arg)).collect());
-	function(opts.function, &mut data);
+
+	let test_cases = function(opts.function);
+
 	if opts.search == "exh" {
-		exhaustive_search(&data.test_cases, schema, mach(opts.arch));
+		exhaustive_search(&test_cases, schema, mach(opts.arch));
 	}
-	search(opts.search, &mut data);
 }
