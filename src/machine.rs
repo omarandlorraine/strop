@@ -24,8 +24,8 @@ pub struct Instruction {
 	addressingmode: AddressingMode,
 }
 
-pub fn add_to_reg8(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>, Option<bool>, Option<bool>, Option<bool>) {
-	// The return values are the result of the addition, the carry flag, the zero flag, the sign flag, overflow.
+pub fn add_to_reg8(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>, Option<bool>, Option<bool>, Option<bool>, Option<bool>) {
+	// The return values are the result of the addition, then the flags, carry, zerro, sign, overflow, half-carry.
 	if let Some(v) = a {
 	if let Some(r) = reg {
 		let result = r.wrapping_add(v);
@@ -33,12 +33,55 @@ pub fn add_to_reg8(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>,
 		let c = if r.checked_add(v).is_none() { true } else { false };
 		let n = if result < 0 { true } else { false };
 		let o = (r < 0 && v < 0 && result >= 0) || (r > 0 && v > 0 && result <= 0);
-		(Some(result), Some(c), Some(z), Some(n), Some(o))
+		let h = ((r ^ v ^ result ) & 0x10) == 0x10;
+		(Some(result), Some(c), Some(z), Some(n), Some(o), Some(h))
 	} else {
-		(None, None, None, None, None)
+		(None, None, None, None, None, None)
 	}
 	} else {
-		(None, None, None, None, None)
+		(None, None, None, None, None, None)
+	}
+}
+
+fn decimal_adjust(accumulator: Option<i8>, carry: Option<bool>, halfcarry: Option<bool>) -> Option<i8> {
+	fn nybble(val: i8, flag: Option<bool>) -> Option<i8> {
+		if val & 0x0f > 0x09 {
+			return Some(0x06);
+		}
+		if flag.is_none() {
+			return None;
+		}
+		if flag.unwrap_or(false) {
+			return Some(0x06);
+		}
+		return Some(0);
+	}
+
+	if let Some(a) = accumulator {
+		if let Some(right) = nybble(a, halfcarry) {
+			let ar = a + right;
+			if let Some(left) = nybble(ar >> 4, carry) {
+				Some(ar + (left << 4))
+			} else {
+				None
+			}
+		} else {
+			None
+		}
+	} else {
+		None
+	}
+}
+
+fn rotate_left_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>, Option<bool>) {
+	if val.is_none() || carry.is_none() {
+		(None, None)
+	} else {
+		let c = carry.unwrap();
+		let v = val.unwrap();
+		let high_bit_set = v & -128 != 0;
+		let shifted = (v & 0x7f).rotate_left(1);
+		(Some(if c { shifted + 1 } else { shifted }), Some(high_bit_set))
 	}
 }
 
@@ -64,7 +107,7 @@ impl Instruction {
 
 	fn operation_aba(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s {
-			let (result, c, z, n, o) = add_to_reg8(s.accumulator, s.reg_b);
+			let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, s.reg_b);
 			Some(State {
 				accumulator: result,
 				reg_b: s.reg_b,
@@ -75,195 +118,284 @@ impl Instruction {
 				zero: z,
 				decimal: s.decimal,
 				overflow: o,
+				halfcarry: h
 			})
 		} else {
 			None
 		}
 	}
 
-		fn operation_dex(&self, s: &mut Option<State>) -> Option<State> {
-			if let Some(s) = s {
-				let (result, _c, z, n, _o) = add_to_reg8(s.x8, Some(-1));
-				Some(State {
-					accumulator: s.accumulator,
-					reg_b: s.reg_b,
-					x8: result,
-					y8: s.y8,
-					carry: s.carry,
-					zero: z,
-					decimal: s.decimal,
-					overflow: s.overflow,
-					sign: n
-				})
-			} else {
-				None
-			}
+	fn operation_add(&self, s: &mut Option<State>) -> Option<State> {
+		if let Some(s) = s {
+			let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s));
+			Some(State {
+				accumulator: result,
+				reg_b: s.reg_b,
+				x8: s.x8,
+				y8: s.y8,
+				sign: n,
+				carry: c,
+				zero: z,
+				decimal: s.decimal,
+				overflow: o,
+				halfcarry: h
+			})
+		} else {
+			None
 		}
+	}
 
-		fn operation_dey(&self, s: &mut Option<State>) -> Option<State> {
-			if let Some(s) = s {
-				let (result, _c, z, n, _o) = add_to_reg8(s.y8, Some(-1));
-				Some(State {
-					accumulator: s.accumulator,
-					reg_b: s.reg_b,
-					x8: s.x8,
-					y8: result,
-					carry: s.carry,
-					zero: z,
-					decimal: s.decimal,
-					overflow: s.overflow,
-					sign: n
-				})
-			} else {
-				None
-			}
+	fn operation_clc(&self, s: &mut Option<State>) -> Option<State> {
+		if let Some(s) = s {
+			Some(State {
+				accumulator: s.accumulator,
+				reg_b: s.reg_b,
+				x8: s.x8,
+				y8: s.y8,
+				sign: s.sign,
+				carry: Some(false),
+				zero: s.zero,
+				decimal: s.decimal,
+				overflow: s.overflow,
+				halfcarry: s.halfcarry
+			})
+		} else {
+			None
 		}
+	}
 
-		fn operation_inx(&self, s: &mut Option<State>) -> Option<State> {
-			if let Some(s) = s {
-				let (result, _c, z, n, _o) = add_to_reg8(s.x8, Some(1));
-				Some(State {
-					accumulator: s.accumulator,
-					reg_b: s.reg_b,
-					x8: result,
-					y8: s.y8,
-					carry: s.carry,
-					zero: z,
-					decimal: s.decimal,
-					overflow: s.overflow,
-					sign: n
-				})
-			} else {
-				None
-			}
+	fn operation_dex(&self, s: &mut Option<State>) -> Option<State> {
+		if let Some(s) = s {
+			let (result, _c, z, n, _o, _h) = add_to_reg8(s.x8, Some(-1));
+			Some(State {
+				accumulator: s.accumulator,
+				reg_b: s.reg_b,
+				x8: result,
+				y8: s.y8,
+				carry: s.carry,
+				zero: z,
+				decimal: s.decimal,
+				overflow: s.overflow,
+				sign: n,
+				halfcarry: s.halfcarry
+			})
+		} else {
+			None
 		}
+	}
 
-		fn operation_iny(&self, s: &mut Option<State>) -> Option<State> {
-			if let Some(s) = s {
-				let (result, _c, z, n, _o) = add_to_reg8(s.y8, Some(1));
-				Some(State {
-					accumulator: s.accumulator,
-					reg_b: s.reg_b,
-					x8: s.x8,
-					y8: result,
-					carry: s.carry,
-					zero: z,
-					decimal: s.decimal,
-					overflow: s.overflow,
-					sign: n
-				})
-			} else {
-				None
-			}
+	fn operation_dey(&self, s: &mut Option<State>) -> Option<State> {
+		if let Some(s) = s {
+			let (result, _c, z, n, _o, _h) = add_to_reg8(s.y8, Some(-1));
+			Some(State {
+				accumulator: s.accumulator,
+				reg_b: s.reg_b,
+				x8: s.x8,
+				y8: result,
+				carry: s.carry,
+				zero: z,
+				decimal: s.decimal,
+				overflow: s.overflow,
+				sign: n,
+				halfcarry: s.halfcarry
+			})
+		} else {
+			None
 		}
+	}
 
-		fn operation_tab(&self, s: &mut Option<State>) -> Option<State> {
-			if let Some(s) = s {
-				Some(State {
-					accumulator: s.accumulator,
-					reg_b: s.accumulator,
-					x8: s.x8,
-					y8: s.y8,
-					carry: s.carry,
-					zero: s.zero,
-					decimal: s.decimal,
-					overflow: s.overflow,
-					sign: s.sign
-				})
-			} else {
-				None
-			}
+	fn operation_inx(&self, s: &mut Option<State>) -> Option<State> {
+		if let Some(s) = s {
+			let (result, _c, z, n, _o, _h) = add_to_reg8(s.x8, Some(1));
+			Some(State {
+				accumulator: s.accumulator,
+				reg_b: s.reg_b,
+				x8: result,
+				y8: s.y8,
+				carry: s.carry,
+				zero: z,
+				decimal: s.decimal,
+				overflow: s.overflow,
+				sign: n,
+				halfcarry: s.halfcarry
+			})
+		} else {
+			None
 		}
+	}
 
-		fn operation_tax(&self, s: &mut Option<State>) -> Option<State> {
-			if let Some(s) = s {
-				Some(State {
-					accumulator: s.accumulator,
-					reg_b: s.reg_b,
-					x8: s.accumulator,
-					y8: s.y8,
-					carry: s.carry,
-					zero: s.zero,
-					decimal: s.decimal,
-					overflow: s.overflow,
-					sign: s.sign
-				})
-			} else {
-				None
-			}
+	fn operation_iny(&self, s: &mut Option<State>) -> Option<State> {
+		if let Some(s) = s {
+			let (result, _c, z, n, _o, _h) = add_to_reg8(s.y8, Some(1));
+			Some(State {
+				accumulator: s.accumulator,
+				reg_b: s.reg_b,
+				x8: s.x8,
+				y8: result,
+				carry: s.carry,
+				zero: z,
+				decimal: s.decimal,
+				overflow: s.overflow,
+				sign: n,
+				halfcarry: s.halfcarry
+			})
+		} else {
+			None
 		}
+	}
 
-		fn operation_tay(&self, s: &mut Option<State>) -> Option<State> {
-			if let Some(s) = s {
-				Some(State {
-					accumulator: s.accumulator,
-					reg_b: s.reg_b,
-					x8: s.x8,
-					y8: s.accumulator,
-					carry: s.carry,
-					zero: s.zero,
-					decimal: s.decimal,
-					overflow: s.overflow,
-					sign: s.sign
-				})
-			} else {
-				None
-			}
+	fn operation_rol(&self, s: &mut Option<State>) -> Option<State> {
+		if let Some(s) = s{
+			let (val, c) = rotate_left_thru_carry(s.accumulator, s.carry);
+			Some(State {
+				accumulator: val,
+				reg_b: s.reg_b,
+				x8: s.x8,
+				y8: s.y8,
+				sign: s.sign,
+				carry: c,
+				zero: s.zero,
+				decimal: s.decimal,
+				overflow: s.overflow,
+				halfcarry: s.halfcarry
+			})
+		} else {
+			None
 		}
+	}
 
-		fn operation_tba(&self, s: &mut Option<State>) -> Option<State> {
-			if let Some(s) = s {
-				Some(State {
-					accumulator: s.reg_b,
-					reg_b: s.reg_b,
-					x8: s.x8,
-					y8: s.y8,
-					carry: s.carry,
-					zero: s.zero,
-					decimal: s.decimal,
-					overflow: s.overflow,
-					sign: s.sign
-				})
-			} else {
-				None
-			}
+	fn operation_sec(&self, s: &mut Option<State>) -> Option<State> {
+		if let Some(s) = s {
+			Some(State {
+				accumulator: s.accumulator,
+				reg_b: s.reg_b,
+				x8: s.x8,
+				y8: s.y8,
+				sign: s.sign,
+				carry: Some(true),
+				zero: s.zero,
+				decimal: s.decimal,
+				overflow: s.overflow,
+				halfcarry: s.halfcarry
+			})
+		} else {
+			None
 		}
+	}
 
-		fn operation_txa(&self, s: &mut Option<State>) -> Option<State> {
-			if let Some(s) = s {
-				Some(State {
-					accumulator: s.x8,
-					reg_b: s.reg_b,
-					x8: s.x8,
-					y8: s.y8,
-					carry: s.carry,
-					zero: s.zero,
-					decimal: s.decimal,
-					overflow: s.overflow,
-					sign: s.sign
-				})
-			} else {
-				None
-			}
+	fn operation_tab(&self, s: &mut Option<State>) -> Option<State> {
+		if let Some(s) = s {
+			Some(State {
+				accumulator: s.accumulator,
+				reg_b: s.accumulator,
+				x8: s.x8,
+				y8: s.y8,
+				carry: s.carry,
+				zero: s.zero,
+				decimal: s.decimal,
+				overflow: s.overflow,
+				sign: s.sign,
+				halfcarry: s.halfcarry
+			})
+		} else {
+			None
 		}
+	}
 
-		fn operation_tya(&self, s: &mut Option<State>) -> Option<State> {
-			if let Some(s) = s {
-				Some(State {
-					accumulator: s.y8,
-					reg_b: s.reg_b,
-					x8: s.x8,
-					y8: s.y8,
-					carry: s.carry,
-					zero: s.zero,
-					decimal: s.decimal,
-					overflow: s.overflow,
-					sign: s.sign
-				})
-			} else {
-				None
-			}
+	fn operation_tax(&self, s: &mut Option<State>) -> Option<State> {
+		if let Some(s) = s {
+			Some(State {
+				accumulator: s.accumulator,
+				reg_b: s.reg_b,
+				x8: s.accumulator,
+				y8: s.y8,
+				carry: s.carry,
+				zero: s.zero,
+				decimal: s.decimal,
+				overflow: s.overflow,
+				sign: s.sign,
+				halfcarry: s.halfcarry
+			})
+		} else {
+			None
 		}
+	}
+
+	fn operation_tay(&self, s: &mut Option<State>) -> Option<State> {
+		if let Some(s) = s {
+			Some(State {
+				accumulator: s.accumulator,
+				reg_b: s.reg_b,
+				x8: s.x8,
+				y8: s.accumulator,
+				carry: s.carry,
+				zero: s.zero,
+				decimal: s.decimal,
+				overflow: s.overflow,
+				sign: s.sign,
+				halfcarry: s.halfcarry
+			})
+		} else {
+			None
+		}
+	}
+
+	fn operation_tba(&self, s: &mut Option<State>) -> Option<State> {
+		if let Some(s) = s {
+			Some(State {
+				accumulator: s.reg_b,
+				reg_b: s.reg_b,
+				x8: s.x8,
+				y8: s.y8,
+				carry: s.carry,
+				zero: s.zero,
+				decimal: s.decimal,
+				overflow: s.overflow,
+				sign: s.sign,
+				halfcarry: s.halfcarry
+			})
+		} else {
+			None
+		}
+	}
+
+	fn operation_txa(&self, s: &mut Option<State>) -> Option<State> {
+		if let Some(s) = s {
+			Some(State {
+				accumulator: s.x8,
+				reg_b: s.reg_b,
+				x8: s.x8,
+				y8: s.y8,
+				carry: s.carry,
+				zero: s.zero,
+				decimal: s.decimal,
+				overflow: s.overflow,
+				sign: s.sign,
+				halfcarry: s.halfcarry
+			})
+		} else {
+			None
+		}
+	}
+
+	fn operation_tya(&self, s: &mut Option<State>) -> Option<State> {
+		if let Some(s) = s {
+			Some(State {
+				accumulator: s.y8,
+				reg_b: s.reg_b,
+				x8: s.x8,
+				y8: s.y8,
+				carry: s.carry,
+				zero: s.zero,
+				decimal: s.decimal,
+				overflow: s.overflow,
+				sign: s.sign,
+				halfcarry: s.halfcarry
+			})
+		} else {
+			None
+		}
+	}
 }
 
 impl std::fmt::Display for Instruction {
@@ -290,47 +422,18 @@ impl Iterator for Instruction {
     }
 }
 
-fn get_datum(m: State, i: Instruction) -> Option<i8> {
-	match i.addressingmode {
-		AddressingMode::Implicit => {
-			panic!();
-		}
-		AddressingMode::Accumulator => {
-			m.accumulator
-		}
-		AddressingMode::Immediate(constant) => {
-			Some(constant)
-		}
-	}
-}
-
-fn decimal_adjust(a: i8) -> i8 {
-	let bcd1: i8 = if (a & 0x0f) as u8 > 0x09 {
-		0x06
-	} else {
-		0x00
-	};
-
-	let bcd2: i8 = if (a.wrapping_add(bcd1) as u8 & 0xf0) as u8 > 0x90 {
-		0x60
-	} else {
-		0x00
-	};
-
-	bcd2
-}
-
 #[derive(Copy, Clone)]
 pub struct State {
 	accumulator: Option<i8>,
 	reg_b: Option<i8>,
-	pub x8: Option<i8>,
+	x8: Option<i8>,
 	y8: Option<i8>,
 	zero: Option<bool>,
 	carry: Option<bool>,
 	sign: Option<bool>,
 	decimal: Option<bool>,
-	overflow: Option<bool>
+	overflow: Option<bool>,
+	halfcarry: Option<bool>
 }
 
 impl State {
@@ -344,7 +447,8 @@ impl State {
 			carry: None,
 			sign: None,
 			decimal: None,
-			overflow: None
+			overflow: None,
+			halfcarry: None,
 		}
 	}
 }
@@ -366,6 +470,8 @@ pub fn motorola6800() -> Vec<Instruction> {
 	Instruction::new("aba", Instruction::operation_aba, vec![Instruction::random_implied]),
 	Instruction::new("tab", Instruction::operation_tab, vec![Instruction::random_implied]),
 	Instruction::new("tba", Instruction::operation_tba, vec![Instruction::random_implied]),
+	Instruction::new("rol", Instruction::operation_rol, vec![Instruction::random_implied]),
+	Instruction::new("clc", Instruction::operation_clc, vec![Instruction::random_implied]),
 	]
 }
 
@@ -382,6 +488,8 @@ pub fn mos6502() -> Vec<Instruction> {
 	Instruction::new("tay", Instruction::operation_tay, vec![Instruction::random_implied]),
 	Instruction::new("txa", Instruction::operation_txa, vec![Instruction::random_implied]),
 	Instruction::new("tya", Instruction::operation_tya, vec![Instruction::random_implied]),
+
+	Instruction::new("add", Instruction::operation_add, vec![Instruction::random_immediate]),
 	]
 }
 
