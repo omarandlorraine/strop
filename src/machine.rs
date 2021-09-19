@@ -105,6 +105,20 @@ impl Instruction {
 		self.addressingmode = AddressingMode::Immediate(rand::random());
 	}
 
+	fn get_datum(&self, m: &State) -> Option<i8> {
+		match self.addressingmode {
+			AddressingMode::Implicit => {
+				panic!();
+			}
+			AddressingMode::Accumulator => {
+				m.accumulator
+			}
+			AddressingMode::Immediate(constant) => {
+				Some(constant)
+			}
+		}
+	}
+
 	fn operation_aba(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s {
 			let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, s.reg_b);
