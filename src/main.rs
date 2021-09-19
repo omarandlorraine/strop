@@ -96,7 +96,7 @@ fn mach(m: String) -> Vec<Instruction> {
 	process::exit(1);
 }
 
-fn check_arities(data: &SearchData, m: String, ins: usize, outs: usize) {
+fn check_arities(data: &SearchData, m: &String, ins: usize, outs: usize) {
 	if data.live_in.len() != ins {
 		println!("the {} function needs exactly {} live-in(s)", m, ins);
 		process::exit(1);
@@ -109,11 +109,28 @@ fn check_arities(data: &SearchData, m: String, ins: usize, outs: usize) {
 
 fn function(m: String, data: &mut SearchData) {
 	if m == "id" {
-		check_arities(data, m, 1, 1);
+		check_arities(data, &m, 1, 1);
 		for n in -128..=127 {
 			data.test_cases.push((vec![n], vec![n]));
 		}
 		return;
+	}
+	if m[0..4] == "mult".to_string() {
+
+		let arg = m[4..].to_string();
+		let a = arg.parse::<i8>();
+
+		if let Some(f) = a.ok() {
+			check_arities(data, &m, 1, 1);
+			for n in -128_i8..=127 {
+				if let Some(res) = n.checked_mul(f) {
+					data.test_cases.push((vec![n], vec![res]));
+				}
+			}
+			return;
+		} else {
+			println!("Can't multiply by {}", arg);
+		}
 	}
 	println!("I don't understand what you mean by the argument {}", m);
 	process::exit(1);
