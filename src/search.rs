@@ -68,7 +68,28 @@ pub fn exhaustive_search(d: &mut SearchData) {
 	}
 
 	println!("Trying programs of length 2.");
+	for i in &d.instrs {
+		for j in &d.instrs {
+			d.prog = vec![*i, *j];
+			if equivalence(d) {
+				disassemble(&d.prog);
+				return;
+			};
+		}
+	}
+
 	println!("Trying programs of length 3.");
+	for i in &d.instrs {
+		for j in &d.instrs {
+			for k in &d.instrs {
+				d.prog = vec![*i, *j, *k];
+				if equivalence(d) {
+					disassemble(&d.prog);
+					return;
+				};
+			}
+		}
+	}
 	
 }
 
