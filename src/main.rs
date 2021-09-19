@@ -5,7 +5,6 @@ use argh::FromArgs;
 
 mod machine;
 mod search;
-mod functions;
 
 use crate::machine::{mos6502, mos65c02};
 use crate::machine::motorola6800;
@@ -19,8 +18,6 @@ use crate::machine::{set_a, get_a, set_b, get_b, set_x, set_y, get_x, get_y};
 use crate::search::SearchData;
 use crate::search::exhaustive_search;
 use crate::search::dead_code_elimination;
-
-use crate::functions::{id, parity, popcount};
 
 struct MOpt {
 	name: &'static str, func: fn() -> Vec<Instruction>, help: &'static str
