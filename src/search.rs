@@ -21,7 +21,7 @@ fn run_program(prog: &Vec<Instruction>, schema: &Schema, inputs: &Vec<i8>) -> Op
 	prog.iter().fold(Some(s), |mut state, i| (i.operation)(i, &mut state))
 }
 
-fn equivalence(prog: &Vec<Instruction>, schema: &Schema, test_cases: &Vec<(Vec<i8>, Vec<i8>)>) -> bool {
+pub fn equivalence(prog: &Vec<Instruction>, schema: &Schema, test_cases: &Vec<(Vec<i8>, Vec<i8>)>) -> bool {
 	for tc in test_cases {
 		if let Some(state) = run_program(prog, schema, &tc.0) {
 			for (func, val) in schema.live_out.iter().zip(&tc.1) {
@@ -44,13 +44,13 @@ fn disassemble(p: &Vec<Instruction>) {
 	}
 }
 
-pub fn exhaustive_search(test_cases: &Vec<(Vec<i8>, Vec<i8>)>, schema: Schema, instrs: Vec<Instruction>) {
+pub fn exhaustive_search(found_it: &dyn Fn(&Vec<Instruction>) -> bool, instrs: Vec<Instruction>) {
 	// There's gotta be a less moronic way of doing this.
 
 	println!("Trying programs of length 1.");
 	for i in &instrs {
 		let prog = vec![*i];
-		if equivalence(&prog, &schema, test_cases) {
+		if found_it(&prog) {
 			disassemble(&prog);
 			return;
 		};
@@ -60,7 +60,7 @@ pub fn exhaustive_search(test_cases: &Vec<(Vec<i8>, Vec<i8>)>, schema: Schema, i
 	for i in &instrs {
 		for j in &instrs {
 			let prog = vec![*i, *j];
-			if equivalence(&prog, &schema, test_cases) {
+			if found_it(&prog) {
 				disassemble(&prog);
 				return;
 			};
@@ -72,7 +72,7 @@ pub fn exhaustive_search(test_cases: &Vec<(Vec<i8>, Vec<i8>)>, schema: Schema, i
 		for j in &instrs {
 			for k in &instrs {
 				let prog = vec![*i, *j, *k];
-				if equivalence(&prog, &schema, test_cases) {
+				if found_it(&prog) {
 					disassemble(&prog);
 					return;
 				};

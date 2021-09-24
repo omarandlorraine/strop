@@ -16,6 +16,7 @@ use crate::machine::State;
 use crate::machine::{set_a, get_a, set_b, get_b, set_x, set_y, get_x, get_y};
 
 use crate::search::Schema;
+use crate::search::equivalence;
 use crate::search::exhaustive_search;
 
 struct MOpt {
@@ -146,7 +147,11 @@ fn main() {
 
 	let test_cases = function(opts.function);
 
+	let found_it = |prog: &Vec<Instruction>| {
+		equivalence(prog, &schema, &test_cases)
+	};
+
 	if opts.search == "exh" {
-		exhaustive_search(&test_cases, schema, mach(opts.arch));
+		exhaustive_search(&found_it, mach(opts.arch));
 	}
 }
