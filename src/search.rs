@@ -45,39 +45,34 @@ fn disassemble(p: &Vec<Instruction>) {
 }
 
 pub fn exhaustive_search(found_it: &dyn Fn(&Vec<Instruction>) -> bool, instrs: Vec<Instruction>) {
-	// There's gotta be a less moronic way of doing this.
 
-	println!("Trying programs of length 1.");
-	for i in &instrs {
-		let prog = vec![*i];
-		if found_it(&prog) {
-			disassemble(&prog);
-			return;
-		};
-	}
-
-	println!("Trying programs of length 2.");
-	for i in &instrs {
-		for j in &instrs {
-			let prog = vec![*i, *j];
-			if found_it(&prog) {
-				disassemble(&prog);
-				return;
-			};
-		}
-	}
-
-	println!("Trying programs of length 3.");
-	for i in &instrs {
-		for j in &instrs {
-			for k in &instrs {
-				let prog = vec![*i, *j, *k];
-				if found_it(&prog) {
-					disassemble(&prog);
-					return;
-				};
+	fn try_all(term: &dyn Fn(&Vec<Instruction>) -> bool, prog: Vec<Instruction>, instrs: &Vec<Instruction>, len: u32) -> bool {
+		if len == 0 {
+			/*
+			println!("Trying:");
+			for i in &prog {
+				println!("{}", i);
 			}
+			*/
+			return term(&prog);
+		} else {
+			for ins in instrs {
+				let p = prog.iter().cloned().chain(vec![*ins]).collect();
+				if try_all(term, p, &instrs, len-1) {
+					return true;
+				}
+			}
+			return false;
 		}
 	}
-	
+
+	let t: &dyn Fn(&Vec<Instruction>) -> bool = &|v| -> bool { found_it(v) };
+
+	for i in 1..10 {
+		println!("Trying programs of length {}.", i);
+		if try_all(&t, Vec::new(), &instrs, i){
+			return;
+		}
+	}
+
 }

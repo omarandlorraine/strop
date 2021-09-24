@@ -139,6 +139,12 @@ fn parse_live_out<'a>(arg: String) -> Box<dyn for<'r> Fn(&'r State) -> Option<i8
 	process::exit(1);
 }
 
+fn disassemble(prog: &Vec<Instruction>) {
+	for p in prog {
+		println!("{}", p);
+	}
+}
+
 fn main() {
 	let opts: Opts = argh::from_env();
 	let schema =  Schema::new(
@@ -149,7 +155,12 @@ fn main() {
 
 	if opts.search == "exh" {
 		let found_it = |prog: &Vec<Instruction>| {
-			equivalence(prog, &schema, &test_cases)
+			if equivalence(prog, &schema, &test_cases){
+				disassemble(prog);
+				true
+			} else {
+				false
+			}
 		};
 		exhaustive_search(&found_it, mach(opts.arch));
 	}
