@@ -147,11 +147,10 @@ fn main() {
 
 	let test_cases = function(opts.function);
 
-	let found_it = |prog: &Vec<Instruction>| {
-		equivalence(prog, &schema, &test_cases)
-	};
-
 	if opts.search == "exh" {
+		let found_it = |prog: &Vec<Instruction>| {
+			equivalence(prog, &schema, &test_cases)
+		};
 		exhaustive_search(&found_it, mach(opts.arch));
 	}
 }
