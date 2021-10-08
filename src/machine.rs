@@ -21,11 +21,13 @@ pub enum AddressingMode {
 pub struct Instruction {
 	opname: &'static str,
 	pub operation: fn(&Instruction, &mut Option<State>) -> Option<State>,
+	pub randomize: fn(&mut Instruction),
+	pub vectorize: fn(&Instruction) -> Vec<Instruction>,
 	addressingmode: AddressingMode,
 }
 
 pub fn add_to_reg8(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>, Option<bool>, Option<bool>, Option<bool>, Option<bool>) {
-	// The return values are the result of the addition, then the flags, carry, zerro, sign, overflow, half-carry.
+	// The return values are the result of the addition, then the flags, carry, zero, sign, overflow, half-carry.
 	if let Some(v) = a {
 	if let Some(r) = reg {
 		let result = r.wrapping_add(v);
@@ -93,8 +95,12 @@ fn add_to_reg8_test() {
 }
 
 impl Instruction {
-	pub fn new(opname: &'static str, operation: for<'r, 's> fn(&'r Instruction, &'s mut Option<State>) -> Option<State>, randomisers: Vec<fn(&mut Instruction)>) -> Instruction {
-		Instruction{opname, operation, addressingmode: AddressingMode::Implicit}
+	pub fn inh(opname: &'static str, operation: for<'r, 's> fn(&'r Instruction, &'s mut Option<State>) -> Option<State>) -> Instruction {
+		Instruction{opname, operation, addressingmode: AddressingMode::Implicit, randomize: Instruction::random_implied, vectorize: Instruction::vector_implied}
+	}
+
+	pub fn vector_implied(&self) -> Vec<Instruction> {
+		vec![*self]
 	}
 
 	pub fn random_implied(&mut self) {
