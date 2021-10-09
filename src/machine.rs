@@ -125,7 +125,7 @@ impl Instruction {
 		}
 	}
 
-	fn operation_aba(&self, s: &mut Option<State>) -> Option<State> {
+	fn op_aba(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s {
 			let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, s.reg_b);
 			Some(State {
@@ -145,7 +145,7 @@ impl Instruction {
 		}
 	}
 
-	fn operation_add(&self, s: &mut Option<State>) -> Option<State> {
+	fn op_add(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s {
 			let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s));
 			Some(State {
@@ -165,7 +165,27 @@ impl Instruction {
 		}
 	}
 
-	fn operation_clc(&self, s: &mut Option<State>) -> Option<State> {
+	fn op_asl(&self, s: &mut Option<State>) -> Option<State> {
+		if let Some(s) = s{
+			let (val, c) = rotate_left_thru_carry(s.accumulator, Some(false));
+			Some(State {
+				accumulator: val,
+				reg_b: s.reg_b,
+				x8: s.x8,
+				y8: s.y8,
+				sign: s.sign,
+				carry: c,
+				zero: s.zero,
+				decimal: s.decimal,
+				overflow: s.overflow,
+				halfcarry: s.halfcarry
+			})
+		} else {
+			None
+		}
+	}
+
+	fn op_clc(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s {
 			Some(State {
 				accumulator: s.accumulator,
@@ -184,7 +204,7 @@ impl Instruction {
 		}
 	}
 
-	fn operation_dex(&self, s: &mut Option<State>) -> Option<State> {
+	fn op_dex(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s {
 			let (result, _c, z, n, _o, _h) = add_to_reg8(s.x8, Some(-1));
 			Some(State {
@@ -204,7 +224,7 @@ impl Instruction {
 		}
 	}
 
-	fn operation_dey(&self, s: &mut Option<State>) -> Option<State> {
+	fn op_dey(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s {
 			let (result, _c, z, n, _o, _h) = add_to_reg8(s.y8, Some(-1));
 			Some(State {
@@ -224,7 +244,7 @@ impl Instruction {
 		}
 	}
 
-	fn operation_inx(&self, s: &mut Option<State>) -> Option<State> {
+	fn op_inx(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s {
 			let (result, _c, z, n, _o, _h) = add_to_reg8(s.x8, Some(1));
 			Some(State {
@@ -244,7 +264,7 @@ impl Instruction {
 		}
 	}
 
-	fn operation_iny(&self, s: &mut Option<State>) -> Option<State> {
+	fn op_iny(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s {
 			let (result, _c, z, n, _o, _h) = add_to_reg8(s.y8, Some(1));
 			Some(State {
@@ -264,7 +284,7 @@ impl Instruction {
 		}
 	}
 
-	fn operation_rol(&self, s: &mut Option<State>) -> Option<State> {
+	fn op_rol(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s{
 			let (val, c) = rotate_left_thru_carry(s.accumulator, s.carry);
 			Some(State {
@@ -284,7 +304,7 @@ impl Instruction {
 		}
 	}
 
-	fn operation_sec(&self, s: &mut Option<State>) -> Option<State> {
+	fn op_sec(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s {
 			Some(State {
 				accumulator: s.accumulator,
@@ -303,7 +323,7 @@ impl Instruction {
 		}
 	}
 
-	fn operation_tab(&self, s: &mut Option<State>) -> Option<State> {
+	fn op_tab(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s {
 			Some(State {
 				accumulator: s.accumulator,
@@ -322,7 +342,7 @@ impl Instruction {
 		}
 	}
 
-	fn operation_tax(&self, s: &mut Option<State>) -> Option<State> {
+	fn op_tax(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s {
 			Some(State {
 				accumulator: s.accumulator,
@@ -341,7 +361,7 @@ impl Instruction {
 		}
 	}
 
-	fn operation_tay(&self, s: &mut Option<State>) -> Option<State> {
+	fn op_tay(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s {
 			Some(State {
 				accumulator: s.accumulator,
@@ -360,7 +380,7 @@ impl Instruction {
 		}
 	}
 
-	fn operation_tba(&self, s: &mut Option<State>) -> Option<State> {
+	fn op_tba(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s {
 			Some(State {
 				accumulator: s.reg_b,
@@ -379,7 +399,7 @@ impl Instruction {
 		}
 	}
 
-	fn operation_txa(&self, s: &mut Option<State>) -> Option<State> {
+	fn op_txa(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s {
 			Some(State {
 				accumulator: s.x8,
@@ -398,7 +418,7 @@ impl Instruction {
 		}
 	}
 
-	fn operation_tya(&self, s: &mut Option<State>) -> Option<State> {
+	fn op_tya(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s {
 			Some(State {
 				accumulator: s.y8,
@@ -431,14 +451,6 @@ impl std::fmt::Display for Instruction {
                 write!(f, "\t{} #{}", self.opname, constant)
             }
         }
-    }
-}
-
-impl Iterator for Instruction {
-    type Item = Instruction;
-
-    fn next(&mut self) -> std::option::Option<<Self as std::iter::Iterator>::Item> {
-        todo!()
     }
 }
 
@@ -485,62 +497,67 @@ pub fn get_x(state: &State) -> Option<i8> { state.x8 }
 pub fn set_y(state: &mut State, y: i8) { state.y8 = Some(y); }
 pub fn get_y(state: &State) -> Option<i8> { state.y8 } 
 
-pub fn motorola6800() -> Vec<Instruction> {
+pub fn motorola6800(consts: Vec<i8>) -> Vec<Instruction> {
 	vec![
-	Instruction::new("aba", Instruction::operation_aba, vec![Instruction::random_implied]),
-	Instruction::new("tab", Instruction::operation_tab, vec![Instruction::random_implied]),
-	Instruction::new("tba", Instruction::operation_tba, vec![Instruction::random_implied]),
-	Instruction::new("rol", Instruction::operation_rol, vec![Instruction::random_implied]),
-	Instruction::new("clc", Instruction::operation_clc, vec![Instruction::random_implied]),
+	Instruction::inh("aba", Instruction::op_aba),
+	Instruction::inh("asla", Instruction::op_asl),
+	Instruction::inh("tab", Instruction::op_tab),
+	Instruction::inh("tba", Instruction::op_tba),
+	Instruction::inh("rol", Instruction::op_rol),
+	Instruction::inh("clc", Instruction::op_clc),
+	Instruction::inh("sec", Instruction::op_sec),
 	]
 }
 
-pub fn mos6502() -> Vec<Instruction> {
+pub fn mos6502(consts: Vec<i8>) -> Vec<Instruction> {
 	vec![
 	// TODO: Maybe we should have only one INC instruction, which can randomly go to either X or Y or the other possibilities.
-	Instruction::new("inx", Instruction::operation_inx, vec![Instruction::random_implied]),
-	Instruction::new("iny", Instruction::operation_iny, vec![Instruction::random_implied]),
-	Instruction::new("dex", Instruction::operation_dex, vec![Instruction::random_implied]),
-	Instruction::new("dey", Instruction::operation_dey, vec![Instruction::random_implied]),
+	Instruction::inh("inx", Instruction::op_inx),
+	Instruction::inh("iny", Instruction::op_iny),
+	Instruction::inh("dex", Instruction::op_dex),
+	Instruction::inh("dey", Instruction::op_dey),
 
 	// TODO: Maybe we should have a single transfer instruction as well, which can go to one of tax txa tay tya txs tsx etc.
-	Instruction::new("tax", Instruction::operation_tax, vec![Instruction::random_implied]),
-	Instruction::new("tay", Instruction::operation_tay, vec![Instruction::random_implied]),
-	Instruction::new("txa", Instruction::operation_txa, vec![Instruction::random_implied]),
-	Instruction::new("tya", Instruction::operation_tya, vec![Instruction::random_implied]),
+	Instruction::inh("tax", Instruction::op_tax),
+	Instruction::inh("tay", Instruction::op_tay),
+	Instruction::inh("txa", Instruction::op_txa),
+	Instruction::inh("tya", Instruction::op_tya),
 
-	Instruction::new("add", Instruction::operation_add, vec![Instruction::random_immediate]),
+	Instruction::inh("asl a", Instruction::op_asl),
+	Instruction::inh("rol", Instruction::op_rol),
+	Instruction::inh("clc", Instruction::op_clc),
+	Instruction::inh("sec", Instruction::op_sec),
 	]
 }
 
-pub fn mos65c02() -> Vec<Instruction> {
-	mos6502()
+pub fn mos65c02(consts: Vec<i8>) -> Vec<Instruction> {
+	mos6502(consts)
 }
 
-pub fn z80() -> Vec<Instruction> {
+pub fn z80(consts: Vec<i8>) -> Vec<Instruction> {
 	Vec::new()
 }
 
-pub fn i8080() -> Vec<Instruction> {
+pub fn i8080(consts: Vec<i8>) -> Vec<Instruction> {
 	Vec::new()
 }
 
-pub fn i8085() -> Vec<Instruction> {
+pub fn i8085(consts: Vec<i8>) -> Vec<Instruction> {
 	Vec::new()
 }
 
-pub fn iz80() -> Vec<Instruction> {
+pub fn iz80(consts: Vec<i8>) -> Vec<Instruction> {
 	Vec::new()
 }
 
-pub fn pic12() -> Vec<Instruction> {
+pub fn pic12(consts: Vec<i8>) -> Vec<Instruction> {
 	Vec::new()
 }
 
-pub fn pic14() -> Vec<Instruction> {
+pub fn pic14(consts: Vec<i8>) -> Vec<Instruction> {
 	Vec::new()
 }
 
-pub fn pic16() -> Vec<Instruction> {
+pub fn pic16(consts: Vec<i8>) -> Vec<Instruction> {
 	Vec::new()
 }

@@ -20,7 +20,7 @@ use crate::search::equivalence;
 use crate::search::exhaustive_search;
 
 struct MOpt {
-	name: &'static str, func: fn() -> Vec<Instruction>, help: &'static str
+	name: &'static str, func: fn(consts: Vec<i8>) -> Vec<Instruction>, help: &'static str
 }
 
 struct VOpt {
@@ -69,12 +69,16 @@ struct Opts {
 	#[argh(option)]
 	/// live_out variables
 	live_out: Vec<String>,
+
+    #[argh(option)]
+    /// constants
+    constant: Vec<i8>,
 }
 
-fn mach(m: String) -> Vec<Instruction> {
+fn mach(m: String, consts: Vec<i8>) -> Vec<Instruction> {
 	for m_opt in &M_OPTS {
 		if m_opt.name == m {
-			return (m_opt.func)();
+			return (m_opt.func)(consts);
 		}
 	}
 	println!("You didn't pick a valid arch, so here's the ones I know:");
@@ -145,6 +149,18 @@ fn disassemble(prog: &Vec<Instruction>) {
 	}
 }
 
+fn constants(c: Vec<i8>) -> Vec<i8> {
+    let mut v = Vec::<i8>::new();
+    for i in 0..16 {
+        v.push(i);
+        v.push(0-i);
+    }
+    for i in 0..7 {
+        v.push(2i8.pow(i));
+    }
+    c.into_iter().chain(v).collect()
+}
+
 fn main() {
 	let opts: Opts = argh::from_env();
 	let schema =  Schema::new(
@@ -162,6 +178,6 @@ fn main() {
 				false
 			}
 		};
-		exhaustive_search(&found_it, mach(opts.arch));
+		exhaustive_search(&found_it, mach(opts.arch, constants(opts.constant)));
 	}
 }
