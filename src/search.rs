@@ -37,15 +37,6 @@ pub fn equivalence(prog: &Vec<Instruction>, schema: &Schema, test_cases: &Vec<(V
 	return true;
 }
 
-fn disassemble(p: &Vec<Instruction>) {
-       println!("Disassembly:");
-       for i in p {
-               println!("\t{}", i);
-       }
-
-}
-
-
 pub fn exhaustive_search(found_it: &dyn Fn(&Vec<Instruction>) -> bool, instructions: Vec<Instruction>) {
     let instrs = instructions.iter().map(|i| (i.vectorize)(i)).flatten().collect();
 
