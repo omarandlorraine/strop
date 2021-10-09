@@ -42,12 +42,6 @@ pub fn exhaustive_search(found_it: &dyn Fn(&Vec<Instruction>) -> bool, instructi
 
 	fn try_all(term: &dyn Fn(&Vec<Instruction>) -> bool, prog: Vec<Instruction>, instrs: &Vec<Instruction>, len: u32) -> bool {
 		if len == 0 {
-			/*
-			println!("Trying:");
-			for i in &prog {
-				println!("{}", i);
-			}
-			*/
 			return term(&prog);
 		} else {
 			for ins in instrs {
