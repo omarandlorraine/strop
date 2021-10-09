@@ -38,13 +38,16 @@ pub fn equivalence(prog: &Vec<Instruction>, schema: &Schema, test_cases: &Vec<(V
 }
 
 fn disassemble(p: &Vec<Instruction>) {
-	println!("Disassembly:");
-	for i in p {
-		println!("\t{}", i);
-	}
+       println!("Disassembly:");
+       for i in p {
+               println!("\t{}", i);
+       }
+
 }
 
-pub fn exhaustive_search(found_it: &dyn Fn(&Vec<Instruction>) -> bool, instrs: Vec<Instruction>) {
+
+pub fn exhaustive_search(found_it: &dyn Fn(&Vec<Instruction>) -> bool, instructions: Vec<Instruction>) {
+    let instrs = instructions.iter().map(|i| (i.vectorize)(i)).flatten().collect();
 
 	fn try_all(term: &dyn Fn(&Vec<Instruction>) -> bool, prog: Vec<Instruction>, instrs: &Vec<Instruction>, len: u32) -> bool {
 		if len == 0 {
