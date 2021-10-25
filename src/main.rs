@@ -113,6 +113,22 @@ fn function(m: String) -> Vec<(Vec<i8>, Vec<i8>)> {
 			println!("Can't multiply by {}", arg);
 		}
 	}
+    if m[0..3] == "add".to_string() {
+
+		let arg = m[3..].to_string();
+		let a = arg.parse::<i8>();
+
+		if let Some(f) = a.ok() {
+			for n in -128_i8..=127 {
+				if let Some(res) = n.checked_add(f) {
+					test_cases.push((vec![n], vec![res]));
+				}
+			}
+			return test_cases;
+		} else {
+			println!("Can't add {}", arg);
+		}
+	}
 	println!("I don't understand what you mean by the argument {}", m);
 	process::exit(1);
 }

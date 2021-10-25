@@ -218,6 +218,47 @@ impl Instruction {
 		}
 	}
 
+	fn op_adc(&self, s: &mut Option<State>) -> Option<State> {
+		if let Some(s) = s{
+			let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s));
+			Some(State {
+				accumulator: result,
+				reg_b: s.reg_b,
+				x8: s.x8,
+				y8: s.y8,
+				sign: n,
+				carry: c,
+				zero: z,
+				decimal: s.decimal,
+				overflow: o,
+				halfcarry: h
+			})
+		} else {
+			None
+		}
+	}
+
+	fn op_adc_dp(&self, s: &mut Option<State>) -> Option<State> {
+		if let Some(s) = s{
+            // TODO: Check decimal flag here.
+			let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s));
+			Some(State {
+				accumulator: result,
+				reg_b: s.reg_b,
+				x8: s.x8,
+				y8: s.y8,
+				sign: n,
+				carry: c,
+				zero: z,
+				decimal: s.decimal,
+				overflow: o,
+				halfcarry: h
+			})
+		} else {
+			None
+		}
+	}
+
 	fn op_clc(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s {
 			Some(State {
@@ -533,6 +574,8 @@ pub fn get_y(state: &State) -> Option<i8> { state.y8 }
 pub fn motorola6800() -> Vec<Instruction> {
 	vec![
 	Instruction::inh("aba", Instruction::op_aba),
+    Instruction::imm("add", Instruction::op_add),
+    Instruction::imm("adc", Instruction::op_adc),
 	Instruction::inh("asla", Instruction::op_asl),
 	Instruction::inh("tab", Instruction::op_tab),
 	Instruction::inh("tba", Instruction::op_tba),
@@ -560,6 +603,8 @@ pub fn mos6502() -> Vec<Instruction> {
 	Instruction::inh("rol", Instruction::op_rol),
 	Instruction::inh("clc", Instruction::op_clc),
 	Instruction::inh("sec", Instruction::op_sec),
+
+    Instruction::imm("adc", Instruction::op_adc_dp),
 	]
 }
 
