@@ -1,3 +1,4 @@
+use rand::seq::SliceRandom;
 extern crate rand;
 
 #[derive(Clone, Copy)]
@@ -21,8 +22,6 @@ pub enum AddressingMode {
 pub struct Instruction {
 	opname: &'static str,
 	pub operation: fn(&Instruction, &mut Option<State>) -> Option<State>,
-	pub randomize: fn(&mut Instruction),
-	pub vectorize: fn(&Instruction) -> Vec<Instruction>,
 	addressingmode: AddressingMode,
 }
 
@@ -96,19 +95,53 @@ fn add_to_reg8_test() {
 
 impl Instruction {
 	pub fn inh(opname: &'static str, operation: for<'r, 's> fn(&'r Instruction, &'s mut Option<State>) -> Option<State>) -> Instruction {
-		Instruction{opname, operation, addressingmode: AddressingMode::Implicit, randomize: Instruction::random_implied, vectorize: Instruction::vector_implied}
+		Instruction{opname, operation, addressingmode: AddressingMode::Implicit}
 	}
 
-	pub fn vector_implied(&self) -> Vec<Instruction> {
-		vec![*self]
-	}
+	pub fn imm(opname: &'static str, operation: for<'r, 's> fn(&'r Instruction, &'s mut Option<State>) -> Option<State>) -> Instruction {
+        Instruction{
+            opname,
+            operation,
+            addressingmode: AddressingMode::Immediate(0),
+        }
+    }
 
-	pub fn random_implied(&mut self) {
-		self.addressingmode = AddressingMode::Implicit;
-	}
+    pub fn randomize(&mut self, constants: Vec<i8>) {
+        match self.addressingmode {
+            AddressingMode::Implicit => {
+                self.addressingmode = AddressingMode::Implicit;
+            }
+            AddressingMode::Accumulator => {
+                self.addressingmode = AddressingMode::Accumulator;
+            }
+            AddressingMode::Immediate(_) => {
+                if let Some(r) = constants.choose(&mut rand::thread_rng()) {
+                    // If there's any constants, then pick one.
+                    self.addressingmode = AddressingMode::Immediate(*r);
+                } else {
+                    // Otherwise pick any i8.
+                    self.addressingmode = AddressingMode::Immediate(rand::random());
+                }
+            }
+        }
+    }
 
-	pub fn random_immediate(&mut self) {
-		self.addressingmode = AddressingMode::Immediate(rand::random());
+	pub fn vectorize(&self, constants: &Vec<i8>) -> Vec<Instruction> {
+        match self.addressingmode {
+            AddressingMode::Implicit => {
+                vec![*self]
+            }
+            AddressingMode::Accumulator => {
+                vec![*self]
+            }
+            AddressingMode::Immediate(_) => {
+                (*constants.into_iter().map(|c| Instruction {
+                    opname: self.opname,
+                    operation: self.operation,
+                    addressingmode: AddressingMode::Immediate(*c),
+                }).collect::<Vec<Instruction>>()).to_vec()
+            }
+        }
 	}
 
 	fn get_datum(&self, m: &State) -> Option<i8> {
