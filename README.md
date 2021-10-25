@@ -62,4 +62,4 @@ And the program outputs:
 This was found by an exhaustive search. The difficulty is that this takes a
 long time to run, and the runtime is only going to get worse as I add more
 instructions to each architecture. Eventually there will also be miscellaneous
-stochastic search strategies.
+stochastic search strategies to mitigate this problem.
