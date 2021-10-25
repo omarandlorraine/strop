@@ -25,13 +25,41 @@ compilers can do. A few of the reasons why that's possible:
   greedy ascent. That means strop will find a global maximum, instead of a
   local maximum.
 
-- we can put things like error margins on output variables, which can yield
-  more opportunity for code optimization. That's like saying, "oh I don't care
-  if the program computes things 100% correctly, so long as it's much faster",
-  which I bet could have some utility.
+- we can put things like error margins, and don't-care bits on output
+  variables, which can yield more opportunity for code optimization. That's
+  like saying, "oh I don't care if the program computes things 100% correctly,
+  so long as it's much faster", which I bet could have some utility.
 
 - we can add different weights to each test case. That would be like saying,
   "oh, I don't care if the program is slower in the general case, so long as
   it's faster for these specific test cases."
 
 (The last two are not implemented yet, but something I want to do eventually)
+
+### Some example runs
+
+What if we want to multiply some number by a constant? For this example, the
+number is in register B, the constant is 15, and the output is in register A.
+So you'd run:
+
+    strop --arch motorola6800 --function mult15 --search exh --live-in b --live-out a
+
+As you can see, `mult15` was used for the function name. Any positive integer
+can go here actually. But the `mult*n*` functions are not defined for integer
+overflow. So for example `mult129` is probably not what it seems at first
+glance.
+
+And the program outputs:
+
+	tba
+	aba
+	aba
+	asla
+	aba
+	asla
+	aba
+
+This was found by an exhaustive search. The difficulty is that this takes a
+long time to run, and the runtime is only going to get worse as I add more
+instructions to each architecture. Eventually there will also be miscellaneous
+stochastic search strategies.
