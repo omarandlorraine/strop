@@ -20,7 +20,7 @@ use crate::search::equivalence;
 use crate::search::exhaustive_search;
 
 struct MOpt {
-	name: &'static str, func: fn(consts: Vec<i8>) -> Vec<Instruction>, help: &'static str
+	name: &'static str, func: fn() -> Vec<Instruction>, help: &'static str
 }
 
 struct VOpt {
@@ -75,10 +75,10 @@ struct Opts {
     constant: Vec<i8>,
 }
 
-fn mach(m: String, consts: Vec<i8>) -> Vec<Instruction> {
+fn mach(m: String) -> Vec<Instruction> {
 	for m_opt in &M_OPTS {
 		if m_opt.name == m {
-			return (m_opt.func)(consts);
+			return (m_opt.func)();
 		}
 	}
 	println!("You didn't pick a valid arch, so here's the ones I know:");
@@ -178,6 +178,6 @@ fn main() {
 				false
 			}
 		};
-		exhaustive_search(&found_it, mach(opts.arch, constants(opts.constant)));
+		exhaustive_search(&found_it, mach(opts.arch), constants(opts.constant));
 	}
 }

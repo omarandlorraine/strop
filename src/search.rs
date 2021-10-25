@@ -37,8 +37,8 @@ pub fn equivalence(prog: &Vec<Instruction>, schema: &Schema, test_cases: &Vec<(V
 	return true;
 }
 
-pub fn exhaustive_search(found_it: &dyn Fn(&Vec<Instruction>) -> bool, instructions: Vec<Instruction>) {
-    let instrs = instructions.iter().map(|i| (i.vectorize)(i)).flatten().collect();
+pub fn exhaustive_search(found_it: &dyn Fn(&Vec<Instruction>) -> bool, instructions: Vec<Instruction>, constants: Vec<i8>) {
+    let instrs = instructions.iter().map(|i| i.vectorize(&constants)).flatten().collect();
 
 	fn try_all(term: &dyn Fn(&Vec<Instruction>) -> bool, prog: Vec<Instruction>, instrs: &Vec<Instruction>, len: u32) -> bool {
 		if len == 0 {

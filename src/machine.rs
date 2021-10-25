@@ -497,7 +497,7 @@ pub fn get_x(state: &State) -> Option<i8> { state.x8 }
 pub fn set_y(state: &mut State, y: i8) { state.y8 = Some(y); }
 pub fn get_y(state: &State) -> Option<i8> { state.y8 } 
 
-pub fn motorola6800(consts: Vec<i8>) -> Vec<Instruction> {
+pub fn motorola6800() -> Vec<Instruction> {
 	vec![
 	Instruction::inh("aba", Instruction::op_aba),
 	Instruction::inh("asla", Instruction::op_asl),
@@ -509,7 +509,7 @@ pub fn motorola6800(consts: Vec<i8>) -> Vec<Instruction> {
 	]
 }
 
-pub fn mos6502(consts: Vec<i8>) -> Vec<Instruction> {
+pub fn mos6502() -> Vec<Instruction> {
 	vec![
 	// TODO: Maybe we should have only one INC instruction, which can randomly go to either X or Y or the other possibilities.
 	Instruction::inh("inx", Instruction::op_inx),
@@ -530,34 +530,34 @@ pub fn mos6502(consts: Vec<i8>) -> Vec<Instruction> {
 	]
 }
 
-pub fn mos65c02(consts: Vec<i8>) -> Vec<Instruction> {
-	mos6502(consts)
+pub fn mos65c02() -> Vec<Instruction> {
+	mos6502()
 }
 
-pub fn z80(consts: Vec<i8>) -> Vec<Instruction> {
+pub fn z80() -> Vec<Instruction> {
 	Vec::new()
 }
 
-pub fn i8080(consts: Vec<i8>) -> Vec<Instruction> {
+pub fn i8080() -> Vec<Instruction> {
 	Vec::new()
 }
 
-pub fn i8085(consts: Vec<i8>) -> Vec<Instruction> {
+pub fn i8085() -> Vec<Instruction> {
 	Vec::new()
 }
 
-pub fn iz80(consts: Vec<i8>) -> Vec<Instruction> {
+pub fn iz80() -> Vec<Instruction> {
 	Vec::new()
 }
 
-pub fn pic12(consts: Vec<i8>) -> Vec<Instruction> {
+pub fn pic12() -> Vec<Instruction> {
 	Vec::new()
 }
 
-pub fn pic14(consts: Vec<i8>) -> Vec<Instruction> {
+pub fn pic14() -> Vec<Instruction> {
 	Vec::new()
 }
 
-pub fn pic16(consts: Vec<i8>) -> Vec<Instruction> {
+pub fn pic16() -> Vec<Instruction> {
 	Vec::new()
 }
