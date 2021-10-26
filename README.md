@@ -4,7 +4,11 @@ Superoptimizer written in Rust
 I made the decision to abandon [stoc](https://github.com/omarandlorraine/stoc)
 when I realized it was simply too unwieldly to work with. I needed an excuse to
 learn Rust, plus I wanted a superoptimizer that could target things other than
-the 6502.
+the 6502., So, strop was born, the *st*ochastic *op*timizer, written in *R*ust.
+
+Okay, okay, it's not stochastic (yet). Like very early versions of stoc, it has
+an exhaustive search only. Some of the warnings at build time about functions
+that never get used, is because the stochastic search is not implemented yet.
 
 ### Supported architectures:
 Not much here (yet). There are a few placeholders for miscellaneous
