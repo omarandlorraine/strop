@@ -278,6 +278,26 @@ impl Instruction {
 		}
 	}
 
+	fn op_dea(&self, s: &mut Option<State>) -> Option<State> {
+		if let Some(s) = s {
+			let (result, _c, z, n, _o, _h) = add_to_reg8(s.accumulator, Some(-1));
+			Some(State {
+				accumulator: result,
+				reg_b: s.reg_b,
+				x8: s.x8,
+				y8: s.y8,
+				carry: s.carry,
+				zero: z,
+				decimal: s.decimal,
+				overflow: s.overflow,
+				sign: n,
+				halfcarry: s.halfcarry
+			})
+		} else {
+			None
+		}
+	}
+
 	fn op_dex(&self, s: &mut Option<State>) -> Option<State> {
 		if let Some(s) = s {
 			let (result, _c, z, n, _o, _h) = add_to_reg8(s.x8, Some(-1));
@@ -306,6 +326,26 @@ impl Instruction {
 				reg_b: s.reg_b,
 				x8: s.x8,
 				y8: result,
+				carry: s.carry,
+				zero: z,
+				decimal: s.decimal,
+				overflow: s.overflow,
+				sign: n,
+				halfcarry: s.halfcarry
+			})
+		} else {
+			None
+		}
+	}
+
+	fn op_ina(&self, s: &mut Option<State>) -> Option<State> {
+		if let Some(s) = s {
+			let (result, _c, z, n, _o, _h) = add_to_reg8(s.accumulator, Some(1));
+			Some(State {
+				accumulator: result,
+				reg_b: s.reg_b,
+				x8: s.x8,
+				y8: s.y8,
 				carry: s.carry,
 				zero: z,
 				decimal: s.decimal,
@@ -609,7 +649,10 @@ pub fn mos6502() -> Vec<Instruction> {
 }
 
 pub fn mos65c02() -> Vec<Instruction> {
-	mos6502()
+	vec![
+	Instruction::inh("ina", Instruction::op_ina),
+	Instruction::inh("dea", Instruction::op_dea),
+    ].into_iter().chain(mos6502()).collect()
 }
 
 pub fn z80() -> Vec<Instruction> {
