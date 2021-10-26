@@ -17,9 +17,9 @@ them. But I don't want to say they're *supported* as such yet. Probably the
 best ones are:
 
 - *mos6502*, because why not
-- *mos65c02*, which for the time being is actually identical to *mos6502* since
-  the extra opcodes are still not implemented
-- *motorola6800*, it's related to the 6502s but has an extra register
+- *mos65c02*, which has all the same instructions as mos6502 plus some extras
+- *motorola6800*, it's related to the 6502s but has an extra register and some
+  other goodies
 
 ### Theory of operation
 The basic idea is to generate code better than what traditional optimising
