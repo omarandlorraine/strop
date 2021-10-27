@@ -18,7 +18,11 @@ fn run_program(prog: &Vec<Instruction>, schema: &Schema, inputs: &Vec<i8>) -> Op
 	for (func, val) in schema.live_in.iter().zip(inputs) {
 		(func)(&mut s, *val);
 	}
-	prog.iter().fold(Some(s), |mut state, i| (i.operation)(i, &mut state))
+	if prog.iter().fold(true, |valid: bool, i| valid && (i.operation)(i, &mut s)) {
+        Some(s)
+    } else {
+        None
+    }
 }
 
 pub fn equivalence(prog: &Vec<Instruction>, schema: &Schema, test_cases: &Vec<(Vec<i8>, Vec<i8>)>) -> bool {
