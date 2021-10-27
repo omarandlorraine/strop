@@ -194,6 +194,7 @@ fn main() {
 				false
 			}
 		};
-		exhaustive_search(&found_it, mach(opts.arch), constants(opts.constant));
+        let vars: Vec<u16> = vec![3,4,5];
+		exhaustive_search(&found_it, mach(opts.arch), constants(opts.constant), vars);
 	}
 }

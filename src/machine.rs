@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use rand::seq::SliceRandom;
 extern crate rand;
 
@@ -6,16 +7,7 @@ pub enum AddressingMode {
 	Implicit,
 	Accumulator,
 	Immediate(i8),
-	//ZeroPage,
-	//ZeroPageX,
-	//ZeroPageY,
-	//Relative,
-	//Absolute,
-	//AbsoluteX,
-	//AbsoluteY,
-	//Indirect,
-	//IndexedIndirect,
-	//IndirectIndexed,
+	Absolute(u16),
 }
 
 #[derive(Clone, Copy)]
@@ -106,7 +98,15 @@ impl Instruction {
         }
     }
 
-    pub fn randomize(&mut self, constants: Vec<i8>) {
+	pub fn abs(opname: &'static str, operation: for<'r, 's> fn(&'r Instruction, &'s mut State) -> bool) -> Instruction {
+        Instruction{
+            opname,
+            operation,
+            addressingmode: AddressingMode::Absolute(0),
+        }
+    }
+
+    pub fn randomize(&mut self, constants: Vec<i8>, vars: Vec<u16>) {
         match self.addressingmode {
             AddressingMode::Implicit => {
                 self.addressingmode = AddressingMode::Implicit;
@@ -123,10 +123,19 @@ impl Instruction {
                     self.addressingmode = AddressingMode::Immediate(rand::random());
                 }
             }
+            AddressingMode::Absolute(_) => {
+                if let Some(r) = vars.choose(&mut rand::thread_rng()) {
+                    // If there's any variables, then pick one.
+                    self.addressingmode = AddressingMode::Absolute(*r);
+                } else {
+                    // Otherwise pick any random address. (this is unlikely to be any good)
+                    self.addressingmode = AddressingMode::Absolute(rand::random());
+                }
+            }
         }
     }
 
-	pub fn vectorize(&self, constants: &Vec<i8>) -> Vec<Instruction> {
+	pub fn vectorize(&self, constants: &Vec<i8>, vars: &Vec<u16>) -> Vec<Instruction> {
         match self.addressingmode {
             AddressingMode::Implicit => {
                 vec![*self]
@@ -139,6 +148,13 @@ impl Instruction {
                     opname: self.opname,
                     operation: self.operation,
                     addressingmode: AddressingMode::Immediate(*c),
+                }).collect::<Vec<Instruction>>()).to_vec()
+            }
+            AddressingMode::Absolute(_) => {
+                (*vars.into_iter().map(|c| Instruction {
+                    opname: self.opname,
+                    operation: self.operation,
+                    addressingmode: AddressingMode::Absolute(*c),
                 }).collect::<Vec<Instruction>>()).to_vec()
             }
         }
@@ -155,6 +171,13 @@ impl Instruction {
 			AddressingMode::Immediate(constant) => {
 				Some(constant)
 			}
+            AddressingMode::Absolute(address) => {
+                if let Some(x) = m.heap.get(&address) {
+                    Some(*x)
+                } else {
+                    None
+                }
+            }
 		}
 	}
 
@@ -326,6 +349,9 @@ impl std::fmt::Display for Instruction {
             AddressingMode::Immediate(constant) => {
                 write!(f, "\t{} #{}", self.opname, constant)
             }
+            AddressingMode::Absolute(address) => {
+                write!(f, "\t{} {}", self.opname, address)
+            }
         }
     }
 }
@@ -341,7 +367,8 @@ pub struct State {
 	sign: Option<bool>,
 	decimal: Option<bool>,
 	overflow: Option<bool>,
-	halfcarry: Option<bool>
+	halfcarry: Option<bool>,
+    heap: HashMap<u16, i8>
 }
 
 impl State {
@@ -357,6 +384,7 @@ impl State {
 			decimal: None,
 			overflow: None,
 			halfcarry: None,
+            heap: HashMap::new()
 		}
 	}
 }
