@@ -63,6 +63,22 @@ And the program outputs:
 	asla
 	aba
 
+Or let's say you want a multiply by three routine for the 6502. So you run
+
+    target/debug/strop --arch mos6502 --function mult5 --search exh --live-in a --live-out a
+
+Okay, the program spits out the following:
+
+	sta 3
+	asl a
+	asl a
+	adc 3
+
+So that's store the original accumulator in zero page location 3, multiply the
+accumulator by four in the obvious way, and then add the original value. I
+don't yet know why location 3, or why the carry flag wasn't cleared anywhere.
+That's a bug.
+
 This was found by an exhaustive search. The difficulty is that this takes a
 long time to run, and the runtime is only going to get worse as I add more
 instructions to each architecture. Eventually there will also be miscellaneous
