@@ -173,10 +173,27 @@ impl Instruction {
 			}
             AddressingMode::Absolute(address) => {
                 if let Some(x) = m.heap.get(&address) {
-                    Some(*x)
+                    *x
                 } else {
                     None
                 }
+            }
+		}
+	}
+
+	fn write_datum(&self, m: &mut State, val: Option<i8>) {
+		match self.addressingmode {
+			AddressingMode::Implicit => {
+				panic!();
+			}
+			AddressingMode::Accumulator => {
+				m.accumulator = val;
+			}
+			AddressingMode::Immediate(_) => {
+				panic!();
+			}
+            AddressingMode::Absolute(address) => {
+                m.heap.insert(address, val);
             }
 		}
 	}
@@ -286,6 +303,12 @@ impl Instruction {
         true
     }
 
+    fn op_lda(&self, s: &mut State) -> bool {
+        s.accumulator = self.get_datum(s);
+        true
+    }
+
+
     fn op_rol(&self, s: &mut State) -> bool {
         let (val, c) = rotate_left_thru_carry(s.accumulator, s.carry);
         s.accumulator = val;
@@ -295,6 +318,11 @@ impl Instruction {
 
     fn op_sec(&self, s: &mut State) -> bool {
         s.carry = Some(true);
+        true
+    }
+
+    fn op_sta(&self, s: &mut State) -> bool {
+        self.write_datum(s, s.accumulator);
         true
     }
 
@@ -368,7 +396,7 @@ pub struct State {
 	decimal: Option<bool>,
 	overflow: Option<bool>,
 	halfcarry: Option<bool>,
-    heap: HashMap<u16, i8>
+    heap: HashMap<u16, Option<i8>>
 }
 
 impl State {
@@ -435,6 +463,9 @@ pub fn mos6502() -> Vec<Instruction> {
 	Instruction::inh("sec", Instruction::op_sec),
 
     Instruction::imm("adc", Instruction::op_adc_dp),
+    Instruction::abs("lda", Instruction::op_lda),
+    Instruction::abs("sta", Instruction::op_sta),
+    Instruction::abs("adc", Instruction::op_adc_dp),
 	]
 }
 
