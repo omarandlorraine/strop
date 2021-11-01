@@ -55,11 +55,6 @@ So you'd run:
 
     strop --arch motorola6800 --function mult15 --search exh --live-in b --live-out a
 
-As you can see, `mult15` was used for the function name. Any positive integer
-can go here actually. But the `mult*n*` functions are not defined for integer
-overflow. So for example `mult129` is probably not what it seems at first
-glance.
-
 And the program outputs:
 
 	tba
@@ -70,23 +65,27 @@ And the program outputs:
 	asla
 	aba
 
-Or let's say you want a multiply by three routine for the 6502. So you run
+Or let's say you want a multiply by seven routine for the 6502. So you run
 
-    strop --arch mos6502 --function mult5 --search exh --live-in a --live-out a
+    strop --arch mos6502 --function mult7 --search exh --live-in a --live-out a
 
 Okay, the program spits out the following:
 
-	sta 3
-	asl a
-	asl a
-	adc 3
+    sta 3
+    asl a
+    adc 3
+    asl a
+    adc 3
 
 So that's store the original accumulator in zero page location 3, multiply the
 accumulator by four in the obvious way, and then add the original value. I
 don't yet know why location 3, or why the carry flag wasn't cleared anywhere.
 That's a bug.
 
-This was found by an exhaustive search. The difficulty is that this takes a
-long time to run, and the runtime is only going to get worse as I add more
-instructions to each architecture. Eventually there will also be miscellaneous
-stochastic search strategies to mitigate this problem.
+These programs were found by an exhaustive search. The difficulty is that this
+takes a long time to run, and the runtime is only going to get worse as I add
+more instructions to each architecture. Eventually the problem of long runtimes
+will be mitigated by two things: miscellaneous stochastic search strategies
+which can run faster by not checking Every Single Possibility, and use of
+threads or something.
+.
