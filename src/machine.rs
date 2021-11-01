@@ -326,6 +326,21 @@ impl Instruction {
         true
     }
 
+    fn op_stx(&self, s: &mut State) -> bool {
+        self.write_datum(s, s.x8);
+        true
+    }
+
+    fn op_sty(&self, s: &mut State) -> bool {
+        self.write_datum(s, s.y8);
+        true
+    }
+
+    fn op_stz(&self, s: &mut State) -> bool {
+        self.write_datum(s, Some(0));
+        true
+    }
+
     fn op_tab(&self, s: &mut State) -> bool {
         // TODO: We need to check if this instruction affects flags or not, 
         // I feel like this is an oversight
@@ -463,9 +478,12 @@ pub fn mos6502() -> Vec<Instruction> {
 	Instruction::inh("sec", Instruction::op_sec),
 
     Instruction::imm("adc", Instruction::op_adc_dp),
+    Instruction::abs("adc", Instruction::op_adc_dp),
+
     Instruction::abs("lda", Instruction::op_lda),
     Instruction::abs("sta", Instruction::op_sta),
-    Instruction::abs("adc", Instruction::op_adc_dp),
+    Instruction::abs("stx", Instruction::op_stx),
+    Instruction::abs("sty", Instruction::op_sty),
 	]
 }
 
@@ -473,6 +491,7 @@ pub fn mos65c02() -> Vec<Instruction> {
 	vec![
 	Instruction::inh("ina", Instruction::op_ina),
 	Instruction::inh("dea", Instruction::op_dea),
+	Instruction::inh("stz", Instruction::op_stz),
     ].into_iter().chain(mos6502()).collect()
 }
 
@@ -493,13 +512,17 @@ pub fn iz80() -> Vec<Instruction> {
 }
 
 pub fn pic12() -> Vec<Instruction> {
-	Vec::new()
+    // Not sure yet how we're going to deal with the PIC instructions that
+    // either write the result to W or back to the memory.
+	vec![
+	Instruction::abs("clrf", Instruction::op_stz),
+    ]
 }
 
 pub fn pic14() -> Vec<Instruction> {
-	Vec::new()
+	pic12()
 }
 
 pub fn pic16() -> Vec<Instruction> {
-	Vec::new()
+	pic14()
 }
