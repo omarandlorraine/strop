@@ -14,7 +14,8 @@ pub enum AddressingMode {
 pub struct Instruction {
 	opname: &'static str,
 	pub operation: fn(&Instruction, &mut State) -> bool,
-	addressingmode: AddressingMode,
+	src: AddressingMode,
+    dst: AddressingMode,
 }
 
 pub fn add_to_reg8(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>, Option<bool>, Option<bool>, Option<bool>, Option<bool>) {
@@ -87,14 +88,15 @@ fn add_to_reg8_test() {
 
 impl Instruction {
 	pub fn inh(opname: &'static str, operation: for<'r, 's> fn(&'r Instruction, &'s mut State) -> bool) -> Instruction {
-		Instruction{opname, operation, addressingmode: AddressingMode::Implicit}
+		Instruction{opname, operation, src: AddressingMode::Implicit, dst: AddressingMode::Implicit}
 	}
 
 	pub fn imm(opname: &'static str, operation: for<'r, 's> fn(&'r Instruction, &'s mut State) -> bool) -> Instruction {
         Instruction{
             opname,
             operation,
-            addressingmode: AddressingMode::Immediate(0),
+            src: AddressingMode::Immediate(0),
+            dst: AddressingMode::Immediate(0),
         }
     }
 
@@ -102,41 +104,42 @@ impl Instruction {
         Instruction{
             opname,
             operation,
-            addressingmode: AddressingMode::Absolute(0),
+            src: AddressingMode::Absolute(0),
+            dst: AddressingMode::Absolute(0),
         }
     }
 
     pub fn randomize(&mut self, constants: Vec<i8>, vars: Vec<u16>) {
-        match self.addressingmode {
+        match self.src {
             AddressingMode::Implicit => {
-                self.addressingmode = AddressingMode::Implicit;
+                self.src = AddressingMode::Implicit;
             }
             AddressingMode::Accumulator => {
-                self.addressingmode = AddressingMode::Accumulator;
+                self.src = AddressingMode::Accumulator;
             }
             AddressingMode::Immediate(_) => {
                 if let Some(r) = constants.choose(&mut rand::thread_rng()) {
                     // If there's any constants, then pick one.
-                    self.addressingmode = AddressingMode::Immediate(*r);
+                    self.src = AddressingMode::Immediate(*r);
                 } else {
                     // Otherwise pick any i8.
-                    self.addressingmode = AddressingMode::Immediate(rand::random());
+                    self.src = AddressingMode::Immediate(rand::random());
                 }
             }
             AddressingMode::Absolute(_) => {
                 if let Some(r) = vars.choose(&mut rand::thread_rng()) {
                     // If there's any variables, then pick one.
-                    self.addressingmode = AddressingMode::Absolute(*r);
+                    self.src = AddressingMode::Absolute(*r);
                 } else {
                     // Otherwise pick any random address. (this is unlikely to be any good)
-                    self.addressingmode = AddressingMode::Absolute(rand::random());
+                    self.src = AddressingMode::Absolute(rand::random());
                 }
             }
         }
     }
 
 	pub fn vectorize(&self, constants: &Vec<i8>, vars: &Vec<u16>) -> Vec<Instruction> {
-        match self.addressingmode {
+        match self.src {
             AddressingMode::Implicit => {
                 vec![*self]
             }
@@ -147,21 +150,23 @@ impl Instruction {
                 (*constants.into_iter().map(|c| Instruction {
                     opname: self.opname,
                     operation: self.operation,
-                    addressingmode: AddressingMode::Immediate(*c),
+                    src: AddressingMode::Immediate(*c),
+                    dst: AddressingMode::Immediate(*c),
                 }).collect::<Vec<Instruction>>()).to_vec()
             }
             AddressingMode::Absolute(_) => {
                 (*vars.into_iter().map(|c| Instruction {
                     opname: self.opname,
                     operation: self.operation,
-                    addressingmode: AddressingMode::Absolute(*c),
+                    src: AddressingMode::Absolute(*c),
+                    dst: AddressingMode::Absolute(*c),
                 }).collect::<Vec<Instruction>>()).to_vec()
             }
         }
 	}
 
 	fn get_datum(&self, m: &State) -> Option<i8> {
-		match self.addressingmode {
+		match self.src {
 			AddressingMode::Implicit => {
 				panic!();
 			}
@@ -182,7 +187,7 @@ impl Instruction {
 	}
 
 	fn write_datum(&self, m: &mut State, val: Option<i8>) {
-		match self.addressingmode {
+		match self.dst {
 			AddressingMode::Implicit => {
 				panic!();
 			}
@@ -382,7 +387,7 @@ impl Instruction {
 
 impl std::fmt::Display for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.addressingmode {
+        match self.src {
             AddressingMode::Implicit => {
                 write!(f, "\t{}", self.opname)
             }
