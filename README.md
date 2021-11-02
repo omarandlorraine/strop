@@ -77,10 +77,8 @@ Okay, the program spits out the following:
     asl a
     adc 3
 
-So that's store the original accumulator in zero page location 3, multiply the
-accumulator by four in the obvious way, and then add the original value. I
-don't yet know why location 3, or why the carry flag wasn't cleared anywhere.
-That's a bug.
+I don't yet know why location 3 was picked. And I don't know why the carry flag
+wasn't cleared anywhere. That's a bug.
 
 These programs were found by an exhaustive search. The difficulty is that this
 takes a long time to run, and the runtime is only going to get worse as I add
