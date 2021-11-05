@@ -97,6 +97,16 @@ fn function(m: String) -> Vec<(Vec<i8>, Vec<i8>)> {
 		}
 		return test_cases;
 	}
+	if m == "signum" {
+		for n in -128..=-1 {
+			test_cases.push((vec![n], vec![-1]));
+		}
+        test_cases.push((vec![0], vec![0]));
+		for n in 1..=127 {
+			test_cases.push((vec![n], vec![1]));
+		}
+		return test_cases;
+	}
 	if m[0..4] == "mult".to_string() {
 
 		let arg = m[4..].to_string();
@@ -111,6 +121,20 @@ fn function(m: String) -> Vec<(Vec<i8>, Vec<i8>)> {
 			return test_cases;
 		} else {
 			println!("Can't multiply by {}", arg);
+		}
+	}
+	if m[0..4] == "idiv".to_string() {
+
+		let arg = m[4..].to_string();
+		let a = arg.parse::<i8>();
+
+		if let Some(f) = a.ok() {
+			for n in 0..=127 {
+                test_cases.push((vec![n], vec![n / f]));
+			}
+			return test_cases;
+		} else {
+			println!("Can't divide by {}", arg);
 		}
 	}
     if m[0..3] == "add".to_string() {
