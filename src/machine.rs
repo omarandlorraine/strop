@@ -79,6 +79,18 @@ fn rotate_left_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>, 
 	}
 }
 
+fn rotate_right_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>, Option<bool>) {
+	if val.is_none() || carry.is_none() {
+		(None, None)
+	} else {
+		let c = carry.unwrap();
+		let v = val.unwrap();
+		let low_bit_set = v & 1 != 0;
+		let shifted = (v & 0x7f).rotate_right(1);
+		(Some(if c { shifted | -128i8 } else { shifted }), Some(low_bit_set))
+	}
+}
+
 #[test]
 fn add_to_reg8_test() {
 	assert_eq!(add_to_reg8(Some(3), 3), (Some(6), Some(false), Some(false), Some(false), Some(false)));
@@ -313,9 +325,22 @@ impl Instruction {
         true
     }
 
+    fn op_lsr(&self, s: &mut State) -> bool {
+        let (val, c) = rotate_right_thru_carry(s.accumulator, Some(false));
+        s.accumulator = val;
+        s.carry = c;
+        true
+    }
 
     fn op_rol(&self, s: &mut State) -> bool {
         let (val, c) = rotate_left_thru_carry(s.accumulator, s.carry);
+        s.accumulator = val;
+        s.carry = c;
+        true
+    }
+
+    fn op_ror(&self, s: &mut State) -> bool {
+        let (val, c) = rotate_right_thru_carry(s.accumulator, s.carry);
         s.accumulator = val;
         s.carry = c;
         true
@@ -458,6 +483,7 @@ pub fn motorola6800() -> Vec<Instruction> {
 	Instruction::inh("tab", Instruction::op_tab),
 	Instruction::inh("tba", Instruction::op_tba),
 	Instruction::inh("rol", Instruction::op_rol),
+	Instruction::inh("ror", Instruction::op_ror),
 	Instruction::inh("clc", Instruction::op_clc),
 	Instruction::inh("sec", Instruction::op_sec),
 	]
@@ -479,6 +505,8 @@ pub fn mos6502() -> Vec<Instruction> {
 
 	Instruction::inh("asl a", Instruction::op_asl),
 	Instruction::inh("rol", Instruction::op_rol),
+	Instruction::inh("ror", Instruction::op_ror),
+	Instruction::inh("lsr", Instruction::op_lsr),
 	Instruction::inh("clc", Instruction::op_clc),
 	Instruction::inh("sec", Instruction::op_sec),
 
