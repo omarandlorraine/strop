@@ -18,10 +18,12 @@ pub struct Instruction {
     dst: AddressingMode,
 }
 
-pub fn add_to_reg8(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>, Option<bool>, Option<bool>, Option<bool>, Option<bool>) {
+pub fn add_to_reg8(reg: Option<i8>, a: Option<i8>, carry: Option<bool>) -> (Option<i8>, Option<bool>, Option<bool>, Option<bool>, Option<bool>, Option<bool>) {
 	// The return values are the result of the addition, then the flags, carry, zero, sign, overflow, half-carry.
-	if let Some(v) = a {
+	if let Some(operand) = a {
 	if let Some(r) = reg {
+	if let Some(c) = carry {
+        let v = operand + if c { 1 } else { 0 };
 		let result = r.wrapping_add(v);
 		let z = if result == 0 { true } else { false };
 		let c = if r.checked_add(v).is_none() { true } else { false };
@@ -29,6 +31,9 @@ pub fn add_to_reg8(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>,
 		let o = (r < 0 && v < 0 && result >= 0) || (r > 0 && v > 0 && result <= 0);
 		let h = ((r ^ v ^ result ) & 0x10) == 0x10;
 		(Some(result), Some(c), Some(z), Some(n), Some(o), Some(h))
+	} else {
+		(None, None, None, None, None, None)
+	}
 	} else {
 		(None, None, None, None, None, None)
 	}
@@ -216,7 +221,8 @@ impl Instruction {
 	}
 
     fn op_aba(&self, s: &mut State) -> bool {
-        let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, s.reg_b);
+        // It looks like the ABA instruction of the 6800 doesn't use the carry flag.
+        let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, s.reg_b, Some(false));
         s.accumulator = result;
         s.sign = n;
         s.carry = c;
@@ -227,7 +233,7 @@ impl Instruction {
     }
 
     fn op_add(&self, s: &mut State) -> bool {
-        let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s));
+        let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s), Some(false));
         s.accumulator = result;
         s.sign = n;
         s.carry = c;
@@ -245,7 +251,7 @@ impl Instruction {
     }
 
     fn op_adc(&self, s: &mut State) -> bool {
-        let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s));
+        let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s), s.carry);
         s.accumulator = result;
         s.sign = n;
         s.carry = c;
@@ -257,7 +263,7 @@ impl Instruction {
 
     fn op_adc_dp(&self, s: &mut State) -> bool {
         // TODO: Check decimal flag here.
-        let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s));
+        let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s), s.carry);
         s.accumulator = result;
         s.sign = n;
         s.carry = c;
@@ -273,7 +279,7 @@ impl Instruction {
     }
 
     fn op_dea(&self, s: &mut State) -> bool {
-        let (result, _c, z, n, _o, _h) = add_to_reg8(s.accumulator, Some(-1));
+        let (result, _c, z, n, _o, _h) = add_to_reg8(s.accumulator, Some(-1), Some(false));
         s.accumulator = result;
         s.zero = z;
         s.sign = n;
@@ -281,7 +287,7 @@ impl Instruction {
     }
 
     fn op_dex(&self, s: &mut State) -> bool {
-        let (result, _c, z, n, _o, _h) = add_to_reg8(s.x8, Some(-1));
+        let (result, _c, z, n, _o, _h) = add_to_reg8(s.x8, Some(-1), Some(false));
         s.x8 = result;
         s.zero = z;
         s.sign = n;
@@ -289,7 +295,7 @@ impl Instruction {
     }
 
     fn op_dey(&self, s: &mut State) -> bool {
-        let (result, _c, z, n, _o, _h) = add_to_reg8(s.y8, Some(-1));
+        let (result, _c, z, n, _o, _h) = add_to_reg8(s.y8, Some(-1), Some(false));
         s.y8 = result;
         s.zero = z;
         s.sign = n;
@@ -297,7 +303,7 @@ impl Instruction {
     }
 
     fn op_ina(&self, s: &mut State) -> bool {
-        let (result, _c, z, n, _o, _h) = add_to_reg8(s.accumulator, Some(1));
+        let (result, _c, z, n, _o, _h) = add_to_reg8(s.accumulator, Some(1), Some(false));
         s.accumulator = result;
         s.zero = z;
         s.sign = n;
@@ -305,7 +311,7 @@ impl Instruction {
     }
 
     fn op_inx(&self, s: &mut State) -> bool {
-        let (result, _c, z, n, _o, _h) = add_to_reg8(s.x8, Some(1));
+        let (result, _c, z, n, _o, _h) = add_to_reg8(s.x8, Some(1), Some(false));
         s.x8 = result;
         s.zero = z;
         s.sign = n;
@@ -313,7 +319,7 @@ impl Instruction {
     }
 
     fn op_iny(&self, s: &mut State) -> bool {
-        let (result, _c, z, n, _o, _h) = add_to_reg8(s.y8, Some(1));
+        let (result, _c, z, n, _o, _h) = add_to_reg8(s.y8, Some(1), Some(false));
         s.y8 = result;
         s.zero = z;
         s.sign = n;
