@@ -44,15 +44,16 @@ pub fn equivalence(prog: &Vec<Instruction>, schema: &Schema, test_cases: &Vec<(V
 pub fn exhaustive_search(found_it: &dyn Fn(&Vec<Instruction>) -> bool, instructions: Vec<Instruction>, constants: Vec<i8>, vars: Vec<u16>) {
     let instrs = instructions.iter().map(|i| i.vectorize(&constants, &vars)).flatten().collect();
 
-	fn try_all(term: &dyn Fn(&Vec<Instruction>) -> bool, prog: Vec<Instruction>, instrs: &Vec<Instruction>, len: u32) -> bool {
+	fn try_all(term: &dyn Fn(&Vec<Instruction>) -> bool, prog: &mut Vec<Instruction>, instrs: &Vec<Instruction>, len: u32) -> bool {
 		if len == 0 {
 			return term(&prog);
 		} else {
 			for ins in instrs {
-				let p = prog.iter().cloned().chain(vec![*ins]).collect();
-				if try_all(term, p, &instrs, len-1) {
+				prog.push(*ins);
+				if try_all(term, prog, &instrs, len-1) {
 					return true;
 				}
+                prog.pop();
 			}
 			return false;
 		}
@@ -62,7 +63,7 @@ pub fn exhaustive_search(found_it: &dyn Fn(&Vec<Instruction>) -> bool, instructi
 
 	for i in 1..10 {
 		println!("Trying programs of length {}.", i);
-		if try_all(&t, Vec::new(), &instrs, i){
+		if try_all(&t, &mut Vec::new(), &instrs, i){
 			return;
 		}
 	}
