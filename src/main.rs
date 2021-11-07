@@ -16,8 +16,8 @@ use crate::machine::State;
 use crate::machine::{set_a, get_a, set_b, get_b, set_x, set_y, get_x, get_y};
 
 use crate::search::Schema;
-use crate::search::equivalence;
-use crate::search::exhaustive_search;
+use crate::search::{equivalence, differance};
+use crate::search::{exhaustive_search, stochastic_search};
 
 struct MOpt {
 	name: &'static str, func: fn() -> Vec<Instruction>, help: &'static str
@@ -221,4 +221,13 @@ fn main() {
         let vars: Vec<u16> = vec![3,4,5];
 		exhaustive_search(&found_it, mach(opts.arch), constants(opts.constant), vars);
 	}
+
+    else if opts.search == "stoc" {
+        let convergence = |prog: &Vec<Instruction>| {
+            differance(prog, &schema, &test_cases)
+        };
+        let vars: Vec<u16> = vec![3,4,5];
+        let prog = stochastic_search(&convergence, mach(opts.arch), constants(opts.constant), vars);
+        disassemble(&prog);
+    }
 }

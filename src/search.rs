@@ -1,3 +1,5 @@
+use rand::Rng;
+use rand::prelude::SliceRandom;
 use crate::machine::Instruction;
 use crate::State;
 
@@ -39,6 +41,79 @@ pub fn equivalence(prog: &Vec<Instruction>, schema: &Schema, test_cases: &Vec<(V
 		}
 	}
 	return true;
+}
+
+pub fn differance(prog: &Vec<Instruction>, schema: &Schema, test_cases: &Vec<(Vec<i8>, Vec<i8>)>) -> f64 {
+    let mut ret: f64 = 0.0;
+	for tc in test_cases {
+		if let Some(state) = run_program(prog, schema, &tc.0) {
+			for (func, val) in schema.live_out.iter().zip(&tc.1) {
+                if let Some(v) = func(&state) {
+                    let d: f64 = v.into();
+                    let e: f64 = (*val).into();
+                    ret += (d - e).abs();
+                } else {
+                    ret += 256.0; // the cost of an output variable that's never been written to
+                }
+			}
+		} else {
+			ret = ret + 1000.0; // what am I doing
+		}
+	}
+    return ret;
+}
+
+fn disassemble(prog: &Vec<Instruction>) {
+    for p in prog {
+        println!("{}", p);
+    }
+}
+
+pub fn stochastic_search(convergence: &dyn Fn(&Vec<Instruction>) -> f64, instructions: Vec<Instruction>, constants: Vec<i8>, vars: Vec<u16>) -> Vec<Instruction> {
+
+    let mut prog: Vec<Instruction> = vec![];
+    let mut current: Vec<Instruction> = vec![];
+
+    while convergence(&current) > 0.01 {
+        if convergence(&current) > convergence(&prog) {
+            current = prog.clone();
+            println!("\n\ncurrent:\n");
+            disassemble(&current);
+        }
+        let mutate: usize = rand::thread_rng().gen_range(0, 3);
+        match mutate {
+            /* randomize an instruction 
+             * (this could involve changing and operand, addressing mode, etc etc.
+             */
+            0 => {
+                if prog.len() > 1 {
+                    let offset: usize = rand::thread_rng().gen_range(0, prog.len());
+                    prog[offset].randomize(&constants, &vars);
+                }
+            }
+            /* delete an instruction */
+            1 => {
+                if prog.len() > 1 {
+                    let offset: usize = rand::thread_rng().gen_range(0, prog.len());
+                    prog.remove(offset);
+                }
+            }
+            2 => {
+                let offset: usize = if prog.len() > 0 {
+                    rand::thread_rng().gen_range(0, prog.len())
+                } else {
+                    0
+                };
+                let instruction = instructions.choose(&mut rand::thread_rng()).unwrap();
+                prog.insert(offset, *instruction);
+                prog[offset].randomize(&constants, &vars);
+            }
+            _ => {
+                panic!();
+            }
+        }
+    }
+    prog
 }
 
 pub fn exhaustive_search(found_it: &dyn Fn(&Vec<Instruction>) -> bool, instructions: Vec<Instruction>, constants: Vec<i8>, vars: Vec<u16>) {

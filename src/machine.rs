@@ -126,7 +126,7 @@ impl Instruction {
         }
     }
 
-    pub fn randomize(&mut self, constants: Vec<i8>, vars: Vec<u16>) {
+    pub fn randomize(&mut self, constants: &Vec<i8>, vars: &Vec<u16>) {
         match self.src {
             AddressingMode::Implicit => {
                 self.src = AddressingMode::Implicit;
