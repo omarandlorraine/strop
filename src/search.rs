@@ -69,51 +69,97 @@ fn disassemble(prog: &Vec<Instruction>) {
     }
 }
 
-pub fn stochastic_search(convergence: &dyn Fn(&Vec<Instruction>) -> f64, instructions: Vec<Instruction>, constants: Vec<i8>, vars: Vec<u16>) -> Vec<Instruction> {
+fn cost(prog: &Vec<Instruction>) -> f64 {
+    /* quick and simple cost function,
+     * number of instructions in the program.
+     * Not really a bad thing to minimise for.
+     */
+    prog.len() as f64
+}
+
+fn mutate_delete(prog: &mut Vec<Instruction>) {
+    if prog.len() > 1 {
+        let offset: usize = rand::thread_rng().gen_range(0, prog.len());
+        prog.remove(offset);
+    }
+}
+
+fn mutate(prog: &mut Vec<Instruction>, instructions: &Vec<Instruction>, constants: &Vec<i8>, vars: &Vec<u16>) {
+    let mutate: usize = rand::thread_rng().gen_range(0, 3);
+    match mutate {
+        /* randomize an instruction 
+         * (this could involve changing an operand, addressing mode, etc etc.
+         */
+        0 => {
+            if prog.len() > 1 {
+                let offset: usize = rand::thread_rng().gen_range(0, prog.len());
+                prog[offset].randomize(&constants, &vars);
+            }
+        }
+        /* delete an instruction */
+        1 => {
+            mutate_delete(prog);
+        }
+        /* insert a new instruction */
+        2 => {
+            let offset: usize = if prog.len() > 0 {
+                rand::thread_rng().gen_range(0, prog.len())
+            } else {
+                0
+            };
+            let instruction = instructions.choose(&mut rand::thread_rng()).unwrap();
+            prog.insert(offset, *instruction);
+            prog[offset].randomize(&constants, &vars);
+        }
+        _ => {
+            panic!();
+        }
+    }
+}
+
+pub fn dead_code_elimination(convergence: &dyn Fn(&Vec<Instruction>) -> f64, prog: &Vec<Instruction>) -> Vec<Instruction> {
+    let mut better = prog.clone();
+
+    for _m in 1..1000 {
+        let mut putative = prog.clone();
+        for _n in 1..100 {
+            mutate_delete(&mut putative);
+            if convergence(&better) >= convergence(&putative) {
+                better = putative.clone();
+            } else {
+                break
+            }
+        }
+    }
+    better
+}
+
+pub fn stochastic_search(convergence: &dyn Fn(&Vec<Instruction>) -> f64, instructions: &Vec<Instruction>, constants: &Vec<i8>, vars: &Vec<u16>) -> Vec<Instruction> {
 
     let mut prog: Vec<Instruction> = vec![];
     let mut current: Vec<Instruction> = vec![];
 
     while convergence(&current) > 0.01 {
-        if convergence(&current) > convergence(&prog) {
-            current = prog.clone();
-            println!("\n\ncurrent:\n");
-            disassemble(&current);
-        }
-        let mutate: usize = rand::thread_rng().gen_range(0, 3);
-        match mutate {
-            /* randomize an instruction 
-             * (this could involve changing and operand, addressing mode, etc etc.
-             */
-            0 => {
-                if prog.len() > 1 {
-                    let offset: usize = rand::thread_rng().gen_range(0, prog.len());
-                    prog[offset].randomize(&constants, &vars);
+        prog = current.clone();
+        for _n in 1..101 {
+            mutate(&mut prog, instructions, constants, vars);
+
+            if convergence(&current) > convergence(&prog) {
+                current = prog.clone();
+                break;
+            }
+            
+            if convergence(&current) - convergence(&prog) > -1.0 {
+                /* this encourages a sport of DCE and other optimisations along the way. */
+                if cost(&prog) < cost(&current) {
+                    current = prog.clone();
+                    break;
                 }
-            }
-            /* delete an instruction */
-            1 => {
-                if prog.len() > 1 {
-                    let offset: usize = rand::thread_rng().gen_range(0, prog.len());
-                    prog.remove(offset);
-                }
-            }
-            2 => {
-                let offset: usize = if prog.len() > 0 {
-                    rand::thread_rng().gen_range(0, prog.len())
-                } else {
-                    0
-                };
-                let instruction = instructions.choose(&mut rand::thread_rng()).unwrap();
-                prog.insert(offset, *instruction);
-                prog[offset].randomize(&constants, &vars);
-            }
-            _ => {
-                panic!();
             }
         }
     }
-    prog
+    dead_code_elimination(convergence, &prog)
+    //prog
 }
 
 pub fn exhaustive_search(found_it: &dyn Fn(&Vec<Instruction>) -> bool, instructions: Vec<Instruction>, constants: Vec<i8>, vars: Vec<u16>) {
