@@ -23,7 +23,7 @@ pub fn add_to_reg8(reg: Option<i8>, a: Option<i8>, carry: Option<bool>) -> (Opti
 	if let Some(operand) = a {
 	if let Some(r) = reg {
 	if let Some(c) = carry {
-        let v = operand + if c { 1 } else { 0 };
+        let v = operand.wrapping_add(if c { 1 } else { 0 });
 		let result = r.wrapping_add(v);
 		let z = if result == 0 { true } else { false };
 		let c = if r.checked_add(v).is_none() { true } else { false };
