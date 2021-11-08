@@ -50,7 +50,7 @@ pub fn equivalence(
             return false;
         }
     }
-    return true;
+    true
 }
 
 pub fn differance(
@@ -71,10 +71,10 @@ pub fn differance(
                 }
             }
         } else {
-            ret = ret + 1000.0; // what am I doing
+            ret += 1000.0; // what am I doing
         }
     }
-    return ret;
+    ret
 }
 
 fn disassemble(prog: &Vec<Instruction>) {
@@ -207,7 +207,7 @@ pub fn exhaustive_search(
         len: u32,
     ) -> bool {
         if len == 0 {
-            return term(&prog);
+            term(prog)
         } else {
             for ins in instrs {
                 prog.push(*ins);
@@ -216,7 +216,7 @@ pub fn exhaustive_search(
                 }
                 prog.pop();
             }
-            return false;
+            false
         }
     }
 

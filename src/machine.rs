@@ -36,13 +36,9 @@ pub fn add_to_reg8(
             if let Some(c) = carry {
                 let v = operand.wrapping_add(if c { 1 } else { 0 });
                 let result = r.wrapping_add(v);
-                let z = if result == 0 { true } else { false };
-                let c = if r.checked_add(v).is_none() {
-                    true
-                } else {
-                    false
-                };
-                let n = if result < 0 { true } else { false };
+                let z = result == 0;
+                let c = r.checked_add(v).is_none();
+                let n = result < 0;
                 let o = (r < 0 && v < 0 && result >= 0) || (r > 0 && v > 0 && result <= 0);
                 let h = ((r ^ v ^ result) & 0x10) == 0x10;
                 (Some(result), Some(c), Some(z), Some(n), Some(o), Some(h))
@@ -72,7 +68,7 @@ fn decimal_adjust(
         if flag.unwrap_or(false) {
             return Some(0x06);
         }
-        return Some(0);
+        Some(0)
     }
 
     if let Some(a) = accumulator {
