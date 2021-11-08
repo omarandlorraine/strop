@@ -297,9 +297,9 @@ fn main() {
         let vars: Vec<u16> = vec![3, 4, 5];
         let prog = stochastic_search(
             &convergence,
-            mach(opts.arch),
-            constants(opts.constant),
-            vars,
+            &mach(opts.arch),
+            &constants(opts.constant),
+            &vars,
         );
         disassemble(&prog);
     }
