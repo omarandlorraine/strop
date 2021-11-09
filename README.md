@@ -77,8 +77,9 @@ Okay, the program spits out the following:
     asl a
     adc 3
 
-I don't yet know why location 3 was picked. And I don't know why the carry flag
-wasn't cleared anywhere. That's a bug.
+Location 3 was picked because it's the first of the hard-coded locations (I
+think this should be a configurable. some day maybe). And the carry flag wasn't
+cleared anywhere. That's a bug that's been fixed since this was run.
 
 These programs were found by an exhaustive search. The difficulty is that this
 takes a long time to run, and the runtime is only going to get worse as I add
@@ -86,4 +87,3 @@ more instructions to each architecture. Eventually the problem of long runtimes
 will be mitigated by two things: miscellaneous stochastic search strategies
 which can run faster by not checking Every Single Possibility, and use of
 threads or something.
-.
