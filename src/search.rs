@@ -162,25 +162,38 @@ pub fn stochastic_search(
     constants: &Vec<i8>,
     vars: &Vec<u16>,
 ) -> Vec<Instruction> {
+
+    let mut population: Vec<Vec<Instruction>> = vec![];
+    for _i in 1..1000 {
+        let mut program: Vec<Instruction> = vec![];
+        for _j in 1..50 {
+            mutate(&mut program, instructions, constants, vars);
+        }
+        population.push(program);
+    }
+
     let mut prog: Vec<Instruction> = vec![];
     let mut current: Vec<Instruction> = vec![];
 
     while convergence(&current) > 0.01 {
         prog = current.clone();
-        for _n in 1..101 {
+        for _n in 1..50 {
             mutate(&mut prog, instructions, constants, vars);
+        }
 
-            if convergence(&current) > convergence(&prog) {
+        println!("\n\n");
+        disassemble(&prog);
+
+        if convergence(&current) > convergence(&prog) {
+            current = prog.clone();
+            break;
+        }
+
+        if convergence(&current) - convergence(&prog) > -1.0 {
+            /* this encourages a sport of DCE and other optimisations along the way. */
+            if cost(&prog) < cost(&current) {
                 current = prog.clone();
                 break;
-            }
-
-            if convergence(&current) - convergence(&prog) > -1.0 {
-                /* this encourages a sport of DCE and other optimisations along the way. */
-                if cost(&prog) < cost(&current) {
-                    current = prog.clone();
-                    break;
-                }
             }
         }
     }
