@@ -98,6 +98,17 @@ fn mutate_delete(prog: &mut Vec<Instruction>) {
     }
 }
 
+fn mutate_insert(prog: &mut Vec<Instruction>, instructions: &Vec<Instruction>, constants: &Vec<i8>, vars: &Vec<u16>) {
+    let offset: usize = if prog.len() > 0 {
+        rand::thread_rng().gen_range(0, prog.len())
+    } else {
+        0
+    };
+    let instruction = instructions.choose(&mut rand::thread_rng()).unwrap();
+    prog.insert(offset, *instruction);
+    prog[offset].randomize(&constants, &vars);
+}
+
 fn mutate(
     prog: &mut Vec<Instruction>,
     instructions: &Vec<Instruction>,
@@ -121,14 +132,7 @@ fn mutate(
         }
         /* insert a new instruction */
         2 => {
-            let offset: usize = if prog.len() > 0 {
-                rand::thread_rng().gen_range(0, prog.len())
-            } else {
-                0
-            };
-            let instruction = instructions.choose(&mut rand::thread_rng()).unwrap();
-            prog.insert(offset, *instruction);
-            prog[offset].randomize(&constants, &vars);
+            mutate_insert(prog, instructions, constants, vars);
         }
         _ => {
             panic!();
@@ -163,41 +167,60 @@ pub fn stochastic_search(
     vars: &Vec<u16>,
 ) -> Vec<Instruction> {
 
-    let mut population: Vec<Vec<Instruction>> = vec![];
+    // Initial population of a bajillion stupid programs
+    // which are of course unlikely to be any good
+    let mut population: Vec<(f64, Vec<Instruction>)> = vec![];
     for _i in 1..1000 {
         let mut program: Vec<Instruction> = vec![];
         for _j in 1..50 {
-            mutate(&mut program, instructions, constants, vars);
+            mutate_insert(&mut program, instructions, constants, vars);
         }
-        population.push(program);
+        population.push((convergence(&program.clone()), program));
     }
 
-    let mut prog: Vec<Instruction> = vec![];
-    let mut current: Vec<Instruction> = vec![];
+    loop {
 
-    while convergence(&current) > 0.01 {
-        prog = current.clone();
-        for _n in 1..50 {
-            mutate(&mut prog, instructions, constants, vars);
+        // Now get the best one of all and print it out
+        if let Some(best) = population.iter().min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN")) {
+            println!("\n\n{}", best.0);
+            disassemble(&best.1);
+        } else {
+            println!("none found :(");
+            return vec![];
         }
 
-        println!("\n\n");
-        disassemble(&prog);
+        // compute the average fitness
+        let avg_fit: f64 = Iterator::sum::<f64>(population.iter().map(|s| s.0)) / population.len() as f64;
+        println!("avg_fit {}", avg_fit);
 
-        if convergence(&current) > convergence(&prog) {
-            current = prog.clone();
-            break;
-        }
+        // get rid of all lower-than-average specimens
+        population.retain(|s| s.0 < avg_fit);
+        println!("population size {}", population.len());
 
-        if convergence(&current) - convergence(&prog) > -1.0 {
-            /* this encourages a sport of DCE and other optimisations along the way. */
-            if cost(&prog) < cost(&current) {
-                current = prog.clone();
-                break;
+        // If the population size is not too great,
+        // then the rest of the population may now make babies.
+        if population.len() < 99 {
+            let mut next_generation: Vec<(f64, Vec<Instruction>)> = vec![];
+            for parent in &population {
+                let mut child = parent.1.clone();
+                dead_code_elimination(convergence, &child);
+
+                // let's say, I don't know, fifty kids each.
+                for _i in 0..50 {
+                    mutate(&mut child, instructions, constants, vars);
+                    let fitness = convergence(&child);
+
+                    // but only the ones that are actually better make it
+                    if fitness < avg_fit {
+                        next_generation.push((fitness, child.clone()));
+                    }
+                }
             }
+            population.append(&mut next_generation);
         }
+
     }
-    dead_code_elimination(convergence, &prog)
+    //dead_code_elimination(convergence, &prog)
     //prog
 }
 
