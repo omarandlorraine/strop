@@ -134,6 +134,15 @@ fn mutate(
         2 => {
             mutate_insert(prog, instructions, constants, vars);
         }
+        /* Pick two instructions and swap them round */
+        3 => {
+            let offset_a: usize = rand::thread_rng().gen_range(0, prog.len());
+            let offset_b: usize = rand::thread_rng().gen_range(0, prog.len());
+            let ins_a = prog[offset_a];
+            let ins_b = prog[offset_b];
+            prog[offset_a] = ins_b;
+            prog[offset_b] = ins_a;
+        }
         _ => {
             panic!();
         }
