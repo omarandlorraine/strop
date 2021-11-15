@@ -28,6 +28,17 @@ impl BasicBlock {
         BasicBlock{instructions: vec![]}
     }
 
+    fn initial_guess(instructions: &Vec<Instruction>, constants: &Vec<i8>, vars: &Vec<u16>, max_size: i32) -> BasicBlock {
+        let mut bb = BasicBlock{instructions: vec![]};
+        for _i in 0..max_size {
+            let instruction = instructions.choose(&mut rand::thread_rng()).unwrap();
+            let mut i = instruction.clone();
+            i.randomize(&constants, &vars);
+            bb.push(i);
+        }
+        bb
+    }
+
     fn len(&self) -> usize {
         self.instructions.len()
     }
@@ -227,10 +238,7 @@ pub fn stochastic_search(
     // which are of course unlikely to be any good
     let mut population: Vec<(f64, BasicBlock)> = vec![];
     for _i in 1..1000 {
-        let mut program: BasicBlock;
-        for _j in 1..50 {
-            mutate_insert(&mut program, instructions, constants, vars);
-        }
+        let program = BasicBlock::initial_guess(instructions, constants, vars, 20);
         population.push((convergence(&program), program));
     }
 
