@@ -1,3 +1,4 @@
+use std::ops::{Index,IndexMut};
 use crate::machine::Instruction;
 use crate::State;
 use rand::prelude::SliceRandom;
@@ -17,13 +18,59 @@ impl<'a> Schema<'_> {
     }
 }
 
-fn run_program(prog: &Vec<Instruction>, schema: &Schema, inputs: &Vec<i8>) -> Option<State> {
+#[derive(Clone)]
+pub struct BasicBlock {
+    pub instructions: Vec<Instruction>
+}
+
+impl BasicBlock {
+    fn new() -> BasicBlock {
+        BasicBlock{instructions: vec![]}
+    }
+
+    fn len(&self) -> usize {
+        self.instructions.len()
+    }
+
+    fn remove(&mut self, offset: usize) -> Instruction {
+        self.instructions.remove(offset)
+    }
+
+    fn insert(&mut self, offset: usize, instr: Instruction) {
+        self.instructions.insert(offset, instr)
+    }
+
+    fn pop(&mut self) -> Option<Instruction> {
+        self.instructions.pop()
+    }
+
+    fn push(&mut self, instr: Instruction) {
+        self.instructions.push(instr)
+    }
+
+}
+
+impl Index<usize> for BasicBlock {
+    type Output = Instruction;
+
+    fn index(&self, offset: usize) -> &Self::Output {
+        &self.instructions[offset]
+    }
+}
+
+impl IndexMut<usize> for BasicBlock {
+    fn index_mut(&mut self, offset: usize) -> &mut Self::Output {
+        &mut self.instructions[offset]
+    }
+}
+
+fn run_program(prog: &BasicBlock, schema: &Schema, inputs: &Vec<i8>) -> Option<State> {
     let mut s = State::new();
 
     for (func, val) in schema.live_in.iter().zip(inputs) {
         (func)(&mut s, *val);
     }
-    if prog
+    if prog.instructions
         .iter()
         .fold(true, |valid: bool, i| valid && (i.operation)(i, &mut s))
     {
@@ -34,12 +81,12 @@ fn run_program(prog: &Vec<Instruction>, schema: &Schema, inputs: &Vec<i8>) -> Op
 }
 
 pub fn equivalence(
-    prog: &Vec<Instruction>,
+    prog: BasicBlock,
     schema: &Schema,
     test_cases: &Vec<(Vec<i8>, Vec<i8>)>,
 ) -> bool {
     for tc in test_cases {
-        if let Some(state) = run_program(prog, schema, &tc.0) {
+        if let Some(state) = run_program(&prog, schema, &tc.0) {
             for (func, val) in schema.live_out.iter().zip(&tc.1) {
                 let result = func(&state);
                 if result != Some(*val) {
@@ -54,13 +101,13 @@ pub fn equivalence(
 }
 
 pub fn differance(
-    prog: &Vec<Instruction>,
+    prog: &BasicBlock,
     schema: &Schema,
     test_cases: &Vec<(Vec<i8>, Vec<i8>)>,
 ) -> f64 {
     let mut ret: f64 = 0.0;
     for tc in test_cases {
-        if let Some(state) = run_program(prog, schema, &tc.0) {
+        if let Some(state) = run_program(&prog, schema, &tc.0) {
             for (func, val) in schema.live_out.iter().zip(&tc.1) {
                 if let Some(v) = func(&state) {
                     let d: f64 = v.into();
@@ -77,8 +124,8 @@ pub fn differance(
     ret
 }
 
-fn disassemble(prog: &Vec<Instruction>) {
-    for p in prog {
+fn disassemble(prog: &BasicBlock) {
+    for p in &prog.instructions {
         println!("{}", p);
     }
 }
@@ -91,14 +138,14 @@ fn cost(prog: &Vec<Instruction>) -> f64 {
     prog.len() as f64
 }
 
-fn mutate_delete(prog: &mut Vec<Instruction>) {
+fn mutate_delete(prog: &mut BasicBlock) {
     if prog.len() > 1 {
         let offset: usize = rand::thread_rng().gen_range(0, prog.len());
         prog.remove(offset);
     }
 }
 
-fn mutate_insert(prog: &mut Vec<Instruction>, instructions: &Vec<Instruction>, constants: &Vec<i8>, vars: &Vec<u16>) {
+fn mutate_insert(prog: &mut BasicBlock, instructions: &Vec<Instruction>, constants: &Vec<i8>, vars: &Vec<u16>) {
     let offset: usize = if prog.len() > 0 {
         rand::thread_rng().gen_range(0, prog.len())
     } else {
@@ -110,7 +157,7 @@ fn mutate_insert(prog: &mut Vec<Instruction>, instructions: &Vec<Instruction>, c
 }
 
 fn mutate(
-    prog: &mut Vec<Instruction>,
+    prog: &mut BasicBlock,
     instructions: &Vec<Instruction>,
     constants: &Vec<i8>,
     vars: &Vec<u16>,
@@ -150,9 +197,9 @@ fn mutate(
 }
 
 pub fn dead_code_elimination(
-    convergence: &dyn Fn(&Vec<Instruction>) -> f64,
-    prog: &Vec<Instruction>,
-) -> Vec<Instruction> {
+    convergence: &dyn Fn(&BasicBlock) -> f64,
+    prog: BasicBlock,
+) -> BasicBlock {
     let mut better = prog.clone();
 
     for _m in 1..1000 {
@@ -170,21 +217,21 @@ pub fn dead_code_elimination(
 }
 
 pub fn stochastic_search(
-    convergence: &dyn Fn(&Vec<Instruction>) -> f64,
+    convergence: &dyn Fn(&BasicBlock) -> f64,
     instructions: &Vec<Instruction>,
     constants: &Vec<i8>,
     vars: &Vec<u16>,
-) -> Vec<Instruction> {
+) -> BasicBlock {
 
     // Initial population of a bajillion stupid programs
     // which are of course unlikely to be any good
-    let mut population: Vec<(f64, Vec<Instruction>)> = vec![];
+    let mut population: Vec<(f64, BasicBlock)> = vec![];
     for _i in 1..1000 {
-        let mut program: Vec<Instruction> = vec![];
+        let mut program: BasicBlock;
         for _j in 1..50 {
             mutate_insert(&mut program, instructions, constants, vars);
         }
-        population.push((convergence(&program.clone()), program));
+        population.push((convergence(&program), program));
     }
 
     loop {
@@ -193,9 +240,6 @@ pub fn stochastic_search(
         if let Some(best) = population.iter().min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN")) {
             println!("\n\n{}", best.0);
             disassemble(&best.1);
-        } else {
-            println!("none found :(");
-            return vec![];
         }
 
         // compute the average fitness
@@ -209,10 +253,10 @@ pub fn stochastic_search(
         // If the population size is not too great,
         // then the rest of the population may now make babies.
         if population.len() < 99 {
-            let mut next_generation: Vec<(f64, Vec<Instruction>)> = vec![];
+            let mut next_generation: Vec<(f64, BasicBlock)> = vec![];
             for parent in &population {
                 let mut child = parent.1.clone();
-                dead_code_elimination(convergence, &child);
+                dead_code_elimination(convergence, child);
 
                 // let's say, I don't know, fifty kids each.
                 for _i in 0..50 {
@@ -234,7 +278,7 @@ pub fn stochastic_search(
 }
 
 pub fn exhaustive_search(
-    found_it: &dyn Fn(&Vec<Instruction>) -> bool,
+    found_it: &dyn Fn(BasicBlock) -> bool,
     instructions: Vec<Instruction>,
     constants: Vec<i8>,
     vars: Vec<u16>,
@@ -246,13 +290,13 @@ pub fn exhaustive_search(
         .collect();
 
     fn try_all(
-        term: &dyn Fn(&Vec<Instruction>) -> bool,
-        prog: &mut Vec<Instruction>,
+        term: &dyn Fn(BasicBlock) -> bool,
+        prog: &mut BasicBlock,
         instrs: &Vec<Instruction>,
         len: u32,
     ) -> bool {
         if len == 0 {
-            term(prog)
+            term(*prog)
         } else {
             for ins in instrs {
                 prog.push(*ins);
@@ -265,11 +309,9 @@ pub fn exhaustive_search(
         }
     }
 
-    let t: &dyn Fn(&Vec<Instruction>) -> bool = &|v| -> bool { found_it(v) };
-
     for i in 1..10 {
         println!("Trying programs of length {}.", i);
-        if try_all(&t, &mut Vec::new(), &instrs, i) {
+        if try_all(&found_it, &mut BasicBlock::new(), &instrs, i) {
             return;
         }
     }

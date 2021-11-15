@@ -16,6 +16,7 @@ use crate::machine::State;
 use crate::machine::{get_a, get_b, get_x, get_y, set_a, set_b, set_x, set_y};
 
 use crate::search::Schema;
+use crate::search::BasicBlock;
 use crate::search::{differance, equivalence};
 use crate::search::{exhaustive_search, stochastic_search};
 
@@ -248,8 +249,8 @@ fn parse_live_out<'a>(arg: String) -> Box<dyn for<'r> Fn(&'r State) -> Option<i8
     process::exit(1);
 }
 
-fn disassemble(prog: &Vec<Instruction>) {
-    for p in prog {
+fn disassemble(prog: BasicBlock) {
+    for p in prog.instructions {
         println!("{}", p);
     }
 }
@@ -282,9 +283,9 @@ fn main() {
     let test_cases = function(opts.function);
 
     if opts.search == "exh" {
-        let found_it = |prog: &Vec<Instruction>| {
-            if equivalence(prog, &schema, &test_cases) {
-                disassemble(prog);
+        let found_it = |prog: BasicBlock| {
+            if equivalence(prog.clone(), &schema, &test_cases) {
+                disassemble(prog.clone());
                 true
             } else {
                 false
@@ -293,7 +294,7 @@ fn main() {
         let vars: Vec<u16> = vec![3, 4, 5];
         exhaustive_search(&found_it, mach(opts.arch), constants(opts.constant), vars);
     } else if opts.search == "stoc" {
-        let convergence = |prog: &Vec<Instruction>| differance(prog, &schema, &test_cases);
+        let convergence = |prog: &BasicBlock| differance(prog, &schema, &test_cases);
         let vars: Vec<u16> = vec![3, 4, 5];
         let prog = stochastic_search(
             &convergence,
@@ -301,6 +302,6 @@ fn main() {
             &constants(opts.constant),
             &vars,
         );
-        disassemble(&prog);
+        disassemble(prog);
     }
 }
