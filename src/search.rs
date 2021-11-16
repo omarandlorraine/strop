@@ -23,6 +23,29 @@ pub struct BasicBlock {
     pub instructions: Vec<Instruction>
 }
 
+struct BasicBlockSpawn {
+    parent: BasicBlock,
+    mutant: BasicBlock,
+    ncount: i32,
+    instructions: Vec<Instruction>,
+    constants: Vec<i8>,
+    vars: Vec<u16>,
+}
+
+impl Iterator for BasicBlockSpawn {
+    type Item = BasicBlock;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.ncount == 0 {
+            self.mutant = self.parent.clone();
+            self.ncount = rand::thread_rng().gen_range(6, 12);
+        }
+        self.ncount -= 1;
+        mutate(&mut self.mutant, &self.instructions, &self.constants, &self.vars);
+        Some(self.mutant.clone())
+    }
+}
+
 impl BasicBlock {
     fn new() -> BasicBlock {
         BasicBlock{instructions: vec![]}
@@ -37,6 +60,15 @@ impl BasicBlock {
             bb.push(i);
         }
         bb
+    }
+
+    fn spawn(&self,
+        instructions: Vec<Instruction>,
+        constants: Vec<i8>,
+        vars: Vec<u16>,
+    ) -> BasicBlockSpawn {
+        let parent: BasicBlock = BasicBlock{ instructions : self.instructions.clone()};
+        BasicBlockSpawn{parent, mutant: self.clone(), ncount: 0, instructions, constants, vars}
     }
 
     fn len(&self) -> usize {
@@ -209,7 +241,7 @@ fn mutate(
 
 pub fn dead_code_elimination(
     convergence: &dyn Fn(&BasicBlock) -> f64,
-    prog: BasicBlock,
+    prog: &BasicBlock,
 ) -> BasicBlock {
     let mut better = prog.clone();
 
@@ -241,41 +273,47 @@ pub fn stochastic_search(
         let program = BasicBlock::initial_guess(instructions, constants, vars, 20);
         population.push((convergence(&program), program));
     }
+    let mut mcount = 0;
 
     loop {
 
         // Now get the best one of all and print it out
-        if let Some(best) = population.iter().min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN")) {
-            println!("\n\n{}", best.0);
-            disassemble(&best.1);
+        // (but not too often, or we'll start blocking on the slow terminal)
+        if mcount == 0 {
+            if let Some(best) = population.iter().min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN")) {
+                println!("\n\n{}", best.0);
+                disassemble(&best.1);
+            }
+            mcount = 100;
+        } else {
+            mcount -= 1;
         }
 
         // compute the average fitness
         let avg_fit: f64 = Iterator::sum::<f64>(population.iter().map(|s| s.0)) / population.len() as f64;
-        println!("avg_fit {}", avg_fit);
 
         // get rid of all lower-than-average specimens
-        population.retain(|s| s.0 < avg_fit);
-        println!("population size {}", population.len());
+        population.retain(|s| s.0 <= avg_fit);
+
+        if mcount == 0 {
+            println!("avg_fit {}", avg_fit);
+            println!("population size {}", population.len());
+        }
 
         // If the population size is not too great,
         // then the rest of the population may now make babies.
-        if population.len() < 99 {
+        if population.len() < 1000 {
             let mut next_generation: Vec<(f64, BasicBlock)> = vec![];
             for parent in &population {
-                let mut child = parent.1.clone();
-                dead_code_elimination(convergence, child);
+                dead_code_elimination(convergence, &parent.1);
 
                 // let's say, I don't know, fifty kids each.
-                for _i in 0..50 {
-                    mutate(&mut child, instructions, constants, vars);
-                    let fitness = convergence(&child);
-
-                    // but only the ones that are actually better make it
-                    if fitness < avg_fit {
-                        next_generation.push((fitness, child.clone()));
-                    }
-                }
+                for child in parent.1.spawn(instructions.to_vec(), constants.to_vec(), vars.to_vec()).take(5000)
+                    .map(|s| (convergence(&s), s))
+                        .filter(|s| s.0 < avg_fit)
+                        {
+                            next_generation.push(child);
+                        }
             }
             population.append(&mut next_generation);
         }
@@ -304,7 +342,7 @@ pub fn exhaustive_search(
         len: u32,
     ) -> bool {
         if len == 0 {
-            term(*prog)
+            term(prog.clone())
         } else {
             for ins in instrs {
                 prog.push(*ins);
