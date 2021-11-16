@@ -372,6 +372,16 @@ impl Instruction {
         true
     }
 
+    fn op_ldx(&self, s: &mut State) -> bool {
+        s.x8 = self.get_datum(s);
+        true
+    }
+
+    fn op_ldy(&self, s: &mut State) -> bool {
+        s.y8 = self.get_datum(s);
+        true
+    }
+
     fn op_lsr(&self, s: &mut State) -> bool {
         let (val, c) = rotate_right_thru_carry(s.accumulator, Some(false));
         s.accumulator = val;
@@ -574,7 +584,9 @@ pub fn mos6502() -> Vec<Instruction> {
         Instruction::abs("adc", Instruction::op_adc_dp),
         Instruction::abs("lda", Instruction::op_lda),
         Instruction::abs("sta", Instruction::op_sta),
+        Instruction::abs("ldx", Instruction::op_ldx),
         Instruction::abs("stx", Instruction::op_stx),
+        Instruction::abs("ldy", Instruction::op_ldy),
         Instruction::abs("sty", Instruction::op_sty),
     ]
 }
