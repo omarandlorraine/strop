@@ -91,6 +91,10 @@ impl BasicBlock {
         self.instructions.push(instr)
     }
 
+    fn is_empty(&self) -> bool {
+        self.instructions.is_empty()
+    }
+
 }
 
 impl Index<usize> for BasicBlock {
@@ -259,6 +263,30 @@ pub fn dead_code_elimination(
     better
 }
 
+pub fn quick_dce(
+    convergence: &dyn Fn(&BasicBlock) -> f64,
+    prog: &BasicBlock,
+) -> BasicBlock {
+    
+    let mut better = prog.clone();
+    let score = convergence(prog);
+    let mut cur: usize = 0;
+
+    loop {
+        let mut putative = better.clone();
+        if cur >= better.len() {
+            return better;
+        }
+        putative.remove(cur);
+        if convergence(&putative) <= score {
+            better = putative.clone();
+        } else {
+            cur += 1;
+        }
+    }
+}
+
+
 pub fn stochastic_search(
     convergence: &dyn Fn(&BasicBlock) -> f64,
     instructions: &Vec<Instruction>,
@@ -277,14 +305,17 @@ pub fn stochastic_search(
 
     loop {
 
-        // Now get the best one of all and print it out
-        // (but not too often, or we'll start blocking on the slow terminal)
         if mcount == 0 {
+            println!("running dce");
+            population = population.iter().map(|s| (s.0, quick_dce(convergence, &s.1))).collect();
+            println!("finished dce");
+            // Now get the best one of all and print it out
+            // (but not too often, or we'll start blocking on the slow terminal)
             if let Some(best) = population.iter().min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN")) {
                 println!("\n\n{}", best.0);
                 disassemble(&best.1);
             }
-            mcount = 100;
+            mcount = 1;
         } else {
             mcount -= 1;
         }
@@ -296,8 +327,7 @@ pub fn stochastic_search(
         population.retain(|s| s.0 <= avg_fit);
 
         if mcount == 0 {
-            println!("avg_fit {}", avg_fit);
-            println!("population size {}", population.len());
+            println!("avg_fit {} population size {}", avg_fit, population.len());
         }
 
         // If the population size is not too great,
@@ -305,11 +335,9 @@ pub fn stochastic_search(
         if population.len() < 1000 {
             let mut next_generation: Vec<(f64, BasicBlock)> = vec![];
             for parent in &population {
-                dead_code_elimination(convergence, &parent.1);
 
-                // let's say, I don't know, fifty kids each.
                 for child in parent.1.spawn(instructions.to_vec(), constants.to_vec(), vars.to_vec()).take(5000)
-                    .map(|s| (convergence(&s), s))
+                    .map(|s| (convergence(&s), quick_dce(convergence, &s)))
                         .filter(|s| s.0 < avg_fit)
                         {
                             next_generation.push(child);
@@ -318,6 +346,16 @@ pub fn stochastic_search(
             population.append(&mut next_generation);
         }
 
+        // Also introduce a little fresh blood into the population
+        let mut fresh_blood: Vec<(f64, BasicBlock)> = vec![];
+        for _i in 1..1000 {
+            let program = quick_dce(convergence, &BasicBlock::initial_guess(instructions, constants, vars, 20));
+            let f = convergence(&program);
+            if f > avg_fit {
+                fresh_blood.push((f, program));
+            }
+        }
+        population.append(&mut fresh_blood);
     }
     //dead_code_elimination(convergence, &prog)
     //prog
