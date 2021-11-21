@@ -1,4 +1,5 @@
 use std::ops::{Index,IndexMut};
+use rayon::prelude::*;
 use crate::machine::Instruction;
 use crate::State;
 use rand::prelude::SliceRandom;
@@ -26,7 +27,7 @@ pub struct BasicBlock {
 struct BasicBlockSpawn {
     parent: BasicBlock,
     mutant: BasicBlock,
-    ncount: i32,
+    ncount: usize,
     instructions: Vec<Instruction>,
     constants: Vec<i8>,
     vars: Vec<u16>,
@@ -38,7 +39,7 @@ impl Iterator for BasicBlockSpawn {
     fn next(&mut self) -> Option<Self::Item> {
         if self.ncount == 0 {
             self.mutant = self.parent.clone();
-            self.ncount = rand::thread_rng().gen_range(6, 12);
+            self.ncount = 100;
         }
         self.ncount -= 1;
         mutate(&mut self.mutant, &self.instructions, &self.constants, &self.vars);
@@ -293,7 +294,7 @@ pub fn stochastic_search(
     constants: &Vec<i8>,
     vars: &Vec<u16>,
 ) -> BasicBlock {
-
+    
     // Initial population of a bajillion stupid programs
     // which are of course unlikely to be any good
     let mut population: Vec<(f64, BasicBlock)> = vec![];
@@ -301,61 +302,36 @@ pub fn stochastic_search(
         let program = BasicBlock::initial_guess(instructions, constants, vars, 20);
         population.push((convergence(&program), program));
     }
-    let mut mcount = 0;
 
     loop {
 
-        if mcount == 0 {
-            println!("running dce");
-            population = population.iter().map(|s| (s.0, quick_dce(convergence, &s.1))).collect();
-            println!("finished dce");
-            // Now get the best one of all and print it out
-            // (but not too often, or we'll start blocking on the slow terminal)
-            if let Some(best) = population.iter().min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN")) {
-                println!("\n\n{}", best.0);
-                disassemble(&best.1);
-            }
-            mcount = 1;
-        } else {
-            mcount -= 1;
+        // Get the best specimen
+        let b = population.iter().min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN")).unwrap();
+
+        // get rid of unnecessary instructions
+        let best = quick_dce(convergence, &b.1);
+
+        if b.0 < 0.1 {
+            return dead_code_elimination(convergence, &quick_dce(convergence, &b.1));
         }
 
-        // compute the average fitness
+        let mut next_generation: Vec<(f64, BasicBlock)> = vec![];
+
+        for s in best.spawn(instructions.to_vec(), constants.to_vec(), vars.to_vec()).take(5000000) {
+            let fit = convergence(&s);
+            if fit < b.0 {
+                let d = quick_dce(convergence, &s);
+                println!("\n\n{} < {}\nspawned:", fit, b.0);
+                disassemble(&d);
+                next_generation.push((fit, d));
+            }
+        }
+
+        if !next_generation.is_empty() {
+            population = next_generation;
+        }
         let avg_fit: f64 = Iterator::sum::<f64>(population.iter().map(|s| s.0)) / population.len() as f64;
-
-        // get rid of all lower-than-average specimens
-        population.retain(|s| s.0 <= avg_fit);
-
-        if mcount == 0 {
-            println!("avg_fit {} population size {}", avg_fit, population.len());
-        }
-
-        // If the population size is not too great,
-        // then the rest of the population may now make babies.
-        if population.len() < 1000 {
-            let mut next_generation: Vec<(f64, BasicBlock)> = vec![];
-            for parent in &population {
-
-                for child in parent.1.spawn(instructions.to_vec(), constants.to_vec(), vars.to_vec()).take(5000)
-                    .map(|s| (convergence(&s), quick_dce(convergence, &s)))
-                        .filter(|s| s.0 < avg_fit)
-                        {
-                            next_generation.push(child);
-                        }
-            }
-            population.append(&mut next_generation);
-        }
-
-        // Also introduce a little fresh blood into the population
-        let mut fresh_blood: Vec<(f64, BasicBlock)> = vec![];
-        for _i in 1..1000 {
-            let program = quick_dce(convergence, &BasicBlock::initial_guess(instructions, constants, vars, 20));
-            let f = convergence(&program);
-            if f > avg_fit {
-                fresh_blood.push((f, program));
-            }
-        }
-        population.append(&mut fresh_blood);
+        println!("avg_fit {} population size {}", avg_fit, population.len());
     }
     //dead_code_elimination(convergence, &prog)
     //prog
