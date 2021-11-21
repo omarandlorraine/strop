@@ -321,8 +321,6 @@ pub fn stochastic_search(
             let fit = convergence(&s);
             if fit < b.0 {
                 let d = quick_dce(convergence, &s);
-                println!("\n\n{} < {}\nspawned:", fit, b.0);
-                disassemble(&d);
                 next_generation.push((fit, d));
             }
         }
@@ -330,11 +328,7 @@ pub fn stochastic_search(
         if !next_generation.is_empty() {
             population = next_generation;
         }
-        let avg_fit: f64 = Iterator::sum::<f64>(population.iter().map(|s| s.0)) / population.len() as f64;
-        println!("avg_fit {} population size {}", avg_fit, population.len());
     }
-    //dead_code_elimination(convergence, &prog)
-    //prog
 }
 
 pub fn exhaustive_search(
