@@ -53,7 +53,7 @@ What if we want to multiply some number by a constant? For this example, the
 number is in register B, the constant is 15, and the output is in register A.
 So you'd run:
 
-    strop --arch motorola6800 --function mult15 --search exh --live-in b --live-out a
+    strop --arch motorola6800 --function mult15 --search exh --in b --out a
 
 And the program outputs:
 
@@ -67,7 +67,7 @@ And the program outputs:
 
 Or let's say you want a multiply by seven routine for the 6502. So you run
 
-    strop --arch mos6502 --function mult7 --search exh --live-in a --live-out a
+    strop --arch mos6502 --function mult7 --search exh --in a --out a
 
 Okay, the program spits out the following:
 

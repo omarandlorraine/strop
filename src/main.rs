@@ -128,13 +128,13 @@ struct Opts {
     /// what kind of search to perform
     search: String,
 
-    #[argh(option)]
-    /// live_in variables
-    live_in: Vec<String>,
+    #[argh(option,long="in")]
+    /// in variables
+    r#in: Vec<String>,
 
     #[argh(option)]
-    /// live_out variables
-    live_out: Vec<String>,
+    /// out variables
+    out: Vec<String>,
 
     #[argh(option)]
     /// constants
@@ -270,11 +270,11 @@ fn constants(c: Vec<i8>) -> Vec<i8> {
 fn main() {
     let opts: Opts = argh::from_env();
     let schema = Schema::new(
-        opts.live_in
+        opts.r#in
             .into_iter()
             .map(|arg| parse_live_in(arg))
             .collect(),
-        opts.live_out
+        opts.out
             .into_iter()
             .map(|arg| parse_live_out(arg))
             .collect(),
