@@ -81,7 +81,7 @@ require a store instruction, and absolute add. This is because the 6502 lacks a
 any register-to-register add instruction. I find that the current iteration of
 the search algorithm, doesn't seem to come across the appropriate instruction 
 mix. For this reason, the exhaustive search is usually better than the 
-stochastic one. At least, for now!
+stochastic one for the 6502. At least, for now!
 
 By the by, sometimes the stochastic search doesn't always find a very good
 program. Here is an example,
@@ -100,5 +100,5 @@ register Y. So here's the kind of thing you might get:
 See, it's transferring X to the accumulator (because this is the only register
 that can participate in most ALU operations), and then adding 14. The result is
 then copied to Y, and Y is incremented. Of course, it could've just added 15 in
-the first place and avoided the last step. The would've been been by any
+the first place and avoided the last step. That would've been better by any
 measure. So I think I might add an optimization step after this.
