@@ -18,7 +18,7 @@ use crate::machine::{get_a, get_b, get_x, get_y, set_a, set_b, set_x, set_y};
 use crate::search::Schema;
 use crate::search::BasicBlock;
 use crate::search::{differance, equivalence};
-use crate::search::{exhaustive_search, stochastic_search};
+use crate::search::{exhaustive_search, stochastic_search, optimize};
 
 struct MOpt {
     name: &'static str,
@@ -296,12 +296,10 @@ fn main() {
     } else if opts.search == "stoc" {
         let convergence = |prog: &BasicBlock| differance(prog, &schema, &test_cases);
         let vars: Vec<u16> = vec![3, 4, 5];
-        let prog = stochastic_search(
-            &convergence,
-            &mach(opts.arch),
-            &constants(opts.constant),
-            &vars,
-        );
-        disassemble(prog);
+        let m = mach(opts.arch);
+        let c = constants(opts.constant);
+        let prog = stochastic_search(&convergence, &m, &c, &vars);
+        let opt = optimize(&convergence, &prog, &m, &c, &vars);
+        disassemble(opt);
     }
 }

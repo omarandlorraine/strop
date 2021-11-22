@@ -178,7 +178,7 @@ fn disassemble(prog: &BasicBlock) {
     }
 }
 
-fn cost(prog: &Vec<Instruction>) -> f64 {
+fn cost(prog: &BasicBlock) -> f64 {
     /* quick and simple cost function,
      * number of instructions in the program.
      * Not really a bad thing to minimise for.
@@ -287,6 +287,36 @@ pub fn quick_dce(
     }
 }
 
+pub fn optimize(
+    convergence: &dyn Fn(&BasicBlock) -> f64,
+    prog: &BasicBlock,
+    instructions: &Vec<Instruction>,
+    constants: &Vec<i8>,
+    vars: &Vec<u16>,
+) -> BasicBlock {
+
+    let mut population: Vec<(f64, BasicBlock)> = vec![];
+
+    let fitness = convergence(&prog);
+    let ccost = cost(&prog);
+    population.push((cost(prog), prog.clone()));
+
+    let best = prog;
+
+    // if we find a better version, try to optimize that as well.
+    for s in best.spawn(instructions.to_vec(), constants.to_vec(), vars.to_vec()).take(1000000)
+        .filter(|s| convergence(&s) <= fitness)
+        .map(|s| (cost(&s), s))
+        .min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"))
+    {
+        if s.0 < ccost {
+            return optimize(convergence, &s.1, instructions, constants, vars);
+        }
+    }
+
+    // Otherwise just return what we got.
+    prog.clone()
+}
 
 pub fn stochastic_search(
     convergence: &dyn Fn(&BasicBlock) -> f64,
