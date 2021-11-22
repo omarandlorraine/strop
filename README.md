@@ -6,10 +6,6 @@ when I realized it was simply too unwieldly to work with. I needed an excuse to
 learn Rust, plus I wanted a superoptimizer that could target things other than
 the 6502., So, strop was born, the *st*ochastic *op*timizer, written in *R*ust.
 
-Okay, okay, it's not stochastic (yet). Like very early versions of stoc, it has
-an exhaustive search only. Some of the warnings at build time about functions
-that never get used, is because the stochastic search is not implemented yet.
-
 ### Supported architectures:
 Not much here (yet). There are a few placeholders for miscellaneous
 architectures, and some of the instructions have been implemented for some of
@@ -55,7 +51,7 @@ So you'd run:
 
     strop --arch motorola6800 --function mult15 --search exh --in b --out a
 
-And the program outputs:
+More than 7 hours later, the program outputs:
 
 	tba
 	aba
@@ -65,25 +61,44 @@ And the program outputs:
 	asla
 	aba
 
-Or let's say you want a multiply by seven routine for the 6502. So you run
+It took too long, so of course we can now run a random search instead of an
+exhaustive search:
 
-    strop --arch mos6502 --function mult7 --search exh --in a --out a
+    strop --arch motorola6800 --function mult15 --search stoc --in b --out a
 
-Okay, the program spits out the following:
+And six seconds later, the program outputs:
 
-    sta 3
-    asl a
-    adc 3
-    asl a
-    adc 3
+	tba
+	aba
+	rol
+	aba
+	tab
+	rol
+	aba
 
-Location 3 was picked because it's the first of the hard-coded locations (I
-think this should be a configurable. some day maybe). And the carry flag wasn't
-cleared anywhere. That's a bug that's been fixed since this was run.
+On some architectures, such as the 6502, the equivalent of the above code would
+require a store instruction, and absolute add. This is because the 6502 lacks a
+any register-to-register add instruction. I find that the current iteration of
+the search algorithm, doesn't seem to come across the appropriate instruction 
+mix. For this reason, the exhaustive search is usually better than the 
+stochastic one. At least, for now!
 
-These programs were found by an exhaustive search. The difficulty is that this
-takes a long time to run, and the runtime is only going to get worse as I add
-more instructions to each architecture. Eventually the problem of long runtimes
-will be mitigated by two things: miscellaneous stochastic search strategies
-which can run faster by not checking Every Single Possibility, and use of
-threads or something.
+By the by, sometimes the stochastic search doesn't always find a very good
+program. Here is an example,
+
+    strop --arch mos6502 --function add15 --search stoc --in x --out y
+
+So we want to add 15 to whatever's in register X, and leave the result in
+register Y. So here's the kind of thing you might get:
+
+	txa
+	clc
+	adc #14
+	tay
+	iny
+
+See, it's transferring X to the accumulator (because this is the only register
+that can participate in most ALU operations), and then adding 14. The result is
+then copied to Y, and Y is incremented. Of course, it could've just added 15 in
+the first place and avoided the last step. The would've been been by any
+measure. So I think I might add an optimization step after this.
