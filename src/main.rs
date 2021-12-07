@@ -17,7 +17,6 @@ use crate::machine::Instruction;
 use crate::machine::State;
 use crate::machine::{get_a, get_b, get_x, get_y, set_a, set_b, set_x, set_y};
 
-use crate::search::Schema;
 use crate::search::BasicBlock;
 use crate::search::{differance, equivalence};
 use crate::search::{exhaustive_search, stochastic_search, optimize};

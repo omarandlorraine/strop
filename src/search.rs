@@ -77,11 +77,6 @@ impl BasicBlock {
     fn push(&mut self, instr: Instruction) {
         self.instructions.push(instr)
     }
-
-    fn is_empty(&self) -> bool {
-        self.instructions.is_empty()
-    }
-
 }
 
 impl Index<usize> for BasicBlock {
@@ -154,12 +149,6 @@ pub fn differance(
         }
     }
     ret
-}
-
-fn disassemble(prog: &BasicBlock) {
-    for p in &prog.instructions {
-        println!("{}", p);
-    }
 }
 
 fn cost(prog: &BasicBlock) -> f64 {
