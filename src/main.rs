@@ -102,7 +102,7 @@ fn sanity_mos6502(dp: &DeParameter) -> Parameter {
 }
 
 fn sanity_6800(dp: &DeParameter) -> Parameter {
-    if let Some(dp) = registers6502(&dp.register) {
+    if let Some(dp) = registers6800(&dp.register) {
         dp
     } else {
         panic!();
