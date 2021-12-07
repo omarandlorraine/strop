@@ -5,20 +5,6 @@ use crate::{State, TestRun, Test};
 use rand::prelude::SliceRandom;
 use rand::Rng;
 
-pub struct Schema<'a> {
-    live_in: Vec<Box<dyn for<'r> Fn(&'r mut State, i8)>>,
-    live_out: Vec<Box<dyn for<'r> Fn(&'r State) -> Option<i8> + 'a>>,
-}
-
-impl<'a> Schema<'_> {
-    pub fn new(
-        live_in: Vec<Box<dyn for<'r> Fn(&'r mut State, i8)>>,
-        live_out: Vec<Box<dyn for<'r> Fn(&'r State) -> Option<i8> + 'a>>,
-    ) -> Schema {
-        Schema { live_in, live_out }
-    }
-}
-
 #[derive(Clone)]
 pub struct BasicBlock {
     pub instructions: Vec<Instruction>
