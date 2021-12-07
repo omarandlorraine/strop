@@ -1,7 +1,7 @@
 use std::ops::{Index,IndexMut};
 use rayon::prelude::*;
 use crate::machine::Instruction;
-use crate::State;
+use crate::{State, TestRun, Test};
 use rand::prelude::SliceRandom;
 use rand::Rng;
 
@@ -112,11 +112,11 @@ impl IndexMut<usize> for BasicBlock {
     }
 }
 
-fn run_program(prog: &BasicBlock, schema: &Schema, inputs: &Vec<i8>) -> Option<State> {
+fn run_program(prog: &BasicBlock, test_run: &TestRun, test: &Test) -> Option<State> {
     let mut s = State::new();
 
-    for (func, val) in schema.live_in.iter().zip(inputs) {
-        (func)(&mut s, *val);
+    for param in test_run.ins.iter().zip(test.ins.iter()) {
+        (param.0.setter)(&mut s, *param.1);
     }
     if prog.instructions
         .iter()
@@ -130,14 +130,13 @@ fn run_program(prog: &BasicBlock, schema: &Schema, inputs: &Vec<i8>) -> Option<S
 
 pub fn equivalence(
     prog: BasicBlock,
-    schema: &Schema,
-    test_cases: &Vec<(Vec<i8>, Vec<i8>)>,
+    test_run: &TestRun
 ) -> bool {
-    for tc in test_cases {
-        if let Some(state) = run_program(&prog, schema, &tc.0) {
-            for (func, val) in schema.live_out.iter().zip(&tc.1) {
-                let result = func(&state);
-                if result != Some(*val) {
+    for tc in test_run.tests.iter() {
+        if let Some(state) = run_program(&prog, test_run, &tc) {
+            for param in test_run.outs.iter().zip(tc.outs.iter()) {
+                let result = (param.0.getter)(&state);
+                if result != Some(*param.1) {
                     return false;
                 }
             }
@@ -150,16 +149,15 @@ pub fn equivalence(
 
 pub fn differance(
     prog: &BasicBlock,
-    schema: &Schema,
-    test_cases: &Vec<(Vec<i8>, Vec<i8>)>,
+    test_run: &TestRun
 ) -> f64 {
     let mut ret: f64 = 0.0;
-    for tc in test_cases {
-        if let Some(state) = run_program(&prog, schema, &tc.0) {
-            for (func, val) in schema.live_out.iter().zip(&tc.1) {
-                if let Some(v) = func(&state) {
+    for tc in test_run.tests.iter() {
+        if let Some(state) = run_program(&prog, test_run, &tc) {
+            for param in test_run.outs.iter().zip(tc.outs.iter()) {
+                if let Some(v) = (param.0.getter)(&state) {
                     let d: f64 = v.into();
-                    let e: f64 = (*val).into();
+                    let e: f64 = (*param.1).into();
                     ret += (d - e).abs();
                 } else {
                     ret += 256.0; // the cost of an output variable that's never been written to
