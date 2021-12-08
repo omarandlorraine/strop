@@ -89,7 +89,7 @@ fn sanity_i8080(dp: &DeParameter) -> Parameter {
     if let Some(dp) = registers8080(&dp.register) {
         dp
     } else {
-        panic!();
+        panic!("No such register as {} for the specified architecture.", dp.register.as_ref().unwrap());
     }
 }
 
@@ -97,7 +97,7 @@ fn sanity_mos6502(dp: &DeParameter) -> Parameter {
     if let Some(dp) = registers6502(&dp.register) {
         dp
     } else {
-        panic!();
+        panic!("No such register as {} for the specified architecture.", dp.register.as_ref().unwrap());
     }
 }
 
@@ -105,7 +105,7 @@ fn sanity_6800(dp: &DeParameter) -> Parameter {
     if let Some(dp) = registers6800(&dp.register) {
         dp
     } else {
-        panic!();
+        panic!("No such register as {} for the specified architecture.", dp.register.as_ref().unwrap());
     }
 }
 
@@ -113,7 +113,7 @@ fn sanity_pic(dp: &DeParameter) -> Parameter {
     if let Some(dp) = registers_pic(&dp.register) {
         dp
     } else {
-        panic!();
+        panic!("No such register as {} for the specified architecture.", dp.register.as_ref().unwrap());
     }
 }
 
