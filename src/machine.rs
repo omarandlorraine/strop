@@ -5,7 +5,6 @@ extern crate rand;
 #[derive(Clone, Copy)]
 pub enum AddressingMode {
     Implicit,
-    Accumulator,
     Immediate(i8),
     Absolute(u16),
 }
@@ -172,9 +171,6 @@ impl Instruction {
             AddressingMode::Implicit => {
                 self.src = AddressingMode::Implicit;
             }
-            AddressingMode::Accumulator => {
-                self.src = AddressingMode::Accumulator;
-            }
             AddressingMode::Immediate(_) => {
                 if let Some(r) = constants.choose(&mut rand::thread_rng()) {
                     // If there's any constants, then pick one.
@@ -199,9 +195,6 @@ impl Instruction {
     pub fn vectorize(&self, constants: &Vec<i8>, vars: &Vec<u16>) -> Vec<Instruction> {
         match self.src {
             AddressingMode::Implicit => {
-                vec![*self]
-            }
-            AddressingMode::Accumulator => {
                 vec![*self]
             }
             AddressingMode::Immediate(_) => (*constants
@@ -232,7 +225,6 @@ impl Instruction {
             AddressingMode::Implicit => {
                 panic!();
             }
-            AddressingMode::Accumulator => m.accumulator,
             AddressingMode::Immediate(constant) => Some(constant),
             AddressingMode::Absolute(address) => {
                 if let Some(x) = m.heap.get(&address) {
@@ -248,9 +240,6 @@ impl Instruction {
         match self.dst {
             AddressingMode::Implicit => {
                 panic!();
-            }
-            AddressingMode::Accumulator => {
-                m.accumulator = val;
             }
             AddressingMode::Immediate(_) => {
                 panic!();
@@ -477,9 +466,6 @@ impl std::fmt::Display for Instruction {
         match self.src {
             AddressingMode::Implicit => {
                 write!(f, "\t{}", self.opname)
-            }
-            AddressingMode::Accumulator => {
-                write!(f, "\t{} a", self.opname)
             }
             AddressingMode::Immediate(constant) => {
                 write!(f, "\t{} #{}", self.opname, constant)
