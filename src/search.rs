@@ -1,13 +1,13 @@
-use std::ops::{Index,IndexMut};
-use rayon::prelude::*;
 use crate::machine::Instruction;
-use crate::{State, TestRun, Test};
+use crate::{State, Test, TestRun};
 use rand::prelude::SliceRandom;
 use rand::Rng;
+use rayon::prelude::*;
+use std::ops::{Index, IndexMut};
 
 #[derive(Clone)]
 pub struct BasicBlock {
-    pub instructions: Vec<Instruction>
+    pub instructions: Vec<Instruction>,
 }
 
 struct BasicBlockSpawn {
@@ -28,18 +28,32 @@ impl Iterator for BasicBlockSpawn {
             self.ncount = 100;
         }
         self.ncount -= 1;
-        mutate(&mut self.mutant, &self.instructions, &self.constants, &self.vars);
+        mutate(
+            &mut self.mutant,
+            &self.instructions,
+            &self.constants,
+            &self.vars,
+        );
         Some(self.mutant.clone())
     }
 }
 
 impl BasicBlock {
     fn new() -> BasicBlock {
-        BasicBlock{instructions: vec![]}
+        BasicBlock {
+            instructions: vec![],
+        }
     }
 
-    fn initial_guess(instructions: &Vec<Instruction>, constants: &Vec<i8>, vars: &Vec<u16>, max_size: i32) -> BasicBlock {
-        let mut bb = BasicBlock{instructions: vec![]};
+    fn initial_guess(
+        instructions: &Vec<Instruction>,
+        constants: &Vec<i8>,
+        vars: &Vec<u16>,
+        max_size: i32,
+    ) -> BasicBlock {
+        let mut bb = BasicBlock {
+            instructions: vec![],
+        };
         for _i in 0..max_size {
             let instruction = instructions.choose(&mut rand::thread_rng()).unwrap();
             let mut i = instruction.clone();
@@ -49,13 +63,23 @@ impl BasicBlock {
         bb
     }
 
-    fn spawn(&self,
+    fn spawn(
+        &self,
         instructions: Vec<Instruction>,
         constants: Vec<i8>,
         vars: Vec<u16>,
     ) -> BasicBlockSpawn {
-        let parent: BasicBlock = BasicBlock{ instructions : self.instructions.clone()};
-        BasicBlockSpawn{parent, mutant: self.clone(), ncount: 0, instructions, constants, vars}
+        let parent: BasicBlock = BasicBlock {
+            instructions: self.instructions.clone(),
+        };
+        BasicBlockSpawn {
+            parent,
+            mutant: self.clone(),
+            ncount: 0,
+            instructions,
+            constants,
+            vars,
+        }
     }
 
     fn len(&self) -> usize {
@@ -99,7 +123,8 @@ fn run_program(prog: &BasicBlock, test_run: &TestRun, test: &Test) -> Option<Sta
     for param in test_run.ins.iter().zip(test.ins.iter()) {
         (param.0.setter)(&mut s, *param.1);
     }
-    if prog.instructions
+    if prog
+        .instructions
         .iter()
         .fold(true, |valid: bool, i| valid && (i.operation)(i, &mut s))
     {
@@ -109,10 +134,7 @@ fn run_program(prog: &BasicBlock, test_run: &TestRun, test: &Test) -> Option<Sta
     }
 }
 
-pub fn equivalence(
-    prog: BasicBlock,
-    test_run: &TestRun
-) -> bool {
+pub fn equivalence(prog: BasicBlock, test_run: &TestRun) -> bool {
     for tc in test_run.tests.iter() {
         if let Some(state) = run_program(&prog, test_run, &tc) {
             for param in test_run.outs.iter().zip(tc.outs.iter()) {
@@ -128,10 +150,7 @@ pub fn equivalence(
     true
 }
 
-pub fn differance(
-    prog: &BasicBlock,
-    test_run: &TestRun
-) -> f64 {
+pub fn differance(prog: &BasicBlock, test_run: &TestRun) -> f64 {
     let mut ret: f64 = 0.0;
     for tc in test_run.tests.iter() {
         if let Some(state) = run_program(&prog, test_run, &tc) {
@@ -166,7 +185,12 @@ fn mutate_delete(prog: &mut BasicBlock) {
     }
 }
 
-fn mutate_insert(prog: &mut BasicBlock, instructions: &Vec<Instruction>, constants: &Vec<i8>, vars: &Vec<u16>) {
+fn mutate_insert(
+    prog: &mut BasicBlock,
+    instructions: &Vec<Instruction>,
+    constants: &Vec<i8>,
+    vars: &Vec<u16>,
+) {
     let offset: usize = if prog.len() > 0 {
         rand::thread_rng().gen_range(0, prog.len())
     } else {
@@ -237,11 +261,7 @@ pub fn dead_code_elimination(
     better
 }
 
-pub fn quick_dce(
-    convergence: &dyn Fn(&BasicBlock) -> f64,
-    prog: &BasicBlock,
-) -> BasicBlock {
-    
+pub fn quick_dce(convergence: &dyn Fn(&BasicBlock) -> f64, prog: &BasicBlock) -> BasicBlock {
     let mut better = prog.clone();
     let score = convergence(prog);
     let mut cur: usize = 0;
@@ -267,7 +287,6 @@ pub fn optimize(
     constants: &Vec<i8>,
     vars: &Vec<u16>,
 ) -> BasicBlock {
-
     let mut population: Vec<(f64, BasicBlock)> = vec![];
 
     let fitness = convergence(&prog);
@@ -277,7 +296,9 @@ pub fn optimize(
     let best = prog;
 
     // if we find a better version, try to optimize that as well.
-    for s in best.spawn(instructions.to_vec(), constants.to_vec(), vars.to_vec()).take(1000000)
+    for s in best
+        .spawn(instructions.to_vec(), constants.to_vec(), vars.to_vec())
+        .take(1000000)
         .filter(|s| convergence(&s) <= fitness)
         .map(|s| (cost(&s), s))
         .min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"))
@@ -297,7 +318,6 @@ pub fn stochastic_search(
     constants: &Vec<i8>,
     vars: &Vec<u16>,
 ) -> BasicBlock {
-    
     // Initial population of a bajillion stupid programs
     // which are of course unlikely to be any good
     let mut population: Vec<(f64, BasicBlock)> = vec![];
@@ -307,9 +327,11 @@ pub fn stochastic_search(
     }
 
     loop {
-
         // Get the best specimen
-        let b = population.iter().min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN")).unwrap();
+        let b = population
+            .iter()
+            .min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"))
+            .unwrap();
 
         // get rid of unnecessary instructions
         let best = quick_dce(convergence, &b.1);
@@ -320,7 +342,10 @@ pub fn stochastic_search(
 
         let mut next_generation: Vec<(f64, BasicBlock)> = vec![];
 
-        for s in best.spawn(instructions.to_vec(), constants.to_vec(), vars.to_vec()).take(5000000) {
+        for s in best
+            .spawn(instructions.to_vec(), constants.to_vec(), vars.to_vec())
+            .take(5000000)
+        {
             let fit = convergence(&s);
             if fit < b.0 {
                 let d = quick_dce(convergence, &s);

@@ -1,5 +1,5 @@
-use std::process;
 use std::fs;
+use std::process;
 
 extern crate argh;
 use argh::FromArgs;
@@ -19,9 +19,9 @@ use crate::machine::{get_a, get_b, get_x, get_y, set_a, set_b, set_x, set_y};
 
 use crate::search::BasicBlock;
 use crate::search::{differance, equivalence};
-use crate::search::{exhaustive_search, stochastic_search, optimize};
+use crate::search::{exhaustive_search, optimize, stochastic_search};
 
-use crate::test::{Parameter, DeParameter, Test, TestRun, DeTestRun, sanity};
+use crate::test::{sanity, DeParameter, DeTestRun, Parameter, Test, TestRun};
 
 struct MOpt {
     name: &'static str,
@@ -40,56 +40,111 @@ struct VOpt {
 fn registers8080(regname: &Option<String>) -> Option<Parameter> {
     if let Some(r) = regname {
         match r.as_str() {
-            "a" => { Some(Parameter { name: "a".to_string(), address: None, cost: None, getter: get_a, setter: set_a }) }
-            "b" => { Some(Parameter { name: "b".to_string(), address: None, cost: None, getter: get_b, setter: set_b }) }
+            "a" => Some(Parameter {
+                name: "a".to_string(),
+                address: None,
+                cost: None,
+                getter: get_a,
+                setter: set_a,
+            }),
+            "b" => Some(Parameter {
+                name: "b".to_string(),
+                address: None,
+                cost: None,
+                getter: get_b,
+                setter: set_b,
+            }),
             // TODO: The rest of the registers for this architecture
-            _ => { None }
+            _ => None,
         }
+    } else {
+        None
     }
-    else{None}
 }
 
 fn registers6502(regname: &Option<String>) -> Option<Parameter> {
     if let Some(r) = regname {
         match r.as_str() {
-            "a" => { Some(Parameter { name: "a".to_string(), address: None, cost: None, getter: get_a, setter: set_a }) }
-            "x" => { Some(Parameter { name: "x".to_string(), address: None, cost: None, getter: get_x, setter: set_x }) }
-            "y" => { Some(Parameter { name: "y".to_string(), address: None, cost: None, getter: get_y, setter: set_y }) }
+            "a" => Some(Parameter {
+                name: "a".to_string(),
+                address: None,
+                cost: None,
+                getter: get_a,
+                setter: set_a,
+            }),
+            "x" => Some(Parameter {
+                name: "x".to_string(),
+                address: None,
+                cost: None,
+                getter: get_x,
+                setter: set_x,
+            }),
+            "y" => Some(Parameter {
+                name: "y".to_string(),
+                address: None,
+                cost: None,
+                getter: get_y,
+                setter: set_y,
+            }),
             // TODO: The rest of the registers for this architecture
-            _ => { None }
+            _ => None,
         }
+    } else {
+        None
     }
-    else{None}
 }
 
 fn registers6800(regname: &Option<String>) -> Option<Parameter> {
     if let Some(r) = regname {
         match r.as_str() {
-            "a" => { Some(Parameter { name: "a".to_string(), address: None, cost: None, getter: get_a, setter: set_a }) }
-            "b" => { Some(Parameter { name: "b".to_string(), address: None, cost: None, getter: get_b, setter: set_b }) }
+            "a" => Some(Parameter {
+                name: "a".to_string(),
+                address: None,
+                cost: None,
+                getter: get_a,
+                setter: set_a,
+            }),
+            "b" => Some(Parameter {
+                name: "b".to_string(),
+                address: None,
+                cost: None,
+                getter: get_b,
+                setter: set_b,
+            }),
             // TODO: The rest of the registers for this architecture
-            _ => { None }
+            _ => None,
         }
+    } else {
+        None
     }
-    else{None}
 }
 
 fn registers_pic(regname: &Option<String>) -> Option<Parameter> {
     if let Some(r) = regname {
         match r.as_str() {
             // just use the stter & getter for the A register
-            "w" => { Some(Parameter { name: "w".to_string(), address: None, cost: None, getter: get_a, setter: set_a }) }
-            _ => { None }
+            "w" => Some(Parameter {
+                name: "w".to_string(),
+                address: None,
+                cost: None,
+                getter: get_a,
+                setter: set_a,
+            }),
+            _ => None,
         }
+    } else {
+        None
     }
-    else{None}
 }
 
 fn sanity_i8080(dp: &DeParameter) -> Parameter {
     if let Some(dp) = registers8080(&dp.register) {
         dp
     } else {
-        panic!("No such register as {} for the specified architecture.", dp.register.as_ref().unwrap());
+        panic!(
+            "No such register as {} for the specified architecture.",
+            dp.register.as_ref().unwrap()
+        );
     }
 }
 
@@ -97,7 +152,10 @@ fn sanity_mos6502(dp: &DeParameter) -> Parameter {
     if let Some(dp) = registers6502(&dp.register) {
         dp
     } else {
-        panic!("No such register as {} for the specified architecture.", dp.register.as_ref().unwrap());
+        panic!(
+            "No such register as {} for the specified architecture.",
+            dp.register.as_ref().unwrap()
+        );
     }
 }
 
@@ -105,7 +163,10 @@ fn sanity_6800(dp: &DeParameter) -> Parameter {
     if let Some(dp) = registers6800(&dp.register) {
         dp
     } else {
-        panic!("No such register as {} for the specified architecture.", dp.register.as_ref().unwrap());
+        panic!(
+            "No such register as {} for the specified architecture.",
+            dp.register.as_ref().unwrap()
+        );
     }
 }
 
@@ -113,7 +174,10 @@ fn sanity_pic(dp: &DeParameter) -> Parameter {
     if let Some(dp) = registers_pic(&dp.register) {
         dp
     } else {
-        panic!("No such register as {} for the specified architecture.", dp.register.as_ref().unwrap());
+        panic!(
+            "No such register as {} for the specified architecture.",
+            dp.register.as_ref().unwrap()
+        );
     }
 }
 
@@ -210,11 +274,11 @@ const V_OPTS: [VOpt; 4] = [
 #[derive(FromArgs, PartialEq, Debug)]
 /// Specify the machine you want to generate code for.
 struct Opts {
-    #[argh(option, short='m')]
+    #[argh(option, short = 'm')]
     /// the name of the architecture.
     arch: String,
 
-    #[argh(option, short='f')]
+    #[argh(option, short = 'f')]
     /// file containing the custom test run
     file: Option<String>,
 
@@ -226,7 +290,7 @@ struct Opts {
     /// what kind of search to perform
     search: String,
 
-    #[argh(option,long="in")]
+    #[argh(option, long = "in")]
     /// in variables
     r#in: Vec<String>,
 
@@ -257,17 +321,29 @@ fn function(m: String) -> Vec<Test> {
     let mut test_cases = Vec::new();
     if m == "id" {
         for n in -128..=127 {
-            test_cases.push(Test{ins:vec![n], outs: vec![n]});
+            test_cases.push(Test {
+                ins: vec![n],
+                outs: vec![n],
+            });
         }
         return test_cases;
     }
     if m == "signum" {
         for n in -128..=-1 {
-            test_cases.push(Test{ins:vec![n], outs: vec![-1]});
+            test_cases.push(Test {
+                ins: vec![n],
+                outs: vec![-1],
+            });
         }
-        test_cases.push(Test{ins:vec![0], outs: vec![0]});
+        test_cases.push(Test {
+            ins: vec![0],
+            outs: vec![0],
+        });
         for n in 1..=127 {
-            test_cases.push(Test{ins:vec![n], outs: vec![1]});
+            test_cases.push(Test {
+                ins: vec![n],
+                outs: vec![1],
+            });
         }
         return test_cases;
     }
@@ -278,7 +354,10 @@ fn function(m: String) -> Vec<Test> {
         if let Some(f) = a.ok() {
             for n in -128_i8..=127 {
                 if let Some(res) = n.checked_mul(f) {
-                    test_cases.push(Test{ins:vec![n], outs: vec![res]});
+                    test_cases.push(Test {
+                        ins: vec![n],
+                        outs: vec![res],
+                    });
                 }
             }
             return test_cases;
@@ -292,7 +371,10 @@ fn function(m: String) -> Vec<Test> {
 
         if let Some(f) = a.ok() {
             for n in 0..=127 {
-                test_cases.push(Test{ins:vec![n], outs: vec![n / f]});
+                test_cases.push(Test {
+                    ins: vec![n],
+                    outs: vec![n / f],
+                });
             }
             return test_cases;
         } else {
@@ -306,7 +388,10 @@ fn function(m: String) -> Vec<Test> {
         if let Some(f) = a.ok() {
             for n in -128_i8..=127 {
                 if let Some(res) = n.checked_add(f) {
-                    test_cases.push(Test{ins:vec![n], outs: vec![res]});
+                    test_cases.push(Test {
+                        ins: vec![n],
+                        outs: vec![res],
+                    });
                 }
             }
             return test_cases;
@@ -326,8 +411,8 @@ fn parse_live_in(arg: String) -> Parameter {
                 setter: v_opt.set,
                 address: None,
                 cost: None,
-                name: arg
-            }
+                name: arg,
+            };
         }
     }
     println!(
@@ -348,8 +433,8 @@ fn parse_live_out<'a>(arg: String) -> Parameter {
                 setter: v_opt.set,
                 address: None,
                 cost: None,
-                name: arg
-            }
+                name: arg,
+            };
         }
     }
     println!("You didn't pick a valid live-out value, so here's the ones I know:");
@@ -379,15 +464,19 @@ fn constants(c: Vec<i8>) -> Vec<i8> {
 
 fn testrun_from_args(opts: &Opts) -> TestRun {
     TestRun {
-        ins: opts.r#in.clone()
+        ins: opts
+            .r#in
+            .clone()
             .into_iter()
             .map(|arg| parse_live_in(arg))
             .collect(),
-        outs: opts.out.clone()
+        outs: opts
+            .out
+            .clone()
             .into_iter()
             .map(|arg| parse_live_out(arg))
             .collect(),
-        tests: function(opts.function.clone().unwrap())
+        tests: function(opts.function.clone().unwrap()),
     }
 }
 
@@ -396,7 +485,7 @@ fn main() {
     let machine = mach(opts.arch.clone());
     let m = machine.0;
     let msan = machine.1;
-    
+
     let testrun = if let Some(path) = opts.file {
         let data = fs::read_to_string(path).expect("Unable to read file");
         let res: DeTestRun = serde_json::from_str(&data).expect("Unable to parse");
