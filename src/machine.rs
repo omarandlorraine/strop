@@ -319,6 +319,11 @@ impl Instruction {
         true
     }
 
+    fn op_daa(&self, s: &mut State) -> bool {
+        s.accumulator = decimal_adjust(s.accumulator, s.carry, s.halfcarry);
+        true
+    }
+
     fn op_dea(&self, s: &mut State) -> bool {
         let (result, _c, z, n, _o, _h) = add_to_reg8(s.accumulator, Some(-1), Some(false));
         s.accumulator = result;
@@ -553,6 +558,7 @@ pub fn motorola6800() -> Vec<Instruction> {
         Instruction::imm("add", Instruction::op_add),
         Instruction::imm("adc", Instruction::op_adc),
         Instruction::inh("asla", Instruction::op_asl),
+        Instruction::inh("daa", Instruction::op_daa),
         Instruction::inh("tab", Instruction::op_tab),
         Instruction::inh("tba", Instruction::op_tba),
         Instruction::inh("rol", Instruction::op_rol),
