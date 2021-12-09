@@ -319,7 +319,7 @@ fn mach(m: String) -> (Vec<Instruction>, fn(&DeParameter) -> Parameter) {
 fn function(m: String) -> Vec<Test> {
     // TODO: test_cases does not need to be mutable..
     let mut test_cases = Vec::new();
-    if m == "id" {
+    if m == *"id" {
         for n in -128..=127 {
             test_cases.push(Test {
                 ins: vec![n],
@@ -328,7 +328,7 @@ fn function(m: String) -> Vec<Test> {
         }
         return test_cases;
     }
-    if m == "signum" {
+    if m == *"signum" {
         for n in -128..=-1 {
             test_cases.push(Test {
                 ins: vec![n],
@@ -347,11 +347,11 @@ fn function(m: String) -> Vec<Test> {
         }
         return test_cases;
     }
-    if m[0..4] == "mult".to_string() {
+    if m[0..4] == *"mult" {
         let arg = m[4..].to_string();
         let a = arg.parse::<i8>();
 
-        if let Some(f) = a.ok() {
+        if let Ok(f) = a {
             for n in -128_i8..=127 {
                 if let Some(res) = n.checked_mul(f) {
                     test_cases.push(Test {
@@ -365,11 +365,11 @@ fn function(m: String) -> Vec<Test> {
             println!("Can't multiply by {}", arg);
         }
     }
-    if m[0..4] == "idiv".to_string() {
+    if m[0..4] == *"idiv" {
         let arg = m[4..].to_string();
         let a = arg.parse::<i8>();
 
-        if let Some(f) = a.ok() {
+        if let Ok(f) = a {
             for n in 0..=127 {
                 test_cases.push(Test {
                     ins: vec![n],
@@ -381,11 +381,11 @@ fn function(m: String) -> Vec<Test> {
             println!("Can't divide by {}", arg);
         }
     }
-    if m[0..3] == "add".to_string() {
+    if m[0..3] == *"add" {
         let arg = m[3..].to_string();
         let a = arg.parse::<i8>();
 
-        if let Some(f) = a.ok() {
+        if let Ok(f) = a {
             for n in -128_i8..=127 {
                 if let Some(res) = n.checked_add(f) {
                     test_cases.push(Test {
@@ -425,7 +425,7 @@ fn parse_live_in(arg: String) -> Parameter {
     process::exit(1);
 }
 
-fn parse_live_out<'a>(arg: String) -> Parameter {
+fn parse_live_out(arg: String) -> Parameter {
     for v_opt in &V_OPTS {
         if v_opt.name == arg {
             return Parameter {
@@ -468,13 +468,13 @@ fn testrun_from_args(opts: &Opts) -> TestRun {
             .r#in
             .clone()
             .into_iter()
-            .map(|arg| parse_live_in(arg))
+            .map(parse_live_in)
             .collect(),
         outs: opts
             .out
             .clone()
             .into_iter()
-            .map(|arg| parse_live_out(arg))
+            .map(parse_live_out)
             .collect(),
         tests: function(opts.function.clone().unwrap()),
     }
@@ -497,7 +497,7 @@ fn main() {
     if opts.search == "exh" {
         let found_it = |prog: BasicBlock| {
             if equivalence(prog.clone(), &testrun) {
-                disassemble(prog.clone());
+                disassemble(prog);
                 true
             } else {
                 false

@@ -61,9 +61,7 @@ fn decimal_adjust(
         if val & 0x0f > 0x09 {
             return Some(0x06);
         }
-        if flag.is_none() {
-            return None;
-        }
+        flag?;
         if flag.unwrap_or(false) {
             return Some(0x06);
         }
@@ -73,11 +71,7 @@ fn decimal_adjust(
     if let Some(a) = accumulator {
         if let Some(right) = nybble(a, halfcarry) {
             let ar = a + right;
-            if let Some(left) = nybble(ar >> 4, carry) {
-                Some(ar + (left << 4))
-            } else {
-                None
-            }
+            nybble(ar >> 4, carry).map(|left| ar + (left << 4))
         } else {
             None
         }
@@ -198,7 +192,7 @@ impl Instruction {
                 vec![*self]
             }
             AddressingMode::Immediate(_) => (*constants
-                .into_iter()
+                .iter()
                 .map(|c| Instruction {
                     opname: self.opname,
                     operation: self.operation,
@@ -208,7 +202,7 @@ impl Instruction {
                 .collect::<Vec<Instruction>>())
             .to_vec(),
             AddressingMode::Absolute(_) => (*vars
-                .into_iter()
+                .iter()
                 .map(|c| Instruction {
                     opname: self.opname,
                     operation: self.operation,
