@@ -17,6 +17,7 @@ pub struct Instruction {
     dst: AddressingMode,
 }
 
+#[allow(clippy::many_single_char_names)]
 pub fn add_to_reg8(
     reg: Option<i8>,
     a: Option<i8>,
@@ -244,6 +245,7 @@ impl Instruction {
         }
     }
 
+    #[allow(clippy::many_single_char_names)]
     fn op_aba(&self, s: &mut State) -> bool {
         // It looks like the ABA instruction of the 6800 doesn't use the carry flag.
         let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, s.reg_b, Some(false));
@@ -256,6 +258,7 @@ impl Instruction {
         true
     }
 
+    #[allow(clippy::many_single_char_names)]
     fn op_add(&self, s: &mut State) -> bool {
         let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s), Some(false));
         s.accumulator = result;
@@ -274,6 +277,7 @@ impl Instruction {
         true
     }
 
+    #[allow(clippy::many_single_char_names)]
     fn op_adc(&self, s: &mut State) -> bool {
         let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s), s.carry);
         s.accumulator = result;
@@ -285,6 +289,7 @@ impl Instruction {
         true
     }
 
+    #[allow(clippy::many_single_char_names)]
     fn op_adc_dp(&self, s: &mut State) -> bool {
         // TODO: Check decimal flag here.
         let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s), s.carry);
