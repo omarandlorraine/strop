@@ -82,3 +82,19 @@ any register-to-register add instruction. I find that the current iteration of
 the search algorithm, doesn't seem to come across the appropriate instruction 
 mix. For this reason, the exhaustive search is usually better than the 
 stochastic one for the 6502. At least, for now!
+
+You might need something other than the miscellaneous built-in functions that
+I've decided to put in. You might want to define your own functions. If you can
+generate an appropriate JSON file, you can pass it to strop and have strop
+generate the code that satisfies all test cases in the file. See the
+`examples/` folder for examples. 
+
+    strop --search exh -m motorola6800 -f examples/decimal_adjust.json
+
+produces the following code,
+
+    add #0
+	daa
+
+As to why the `add #0` was generated, my guess is that `daa` depends on the
+state of certain flags, and `add #0` sets these flags right.
