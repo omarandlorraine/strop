@@ -19,6 +19,37 @@ pub struct Instruction {
     src: AddressingMode,
 }
 
+pub fn bitwise_and(
+    reg: Option<i8>,
+    a: Option<i8>
+) -> (
+    Option<i8>,
+    Option<bool>
+) {
+    if let Some(operand) = a {
+        if let Some(r) = reg {
+            return (Some(r & operand), Some(r & operand == 0));
+        }
+    }
+    return (None, None);
+}
+
+pub fn bitwise_xor(
+    reg: Option<i8>,
+    a: Option<i8>
+) -> (
+    Option<i8>,
+    Option<bool>
+) {
+    if let Some(operand) = a {
+        if let Some(r) = reg {
+            return (Some(r ^ operand), Some(r ^ operand == 0));
+        }
+    }
+    return (None, None);
+}
+
+
 #[allow(clippy::many_single_char_names)]
 pub fn add_to_reg8(
     reg: Option<i8>,
@@ -280,7 +311,7 @@ impl Instruction {
                     m.heap.insert(address, val);
                 }
                 else {
-                    m.accumulator  = val;
+                    m.accumulator = val;
                 }
             }
         }
@@ -308,6 +339,13 @@ impl Instruction {
         s.zero = z;
         s.overflow = o;
         s.halfcarry = h;
+        true
+    }
+    #[allow(clippy::many_single_char_names)]
+    fn op_and(&self, s: &mut State) -> bool {
+        let (result, z) = bitwise_and(s.accumulator, self.get_datum(s));
+        s.accumulator = result;
+        s.zero = z;
         true
     }
 
@@ -343,6 +381,14 @@ impl Instruction {
         true
     }
 
+    #[allow(clippy::many_single_char_names)]
+    fn op_com(&self, s: &mut State) -> bool {
+        let (result, z) = bitwise_xor(s.accumulator, Some(-1));
+        s.accumulator = result;
+        s.zero = z;
+        true
+    }
+
     fn op_clc(&self, s: &mut State) -> bool {
         s.carry = Some(false);
         true
@@ -356,6 +402,14 @@ impl Instruction {
     fn op_dea(&self, s: &mut State) -> bool {
         let (result, _c, z, n, _o, _h) = add_to_reg8(s.accumulator, Some(-1), Some(false));
         s.accumulator = result;
+        s.zero = z;
+        s.sign = n;
+        true
+    }
+
+    fn op_dec(&self, s: &mut State) -> bool {
+        let (result, _c, z, n, _o, _h) = add_to_reg8(self.get_datum(s), Some(-1), Some(false));
+        s.x8 = result;
         s.zero = z;
         s.sign = n;
         true
@@ -380,6 +434,14 @@ impl Instruction {
     fn op_ina(&self, s: &mut State) -> bool {
         let (result, _c, z, n, _o, _h) = add_to_reg8(s.accumulator, Some(1), Some(false));
         s.accumulator = result;
+        s.zero = z;
+        s.sign = n;
+        true
+    }
+
+    fn op_inc(&self, s: &mut State) -> bool {
+        let (result, _c, z, n, _o, _h) = add_to_reg8(self.get_datum(s), Some(1), Some(false));
+        self.write_datum(s, result);
         s.zero = z;
         s.sign = n;
         true
@@ -420,6 +482,11 @@ impl Instruction {
         let (val, c) = rotate_right_thru_carry(s.accumulator, Some(false));
         s.accumulator = val;
         s.carry = c;
+        true
+    }
+
+    fn op_mov(&self, s: &mut State) -> bool {
+        self.write_datum(s, self.get_datum(s));
         true
     }
 
@@ -658,13 +725,43 @@ pub fn iz80() -> Vec<Instruction> {
 }
 
 pub fn pic12() -> Vec<Instruction> {
-    // Not sure yet how we're going to deal with the PIC instructions that
-    // either write the result to W or back to the memory.
-    vec![Instruction::abs("clrf", Instruction::op_stz)]
+    vec![
+        Instruction::pic_wf("addwf", Instruction::op_add),
+        Instruction::imm("andlw", Instruction::op_and),
+        Instruction::pic_wf("andwf", Instruction::op_and),
+        // TODO: bcf bsf btfsc btfss (call) 
+        Instruction::pic_wf("clr  ", Instruction::op_stz),
+        // TODO: (clrwdt)
+        Instruction::abs("comf ", Instruction::op_com),
+        Instruction::abs("decf ", Instruction::op_dec),
+        // TODO: decfsz (goto)
+        Instruction::abs("incf ", Instruction::op_inc),
+        // TODO: incfsz iorlw iorwf
+        Instruction::abs("movf ", Instruction::op_mov),
+        Instruction::imm("movlw", Instruction::op_lda),
+        Instruction::pic_wf("movwf", Instruction::op_sta),
+        // TODO (nop) (option) (retlw)
+        Instruction::abs("rlf  ", Instruction::op_rol),
+        Instruction::abs("rrf  ", Instruction::op_ror),
+        // TODO: (sleep) subwf swapf (tris) xorlw xorwf 
+    ]
 }
 
 pub fn pic14() -> Vec<Instruction> {
-    pic12()
+    // From what I can tell from reading datasheets 41291D.pdf and 41239a.pdf,
+    // these four instructions are the ones that exist in PIC14 and not in
+    // PIC12.
+    // There also are instructions that exist in PIC12 and not in PIC14. They
+    // write to registers which are memory mapped in PIC14. The instructions
+    // include tris and option.
+    vec![
+        Instruction::imm("addlw", Instruction::op_add),
+        // TODO: (retfie) (return)
+        // TODO: sublw
+    ]
+    .into_iter()
+    .chain(pic12())
+    .collect()
 }
 
 pub fn pic16() -> Vec<Instruction> {
