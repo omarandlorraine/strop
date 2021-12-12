@@ -30,13 +30,6 @@ struct MOpt {
     help: &'static str,
 }
 
-struct VOpt {
-    name: &'static str,
-    set: fn(&mut State, i8),
-    get: fn(&State) -> Option<i8>,
-    help: &'static str,
-}
-
 fn registers8080(regname: &Option<String>) -> Option<Parameter> {
     if let Some(r) = regname {
         match r.as_str() {
@@ -244,33 +237,6 @@ const M_OPTS: [MOpt; 10] = [
     },
 ];
 
-const V_OPTS: [VOpt; 4] = [
-    VOpt {
-        name: "a",
-        set: set_a,
-        get: get_a,
-        help: "The Accumulator",
-    },
-    VOpt {
-        name: "b",
-        set: set_b,
-        get: get_b,
-        help: "The B register",
-    },
-    VOpt {
-        name: "x",
-        set: set_x,
-        get: get_x,
-        help: "The X register",
-    },
-    VOpt {
-        name: "y",
-        set: set_y,
-        get: get_y,
-        help: "The Y register",
-    },
-];
-
 #[derive(FromArgs, PartialEq, Debug)]
 /// Specify the machine you want to generate code for.
 struct Opts {
@@ -403,47 +369,6 @@ fn function(m: String) -> Vec<Test> {
     process::exit(1);
 }
 
-fn parse_live_in(arg: String) -> Parameter {
-    for v_opt in &V_OPTS {
-        if v_opt.name == arg {
-            return Parameter {
-                getter: v_opt.get,
-                setter: v_opt.set,
-                address: None,
-                cost: None,
-                name: arg,
-            };
-        }
-    }
-    println!(
-        "I don't understand \"{}\" as a live-in value; here are the ones I know:",
-        arg
-    );
-    for v_opt in &V_OPTS {
-        println!("\t{}  {}", format!("{:>12}", v_opt.name), v_opt.help);
-    }
-    process::exit(1);
-}
-
-fn parse_live_out(arg: String) -> Parameter {
-    for v_opt in &V_OPTS {
-        if v_opt.name == arg {
-            return Parameter {
-                getter: v_opt.get,
-                setter: v_opt.set,
-                address: None,
-                cost: None,
-                name: arg,
-            };
-        }
-    }
-    println!("You didn't pick a valid live-out value, so here's the ones I know:");
-    for v_opt in &V_OPTS {
-        println!("\t{}  {}", format!("{:>12}", v_opt.name), v_opt.help);
-    }
-    process::exit(1);
-}
-
 fn disassemble(prog: BasicBlock) {
     for p in prog.instructions {
         println!("{}", p);
@@ -462,19 +387,19 @@ fn constants(c: Vec<i8>) -> Vec<i8> {
     c.into_iter().chain(v).collect()
 }
 
-fn testrun_from_args(opts: &Opts) -> TestRun {
+fn testrun_from_args(opts: &Opts, pinj: fn(&DeParameter) -> Parameter) -> TestRun {
     TestRun {
         ins: opts
             .r#in
             .clone()
             .into_iter()
-            .map(parse_live_in)
+            .map(|reg| pinj(&DeParameter{register: Some(reg.clone()), cost: Some(0.0), address: None, name: Some(reg.clone())}))
             .collect(),
         outs: opts
             .out
             .clone()
             .into_iter()
-            .map(parse_live_out)
+            .map(|reg| pinj(&DeParameter{register: Some(reg.clone()), cost: Some(0.0), address: None, name: Some(reg.clone())}))
             .collect(),
         tests: function(opts.function.clone().unwrap()),
     }
@@ -491,7 +416,7 @@ fn main() {
         let res: DeTestRun = serde_json::from_str(&data).expect("Unable to parse");
         sanity(&res, msan)
     } else {
-        testrun_from_args(&opts)
+        testrun_from_args(&opts, msan)
     };
 
     if opts.search == "exh" {
