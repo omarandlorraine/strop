@@ -1,4 +1,6 @@
+use rand::thread_rng;
 use rand::seq::SliceRandom;
+use crate::machine::rand::Rng;
 use std::collections::HashMap;
 extern crate rand;
 
@@ -7,6 +9,7 @@ pub enum AddressingMode {
     Implicit,
     Immediate(i8),
     Absolute(u16),
+    PicWF(bool, u16),
 }
 
 #[derive(Clone, Copy)]
@@ -14,7 +17,6 @@ pub struct Instruction {
     opname: &'static str,
     pub operation: fn(&Instruction, &mut State) -> bool,
     src: AddressingMode,
-    dst: AddressingMode,
 }
 
 #[allow(clippy::many_single_char_names)]
@@ -133,7 +135,6 @@ impl Instruction {
             opname,
             operation,
             src: AddressingMode::Implicit,
-            dst: AddressingMode::Implicit,
         }
     }
 
@@ -145,7 +146,6 @@ impl Instruction {
             opname,
             operation,
             src: AddressingMode::Immediate(0),
-            dst: AddressingMode::Immediate(0),
         }
     }
 
@@ -157,11 +157,32 @@ impl Instruction {
             opname,
             operation,
             src: AddressingMode::Absolute(0),
-            dst: AddressingMode::Absolute(0),
+        }
+    }
+
+    pub fn pic_wf(
+        opname: &'static str,
+        operation: for<'r, 's> fn(&'r Instruction, &'s mut State) -> bool,
+    ) -> Instruction {
+        Instruction {
+            opname,
+            operation,
+            src: AddressingMode::PicWF(false, 0),
         }
     }
 
     pub fn randomize(&mut self, constants: &Vec<i8>, vars: &Vec<u16>) {
+
+        fn address(vars: &Vec<u16>) -> u16 {
+            if let Some(r) = vars.choose(&mut rand::thread_rng()) {
+                // If there's any variables, then pick one.
+                *r
+            } else {
+                // Otherwise pick any random address. (this is unlikely to be any good)
+                rand::random()
+            }
+        }
+
         match self.src {
             AddressingMode::Implicit => {
                 self.src = AddressingMode::Implicit;
@@ -176,13 +197,11 @@ impl Instruction {
                 }
             }
             AddressingMode::Absolute(_) => {
-                if let Some(r) = vars.choose(&mut rand::thread_rng()) {
-                    // If there's any variables, then pick one.
-                    self.src = AddressingMode::Absolute(*r);
-                } else {
-                    // Otherwise pick any random address. (this is unlikely to be any good)
-                    self.src = AddressingMode::Absolute(rand::random());
-                }
+                self.src = AddressingMode::Absolute(address(vars));
+            }
+            AddressingMode::PicWF(_, _) => {
+                let mut rng = thread_rng();
+                self.src = AddressingMode::PicWF(rng.gen_bool(0.5), address(vars));
             }
         }
     }
@@ -198,20 +217,27 @@ impl Instruction {
                     opname: self.opname,
                     operation: self.operation,
                     src: AddressingMode::Immediate(*c),
-                    dst: AddressingMode::Immediate(*c),
                 })
                 .collect::<Vec<Instruction>>())
-            .to_vec(),
+                .to_vec(),
             AddressingMode::Absolute(_) => (*vars
                 .iter()
                 .map(|c| Instruction {
                     opname: self.opname,
                     operation: self.operation,
                     src: AddressingMode::Absolute(*c),
-                    dst: AddressingMode::Absolute(*c),
                 })
                 .collect::<Vec<Instruction>>())
-            .to_vec(),
+                .to_vec(),
+            AddressingMode::PicWF(_, _) => (*vars
+                .iter()
+                .map(|c| Instruction {
+                    opname: self.opname,
+                    operation: self.operation,
+                    src: AddressingMode::Absolute(*c),
+                })
+                .collect::<Vec<Instruction>>())
+                .to_vec(),
         }
     }
 
@@ -228,11 +254,18 @@ impl Instruction {
                     None
                 }
             }
+            AddressingMode::PicWF(_d, address) => {
+                if let Some(x) = m.heap.get(&address) {
+                    *x
+                } else {
+                    None
+                }
+            }
         }
     }
 
     fn write_datum(&self, m: &mut State, val: Option<i8>) {
-        match self.dst {
+        match self.src {
             AddressingMode::Implicit => {
                 panic!();
             }
@@ -241,6 +274,14 @@ impl Instruction {
             }
             AddressingMode::Absolute(address) => {
                 m.heap.insert(address, val);
+            }
+            AddressingMode::PicWF(f, address) => {
+                if f {
+                    m.heap.insert(address, val);
+                }
+                else {
+                    m.accumulator  = val;
+                }
             }
         }
     }
@@ -471,6 +512,13 @@ impl std::fmt::Display for Instruction {
             }
             AddressingMode::Absolute(address) => {
                 write!(f, "\t{} {}", self.opname, address)
+            }
+            AddressingMode::PicWF(d, address) => {
+                if d {
+                    write!(f, "\t{} {},d", self.opname, address)
+                } else {
+                    write!(f, "\t{} {}", self.opname, address)
+                }
             }
         }
     }
