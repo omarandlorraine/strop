@@ -12,10 +12,16 @@ architectures, and some of the instructions have been implemented for some of
 them. But I don't want to say they're *supported* as such yet. Probably the
 best ones are:
 
+- *pic12*, precursor to the '14
+- *pic14*, because I use these in my day job
 - *mos6502*, because why not
 - *mos65c02*, which has all the same instructions as mos6502 plus some extras
 - *motorola6800*, it's related to the 6502s but has an extra register and some
   other goodies
+
+I've tried to pick ones I use or like, and then I've added the low-hanging
+fruit like their relatives and so on. I've also tried to make this extensible,
+and easy to add whatever architectures in the future.
 
 ### Theory of operation
 The basic idea is to generate code better than what traditional optimising
