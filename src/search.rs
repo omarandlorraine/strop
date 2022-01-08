@@ -1,4 +1,4 @@
-use crate::machine::Instruction;
+use crate::machine::{Instruction, set, get};
 use crate::{State, Test, TestRun};
 use rand::prelude::SliceRandom;
 use rand::Rng;
@@ -121,7 +121,7 @@ fn run_program(prog: &BasicBlock, test_run: &TestRun, test: &Test) -> Option<Sta
     let mut s = State::new();
 
     for param in test_run.ins.iter().zip(test.ins.iter()) {
-        (param.0.setter)(&mut s, *param.1);
+        set(&mut s, param.0.register, *param.1);
     }
     if prog
         .instructions
@@ -138,7 +138,7 @@ pub fn equivalence(prog: BasicBlock, test_run: &TestRun) -> bool {
     for tc in test_run.tests.iter() {
         if let Some(state) = run_program(&prog, test_run, &tc) {
             for param in test_run.outs.iter().zip(tc.outs.iter()) {
-                let result = (param.0.getter)(&state);
+                let result = get(&state, param.0.register);
                 if result != Some(*param.1) {
                     return false;
                 }
@@ -155,7 +155,7 @@ pub fn differance(prog: &BasicBlock, test_run: &TestRun) -> f64 {
     for tc in test_run.tests.iter() {
         if let Some(state) = run_program(&prog, test_run, &tc) {
             for param in test_run.outs.iter().zip(tc.outs.iter()) {
-                if let Some(v) = (param.0.getter)(&state) {
+                if let Some(v) = get(&state, param.0.register) {
                     let d: f64 = v.into();
                     let e: f64 = (*param.1).into();
                     ret += (d - e).abs();

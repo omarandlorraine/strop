@@ -15,7 +15,7 @@ use crate::machine::{pic12, pic14, pic16};
 
 use crate::machine::Instruction;
 use crate::machine::State;
-use crate::machine::{get_a, get_b, get_x, get_y, set_a, set_b, set_x, set_y};
+use crate::machine::Register;
 
 use crate::search::BasicBlock;
 use crate::search::{differance, equivalence};
@@ -37,15 +37,13 @@ fn registers8080(regname: &Option<String>) -> Option<Parameter> {
                 name: "a".to_string(),
                 address: None,
                 cost: None,
-                getter: get_a,
-                setter: set_a,
+                register: Register::A
             }),
             "b" => Some(Parameter {
                 name: "b".to_string(),
                 address: None,
                 cost: None,
-                getter: get_b,
-                setter: set_b,
+                register: Register::B
             }),
             // TODO: The rest of the registers for this architecture
             _ => None,
@@ -62,24 +60,20 @@ fn registers6502(regname: &Option<String>) -> Option<Parameter> {
                 name: "a".to_string(),
                 address: None,
                 cost: None,
-                getter: get_a,
-                setter: set_a,
+                register: Register::A
             }),
             "x" => Some(Parameter {
                 name: "x".to_string(),
                 address: None,
                 cost: None,
-                getter: get_x,
-                setter: set_x,
+                register: Register::X
             }),
             "y" => Some(Parameter {
                 name: "y".to_string(),
                 address: None,
                 cost: None,
-                getter: get_y,
-                setter: set_y,
+                register: Register::Y
             }),
-            // TODO: The rest of the registers for this architecture
             _ => None,
         }
     } else {
@@ -94,15 +88,13 @@ fn registers6800(regname: &Option<String>) -> Option<Parameter> {
                 name: "a".to_string(),
                 address: None,
                 cost: None,
-                getter: get_a,
-                setter: set_a,
+                register: Register::A
             }),
             "b" => Some(Parameter {
                 name: "b".to_string(),
                 address: None,
                 cost: None,
-                getter: get_b,
-                setter: set_b,
+                register: Register::B
             }),
             // TODO: The rest of the registers for this architecture
             _ => None,
@@ -120,8 +112,7 @@ fn registers_pic(regname: &Option<String>) -> Option<Parameter> {
                 name: "w".to_string(),
                 address: None,
                 cost: None,
-                getter: get_a,
-                setter: set_a,
+                register: Register::A
             }),
             _ => None,
         }

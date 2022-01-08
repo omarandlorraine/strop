@@ -19,6 +19,11 @@ pub struct Instruction {
     src: AddressingMode,
 }
 
+#[derive(Copy, Clone)]
+pub enum Register {
+    A, B, X, Y
+}
+
 pub fn bitwise_and(
     reg: Option<i8>,
     a: Option<i8>
@@ -624,32 +629,38 @@ impl State {
     }
 }
 
-pub fn set_a(state: &mut State, a: i8) {
-    state.accumulator = Some(a);
-}
-pub fn get_a(state: &State) -> Option<i8> {
-    state.accumulator
-}
-
-pub fn set_b(state: &mut State, b: i8) {
-    state.reg_b = Some(b);
-}
-pub fn get_b(state: &State) -> Option<i8> {
-    state.reg_b
-}
-
-pub fn set_x(state: &mut State, x: i8) {
-    state.x8 = Some(x);
-}
-pub fn get_x(state: &State) -> Option<i8> {
-    state.x8
+pub fn set(state: &mut State, register: Register, val: i8) {
+    match register {
+        Register::A => {
+            state.accumulator = Some(val);
+        }
+        Register::B => {
+            state.reg_b = Some(val);
+        }
+        Register::X => {
+            state.x8 = Some(val);
+        }
+        Register::Y => {
+            state.y8 = Some(val);
+        }
+    }
 }
 
-pub fn set_y(state: &mut State, y: i8) {
-    state.y8 = Some(y);
-}
-pub fn get_y(state: &State) -> Option<i8> {
-    state.y8
+pub fn get(state: &State, register: Register) -> Option<i8> {
+    match register {
+        Register::A => {
+            state.accumulator
+        }
+        Register::B => {
+            state.reg_b
+        }
+        Register::X => {
+            state.x8
+        }
+        Register::Y => {
+            state.y8
+        }
+    }
 }
 
 pub fn motorola6800() -> Vec<Instruction> {
