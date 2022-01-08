@@ -104,8 +104,8 @@ fn decimal_adjust(
 
     if let Some(a) = accumulator {
         if let Some(right) = nybble(a, halfcarry) {
-            let ar = a + right;
-            nybble(ar >> 4, carry).map(|left| ar + (left << 4))
+            let ar = a.wrapping_add(right);
+            nybble(ar >> 4, carry).map(|left| ar.wrapping_add((left << 4)))
         } else {
             None
         }
