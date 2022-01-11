@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use crate::Register;
+use crate::{Register, Machine};
 
 #[derive(Deserialize, Debug)]
 pub struct DeParameter {
@@ -40,10 +40,10 @@ pub struct TestRun {
     pub tests: Vec<Test>,
 }
 
-pub fn sanity(dtr: &DeTestRun, pinj: fn(&DeParameter) -> Parameter) -> TestRun {
+pub fn sanity(dtr: &DeTestRun, mach: Machine) -> TestRun {
     TestRun {
-        ins: dtr.ins.iter().map(pinj).collect(),
-        outs: dtr.outs.iter().map(pinj).collect(),
+        ins: dtr.ins.iter().map(|reg| Parameter{register: mach.register_by_name(&reg.name.as_ref().unwrap()), cost: Some(0.0), address: None, name: reg.name.as_ref().unwrap().clone()}).collect(),
+        outs: dtr.outs.iter().map(|reg| Parameter{register: mach.register_by_name(&reg.name.as_ref().unwrap()), cost: Some(0.0), address: None, name: reg.name.as_ref().unwrap().clone()}).collect(),
         tests: dtr
             .tests
             .iter()

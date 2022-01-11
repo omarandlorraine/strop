@@ -5,6 +5,41 @@ use std::collections::HashMap;
 extern crate rand;
 
 #[derive(Clone, Copy)]
+pub enum Mos6502Variant {
+    Nmos,
+    Ricoh2a03,
+    Cmos,
+    IllegalInstructions,
+}
+
+#[derive(Clone, Copy)]
+pub enum Motorola8BitVariant {
+    Motorola6800,
+    Motorola6801,
+}
+
+#[derive(Clone, Copy)]
+pub enum PicVariant {
+    Pic12, Pic14, Pic16,
+}
+
+#[derive(Clone, Copy)]
+pub enum PreX86Variant {
+    ZilogZ80,
+    I8080,
+    I8085,
+    KR580VM1
+}
+
+#[derive(Clone, Copy)]
+pub enum Machine {
+    Mos6502(Mos6502Variant),
+    Motorola6800(Motorola8BitVariant),
+    Pic(PicVariant),
+    PreX86(PreX86Variant)
+}
+
+#[derive(Clone, Copy)]
 pub enum AddressingMode {
     Implicit,
     Immediate(i8),
@@ -22,6 +57,42 @@ pub struct Instruction {
 #[derive(Copy, Clone)]
 pub enum Register {
     A, B, X, Y
+}
+
+impl Machine {
+    pub fn register_by_name(self, name: &str) -> Register {
+        match self {
+            Machine::Mos6502(_) => {
+                match name {
+                    "a" => { Register::A }
+                    "x" => { Register::X }
+                    "y" => { Register::Y }
+                    _ => { panic!("No such register as {}", name); }
+                }
+            }
+            Machine::Motorola6800(_) => {
+                match name {
+                    "a" => { Register::A }
+                    "b" => { Register::B }
+                    _ => { panic!("No such register as {}", name); }
+                }
+            }
+            Machine::Pic(_) => {
+                match name {
+                    "w" => { Register::A }
+                    _ => { panic!("No such register as {}", name); }
+                }
+            }
+            Machine::PreX86(_variant) => {
+                // TODO: fill in for the other variants
+                match name {
+                    "a" => { Register::A }
+                    "b" => { Register::B }
+                    _ => { panic!("No such register as {}", name); }
+                }
+            }
+        }
+    }
 }
 
 pub fn bitwise_and(
