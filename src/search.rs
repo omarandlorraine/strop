@@ -126,7 +126,7 @@ fn run_program(prog: &BasicBlock, test_run: &TestRun, test: &Test) -> Option<Sta
     if prog
         .instructions
         .iter()
-        .fold(true, |valid: bool, i| valid && (i.operation)(i, &mut s))
+        .fold(true, |valid: bool, i| valid && i.operate(&mut s))
     {
         Some(s)
     } else {

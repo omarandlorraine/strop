@@ -15,7 +15,7 @@ pub enum AddressingMode {
 #[derive(Clone, Copy)]
 pub struct Instruction {
     opname: &'static str,
-    pub operation: fn(&Instruction, &mut State) -> bool,
+    pub operation: Operation,
     src: AddressingMode,
 }
 
@@ -162,10 +162,18 @@ fn add_to_reg8_test() {
     assert_eq!(add_to_reg8(None, 3), (None, None, None, None, None));
 }
 
+#[derive(Clone, Copy)]
+pub enum Operation {
+    op_add, op_ror, op_rol, op_sta, op_lda, op_mov, op_inc, op_dec, op_com, op_stz, op_and,
+    op_dea, op_ina, op_sty, op_ldy, op_ldx, op_stx, op_sec, op_clc, op_lsr, op_adc_dp,
+    op_asl, op_tya, op_txa, op_tay, op_tax, op_dey, op_dex, op_inx, op_iny, op_tba, op_tab,
+    op_daa, op_adc, op_aba,
+}
+
 impl Instruction {
     pub fn inh(
         opname: &'static str,
-        operation: for<'r, 's> fn(&'r Instruction, &'s mut State) -> bool,
+        operation: Operation
     ) -> Instruction {
         Instruction {
             opname,
@@ -176,7 +184,7 @@ impl Instruction {
 
     pub fn imm(
         opname: &'static str,
-        operation: for<'r, 's> fn(&'r Instruction, &'s mut State) -> bool,
+        operation: Operation
     ) -> Instruction {
         Instruction {
             opname,
@@ -187,7 +195,7 @@ impl Instruction {
 
     pub fn abs(
         opname: &'static str,
-        operation: for<'r, 's> fn(&'r Instruction, &'s mut State) -> bool,
+        operation: Operation
     ) -> Instruction {
         Instruction {
             opname,
@@ -198,7 +206,7 @@ impl Instruction {
 
     pub fn pic_wf(
         opname: &'static str,
-        operation: for<'r, 's> fn(&'r Instruction, &'s mut State) -> bool,
+        operation: Operation
     ) -> Instruction {
         Instruction {
             opname,
@@ -323,253 +331,252 @@ impl Instruction {
     }
 
     #[allow(clippy::many_single_char_names)]
-    fn op_aba(&self, s: &mut State) -> bool {
-        // It looks like the ABA instruction of the 6800 doesn't use the carry flag.
-        let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, s.reg_b, Some(false));
-        s.accumulator = result;
-        s.sign = n;
-        s.carry = c;
-        s.zero = z;
-        s.overflow = o;
-        s.halfcarry = h;
-        true
-    }
+    pub fn operate(&self, s: &mut State) -> bool {
+        match self.operation {
+            Operation::op_aba => {
+                // It looks like the ABA instruction of the 6800 doesn't use the carry flag.
+                let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, s.reg_b, Some(false));
+                s.accumulator = result;
+                s.sign = n;
+                s.carry = c;
+                s.zero = z;
+                s.overflow = o;
+                s.halfcarry = h;
+                true
+            }
 
-    #[allow(clippy::many_single_char_names)]
-    fn op_add(&self, s: &mut State) -> bool {
-        let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s), Some(false));
-        s.accumulator = result;
-        s.sign = n;
-        s.carry = c;
-        s.zero = z;
-        s.overflow = o;
-        s.halfcarry = h;
-        true
-    }
-    #[allow(clippy::many_single_char_names)]
-    fn op_and(&self, s: &mut State) -> bool {
-        let (result, z) = bitwise_and(s.accumulator, self.get_datum(s));
-        s.accumulator = result;
-        s.zero = z;
-        true
-    }
+            Operation::op_add => {
+                let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s), Some(false));
+                s.accumulator = result;
+                s.sign = n;
+                s.carry = c;
+                s.zero = z;
+                s.overflow = o;
+                s.halfcarry = h;
+                true
+            }
+            Operation::op_and => {
+                let (result, z) = bitwise_and(s.accumulator, self.get_datum(s));
+                s.accumulator = result;
+                s.zero = z;
+                true
+            }
 
-    fn op_asl(&self, s: &mut State) -> bool {
-        let (val, c) = rotate_left_thru_carry(s.accumulator, Some(false));
-        s.accumulator = val;
-        s.carry = c;
-        true
-    }
+            Operation::op_asl => {
+                let (val, c) = rotate_left_thru_carry(s.accumulator, Some(false));
+                s.accumulator = val;
+                s.carry = c;
+                true
+            }
 
-    #[allow(clippy::many_single_char_names)]
-    fn op_adc(&self, s: &mut State) -> bool {
-        let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s), s.carry);
-        s.accumulator = result;
-        s.sign = n;
-        s.carry = c;
-        s.zero = z;
-        s.overflow = o;
-        s.halfcarry = h;
-        true
-    }
+            Operation::op_adc => {
+                let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s), s.carry);
+                s.accumulator = result;
+                s.sign = n;
+                s.carry = c;
+                s.zero = z;
+                s.overflow = o;
+                s.halfcarry = h;
+                true
+            }
 
-    #[allow(clippy::many_single_char_names)]
-    fn op_adc_dp(&self, s: &mut State) -> bool {
-        // TODO: Check decimal flag here.
-        let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s), s.carry);
-        s.accumulator = result;
-        s.sign = n;
-        s.carry = c;
-        s.zero = z;
-        s.overflow = o;
-        s.halfcarry = h;
-        true
-    }
+            Operation::op_adc_dp => {
+                // TODO: Check decimal flag here.
+                let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s), s.carry);
+                s.accumulator = result;
+                s.sign = n;
+                s.carry = c;
+                s.zero = z;
+                s.overflow = o;
+                s.halfcarry = h;
+                true
+            }
 
-    #[allow(clippy::many_single_char_names)]
-    fn op_com(&self, s: &mut State) -> bool {
-        let (result, z) = bitwise_xor(s.accumulator, Some(-1));
-        s.accumulator = result;
-        s.zero = z;
-        true
-    }
+            Operation::op_com => {
+                let (result, z) = bitwise_xor(s.accumulator, Some(-1));
+                s.accumulator = result;
+                s.zero = z;
+                true
+            }
 
-    fn op_clc(&self, s: &mut State) -> bool {
-        s.carry = Some(false);
-        true
-    }
+            Operation::op_clc => {
+                s.carry = Some(false);
+                true
+            }
 
-    fn op_daa(&self, s: &mut State) -> bool {
-        s.accumulator = decimal_adjust(s.accumulator, s.carry, s.halfcarry);
-        true
-    }
+            Operation::op_daa => {
+                s.accumulator = decimal_adjust(s.accumulator, s.carry, s.halfcarry);
+                true
+            }
 
-    fn op_dea(&self, s: &mut State) -> bool {
-        let (result, _c, z, n, _o, _h) = add_to_reg8(s.accumulator, Some(-1), Some(false));
-        s.accumulator = result;
-        s.zero = z;
-        s.sign = n;
-        true
-    }
+            Operation::op_dea => {
+                let (result, _c, z, n, _o, _h) = add_to_reg8(s.accumulator, Some(-1), Some(false));
+                s.accumulator = result;
+                s.zero = z;
+                s.sign = n;
+                true
+            }
 
-    fn op_dec(&self, s: &mut State) -> bool {
-        let (result, _c, z, n, _o, _h) = add_to_reg8(self.get_datum(s), Some(-1), Some(false));
-        s.x8 = result;
-        s.zero = z;
-        s.sign = n;
-        true
-    }
+            Operation::op_dec => {
+                let (result, _c, z, n, _o, _h) = add_to_reg8(self.get_datum(s), Some(-1), Some(false));
+                s.x8 = result;
+                s.zero = z;
+                s.sign = n;
+                true
+            }
 
-    fn op_dex(&self, s: &mut State) -> bool {
-        let (result, _c, z, n, _o, _h) = add_to_reg8(s.x8, Some(-1), Some(false));
-        s.x8 = result;
-        s.zero = z;
-        s.sign = n;
-        true
-    }
+            Operation::op_dex => {
+                let (result, _c, z, n, _o, _h) = add_to_reg8(s.x8, Some(-1), Some(false));
+                s.x8 = result;
+                s.zero = z;
+                s.sign = n;
+                true
+            }
 
-    fn op_dey(&self, s: &mut State) -> bool {
-        let (result, _c, z, n, _o, _h) = add_to_reg8(s.y8, Some(-1), Some(false));
-        s.y8 = result;
-        s.zero = z;
-        s.sign = n;
-        true
-    }
+            Operation::op_dey => {
+                let (result, _c, z, n, _o, _h) = add_to_reg8(s.y8, Some(-1), Some(false));
+                s.y8 = result;
+                s.zero = z;
+                s.sign = n;
+                true
+            }
 
-    fn op_ina(&self, s: &mut State) -> bool {
-        let (result, _c, z, n, _o, _h) = add_to_reg8(s.accumulator, Some(1), Some(false));
-        s.accumulator = result;
-        s.zero = z;
-        s.sign = n;
-        true
-    }
+            Operation::op_ina => {
+                let (result, _c, z, n, _o, _h) = add_to_reg8(s.accumulator, Some(1), Some(false));
+                s.accumulator = result;
+                s.zero = z;
+                s.sign = n;
+                true
+            }
 
-    fn op_inc(&self, s: &mut State) -> bool {
-        let (result, _c, z, n, _o, _h) = add_to_reg8(self.get_datum(s), Some(1), Some(false));
-        self.write_datum(s, result);
-        s.zero = z;
-        s.sign = n;
-        true
-    }
+            Operation::op_inc => {
+                let (result, _c, z, n, _o, _h) = add_to_reg8(self.get_datum(s), Some(1), Some(false));
+                self.write_datum(s, result);
+                s.zero = z;
+                s.sign = n;
+                true
+            }
 
-    fn op_inx(&self, s: &mut State) -> bool {
-        let (result, _c, z, n, _o, _h) = add_to_reg8(s.x8, Some(1), Some(false));
-        s.x8 = result;
-        s.zero = z;
-        s.sign = n;
-        true
-    }
+            Operation::op_inx => {
+                let (result, _c, z, n, _o, _h) = add_to_reg8(s.x8, Some(1), Some(false));
+                s.x8 = result;
+                s.zero = z;
+                s.sign = n;
+                true
+            }
 
-    fn op_iny(&self, s: &mut State) -> bool {
-        let (result, _c, z, n, _o, _h) = add_to_reg8(s.y8, Some(1), Some(false));
-        s.y8 = result;
-        s.zero = z;
-        s.sign = n;
-        true
-    }
+            Operation::op_iny => {
+                let (result, _c, z, n, _o, _h) = add_to_reg8(s.y8, Some(1), Some(false));
+                s.y8 = result;
+                s.zero = z;
+                s.sign = n;
+                true
+            }
 
-    fn op_lda(&self, s: &mut State) -> bool {
-        s.accumulator = self.get_datum(s);
-        true
-    }
+            Operation::op_lda => {
+                s.accumulator = self.get_datum(s);
+                true
+            }
 
-    fn op_ldx(&self, s: &mut State) -> bool {
-        s.x8 = self.get_datum(s);
-        true
-    }
+            Operation::op_ldx => {
+                s.x8 = self.get_datum(s);
+                true
+            }
 
-    fn op_ldy(&self, s: &mut State) -> bool {
-        s.y8 = self.get_datum(s);
-        true
-    }
+            Operation::op_ldy => {
+                s.y8 = self.get_datum(s);
+                true
+            }
 
-    fn op_lsr(&self, s: &mut State) -> bool {
-        let (val, c) = rotate_right_thru_carry(s.accumulator, Some(false));
-        s.accumulator = val;
-        s.carry = c;
-        true
-    }
+            Operation::op_lsr => {
+                let (val, c) = rotate_right_thru_carry(s.accumulator, Some(false));
+                s.accumulator = val;
+                s.carry = c;
+                true
+            }
 
-    fn op_mov(&self, s: &mut State) -> bool {
-        self.write_datum(s, self.get_datum(s));
-        true
-    }
+            Operation::op_mov => {
+                self.write_datum(s, self.get_datum(s));
+                true
+            }
 
-    fn op_rol(&self, s: &mut State) -> bool {
-        let (val, c) = rotate_left_thru_carry(s.accumulator, s.carry);
-        s.accumulator = val;
-        s.carry = c;
-        true
-    }
+            Operation::op_rol => {
+                let (val, c) = rotate_left_thru_carry(s.accumulator, s.carry);
+                s.accumulator = val;
+                s.carry = c;
+                true
+            }
 
-    fn op_ror(&self, s: &mut State) -> bool {
-        let (val, c) = rotate_right_thru_carry(s.accumulator, s.carry);
-        s.accumulator = val;
-        s.carry = c;
-        true
-    }
+            Operation::op_ror => {
+                let (val, c) = rotate_right_thru_carry(s.accumulator, s.carry);
+                s.accumulator = val;
+                s.carry = c;
+                true
+            }
 
-    fn op_sec(&self, s: &mut State) -> bool {
-        s.carry = Some(true);
-        true
-    }
+            Operation::op_sec => {
+                s.carry = Some(true);
+                true
+            }
 
-    fn op_sta(&self, s: &mut State) -> bool {
-        self.write_datum(s, s.accumulator);
-        true
-    }
+            Operation::op_sta => {
+                self.write_datum(s, s.accumulator);
+                true
+            }
 
-    fn op_stx(&self, s: &mut State) -> bool {
-        self.write_datum(s, s.x8);
-        true
-    }
+            Operation::op_stx => {
+                self.write_datum(s, s.x8);
+                true
+            }
 
-    fn op_sty(&self, s: &mut State) -> bool {
-        self.write_datum(s, s.y8);
-        true
-    }
+            Operation::op_sty => {
+                self.write_datum(s, s.y8);
+                true
+            }
 
-    fn op_stz(&self, s: &mut State) -> bool {
-        self.write_datum(s, Some(0));
-        true
-    }
+            Operation::op_stz => {
+                self.write_datum(s, Some(0));
+                true
+            }
 
-    fn op_tab(&self, s: &mut State) -> bool {
-        // TODO: We need to check if this instruction affects flags or not,
-        // I feel like this is an oversight
-        s.reg_b = s.accumulator;
-        true
-    }
+            Operation::op_tab => {
+                // TODO: We need to check if this instruction affects flags or not,
+                // I feel like this is an oversight
+                s.reg_b = s.accumulator;
+                true
+            }
 
-    fn op_tax(&self, s: &mut State) -> bool {
-        // TODO: This one definitely needs flags.
-        s.x8 = s.accumulator;
-        true
-    }
+            Operation::op_tax => {
+                // TODO: This one definitely needs flags.
+                s.x8 = s.accumulator;
+                true
+            }
 
-    fn op_tay(&self, s: &mut State) -> bool {
-        // TODO: This one definitely needs flags.
-        s.y8 = s.accumulator;
-        true
-    }
+            Operation::op_tay => {
+                // TODO: This one definitely needs flags.
+                s.y8 = s.accumulator;
+                true
+            }
 
-    fn op_tba(&self, s: &mut State) -> bool {
-        // TODO: We need to check if this instruction affects flags or not,
-        // I feel like this is an oversight
-        s.accumulator = s.reg_b;
-        true
-    }
+            Operation::op_tba => {
+                // TODO: We need to check if this instruction affects flags or not,
+                // I feel like this is an oversight
+                s.accumulator = s.reg_b;
+                true
+            }
 
-    fn op_txa(&self, s: &mut State) -> bool {
-        // TODO: This one definitely needs flags.
-        s.accumulator = s.x8;
-        true
-    }
+            Operation::op_txa => {
+                // TODO: This one definitely needs flags.
+                s.accumulator = s.x8;
+                true
+            }
 
-    fn op_tya(&self, s: &mut State) -> bool {
-        // TODO: This one definitely needs flags.
-        s.accumulator = s.y8;
-        true
+            Operation::op_tya => {
+                // TODO: This one definitely needs flags.
+                s.accumulator = s.y8;
+                true
+            }
+        }
     }
 }
 
@@ -665,54 +672,54 @@ pub fn get(state: &State, register: Register) -> Option<i8> {
 
 pub fn motorola6800() -> Vec<Instruction> {
     vec![
-        Instruction::inh("aba", Instruction::op_aba),
-        Instruction::imm("add", Instruction::op_add),
-        Instruction::imm("adc", Instruction::op_adc),
-        Instruction::inh("asla", Instruction::op_asl),
-        Instruction::inh("daa", Instruction::op_daa),
-        Instruction::inh("tab", Instruction::op_tab),
-        Instruction::inh("tba", Instruction::op_tba),
-        Instruction::inh("rol", Instruction::op_rol),
-        Instruction::inh("ror", Instruction::op_ror),
-        Instruction::inh("clc", Instruction::op_clc),
-        Instruction::inh("sec", Instruction::op_sec),
+        Instruction::inh("aba", Operation::op_aba),
+        Instruction::imm("add", Operation::op_add),
+        Instruction::imm("adc", Operation::op_adc),
+        Instruction::inh("asla", Operation::op_asl),
+        Instruction::inh("daa", Operation::op_daa),
+        Instruction::inh("tab", Operation::op_tab),
+        Instruction::inh("tba", Operation::op_tba),
+        Instruction::inh("rol", Operation::op_rol),
+        Instruction::inh("ror", Operation::op_ror),
+        Instruction::inh("clc", Operation::op_clc),
+        Instruction::inh("sec", Operation::op_sec),
     ]
 }
 
 pub fn mos6502() -> Vec<Instruction> {
     vec![
         // TODO: Maybe we should have only one INC instruction, which can randomly go to either X or Y or the other possibilities.
-        Instruction::inh("inx", Instruction::op_inx),
-        Instruction::inh("iny", Instruction::op_iny),
-        Instruction::inh("dex", Instruction::op_dex),
-        Instruction::inh("dey", Instruction::op_dey),
+        Instruction::inh("inx", Operation::op_inx),
+        Instruction::inh("iny", Operation::op_iny),
+        Instruction::inh("dex", Operation::op_dex),
+        Instruction::inh("dey", Operation::op_dey),
         // TODO: Maybe we should have a single transfer instruction as well, which can go to one of tax txa tay tya txs tsx etc.
-        Instruction::inh("tax", Instruction::op_tax),
-        Instruction::inh("tay", Instruction::op_tay),
-        Instruction::inh("txa", Instruction::op_txa),
-        Instruction::inh("tya", Instruction::op_tya),
-        Instruction::inh("asl a", Instruction::op_asl),
-        Instruction::inh("rol", Instruction::op_rol),
-        Instruction::inh("ror", Instruction::op_ror),
-        Instruction::inh("lsr", Instruction::op_lsr),
-        Instruction::inh("clc", Instruction::op_clc),
-        Instruction::inh("sec", Instruction::op_sec),
-        Instruction::imm("adc", Instruction::op_adc_dp),
-        Instruction::abs("adc", Instruction::op_adc_dp),
-        Instruction::abs("lda", Instruction::op_lda),
-        Instruction::abs("sta", Instruction::op_sta),
-        Instruction::abs("ldx", Instruction::op_ldx),
-        Instruction::abs("stx", Instruction::op_stx),
-        Instruction::abs("ldy", Instruction::op_ldy),
-        Instruction::abs("sty", Instruction::op_sty),
+        Instruction::inh("tax", Operation::op_tax),
+        Instruction::inh("tay", Operation::op_tay),
+        Instruction::inh("txa", Operation::op_txa),
+        Instruction::inh("tya", Operation::op_tya),
+        Instruction::inh("asl a", Operation::op_asl),
+        Instruction::inh("rol", Operation::op_rol),
+        Instruction::inh("ror", Operation::op_ror),
+        Instruction::inh("lsr", Operation::op_lsr),
+        Instruction::inh("clc", Operation::op_clc),
+        Instruction::inh("sec", Operation::op_sec),
+        Instruction::imm("adc", Operation::op_adc_dp),
+        Instruction::abs("adc", Operation::op_adc_dp),
+        Instruction::abs("lda", Operation::op_lda),
+        Instruction::abs("sta", Operation::op_sta),
+        Instruction::abs("ldx", Operation::op_ldx),
+        Instruction::abs("stx", Operation::op_stx),
+        Instruction::abs("ldy", Operation::op_ldy),
+        Instruction::abs("sty", Operation::op_sty),
     ]
 }
 
 pub fn mos65c02() -> Vec<Instruction> {
     vec![
-        Instruction::inh("ina", Instruction::op_ina),
-        Instruction::inh("dea", Instruction::op_dea),
-        Instruction::inh("stz", Instruction::op_stz),
+        Instruction::inh("ina", Operation::op_ina),
+        Instruction::inh("dea", Operation::op_dea),
+        Instruction::inh("stz", Operation::op_stz),
     ]
     .into_iter()
     .chain(mos6502())
@@ -737,23 +744,23 @@ pub fn iz80() -> Vec<Instruction> {
 
 pub fn pic12() -> Vec<Instruction> {
     vec![
-        Instruction::pic_wf("addwf", Instruction::op_add),
-        Instruction::imm("andlw", Instruction::op_and),
-        Instruction::pic_wf("andwf", Instruction::op_and),
+        Instruction::pic_wf("addwf", Operation::op_add),
+        Instruction::imm("andlw", Operation::op_and),
+        Instruction::pic_wf("andwf", Operation::op_and),
         // TODO: bcf bsf btfsc btfss (call) 
-        Instruction::pic_wf("clr  ", Instruction::op_stz),
+        Instruction::pic_wf("clr  ", Operation::op_stz),
         // TODO: (clrwdt)
-        Instruction::abs("comf ", Instruction::op_com),
-        Instruction::abs("decf ", Instruction::op_dec),
+        Instruction::abs("comf ", Operation::op_com),
+        Instruction::abs("decf ", Operation::op_dec),
         // TODO: decfsz (goto)
-        Instruction::abs("incf ", Instruction::op_inc),
+        Instruction::abs("incf ", Operation::op_inc),
         // TODO: incfsz iorlw iorwf
-        Instruction::abs("movf ", Instruction::op_mov),
-        Instruction::imm("movlw", Instruction::op_lda),
-        Instruction::pic_wf("movwf", Instruction::op_sta),
+        Instruction::abs("movf ", Operation::op_mov),
+        Instruction::imm("movlw", Operation::op_lda),
+        Instruction::pic_wf("movwf", Operation::op_sta),
         // TODO (nop) (option) (retlw)
-        Instruction::abs("rlf  ", Instruction::op_rol),
-        Instruction::abs("rrf  ", Instruction::op_ror),
+        Instruction::abs("rlf  ", Operation::op_rol),
+        Instruction::abs("rrf  ", Operation::op_ror),
         // TODO: (sleep) subwf swapf (tris) xorlw xorwf 
     ]
 }
@@ -766,7 +773,7 @@ pub fn pic14() -> Vec<Instruction> {
     // write to registers which are memory mapped in PIC14. The instructions
     // include tris and option.
     vec![
-        Instruction::imm("addlw", Instruction::op_add),
+        Instruction::imm("addlw", Operation::op_add),
         // TODO: (retfie) (return)
         // TODO: sublw
     ]
