@@ -42,8 +42,8 @@ pub struct TestRun {
 
 pub fn sanity(dtr: &DeTestRun, mach: Machine) -> TestRun {
     TestRun {
-        ins: dtr.ins.iter().map(|reg| Parameter{register: mach.register_by_name(&reg.name.as_ref().unwrap()), cost: Some(0.0), address: None, name: reg.name.as_ref().unwrap().clone()}).collect(),
-        outs: dtr.outs.iter().map(|reg| Parameter{register: mach.register_by_name(&reg.name.as_ref().unwrap()), cost: Some(0.0), address: None, name: reg.name.as_ref().unwrap().clone()}).collect(),
+        ins: dtr.ins.iter().map(|reg| Parameter{register: mach.register_by_name(reg.name.as_ref().unwrap()), cost: Some(0.0), address: None, name: reg.name.as_ref().unwrap().clone()}).collect(),
+        outs: dtr.outs.iter().map(|reg| Parameter{register: mach.register_by_name(reg.name.as_ref().unwrap()), cost: Some(0.0), address: None, name: reg.name.as_ref().unwrap().clone()}).collect(),
         tests: dtr
             .tests
             .iter()

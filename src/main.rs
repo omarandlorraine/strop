@@ -9,7 +9,7 @@ mod search;
 mod test;
 
 use crate::machine::motorola6800;
-use crate::machine::{i8080, i8085, iz80, z80};
+use crate::machine::{i8080, i8085, z80};
 use crate::machine::{Machine, PreX86Variant, Mos6502Variant, Motorola8BitVariant, PicVariant};
 use crate::machine::{mos6502, mos65c02};
 use crate::machine::{pic12, pic14, pic16};
@@ -20,9 +20,9 @@ use crate::machine::Register;
 
 use crate::search::BasicBlock;
 use crate::search::{differance, equivalence};
-use crate::search::{exhaustive_search, optimize, stochastic_search};
+use crate::search::{optimize, stochastic_search};
 
-use crate::test::{sanity, DeParameter, DeTestRun, Parameter, Test, TestRun};
+use crate::test::{sanity, DeTestRun, Parameter, Test, TestRun};
 
 struct MOpt {
     name: &'static str,
@@ -271,7 +271,7 @@ fn main() {
     };
 
     if opts.search == "exh" {
-        let found_it = |prog: BasicBlock| {
+        let _found_it = |prog: BasicBlock| {
             if equivalence(prog.clone(), &testrun) {
                 disassemble(prog);
                 true
@@ -279,14 +279,14 @@ fn main() {
                 false
             }
         };
-        let vars: Vec<u16> = vec![3, 4, 5];
-        exhaustive_search(&found_it, m, constants(opts.constant), vars);
+        let _vars: Vec<u16> = vec![3, 4, 5];
+        panic!();
     } else if opts.search == "stoc" {
         let convergence = |prog: &BasicBlock| differance(prog, &testrun);
         let vars: Vec<u16> = vec![3, 4, 5];
         let c = constants(opts.constant);
-        let prog = stochastic_search(&convergence, &m, &c, &vars);
-        let opt = optimize(&convergence, &prog, &m, &c, &vars);
+        let prog = stochastic_search(&convergence, msan, &m);
+        let opt = optimize(&convergence, &prog,msan,  &m, &c, &vars);
         disassemble(opt);
     }
 }

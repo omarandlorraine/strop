@@ -1,8 +1,6 @@
-use rand::thread_rng;
-use rand::seq::SliceRandom;
-use crate::machine::rand::Rng;
 use std::collections::HashMap;
 extern crate rand;
+use rand::random;
 
 #[derive(Clone, Copy)]
 pub enum Mos6502Variant {
@@ -51,10 +49,18 @@ pub enum AddressingMode {
 pub struct Instruction {
     opname: &'static str,
     pub operation: Operation,
+    pub randomize: fn(Machine, &mut Instruction),
     src: AddressingMode,
 }
 
-#[derive(Copy, Clone)]
+
+impl std::fmt::Display for Instruction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.operation)
+    }
+}
+
+#[derive(Copy, Debug, Clone)]
 pub enum Register {
     A, B, X, Y
 }
@@ -107,7 +113,7 @@ pub fn bitwise_and(
             return (Some(r & operand), Some(r & operand == 0));
         }
     }
-    return (None, None);
+    (None, None)
 }
 
 pub fn bitwise_xor(
@@ -122,7 +128,7 @@ pub fn bitwise_xor(
             return (Some(r ^ operand), Some(r ^ operand == 0));
         }
     }
-    return (None, None);
+    (None, None)
 }
 
 
@@ -181,7 +187,7 @@ fn decimal_adjust(
     if let Some(a) = accumulator {
         if let Some(right) = nybble(a, halfcarry) {
             let ar = a.wrapping_add(right);
-            nybble(ar >> 4, carry).map(|left| ar.wrapping_add((left << 4)))
+            nybble(ar >> 4, carry).map(|left| ar.wrapping_add(left << 4))
         } else {
             None
         }
@@ -233,12 +239,15 @@ fn add_to_reg8_test() {
     assert_eq!(add_to_reg8(None, 3), (None, None, None, None, None));
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Debug, Copy)]
+#[allow(non_camel_case_types)]
 pub enum Operation {
     op_add, op_ror, op_rol, op_sta, op_lda, op_mov, op_inc, op_dec, op_com, op_stz, op_and,
-    op_dea, op_ina, op_sty, op_ldy, op_ldx, op_stx, op_sec, op_clc, op_lsr, op_adc_dp,
-    op_asl, op_tya, op_txa, op_tay, op_tax, op_dey, op_dex, op_inx, op_iny, op_tba, op_tab,
+    op_sty, op_ldy, op_ldx, op_stx, op_sec, op_clc, op_lsr, op_adc_dp,
+    op_asl, op_tya, op_txa, op_tay, op_tax, op_tba, op_tab,
     op_daa, op_adc, op_aba,
+    Decrement(Register),
+    Increment(Register)
 }
 
 impl Instruction {
@@ -249,6 +258,7 @@ impl Instruction {
         Instruction {
             opname,
             operation,
+            randomize: |_m, _i| (),
             src: AddressingMode::Implicit,
         }
     }
@@ -260,6 +270,7 @@ impl Instruction {
         Instruction {
             opname,
             operation,
+            randomize: |_m, _i| (),
             src: AddressingMode::Immediate(0),
         }
     }
@@ -271,7 +282,20 @@ impl Instruction {
         Instruction {
             opname,
             operation,
+            randomize: |_m, _i| (),
             src: AddressingMode::Absolute(0),
+        }
+    }
+
+    pub fn new(
+        randomize: for<'r> fn(Machine, &'r mut Instruction),
+        operation: Operation
+    ) -> Instruction {
+        Instruction {
+            opname: "bonio", // needs to be removed
+            operation,
+            randomize,
+            src: AddressingMode::Absolute(0), // needs to be removed
         }
     }
 
@@ -282,77 +306,8 @@ impl Instruction {
         Instruction {
             opname,
             operation,
+            randomize: |_m, _i| (),
             src: AddressingMode::PicWF(false, 0),
-        }
-    }
-
-    pub fn randomize(&mut self, constants: &Vec<i8>, vars: &Vec<u16>) {
-
-        fn address(vars: &Vec<u16>) -> u16 {
-            if let Some(r) = vars.choose(&mut rand::thread_rng()) {
-                // If there's any variables, then pick one.
-                *r
-            } else {
-                // Otherwise pick any random address. (this is unlikely to be any good)
-                rand::random()
-            }
-        }
-
-        match self.src {
-            AddressingMode::Implicit => {
-                self.src = AddressingMode::Implicit;
-            }
-            AddressingMode::Immediate(_) => {
-                if let Some(r) = constants.choose(&mut rand::thread_rng()) {
-                    // If there's any constants, then pick one.
-                    self.src = AddressingMode::Immediate(*r);
-                } else {
-                    // Otherwise pick any i8.
-                    self.src = AddressingMode::Immediate(rand::random());
-                }
-            }
-            AddressingMode::Absolute(_) => {
-                self.src = AddressingMode::Absolute(address(vars));
-            }
-            AddressingMode::PicWF(_, _) => {
-                let mut rng = thread_rng();
-                self.src = AddressingMode::PicWF(rng.gen_bool(0.5), address(vars));
-            }
-        }
-    }
-
-    pub fn vectorize(&self, constants: &Vec<i8>, vars: &Vec<u16>) -> Vec<Instruction> {
-        match self.src {
-            AddressingMode::Implicit => {
-                vec![*self]
-            }
-            AddressingMode::Immediate(_) => (*constants
-                .iter()
-                .map(|c| Instruction {
-                    opname: self.opname,
-                    operation: self.operation,
-                    src: AddressingMode::Immediate(*c),
-                })
-                .collect::<Vec<Instruction>>())
-                .to_vec(),
-            AddressingMode::Absolute(_) => (*vars
-                .iter()
-                .map(|c| Instruction {
-                    opname: self.opname,
-                    operation: self.operation,
-                    src: AddressingMode::Absolute(*c),
-                })
-                .collect::<Vec<Instruction>>())
-                .to_vec(),
-            AddressingMode::PicWF(_, _) => (*vars
-                .iter()
-                .map(|c| Instruction {
-                    opname: self.opname,
-                    operation: self.operation,
-                    src: AddressingMode::Absolute(*c),
-                })
-                .collect::<Vec<Instruction>>())
-                .to_vec(),
         }
     }
 
@@ -480,14 +435,6 @@ impl Instruction {
                 true
             }
 
-            Operation::op_dea => {
-                let (result, _c, z, n, _o, _h) = add_to_reg8(s.accumulator, Some(-1), Some(false));
-                s.accumulator = result;
-                s.zero = z;
-                s.sign = n;
-                true
-            }
-
             Operation::op_dec => {
                 let (result, _c, z, n, _o, _h) = add_to_reg8(self.get_datum(s), Some(-1), Some(false));
                 s.x8 = result;
@@ -496,25 +443,17 @@ impl Instruction {
                 true
             }
 
-            Operation::op_dex => {
-                let (result, _c, z, n, _o, _h) = add_to_reg8(s.x8, Some(-1), Some(false));
-                s.x8 = result;
+            Operation::Increment(register) => {
+                let (result, _c, z, n, _o, _h) = add_to_reg8(get(s, register), Some(1), Some(false));
+                set(s, register, result);
                 s.zero = z;
                 s.sign = n;
                 true
             }
 
-            Operation::op_dey => {
-                let (result, _c, z, n, _o, _h) = add_to_reg8(s.y8, Some(-1), Some(false));
-                s.y8 = result;
-                s.zero = z;
-                s.sign = n;
-                true
-            }
-
-            Operation::op_ina => {
-                let (result, _c, z, n, _o, _h) = add_to_reg8(s.accumulator, Some(1), Some(false));
-                s.accumulator = result;
+            Operation::Decrement(register) => {
+                let (result, _c, z, n, _o, _h) = add_to_reg8(get(s, register), Some(-1), Some(false));
+                set(s, register, result);
                 s.zero = z;
                 s.sign = n;
                 true
@@ -523,22 +462,6 @@ impl Instruction {
             Operation::op_inc => {
                 let (result, _c, z, n, _o, _h) = add_to_reg8(self.get_datum(s), Some(1), Some(false));
                 self.write_datum(s, result);
-                s.zero = z;
-                s.sign = n;
-                true
-            }
-
-            Operation::op_inx => {
-                let (result, _c, z, n, _o, _h) = add_to_reg8(s.x8, Some(1), Some(false));
-                s.x8 = result;
-                s.zero = z;
-                s.sign = n;
-                true
-            }
-
-            Operation::op_iny => {
-                let (result, _c, z, n, _o, _h) = add_to_reg8(s.y8, Some(1), Some(false));
-                s.y8 = result;
                 s.zero = z;
                 s.sign = n;
                 true
@@ -651,29 +574,6 @@ impl Instruction {
     }
 }
 
-impl std::fmt::Display for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.src {
-            AddressingMode::Implicit => {
-                write!(f, "\t{}", self.opname)
-            }
-            AddressingMode::Immediate(constant) => {
-                write!(f, "\t{} #{}", self.opname, constant)
-            }
-            AddressingMode::Absolute(address) => {
-                write!(f, "\t{} {}", self.opname, address)
-            }
-            AddressingMode::PicWF(d, address) => {
-                if d {
-                    write!(f, "\t{} {},d", self.opname, address)
-                } else {
-                    write!(f, "\t{} {}", self.opname, address)
-                }
-            }
-        }
-    }
-}
-
 //#[derive(Copy, Clone)]
 pub struct State {
     accumulator: Option<i8>,
@@ -707,19 +607,19 @@ impl State {
     }
 }
 
-pub fn set(state: &mut State, register: Register, val: i8) {
+pub fn set(state: &mut State, register: Register, val: Option<i8>) {
     match register {
         Register::A => {
-            state.accumulator = Some(val);
+            state.accumulator = val;
         }
         Register::B => {
-            state.reg_b = Some(val);
+            state.reg_b = val;
         }
         Register::X => {
-            state.x8 = Some(val);
+            state.x8 = val;
         }
         Register::Y => {
-            state.y8 = Some(val);
+            state.y8 = val;
         }
     }
 }
@@ -758,12 +658,30 @@ pub fn motorola6800() -> Vec<Instruction> {
 }
 
 pub fn mos6502() -> Vec<Instruction> {
+    fn random_inc_dec(_mach: Machine, instr: &mut Instruction) {
+        instr.operation = if random() {
+            // pick between increment or decrement
+            match instr.operation {
+                Operation::Increment(x) => { Operation::Decrement(x) }
+                Operation::Decrement(x) => { Operation::Increment(x) }
+                _ => { panic!(); }
+            }
+        } else {
+            // pick between X and Y
+            // TODO: check if this machine supports inc/dec on accumulator
+            match instr.operation {
+                Operation::Increment(Register::X) => { Operation::Decrement(Register::Y) }
+                Operation::Increment(Register::Y) => { Operation::Decrement(Register::X) }
+                Operation::Decrement(Register::X) => { Operation::Increment(Register::Y) }
+                Operation::Decrement(Register::Y) => { Operation::Increment(Register::X) }
+                _ => { panic!(); }
+            }
+        }
+    }
+
     vec![
         // TODO: Maybe we should have only one INC instruction, which can randomly go to either X or Y or the other possibilities.
-        Instruction::inh("inx", Operation::op_inx),
-        Instruction::inh("iny", Operation::op_iny),
-        Instruction::inh("dex", Operation::op_dex),
-        Instruction::inh("dey", Operation::op_dey),
+        Instruction::new(random_inc_dec, Operation::Increment(Register::X)),
         // TODO: Maybe we should have a single transfer instruction as well, which can go to one of tax txa tay tya txs tsx etc.
         Instruction::inh("tax", Operation::op_tax),
         Instruction::inh("tay", Operation::op_tay),
@@ -788,8 +706,6 @@ pub fn mos6502() -> Vec<Instruction> {
 
 pub fn mos65c02() -> Vec<Instruction> {
     vec![
-        Instruction::inh("ina", Operation::op_ina),
-        Instruction::inh("dea", Operation::op_dea),
         Instruction::inh("stz", Operation::op_stz),
     ]
     .into_iter()
@@ -806,10 +722,6 @@ pub fn i8080() -> Vec<Instruction> {
 }
 
 pub fn i8085() -> Vec<Instruction> {
-    Vec::new()
-}
-
-pub fn iz80() -> Vec<Instruction> {
     Vec::new()
 }
 
