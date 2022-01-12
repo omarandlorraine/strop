@@ -31,24 +31,48 @@ struct MOpt {
     help: &'static str,
 }
 
-const M_OPTS: [MOpt; 9] = [
+const M_OPTS: [MOpt; 13] = [
     MOpt {
-        name: "i8080",
+        name: "8080",
         mach: Machine::PreX86(PreX86Variant::I8080),
         func: i8080,
         help: "Intel 8080",
     },
     MOpt {
-        name: "i8085",
+        name: "8085",
         mach: Machine::PreX86(PreX86Variant::I8085),
         func: i8085,
         help: "Intel 8085",
+    },
+    MOpt {
+        name: "kr580vm1",
+        mach: Machine::PreX86(PreX86Variant::KR580VM1),
+        func: z80,
+        help: "KR580VM1, a Soviet Ukrainian 8080 variant",
+    },
+    MOpt {
+        name: "z80",
+        mach: Machine::PreX86(PreX86Variant::ZilogZ80),
+        func: z80,
+        help: "Zilog Z80",
+    },
+    MOpt {
+        name: "2a03",
+        mach: Machine::Mos6502(Mos6502Variant::Ricoh2a03),
+        func: mos6502,
+        help: "Ricoh 2A03/2A07, which is a 6502 with no decimal mode",
     },
     MOpt {
         name: "6502",
         mach: Machine::Mos6502(Mos6502Variant::Nmos),
         func: mos6502,
         help: "generic 6502",
+    },
+    MOpt {
+        name: "65i02",
+        mach: Machine::Mos6502(Mos6502Variant::IllegalInstructions),
+        func: mos65c02,
+        help: "NMOS 6502, but with illegal instructions like lax and dca",
     },
     MOpt {
         name: "65c02",
@@ -59,6 +83,12 @@ const M_OPTS: [MOpt; 9] = [
     MOpt {
         name: "6800",
         mach: Machine::Motorola6800(Motorola8BitVariant::Motorola6800),
+        func: motorola6800,
+        help: "Motorola 6800",
+    },
+    MOpt {
+        name: "6801",
+        mach: Machine::Motorola6800(Motorola8BitVariant::Motorola6801),
         func: motorola6800,
         help: "Motorola 6800",
     },
@@ -79,12 +109,6 @@ const M_OPTS: [MOpt; 9] = [
         mach: Machine::Pic(PicVariant::Pic16),
         func: pic16,
         help: "PIC16",
-    },
-    MOpt {
-        name: "z80",
-        mach: Machine::PreX86(PreX86Variant::ZilogZ80),
-        func: z80,
-        help: "Zilog Z80",
     },
 ];
 
@@ -128,7 +152,7 @@ fn mach(m: String) -> (Vec<Instruction>, Machine) {
     }
     println!("You didn't pick a valid arch, so here's the ones I know:");
     for m_opt in &M_OPTS {
-        println!("\t{}  {}", format!("{:>12}", m_opt.name), m_opt.help);
+        println!("\t{}  {}", format!("{:>8}", m_opt.name), m_opt.help);
     }
     process::exit(1);
 }
