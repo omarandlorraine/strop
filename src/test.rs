@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use crate::{Register, Machine};
+use crate::{Datum, Machine};
 
 #[derive(Deserialize, Debug)]
 pub struct DeParameter {
@@ -13,7 +13,7 @@ pub struct Parameter {
     pub name: String,
     pub address: Option<u16>,
     pub cost: Option<f64>,
-    pub register: Register
+    pub register: Datum
 }
 
 #[derive(Deserialize, Debug)]

@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use crate::machine::rand::prelude::SliceRandom;
+use crate::machine::rand::Rng;
 extern crate rand;
 use rand::random;
 
@@ -61,39 +63,41 @@ impl std::fmt::Display for Instruction {
 }
 
 #[derive(Copy, Debug, Clone)]
-pub enum Register {
-    A, B, X, Y
+pub enum Datum {
+    A, B, X, Y,
+    Immediate(i8),
+    Absolute(u16),
 }
 
 impl Machine {
-    pub fn register_by_name(self, name: &str) -> Register {
+    pub fn register_by_name(self, name: &str) -> Datum {
         match self {
             Machine::Mos6502(_) => {
                 match name {
-                    "a" => { Register::A }
-                    "x" => { Register::X }
-                    "y" => { Register::Y }
+                    "a" => { Datum::A }
+                    "x" => { Datum::X }
+                    "y" => { Datum::Y }
                     _ => { panic!("No such register as {}", name); }
                 }
             }
             Machine::Motorola6800(_) => {
                 match name {
-                    "a" => { Register::A }
-                    "b" => { Register::B }
+                    "a" => { Datum::A }
+                    "b" => { Datum::B }
                     _ => { panic!("No such register as {}", name); }
                 }
             }
             Machine::Pic(_) => {
                 match name {
-                    "w" => { Register::A }
+                    "w" => { Datum::A }
                     _ => { panic!("No such register as {}", name); }
                 }
             }
             Machine::PreX86(_variant) => {
                 // TODO: fill in for the other variants
                 match name {
-                    "a" => { Register::A }
-                    "b" => { Register::B }
+                    "a" => { Datum::A }
+                    "b" => { Datum::B }
                     _ => { panic!("No such register as {}", name); }
                 }
             }
@@ -245,9 +249,11 @@ pub enum Operation {
     op_add, op_ror, op_rol, op_sta, op_lda, op_mov, op_inc, op_dec, op_com, op_stz, op_and,
     op_sty, op_ldy, op_ldx, op_stx, op_sec, op_clc, op_lsr, op_adc_dp,
     op_asl, op_tya, op_txa, op_tay, op_tax, op_tba, op_tab,
-    op_daa, op_adc, op_aba,
-    Decrement(Register),
-    Increment(Register)
+    op_daa,
+    Decrement(Datum),
+    Increment(Datum),
+    Add(Datum, Datum),
+    AddWithCarry(Datum, Datum),
 }
 
 impl Instruction {
@@ -359,9 +365,9 @@ impl Instruction {
     #[allow(clippy::many_single_char_names)]
     pub fn operate(&self, s: &mut State) -> bool {
         match self.operation {
-            Operation::op_aba => {
-                // It looks like the ABA instruction of the 6800 doesn't use the carry flag.
-                let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, s.reg_b, Some(false));
+
+            Operation::op_add => {
+                let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s), Some(false));
                 s.accumulator = result;
                 s.sign = n;
                 s.carry = c;
@@ -370,10 +376,19 @@ impl Instruction {
                 s.halfcarry = h;
                 true
             }
-
-            Operation::op_add => {
-                let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s), Some(false));
-                s.accumulator = result;
+            Operation::Add(source, destination) => {
+                let (result, c, z, n, o, h) = add_to_reg8(get(s, source), get(s, destination), Some(false));
+                set(s, destination, result);
+                s.sign = n;
+                s.carry = c;
+                s.zero = z;
+                s.overflow = o;
+                s.halfcarry = h;
+                true
+            }
+            Operation::AddWithCarry(source, destination) => {
+                let (result, c, z, n, o, h) = add_to_reg8(get(s, source), get(s, destination), s.carry);
+                set(s, destination, result);
                 s.sign = n;
                 s.carry = c;
                 s.zero = z;
@@ -392,17 +407,6 @@ impl Instruction {
                 let (val, c) = rotate_left_thru_carry(s.accumulator, Some(false));
                 s.accumulator = val;
                 s.carry = c;
-                true
-            }
-
-            Operation::op_adc => {
-                let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s), s.carry);
-                s.accumulator = result;
-                s.sign = n;
-                s.carry = c;
-                s.zero = z;
-                s.overflow = o;
-                s.halfcarry = h;
                 true
             }
 
@@ -607,45 +611,85 @@ impl State {
     }
 }
 
-pub fn set(state: &mut State, register: Register, val: Option<i8>) {
+pub fn set(state: &mut State, register: Datum, val: Option<i8>) {
     match register {
-        Register::A => {
+        Datum::A => {
             state.accumulator = val;
         }
-        Register::B => {
+        Datum::B => {
             state.reg_b = val;
         }
-        Register::X => {
+        Datum::X => {
             state.x8 = val;
         }
-        Register::Y => {
+        Datum::Y => {
             state.y8 = val;
+        }
+        Datum::Immediate(_) => {
+            panic!();
+        }
+        Datum::Absolute(address) => {
+            state.heap.insert(address, val);
         }
     }
 }
 
-pub fn get(state: &State, register: Register) -> Option<i8> {
+pub fn get(state: &State, register: Datum) -> Option<i8> {
     match register {
-        Register::A => {
+        Datum::A => {
             state.accumulator
         }
-        Register::B => {
+        Datum::B => {
             state.reg_b
         }
-        Register::X => {
+        Datum::X => {
             state.x8
         }
-        Register::Y => {
+        Datum::Y => {
             state.y8
         }
+        Datum::Immediate(x) => {
+            Some(x)
+        }
+        Datum::Absolute(address) => {
+            if let Some(x) = state.heap.get(&address) {
+                *x
+            } else {
+                None
+            }
+        }
     }
+}
+
+fn random_immediate() -> Datum {
+    let vs = vec![0, 1, 2, 3, 4];
+    Datum::Immediate(*vs.choose(&mut rand::thread_rng()).unwrap())
 }
 
 pub fn motorola6800() -> Vec<Instruction> {
+    fn random_add(_mach: Machine, instr: &mut Instruction) {
+        fn random_accumulator() -> Datum {
+            if random() {
+                Datum::A
+            } else {
+                Datum::B
+            }
+        }
+
+        fn random_source() -> Datum {
+            // TODO: sort it out
+            random_immediate() 
+        }
+        
+        instr.operation = match rand::thread_rng().gen_range(0, 3) { 
+            0 => { Operation::Add(Datum::B, Datum::A)},
+            1 => { Operation::AddWithCarry(random_source(), random_accumulator())},
+            _ => { Operation::Add(random_source(), random_accumulator())},
+        };
+    }
+    
     vec![
-        Instruction::inh("aba", Operation::op_aba),
-        Instruction::imm("add", Operation::op_add),
-        Instruction::imm("adc", Operation::op_adc),
+        Instruction::new(random_add, Operation::Add(Datum::B, Datum::A)),
         Instruction::inh("asla", Operation::op_asl),
         Instruction::inh("daa", Operation::op_daa),
         Instruction::inh("tab", Operation::op_tab),
@@ -670,10 +714,10 @@ pub fn mos6502() -> Vec<Instruction> {
             // pick between X and Y
             // TODO: check if this machine supports inc/dec on accumulator
             match instr.operation {
-                Operation::Increment(Register::X) => { Operation::Decrement(Register::Y) }
-                Operation::Increment(Register::Y) => { Operation::Decrement(Register::X) }
-                Operation::Decrement(Register::X) => { Operation::Increment(Register::Y) }
-                Operation::Decrement(Register::Y) => { Operation::Increment(Register::X) }
+                Operation::Increment(Datum::X) => { Operation::Decrement(Datum::Y) }
+                Operation::Increment(Datum::Y) => { Operation::Decrement(Datum::X) }
+                Operation::Decrement(Datum::X) => { Operation::Increment(Datum::Y) }
+                Operation::Decrement(Datum::Y) => { Operation::Increment(Datum::X) }
                 _ => { panic!(); }
             }
         }
@@ -681,7 +725,7 @@ pub fn mos6502() -> Vec<Instruction> {
 
     vec![
         // TODO: Maybe we should have only one INC instruction, which can randomly go to either X or Y or the other possibilities.
-        Instruction::new(random_inc_dec, Operation::Increment(Register::X)),
+        Instruction::new(random_inc_dec, Operation::Increment(Datum::X)),
         // TODO: Maybe we should have a single transfer instruction as well, which can go to one of tax txa tay tya txs tsx etc.
         Instruction::inh("tax", Operation::op_tax),
         Instruction::inh("tay", Operation::op_tay),

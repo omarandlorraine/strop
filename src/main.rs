@@ -16,7 +16,7 @@ use crate::machine::{pic12, pic14, pic16};
 
 use crate::machine::Instruction;
 use crate::machine::State;
-use crate::machine::Register;
+use crate::machine::Datum;
 
 use crate::search::BasicBlock;
 use crate::search::{differance, equivalence};
