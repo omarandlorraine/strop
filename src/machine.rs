@@ -666,6 +666,11 @@ fn random_immediate() -> Datum {
     Datum::Immediate(*vs.choose(&mut rand::thread_rng()).unwrap())
 }
 
+fn random_absolute() -> Datum {
+    let vs = vec![0, 1, 2, 3, 4];
+    Datum::Absolute(*vs.choose(&mut rand::thread_rng()).unwrap())
+}
+
 pub fn motorola6800() -> Vec<Instruction> {
     fn random_add(_mach: Machine, instr: &mut Instruction) {
         fn random_accumulator() -> Datum {
@@ -723,8 +728,16 @@ pub fn mos6502() -> Vec<Instruction> {
         }
     }
 
+    fn random_add(_mach: Machine, instr: &mut Instruction) {
+        fn random_source() -> Datum {
+            // TODO: sort it out
+            if random() {random_immediate()} else {random_absolute()}
+        }
+        instr.operation = Operation::AddWithCarry(random_source(), Datum::A);
+    }
+    
     vec![
-        // TODO: Maybe we should have only one INC instruction, which can randomly go to either X or Y or the other possibilities.
+        Instruction::new(random_add, Operation::Add(Datum::Immediate(0), Datum::A)),
         Instruction::new(random_inc_dec, Operation::Increment(Datum::X)),
         // TODO: Maybe we should have a single transfer instruction as well, which can go to one of tax txa tay tya txs tsx etc.
         Instruction::inh("tax", Operation::op_tax),
@@ -737,8 +750,6 @@ pub fn mos6502() -> Vec<Instruction> {
         Instruction::inh("lsr", Operation::op_lsr),
         Instruction::inh("clc", Operation::op_clc),
         Instruction::inh("sec", Operation::op_sec),
-        Instruction::imm("adc", Operation::op_adc_dp),
-        Instruction::abs("adc", Operation::op_adc_dp),
         Instruction::abs("lda", Operation::op_lda),
         Instruction::abs("sta", Operation::op_sta),
         Instruction::abs("ldx", Operation::op_ldx),

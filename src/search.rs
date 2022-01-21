@@ -295,6 +295,11 @@ pub fn optimize(
     prog.clone()
 }
 
+fn disassemble(prog: &BasicBlock) {
+    for p in &prog.instructions {
+        println!("{}", p);
+    }
+}                                   
 pub fn stochastic_search(
     convergence: &dyn Fn(&BasicBlock) -> f64,
     mach: Machine,
@@ -326,7 +331,7 @@ pub fn stochastic_search(
 
         for s in best
             .spawn(mach, instructions.to_vec())
-            .take(5000000)
+            .take(500)
         {
             let fit = convergence(&s);
             if fit < b.0 {
@@ -334,6 +339,7 @@ pub fn stochastic_search(
                 next_generation.push((fit, d));
             }
         }
+        println!("generation {}", b.0);
 
         if !next_generation.is_empty() {
             population = next_generation;

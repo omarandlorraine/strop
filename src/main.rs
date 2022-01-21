@@ -310,7 +310,8 @@ fn main() {
         let vars: Vec<u16> = vec![3, 4, 5];
         let c = constants(opts.constant);
         let prog = stochastic_search(&convergence, msan, &m);
-        let opt = optimize(&convergence, &prog,msan,  &m, &c, &vars);
-        disassemble(opt);
+        //let opt = optimize(&convergence, &prog,msan,  &m, &c, &vars);
+        println!("finished search");
+        disassemble(prog);
     }
 }
