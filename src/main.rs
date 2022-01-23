@@ -12,7 +12,7 @@ use crate::machine::motorola6800;
 use crate::machine::{i8080, i8085, z80};
 use crate::machine::{Machine, PreX86Variant, Mos6502Variant, Motorola8BitVariant, PicVariant};
 use crate::machine::{mos6502, mos65c02};
-use crate::machine::{pic12, pic14, pic16};
+use crate::machine::{pic12};
 
 use crate::machine::Instruction;
 use crate::machine::State;
@@ -101,13 +101,13 @@ const M_OPTS: [MOpt; 13] = [
     MOpt {
         name: "pic14",
         mach: Machine::Pic(PicVariant::Pic14),
-        func: pic14,
+        func: pic12,
         help: "PIC14",
     },
     MOpt {
         name: "pic16",
         mach: Machine::Pic(PicVariant::Pic16),
-        func: pic16,
+        func: pic12,
         help: "PIC16",
     },
 ];

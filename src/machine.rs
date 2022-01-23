@@ -246,7 +246,7 @@ fn add_to_reg8_test() {
 #[derive(Clone, Debug, Copy)]
 #[allow(non_camel_case_types)]
 pub enum Operation {
-    op_add, op_ror, op_rol, op_sta, op_lda, op_mov, op_inc, op_dec, op_com, op_stz, op_and,
+    op_ror, op_rol, op_sta, op_lda, op_mov, op_inc, op_dec, op_com, op_stz, op_and,
     op_sty, op_ldy, op_ldx, op_stx, op_sec, op_clc, op_lsr, op_adc_dp,
     op_asl, op_tya, op_txa, op_tay, op_tax, op_tba, op_tab,
     op_daa,
@@ -365,17 +365,6 @@ impl Instruction {
     #[allow(clippy::many_single_char_names)]
     pub fn operate(&self, s: &mut State) -> bool {
         match self.operation {
-
-            Operation::op_add => {
-                let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s), Some(false));
-                s.accumulator = result;
-                s.sign = n;
-                s.carry = c;
-                s.zero = z;
-                s.overflow = o;
-                s.halfcarry = h;
-                true
-            }
             Operation::Add(source, destination) => {
                 let (result, c, z, n, o, h) = add_to_reg8(get(s, source), get(s, destination), Some(false));
                 set(s, destination, result);
@@ -781,8 +770,31 @@ pub fn i8085() -> Vec<Instruction> {
 }
 
 pub fn pic12() -> Vec<Instruction> {
+    fn random_add(mach: Machine, instr: &mut Instruction) {
+        fn addwf() -> Operation {
+            if random() {
+                Operation::Add(random_absolute(), Datum::A)
+            } else {
+                Operation::Add(Datum::A, random_absolute())
+            }
+        }
+        fn addlw() -> Operation {
+            Operation::Add(random_immediate(), Datum::A)
+        }
+
+        instr.operation = match mach {
+            Machine::Pic(PicVariant::Pic12) => {
+                addwf()
+            }
+            Machine::Pic(_) => {
+                if random() { addlw() } else { addwf() }
+            }
+            _ => { unreachable!(); }
+        }
+    }
+
     vec![
-        Instruction::pic_wf("addwf", Operation::op_add),
+        Instruction::new(random_add, Operation::Add(Datum::Absolute(0), Datum::A)),
         Instruction::imm("andlw", Operation::op_and),
         Instruction::pic_wf("andwf", Operation::op_and),
         // TODO: bcf bsf btfsc btfss (call) 
@@ -801,25 +813,4 @@ pub fn pic12() -> Vec<Instruction> {
         Instruction::abs("rrf  ", Operation::op_ror),
         // TODO: (sleep) subwf swapf (tris) xorlw xorwf 
     ]
-}
-
-pub fn pic14() -> Vec<Instruction> {
-    // From what I can tell from reading datasheets 41291D.pdf and 41239a.pdf,
-    // these four instructions are the ones that exist in PIC14 and not in
-    // PIC12.
-    // There also are instructions that exist in PIC12 and not in PIC14. They
-    // write to registers which are memory mapped in PIC14. The instructions
-    // include tris and option.
-    vec![
-        Instruction::imm("addlw", Operation::op_add),
-        // TODO: (retfie) (return)
-        // TODO: sublw
-    ]
-    .into_iter()
-    .chain(pic12())
-    .collect()
-}
-
-pub fn pic16() -> Vec<Instruction> {
-    pic14()
 }
