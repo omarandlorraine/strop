@@ -246,8 +246,8 @@ fn add_to_reg8_test() {
 #[derive(Clone, Debug, Copy)]
 #[allow(non_camel_case_types)]
 pub enum Operation {
-    op_ror, op_rol, op_sta, op_lda, op_mov, op_inc, op_dec, op_com, op_stz, op_and,
-    op_sty, op_ldy, op_ldx, op_stx, op_sec, op_clc, op_lsr, op_adc_dp,
+    op_ror, op_rol, op_sta, op_lda, op_mov, op_com, op_stz, op_and,
+    op_sty, op_ldy, op_ldx, op_stx, op_sec, op_clc, op_lsr,
     op_asl, op_tya, op_txa, op_tay, op_tax, op_tba, op_tab,
     op_daa,
     Decrement(Datum),
@@ -399,18 +399,6 @@ impl Instruction {
                 true
             }
 
-            Operation::op_adc_dp => {
-                // TODO: Check decimal flag here.
-                let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s), s.carry);
-                s.accumulator = result;
-                s.sign = n;
-                s.carry = c;
-                s.zero = z;
-                s.overflow = o;
-                s.halfcarry = h;
-                true
-            }
-
             Operation::op_com => {
                 let (result, z) = bitwise_xor(s.accumulator, Some(-1));
                 s.accumulator = result;
@@ -428,14 +416,6 @@ impl Instruction {
                 true
             }
 
-            Operation::op_dec => {
-                let (result, _c, z, n, _o, _h) = add_to_reg8(self.get_datum(s), Some(-1), Some(false));
-                s.x8 = result;
-                s.zero = z;
-                s.sign = n;
-                true
-            }
-
             Operation::Increment(register) => {
                 let (result, _c, z, n, _o, _h) = add_to_reg8(get(s, register), Some(1), Some(false));
                 set(s, register, result);
@@ -447,14 +427,6 @@ impl Instruction {
             Operation::Decrement(register) => {
                 let (result, _c, z, n, _o, _h) = add_to_reg8(get(s, register), Some(-1), Some(false));
                 set(s, register, result);
-                s.zero = z;
-                s.sign = n;
-                true
-            }
-
-            Operation::op_inc => {
-                let (result, _c, z, n, _o, _h) = add_to_reg8(self.get_datum(s), Some(1), Some(false));
-                self.write_datum(s, result);
                 s.zero = z;
                 s.sign = n;
                 true
@@ -719,15 +691,20 @@ pub fn mos6502() -> Vec<Instruction> {
 
     fn random_add(_mach: Machine, instr: &mut Instruction) {
         fn random_source() -> Datum {
-            // TODO: sort it out
-            if random() {random_immediate()} else {random_absolute()}
+            if random() {
+                random_immediate() 
+            } else {
+                random_absolute()
+            }
         }
+        
         instr.operation = Operation::AddWithCarry(random_source(), Datum::A);
     }
     
+
     vec![
-        Instruction::new(random_add, Operation::Add(Datum::Immediate(0), Datum::A)),
         Instruction::new(random_inc_dec, Operation::Increment(Datum::X)),
+        Instruction::new(random_add, Operation::AddWithCarry(Datum::Immediate(0), Datum::A)),
         // TODO: Maybe we should have a single transfer instruction as well, which can go to one of tax txa tay tya txs tsx etc.
         Instruction::inh("tax", Operation::op_tax),
         Instruction::inh("tay", Operation::op_tay),
@@ -770,6 +747,26 @@ pub fn i8085() -> Vec<Instruction> {
 }
 
 pub fn pic12() -> Vec<Instruction> {
+    fn random_inc_dec(_mach: Machine, instr: &mut Instruction) {
+        // TODO: These instructions can optionally write to W instead of the F.
+        instr.operation = match instr.operation {
+            Operation::Decrement(x) => {
+                if random() {
+                    Operation::Increment(x)
+                } else {
+                    Operation::Decrement(random_absolute())
+                }
+            }
+            Operation::Increment(x) => {
+                if random() {
+                    Operation::Decrement(x)
+                } else {
+                    Operation::Increment(random_absolute())
+                }
+            }
+            _ => { unreachable!() }
+        }
+    }
     fn random_add(mach: Machine, instr: &mut Instruction) {
         fn addwf() -> Operation {
             if random() {
@@ -793,17 +790,17 @@ pub fn pic12() -> Vec<Instruction> {
         }
     }
 
+
     vec![
         Instruction::new(random_add, Operation::Add(Datum::Absolute(0), Datum::A)),
+        Instruction::new(random_inc_dec, Operation::Increment(Datum::X)),
         Instruction::imm("andlw", Operation::op_and),
         Instruction::pic_wf("andwf", Operation::op_and),
         // TODO: bcf bsf btfsc btfss (call) 
         Instruction::pic_wf("clr  ", Operation::op_stz),
         // TODO: (clrwdt)
         Instruction::abs("comf ", Operation::op_com),
-        Instruction::abs("decf ", Operation::op_dec),
         // TODO: decfsz (goto)
-        Instruction::abs("incf ", Operation::op_inc),
         // TODO: incfsz iorlw iorwf
         Instruction::abs("movf ", Operation::op_mov),
         Instruction::imm("movlw", Operation::op_lda),
