@@ -4,7 +4,7 @@ use crate::machine::rand::Rng;
 extern crate rand;
 use rand::random;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Mos6502Variant {
     Nmos,
     Ricoh2a03,
@@ -12,18 +12,18 @@ pub enum Mos6502Variant {
     IllegalInstructions,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Motorola8BitVariant {
     Motorola6800,
     Motorola6801,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum PicVariant {
     Pic12, Pic14, Pic16,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum PreX86Variant {
     ZilogZ80,
     I8080,
@@ -31,7 +31,7 @@ pub enum PreX86Variant {
     KR580VM1
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Machine {
     Mos6502(Mos6502Variant),
     Motorola6800(Motorola8BitVariant),
@@ -731,10 +731,7 @@ pub fn mos6502() -> Vec<Instruction> {
                 if random() {
                     Operation::Move(src, random_absolute())
                 } else {
-                    match mach {
-                        Machine::Mos6502(Mos6502Variant::Cmos) => { Operation::Move(random_register(src, true), dst) }
-                        _ => { Operation::Move(random_register(src, false), dst) }
-                    }
+                    Operation::Move(random_register(src, mach == Machine::Mos6502(Mos6502Variant::Cmos)), dst)
                 }
             }
             _ => { unreachable!() }
