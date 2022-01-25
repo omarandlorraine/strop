@@ -245,7 +245,7 @@ fn add_to_reg8_test() {
 }
 
 #[derive(Clone, Debug, Copy)]
-enum ShiftType {
+pub enum ShiftType {
     LeftArithmetic,
     RightArithmetic,
     LeftRotateThroughCarry,
@@ -896,7 +896,7 @@ pub fn pic12() -> Vec<Instruction> {
         }
     }
 
-    fn random_rotate(mach: Machine, instr: &mut Instruction) {
+    fn random_rotate(_mach: Machine, instr: &mut Instruction) {
         instr.operation = match instr.operation {
             Operation::Shift(shtype, dat) => {
                 if random() {
