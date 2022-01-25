@@ -256,7 +256,8 @@ pub enum ShiftType {
 #[derive(Clone, Debug, Copy)]
 #[allow(non_camel_case_types)]
 pub enum Operation {
-    op_sta, op_lda, op_mov, op_com, op_stz, op_and,
+    op_sta, op_lda, op_mov, op_stz, // These are still only used for PICs, and may be rewritten as Move(x, y)
+    op_com, op_and,
     op_sec, op_clc,
     op_daa,
     Decrement(Datum),
