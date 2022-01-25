@@ -67,6 +67,7 @@ pub enum Datum {
     A, B, X, Y,
     Immediate(i8),
     Absolute(u16),
+    Zero,
 }
 
 impl Machine {
@@ -559,6 +560,8 @@ pub fn set(state: &mut State, register: Datum, val: Option<i8>) {
         Datum::Absolute(address) => {
             state.heap.insert(address, val);
         }
+        Datum::Zero => {
+        }
     }
 }
 
@@ -585,6 +588,9 @@ pub fn get(state: &State, register: Datum) -> Option<i8> {
             } else {
                 None
             }
+        }
+        Datum::Zero => {
+            Some(0)
         }
     }
 }
@@ -710,22 +716,71 @@ pub fn mos6502() -> Vec<Instruction> {
         }
     }
 
+    fn random_store(mach: Machine, instr: &mut Instruction) {
+        fn random_register(r: Datum, z: bool) -> Datum {
+            match rand::thread_rng().gen_range(0, if z { 4 } else { 3 }) {
+                0 => { Datum::A }
+                1 => { Datum::X }
+                2 => { Datum::Y }
+                _ => { Datum::Zero }
+            }
+        }
+
+        instr.operation = match instr.operation {
+            Operation::Move(src, dst) => {
+                if random() {
+                    Operation::Move(src, random_absolute())
+                } else {
+                    match mach {
+                        Machine::Mos6502(Mos6502Variant::Cmos) => { Operation::Move(random_register(src, true), dst) }
+                        _ => { Operation::Move(random_register(src, false), dst) }
+                    }
+                }
+            }
+            _ => { unreachable!() }
+        };
+    }
+
+    fn random_load(mach: Machine, instr: &mut Instruction) {
+        fn random_register() -> Datum {
+            match rand::thread_rng().gen_range(0, 3) {
+                0 => { Datum::A }
+                1 => { Datum::X }
+                _ => { Datum::Y }
+            }
+        }
+        fn random_source() -> Datum {
+            if random() {
+                random_absolute()
+            } else {
+                random_immediate()
+            }
+        }
+
+        instr.operation = match instr.operation {
+            Operation::Move(src, dst) => {
+                if random() {
+                    Operation::Move(src, random_register())
+                } else {
+                    Operation::Move(random_source(), dst)
+                }
+            }
+            _ => { unreachable!() }
+        };
+    }
+
     vec![
         Instruction::new(random_inc_dec, Operation::Increment(Datum::X)),
         Instruction::new(random_add, Operation::AddWithCarry(Datum::Immediate(0), Datum::A)),
         Instruction::new(random_t, Operation::Move(Datum::A, Datum::X)),
+        Instruction::new(random_store, Operation::Move(Datum::A, Datum::Absolute(0))),
+        Instruction::new(random_load, Operation::Move(Datum::Immediate(0), Datum::A)),
         Instruction::inh("asl a", Operation::op_asl),
         Instruction::inh("rol", Operation::op_rol),
         Instruction::inh("ror", Operation::op_ror),
         Instruction::inh("lsr", Operation::op_lsr),
         Instruction::inh("clc", Operation::op_clc),
         Instruction::inh("sec", Operation::op_sec),
-        Instruction::abs("lda", Operation::op_lda),
-        Instruction::abs("sta", Operation::op_sta),
-        Instruction::abs("ldx", Operation::op_ldx),
-        Instruction::abs("stx", Operation::op_stx),
-        Instruction::abs("ldy", Operation::op_ldy),
-        Instruction::abs("sty", Operation::op_sty),
     ]
 }
 
