@@ -831,15 +831,6 @@ pub fn mos6502() -> Vec<Instruction> {
     ]
 }
 
-pub fn mos65c02() -> Vec<Instruction> {
-    vec![
-        Instruction::inh("stz", Operation::op_stz),
-    ]
-    .into_iter()
-    .chain(mos6502())
-    .collect()
-}
-
 pub fn z80() -> Vec<Instruction> {
     Vec::new()
 }

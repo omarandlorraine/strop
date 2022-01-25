@@ -11,7 +11,7 @@ mod test;
 use crate::machine::motorola6800;
 use crate::machine::{i8080, i8085, z80};
 use crate::machine::{Machine, PreX86Variant, Mos6502Variant, Motorola8BitVariant, PicVariant};
-use crate::machine::{mos6502, mos65c02};
+use crate::machine::mos6502;
 use crate::machine::{pic12};
 
 use crate::machine::Instruction;
@@ -71,13 +71,13 @@ const M_OPTS: [MOpt; 13] = [
     MOpt {
         name: "65i02",
         mach: Machine::Mos6502(Mos6502Variant::IllegalInstructions),
-        func: mos65c02,
+        func: mos6502,
         help: "NMOS 6502, but with illegal instructions like lax and dca",
     },
     MOpt {
         name: "65c02",
         mach: Machine::Mos6502(Mos6502Variant::Cmos),
-        func: mos65c02,
+        func: mos6502,
         help: "CMOS 6502, including new instructions like phx and stz",
     },
     MOpt {
