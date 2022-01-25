@@ -295,11 +295,6 @@ pub fn optimize(
     prog.clone()
 }
 
-fn disassemble(prog: &BasicBlock) {
-    for p in &prog.instructions {
-        println!("{}", p);
-    }
-}                                   
 pub fn stochastic_search(
     convergence: &dyn Fn(&BasicBlock) -> f64,
     mach: Machine,

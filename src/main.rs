@@ -20,7 +20,7 @@ use crate::machine::Datum;
 
 use crate::search::BasicBlock;
 use crate::search::{differance, equivalence};
-use crate::search::{optimize, stochastic_search};
+use crate::search::stochastic_search;
 
 use crate::test::{sanity, DeTestRun, Parameter, Test, TestRun};
 
@@ -250,18 +250,6 @@ fn disassemble(prog: BasicBlock) {
     }
 }
 
-fn constants(c: Vec<i8>) -> Vec<i8> {
-    let mut v = Vec::<i8>::new();
-    for i in 0..16 {
-        v.push(i);
-        v.push(0 - i);
-    }
-    for i in 0..7 {
-        v.push(2i8.pow(i));
-    }
-    c.into_iter().chain(v).collect()
-}
-
 fn testrun_from_args(opts: &Opts, mach: Machine) -> TestRun {
     TestRun {
         ins: opts
@@ -307,11 +295,7 @@ fn main() {
         panic!();
     } else if opts.search == "stoc" {
         let convergence = |prog: &BasicBlock| differance(prog, &testrun);
-        let vars: Vec<u16> = vec![3, 4, 5];
-        let c = constants(opts.constant);
         let prog = stochastic_search(&convergence, msan, &m);
-        //let opt = optimize(&convergence, &prog,msan,  &m, &c, &vars);
-        println!("finished search");
         disassemble(prog);
     }
 }

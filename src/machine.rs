@@ -248,7 +248,7 @@ fn add_to_reg8_test() {
 #[allow(non_camel_case_types)]
 pub enum Operation {
     op_ror, op_rol, op_sta, op_lda, op_mov, op_com, op_stz, op_and,
-    op_sty, op_ldy, op_ldx, op_stx, op_sec, op_clc, op_lsr,
+    op_sec, op_clc, op_lsr,
     op_asl,
     op_daa,
     Decrement(Datum),
@@ -443,16 +443,6 @@ impl Instruction {
                 true
             }
 
-            Operation::op_ldx => {
-                s.x8 = self.get_datum(s);
-                true
-            }
-
-            Operation::op_ldy => {
-                s.y8 = self.get_datum(s);
-                true
-            }
-
             Operation::op_lsr => {
                 let (val, c) = rotate_right_thru_carry(s.accumulator, Some(false));
                 s.accumulator = val;
@@ -486,16 +476,6 @@ impl Instruction {
 
             Operation::op_sta => {
                 self.write_datum(s, s.accumulator);
-                true
-            }
-
-            Operation::op_stx => {
-                self.write_datum(s, s.x8);
-                true
-            }
-
-            Operation::op_sty => {
-                self.write_datum(s, s.y8);
                 true
             }
 
@@ -717,7 +697,7 @@ pub fn mos6502() -> Vec<Instruction> {
     }
 
     fn random_store(mach: Machine, instr: &mut Instruction) {
-        fn random_register(r: Datum, z: bool) -> Datum {
+        fn random_register(z: bool) -> Datum {
             match rand::thread_rng().gen_range(0, if z { 4 } else { 3 }) {
                 0 => { Datum::A }
                 1 => { Datum::X }
@@ -731,14 +711,14 @@ pub fn mos6502() -> Vec<Instruction> {
                 if random() {
                     Operation::Move(src, random_absolute())
                 } else {
-                    Operation::Move(random_register(src, mach == Machine::Mos6502(Mos6502Variant::Cmos)), dst)
+                    Operation::Move(random_register(mach == Machine::Mos6502(Mos6502Variant::Cmos)), dst)
                 }
             }
             _ => { unreachable!() }
         };
     }
 
-    fn random_load(mach: Machine, instr: &mut Instruction) {
+    fn random_load(_mach: Machine, instr: &mut Instruction) {
         fn random_register() -> Datum {
             match rand::thread_rng().gen_range(0, 3) {
                 0 => { Datum::A }
