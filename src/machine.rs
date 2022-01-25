@@ -245,17 +245,26 @@ fn add_to_reg8_test() {
 }
 
 #[derive(Clone, Debug, Copy)]
+enum ShiftType {
+    LeftArithmetic,
+    RightArithmetic,
+    LeftRotateThroughCarry,
+    RightRotateThroughCarry,
+    RightLogical,
+}
+
+#[derive(Clone, Debug, Copy)]
 #[allow(non_camel_case_types)]
 pub enum Operation {
-    op_ror, op_rol, op_sta, op_lda, op_mov, op_com, op_stz, op_and,
-    op_sec, op_clc, op_lsr,
-    op_asl,
+    op_sta, op_lda, op_mov, op_com, op_stz, op_and,
+    op_sec, op_clc,
     op_daa,
     Decrement(Datum),
     Increment(Datum),
     Add(Datum, Datum),
     AddWithCarry(Datum, Datum),
     Move(Datum, Datum),
+    Shift(ShiftType, Datum),
 }
 
 impl Instruction {
@@ -398,12 +407,6 @@ impl Instruction {
                 true
             }
 
-            Operation::op_asl => {
-                let (val, c) = rotate_left_thru_carry(s.accumulator, Some(false));
-                s.accumulator = val;
-                s.carry = c;
-                true
-            }
 
             Operation::op_com => {
                 let (result, z) = bitwise_xor(s.accumulator, Some(-1));
@@ -443,29 +446,43 @@ impl Instruction {
                 true
             }
 
-            Operation::op_lsr => {
-                let (val, c) = rotate_right_thru_carry(s.accumulator, Some(false));
-                s.accumulator = val;
-                s.carry = c;
-                true
+            Operation::Shift(shtype, datum) => {
+                match shtype {
+                    ShiftType::LeftArithmetic => {
+                        let (val, c) = rotate_left_thru_carry(get(s, datum), Some(false));
+                        set(s, datum, val);
+                        s.carry = c;
+                        true
+                    }
+                    ShiftType::RightArithmetic => {
+                        let (val, c) = rotate_right_thru_carry(get(s, datum), Some(false));
+                        set(s, datum, val);
+                        s.carry = c;
+                        true
+                    }
+                    ShiftType::RightRotateThroughCarry  => {
+                        let (val, c) = rotate_right_thru_carry(get(s, datum), s.carry);
+                        set(s, datum, val);
+                        s.carry = c;
+                        true
+                    }
+                    ShiftType::LeftRotateThroughCarry  => {
+                        let (val, c) = rotate_left_thru_carry(get(s, datum), s.carry);
+                        set(s, datum, val);
+                        s.carry = c;
+                        true
+                    }
+                    ShiftType::RightLogical  => {
+                        let (val, c) = rotate_right_thru_carry(get(s, datum), Some(false));
+                        set(s, datum, val);
+                        s.carry = c;
+                        true
+                    }
+                }
             }
 
             Operation::op_mov => {
                 self.write_datum(s, self.get_datum(s));
-                true
-            }
-
-            Operation::op_rol => {
-                let (val, c) = rotate_left_thru_carry(s.accumulator, s.carry);
-                s.accumulator = val;
-                s.carry = c;
-                true
-            }
-
-            Operation::op_ror => {
-                let (val, c) = rotate_right_thru_carry(s.accumulator, s.carry);
-                s.accumulator = val;
-                s.carry = c;
                 true
             }
 
@@ -614,15 +631,42 @@ pub fn motorola6800() -> Vec<Instruction> {
             _ => {unreachable!()}
         }
     }
+
+    fn random_rotate(_mach: Machine, instr: &mut Instruction) {
+        fn randsht() -> ShiftType {
+            match rand::thread_rng().gen_range(0, 4) { 
+                0 => { ShiftType::LeftArithmetic }
+                1 => { ShiftType::RightArithmetic }
+                2 => { ShiftType::LeftRotateThroughCarry }
+                _ => { ShiftType::RightRotateThroughCarry }
+            }
+        }
+        fn randdat() -> Datum {
+            match rand::thread_rng().gen_range(0, 3) { 
+                0 => { Datum::A }
+                1 => { Datum::B }
+                _ => { random_absolute() }
+            }
+        }
+        instr.operation = match instr.operation {
+            Operation::Shift(shtype, dat) => {
+                if random() {
+                    Operation::Shift(shtype, randdat())
+                } else {
+                    Operation::Shift(randsht(), dat)
+                }
+            }
+            _ => {
+                unreachable!()
+            }
+        }
+    }
     
     vec![
         Instruction::new(random_add, Operation::Add(Datum::B, Datum::A)),
         Instruction::new(random_t, Operation::Move(Datum::B, Datum::A)),
-
-        Instruction::inh("asla", Operation::op_asl),
+        Instruction::new(random_rotate, Operation::Shift(ShiftType::LeftArithmetic, Datum::A)),
         Instruction::inh("daa", Operation::op_daa),
-        Instruction::inh("rol", Operation::op_rol),
-        Instruction::inh("ror", Operation::op_ror),
         Instruction::inh("clc", Operation::op_clc),
         Instruction::inh("sec", Operation::op_sec),
     ]
@@ -746,16 +790,42 @@ pub fn mos6502() -> Vec<Instruction> {
         };
     }
 
+    fn random_rotate(_mach: Machine, instr: &mut Instruction) {
+        fn randsht() -> ShiftType {
+            match rand::thread_rng().gen_range(0, 4) { 
+                0 => { ShiftType::LeftArithmetic }
+                1 => { ShiftType::RightArithmetic }
+                2 => { ShiftType::LeftRotateThroughCarry }
+                _ => { ShiftType::RightRotateThroughCarry }
+            }
+        }
+        fn randdat() -> Datum {
+            match rand::thread_rng().gen_range(0, 2) { 
+                0 => { Datum::A }
+                _ => { random_absolute() }
+            }
+        }
+        instr.operation = match instr.operation {
+            Operation::Shift(shtype, dat) => {
+                if random() {
+                    Operation::Shift(shtype, randdat())
+                } else {
+                    Operation::Shift(randsht(), dat)
+                }
+            }
+            _ => {
+                unreachable!()
+            }
+        }
+    }
+
     vec![
         Instruction::new(random_inc_dec, Operation::Increment(Datum::X)),
         Instruction::new(random_add, Operation::AddWithCarry(Datum::Immediate(0), Datum::A)),
         Instruction::new(random_t, Operation::Move(Datum::A, Datum::X)),
         Instruction::new(random_store, Operation::Move(Datum::A, Datum::Absolute(0))),
         Instruction::new(random_load, Operation::Move(Datum::Immediate(0), Datum::A)),
-        Instruction::inh("asl a", Operation::op_asl),
-        Instruction::inh("rol", Operation::op_rol),
-        Instruction::inh("ror", Operation::op_ror),
-        Instruction::inh("lsr", Operation::op_lsr),
+        Instruction::new(random_rotate, Operation::Shift(ShiftType::LeftArithmetic, Datum::A)),
         Instruction::inh("clc", Operation::op_clc),
         Instruction::inh("sec", Operation::op_sec),
     ]
@@ -826,10 +896,27 @@ pub fn pic12() -> Vec<Instruction> {
         }
     }
 
+    fn random_rotate(mach: Machine, instr: &mut Instruction) {
+        instr.operation = match instr.operation {
+            Operation::Shift(shtype, dat) => {
+                if random() {
+                    Operation::Shift(shtype, random_absolute())
+                } else {
+                    Operation::Shift(if random() {ShiftType::RightRotateThroughCarry} else {ShiftType::LeftRotateThroughCarry},
+                    dat)
+                }
+            }
+            _ => {
+                unreachable!()
+            }
+        }
+
+    }
 
     vec![
         Instruction::new(random_add, Operation::Add(Datum::Absolute(0), Datum::A)),
         Instruction::new(random_inc_dec, Operation::Increment(Datum::X)),
+        Instruction::new(random_rotate, Operation::Shift(ShiftType::RightRotateThroughCarry, Datum::Absolute(0))),
         Instruction::imm("andlw", Operation::op_and),
         Instruction::pic_wf("andwf", Operation::op_and),
         // TODO: bcf bsf btfsc btfss (call) 
@@ -842,8 +929,6 @@ pub fn pic12() -> Vec<Instruction> {
         Instruction::imm("movlw", Operation::op_lda),
         Instruction::pic_wf("movwf", Operation::op_sta),
         // TODO (nop) (option) (retlw)
-        Instruction::abs("rlf  ", Operation::op_rol),
-        Instruction::abs("rrf  ", Operation::op_ror),
         // TODO: (sleep) subwf swapf (tris) xorlw xorwf 
     ]
 }
