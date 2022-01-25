@@ -248,12 +248,13 @@ fn add_to_reg8_test() {
 pub enum Operation {
     op_ror, op_rol, op_sta, op_lda, op_mov, op_com, op_stz, op_and,
     op_sty, op_ldy, op_ldx, op_stx, op_sec, op_clc, op_lsr,
-    op_asl, op_tya, op_txa, op_tay, op_tax, op_tba, op_tab,
+    op_asl,
     op_daa,
     Decrement(Datum),
     Increment(Datum),
     Add(Datum, Datum),
     AddWithCarry(Datum, Datum),
+    Move(Datum, Datum),
 }
 
 impl Instruction {
@@ -385,6 +386,10 @@ impl Instruction {
                 s.halfcarry = h;
                 true
             }
+            Operation::Move(source, destination) => {
+                set(s, destination, get(s, source));
+                true
+            }
             Operation::op_and => {
                 let (result, z) = bitwise_and(s.accumulator, self.get_datum(s));
                 s.accumulator = result;
@@ -495,44 +500,6 @@ impl Instruction {
 
             Operation::op_stz => {
                 self.write_datum(s, Some(0));
-                true
-            }
-
-            Operation::op_tab => {
-                // TODO: We need to check if this instruction affects flags or not,
-                // I feel like this is an oversight
-                s.reg_b = s.accumulator;
-                true
-            }
-
-            Operation::op_tax => {
-                // TODO: This one definitely needs flags.
-                s.x8 = s.accumulator;
-                true
-            }
-
-            Operation::op_tay => {
-                // TODO: This one definitely needs flags.
-                s.y8 = s.accumulator;
-                true
-            }
-
-            Operation::op_tba => {
-                // TODO: We need to check if this instruction affects flags or not,
-                // I feel like this is an oversight
-                s.accumulator = s.reg_b;
-                true
-            }
-
-            Operation::op_txa => {
-                // TODO: This one definitely needs flags.
-                s.accumulator = s.x8;
-                true
-            }
-
-            Operation::op_tya => {
-                // TODO: This one definitely needs flags.
-                s.accumulator = s.y8;
                 true
             }
         }
@@ -653,13 +620,21 @@ pub fn motorola6800() -> Vec<Instruction> {
             _ => { Operation::Add(random_source(), random_accumulator())},
         };
     }
+
+    fn random_t(_mach: Machine, instr: &mut Instruction) {
+        instr.operation = match instr.operation {
+            Operation::Move(Datum::A, Datum::B) => {Operation::Move(Datum::B, Datum::A)}
+            Operation::Move(Datum::B, Datum::A) => {Operation::Move(Datum::A, Datum::B)}
+            _ => {unreachable!()}
+        }
+    }
     
     vec![
         Instruction::new(random_add, Operation::Add(Datum::B, Datum::A)),
+        Instruction::new(random_t, Operation::Move(Datum::B, Datum::A)),
+
         Instruction::inh("asla", Operation::op_asl),
         Instruction::inh("daa", Operation::op_daa),
-        Instruction::inh("tab", Operation::op_tab),
-        Instruction::inh("tba", Operation::op_tba),
         Instruction::inh("rol", Operation::op_rol),
         Instruction::inh("ror", Operation::op_ror),
         Instruction::inh("clc", Operation::op_clc),
@@ -700,16 +675,45 @@ pub fn mos6502() -> Vec<Instruction> {
         
         instr.operation = Operation::AddWithCarry(random_source(), Datum::A);
     }
-    
+
+    fn random_t(_mach: Machine, instr: &mut Instruction) {
+        instr.operation = match instr.operation {
+            Operation::Move(Datum::A, Datum::X) => {
+                if random() {
+                    Operation::Move(Datum::A, Datum::Y)
+                } else {
+                    Operation::Move(Datum::X, Datum::A)
+                }
+            }
+            Operation::Move(Datum::A, Datum::Y) => {
+                if random() {
+                    Operation::Move(Datum::A, Datum::X)
+                } else {
+                    Operation::Move(Datum::Y, Datum::A)
+                }
+            }
+            Operation::Move(Datum::X, Datum::A) => {
+                if random() {
+                    Operation::Move(Datum::A, Datum::Y)
+                } else {
+                    Operation::Move(Datum::A, Datum::X)
+                }
+            }
+            Operation::Move(Datum::Y, Datum::A) => {
+                if random() {
+                    Operation::Move(Datum::X, Datum::A)
+                } else {
+                    Operation::Move(Datum::A, Datum::X)
+                }
+            }
+            _ => {unreachable!()}
+        }
+    }
 
     vec![
         Instruction::new(random_inc_dec, Operation::Increment(Datum::X)),
         Instruction::new(random_add, Operation::AddWithCarry(Datum::Immediate(0), Datum::A)),
-        // TODO: Maybe we should have a single transfer instruction as well, which can go to one of tax txa tay tya txs tsx etc.
-        Instruction::inh("tax", Operation::op_tax),
-        Instruction::inh("tay", Operation::op_tay),
-        Instruction::inh("txa", Operation::op_txa),
-        Instruction::inh("tya", Operation::op_tya),
+        Instruction::new(random_t, Operation::Move(Datum::A, Datum::X)),
         Instruction::inh("asl a", Operation::op_asl),
         Instruction::inh("rol", Operation::op_rol),
         Instruction::inh("ror", Operation::op_ror),
