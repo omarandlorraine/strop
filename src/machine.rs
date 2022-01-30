@@ -242,7 +242,6 @@ pub enum ShiftType {
     RightArithmetic,
     LeftRotateThroughCarry,
     RightRotateThroughCarry,
-    RightLogical,
 }
 
 #[derive(Clone, Debug, Copy)]
@@ -266,7 +265,7 @@ pub enum Operation {
 }
 
 impl Instruction {
-    pub fn inh(opname: &'static str, operation: Operation) -> Instruction {
+    pub fn inh(operation: Operation) -> Instruction {
         Instruction {
             operation,
             randomize: |_m, _i| (),
@@ -274,7 +273,7 @@ impl Instruction {
         }
     }
 
-    pub fn imm(opname: &'static str, operation: Operation) -> Instruction {
+    pub fn imm(operation: Operation) -> Instruction {
         Instruction {
             operation,
             randomize: |_m, _i| (),
@@ -282,7 +281,7 @@ impl Instruction {
         }
     }
 
-    pub fn abs(opname: &'static str, operation: Operation) -> Instruction {
+    pub fn abs(operation: Operation) -> Instruction {
         Instruction {
             operation,
             randomize: |_m, _i| (),
@@ -301,7 +300,7 @@ impl Instruction {
         }
     }
 
-    pub fn pic_wf(opname: &'static str, operation: Operation) -> Instruction {
+    pub fn pic_wf(operation: Operation) -> Instruction {
         Instruction {
             operation,
             randomize: |_m, _i| (),
@@ -454,12 +453,6 @@ impl Instruction {
                     s.carry = c;
                     true
                 }
-                ShiftType::RightLogical => {
-                    let (val, c) = rotate_right_thru_carry(get(s, datum), Some(false));
-                    set(s, datum, val);
-                    s.carry = c;
-                    true
-                }
             },
 
             Operation::op_mov => {
@@ -494,7 +487,6 @@ pub struct State {
     zero: Option<bool>,
     carry: Option<bool>,
     sign: Option<bool>,
-    decimal: Option<bool>,
     overflow: Option<bool>,
     halfcarry: Option<bool>,
     heap: HashMap<u16, Option<i8>>,
@@ -510,7 +502,6 @@ impl State {
             zero: None,
             carry: None,
             sign: None,
-            decimal: None,
             overflow: None,
             halfcarry: None,
             heap: HashMap::new(),
@@ -642,9 +633,9 @@ pub fn instr_6800() -> Instruction {
             random_rotate,
             Operation::Shift(ShiftType::LeftArithmetic, Datum::A),
         ),
-        Instruction::inh("daa", Operation::op_daa),
-        Instruction::inh("clc", Operation::op_clc),
-        Instruction::inh("sec", Operation::op_sec),
+        Instruction::inh(Operation::op_daa),
+        Instruction::inh(Operation::op_clc),
+        Instruction::inh(Operation::op_sec),
     ].choose(&mut rand::thread_rng()).unwrap()
 }
 
@@ -830,8 +821,8 @@ fn instr_6502() -> Instruction {
             random_rotate,
             Operation::Shift(ShiftType::LeftArithmetic, Datum::A),
         ),
-        Instruction::inh("clc", Operation::op_clc),
-        Instruction::inh("sec", Operation::op_sec),
+        Instruction::inh(Operation::op_clc),
+        Instruction::inh(Operation::op_sec),
     ].choose(&mut rand::thread_rng()).unwrap()
 }
 
@@ -914,17 +905,17 @@ fn instr_pic() -> Instruction {
             random_rotate,
             Operation::Shift(ShiftType::RightRotateThroughCarry, Datum::Absolute(0)),
         ),
-        Instruction::imm("andlw", Operation::op_and),
-        Instruction::pic_wf("andwf", Operation::op_and),
+        Instruction::imm(Operation::op_and),//"andlw"
+        Instruction::pic_wf(Operation::op_and),//"andwf"
         // TODO: bcf bsf btfsc btfss (call)
-        Instruction::pic_wf("clr  ", Operation::op_stz),
+        Instruction::pic_wf(Operation::op_stz),//"clr"
         // TODO: (clrwdt)
-        Instruction::abs("comf ", Operation::op_com),
+        Instruction::abs(Operation::op_com),//"comf"
         // TODO: decfsz (goto)
         // TODO: incfsz iorlw iorwf
-        Instruction::abs("movf ", Operation::op_mov),
-        Instruction::imm("movlw", Operation::op_lda),
-        Instruction::pic_wf("movwf", Operation::op_sta),
+        Instruction::abs(Operation::op_mov),//"movf"
+        Instruction::imm(Operation::op_lda),//"movlw"
+        Instruction::pic_wf(Operation::op_sta),//"movwf"
         // TODO (nop) (option) (retlw)
         // TODO: (sleep) subwf swapf (tris) xorlw xorwf
     ].choose(&mut rand::thread_rng()).unwrap()

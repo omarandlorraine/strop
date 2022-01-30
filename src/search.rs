@@ -112,23 +112,7 @@ fn run_program(prog: &BasicBlock, test_run: &TestRun, test: &Test) -> Option<Sta
     }
 }
 
-pub fn equivalence(prog: BasicBlock, test_run: &TestRun) -> bool {
-    for tc in test_run.tests.iter() {
-        if let Some(state) = run_program(&prog, test_run, tc) {
-            for param in test_run.outs.iter().zip(tc.outs.iter()) {
-                let result = get(&state, param.0.register);
-                if result != Some(*param.1) {
-                    return false;
-                }
-            }
-        } else {
-            return false;
-        }
-    }
-    true
-}
-
-pub fn differance(prog: &BasicBlock, test_run: &TestRun) -> f64 {
+pub fn difference(prog: &BasicBlock, test_run: &TestRun) -> f64 {
     let mut ret: f64 = 0.0;
     for tc in test_run.tests.iter() {
         if let Some(state) = run_program(prog, test_run, tc) {
