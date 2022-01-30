@@ -42,18 +42,10 @@ pub enum Machine {
 }
 
 #[derive(Clone, Copy)]
-pub enum AddressingMode {
-    Implicit,
-    Immediate(i8),
-    Absolute(u16),
-    PicWF(bool, u16),
-}
-
-#[derive(Clone, Copy)]
 pub struct Instruction {
     pub operation: Operation,
-    pub randomize: fn(Machine, &mut Instruction),
-    src: AddressingMode,
+    randomizer: fn(Machine) -> Operation,
+    machine: Machine
 }
 
 impl std::fmt::Display for Instruction {
@@ -62,7 +54,7 @@ impl std::fmt::Display for Instruction {
     }
 }
 
-#[derive(Copy, Debug, Clone)]
+#[derive(Copy, Debug, Clone, PartialEq)]
 pub enum Datum {
     A,
     B,
@@ -247,109 +239,31 @@ pub enum ShiftType {
 #[derive(Clone, Debug, Copy)]
 #[allow(non_camel_case_types)]
 pub enum Operation {
-    op_sta,
-    op_lda,
-    op_mov,
-    op_stz, // These are still only used for PICs, and may be rewritten as Move(x, y)
-    op_com,
-    op_and,
-    op_sec,
-    op_clc,
     op_daa,
     Decrement(Datum),
     Increment(Datum),
     Add(Datum, Datum),
     AddWithCarry(Datum, Datum),
+    And(Datum, Datum),
     Move(Datum, Datum),
     Shift(ShiftType, Datum),
+    Carry(bool)
 }
 
 impl Instruction {
-    pub fn inh(operation: Operation) -> Instruction {
-        Instruction {
-            operation,
-            randomize: |_m, _i| (),
-            src: AddressingMode::Implicit,
-        }
-    }
-
-    pub fn imm(operation: Operation) -> Instruction {
-        Instruction {
-            operation,
-            randomize: |_m, _i| (),
-            src: AddressingMode::Immediate(0),
-        }
-    }
-
-    pub fn abs(operation: Operation) -> Instruction {
-        Instruction {
-            operation,
-            randomize: |_m, _i| (),
-            src: AddressingMode::Absolute(0),
-        }
-    }
-
     pub fn new(
-        randomize: for<'r> fn(Machine, &'r mut Instruction),
-        operation: Operation,
+        machine: Machine,
+        randomizer: fn(Machine) -> Operation,
     ) -> Instruction {
         Instruction {
-            operation,
-            randomize,
-            src: AddressingMode::Absolute(0), // needs to be removed
+            machine,
+            operation: randomizer(machine),
+            randomizer,
         }
     }
 
-    pub fn pic_wf(operation: Operation) -> Instruction {
-        Instruction {
-            operation,
-            randomize: |_m, _i| (),
-            src: AddressingMode::PicWF(false, 0),
-        }
-    }
-
-    fn get_datum(&self, m: &State) -> Option<i8> {
-        match self.src {
-            AddressingMode::Implicit => {
-                panic!();
-            }
-            AddressingMode::Immediate(constant) => Some(constant),
-            AddressingMode::Absolute(address) => {
-                if let Some(x) = m.heap.get(&address) {
-                    *x
-                } else {
-                    None
-                }
-            }
-            AddressingMode::PicWF(_d, address) => {
-                if let Some(x) = m.heap.get(&address) {
-                    *x
-                } else {
-                    None
-                }
-            }
-        }
-    }
-
-    fn write_datum(&self, m: &mut State, val: Option<i8>) {
-        match self.src {
-            AddressingMode::Implicit => {
-                panic!();
-            }
-            AddressingMode::Immediate(_) => {
-                panic!();
-            }
-            AddressingMode::Absolute(address) => {
-                m.heap.insert(address, val);
-            }
-            AddressingMode::PicWF(f, address) => {
-                if f {
-                    m.heap.insert(address, val);
-                } else {
-                    m.accumulator = val;
-                }
-            }
-        }
+    pub fn randomize(&mut self) {
+        self.operation = (self.randomizer)(self.machine);
     }
 
     #[allow(clippy::many_single_char_names)]
@@ -377,26 +291,14 @@ impl Instruction {
                 s.halfcarry = h;
                 true
             }
+            Operation::And(source, destination) => {
+                let (result, z) = bitwise_and(get(s, source), get(s, destination));
+                set(s, destination, result);
+                s.zero = z;
+                true
+            }
             Operation::Move(source, destination) => {
                 set(s, destination, get(s, source));
-                true
-            }
-            Operation::op_and => {
-                let (result, z) = bitwise_and(s.accumulator, self.get_datum(s));
-                s.accumulator = result;
-                s.zero = z;
-                true
-            }
-
-            Operation::op_com => {
-                let (result, z) = bitwise_xor(s.accumulator, Some(-1));
-                s.accumulator = result;
-                s.zero = z;
-                true
-            }
-
-            Operation::op_clc => {
-                s.carry = Some(false);
                 true
             }
 
@@ -420,11 +322,6 @@ impl Instruction {
                 set(s, register, result);
                 s.zero = z;
                 s.sign = n;
-                true
-            }
-
-            Operation::op_lda => {
-                s.accumulator = self.get_datum(s);
                 true
             }
 
@@ -455,25 +352,11 @@ impl Instruction {
                 }
             },
 
-            Operation::op_mov => {
-                self.write_datum(s, self.get_datum(s));
+            Operation::Carry(b) => {
+                s.carry = Some(b);
                 true
             }
 
-            Operation::op_sec => {
-                s.carry = Some(true);
-                true
-            }
-
-            Operation::op_sta => {
-                self.write_datum(s, s.accumulator);
-                true
-            }
-
-            Operation::op_stz => {
-                self.write_datum(s, Some(0));
-                true
-            }
         }
     }
 }
@@ -561,362 +444,246 @@ fn random_absolute() -> Datum {
     Datum::Absolute(*vs.choose(&mut rand::thread_rng()).unwrap())
 }
 
-pub fn instr_prex86() -> Instruction {
+pub fn instr_prex86(_mach: Machine) -> Instruction {
     unimplemented!();
 }
-pub fn instr_6800() -> Instruction {
-    fn random_add(_mach: Machine, instr: &mut Instruction) {
-        fn random_accumulator() -> Datum {
-            if random() {
-                Datum::A
-            } else {
-                Datum::B
-            }
-        }
 
-        fn random_source() -> Datum {
-            // TODO: sort it out
-            random_immediate()
-        }
-
-        instr.operation = match rand::thread_rng().gen_range(0, 3) {
-            0 => Operation::Add(Datum::B, Datum::A),
-            1 => Operation::AddWithCarry(random_source(), random_accumulator()),
-            _ => Operation::Add(random_source(), random_accumulator()),
-        };
+fn random_accumulator_6800() -> Datum {
+    if random() {
+        Datum::A
+    } else {
+        Datum::B
     }
+}
 
-    fn random_t(_mach: Machine, instr: &mut Instruction) {
-        instr.operation = match instr.operation {
-            Operation::Move(Datum::A, Datum::B) => Operation::Move(Datum::B, Datum::A),
-            Operation::Move(Datum::B, Datum::A) => Operation::Move(Datum::A, Datum::B),
-            _ => {
-                unreachable!()
-            }
-        }
+fn random_source_6800() -> Datum {
+    if random() {
+        random_immediate()
+    } else {
+        random_absolute()
     }
+}
 
-    fn random_rotate(_mach: Machine, instr: &mut Instruction) {
-        fn randsht() -> ShiftType {
-            match rand::thread_rng().gen_range(0, 4) {
-                0 => ShiftType::LeftArithmetic,
-                1 => ShiftType::RightArithmetic,
-                2 => ShiftType::LeftRotateThroughCarry,
-                _ => ShiftType::RightRotateThroughCarry,
-            }
-        }
-        fn randdat() -> Datum {
-            match rand::thread_rng().gen_range(0, 3) {
-                0 => Datum::A,
-                1 => Datum::B,
-                _ => random_absolute(),
-            }
-        }
-        instr.operation = match instr.operation {
-            Operation::Shift(shtype, dat) => {
-                if random() {
-                    Operation::Shift(shtype, randdat())
-                } else {
-                    Operation::Shift(randsht(), dat)
-                }
-            }
-            _ => {
-                unreachable!()
-            }
-        }
+fn rmw_datum_6800() -> Datum {
+    // Data that can be the operand for 6800 operations like ASL and COM
+    if random() {
+        random_accumulator_6800()
+    } else {
+        random_absolute()
     }
+}
 
-    *vec![
-        Instruction::new(random_add, Operation::Add(Datum::B, Datum::A)),
-        Instruction::new(random_t, Operation::Move(Datum::B, Datum::A)),
-        Instruction::new(
-            random_rotate,
-            Operation::Shift(ShiftType::LeftArithmetic, Datum::A),
-        ),
-        Instruction::inh(Operation::op_daa),
-        Instruction::inh(Operation::op_clc),
-        Instruction::inh(Operation::op_sec),
-    ].choose(&mut rand::thread_rng()).unwrap()
+fn add_6800(_mach: Machine) -> Operation {
+    let dst = random_accumulator_6800();
+    if dst == Datum::A && random() {
+        return Operation::Add(Datum::B, dst); // ABA
+    }
+    let src = random_source_6800();
+    if random() {
+        Operation::Add(src, dst) // ADDA and ADDB
+    } else {
+        Operation::AddWithCarry(src, dst) // ADCA and ADCB
+    }
+}
+
+fn transfers_6800(_mach: Machine) -> Operation {
+    if random() {
+        Operation::Move(Datum::A, Datum::B)
+    } else {
+        Operation::Move(Datum::B, Datum::A)
+    }
+}
+
+fn rotates_6800(_mach: Machine) -> Operation {
+    match rand::thread_rng().gen_range(0, 4) {
+        0 => {Operation::Shift(ShiftType::LeftArithmetic, rmw_datum_6800())}
+        1 => {Operation::Shift(ShiftType::RightArithmetic,rmw_datum_6800())}
+        2 => {Operation::Shift(ShiftType::LeftRotateThroughCarry, rmw_datum_6800())}
+        _ => {Operation::Shift(ShiftType::RightRotateThroughCarry, rmw_datum_6800())}
+    }
+}
+
+pub fn instr_6800(mach: Machine) -> Instruction {
+    return match rand::thread_rng().gen_range(0, 4) {
+        0 => { Instruction::new(mach, add_6800) }
+        1 => { Instruction::new(mach, transfers_6800) }
+        _ => { Instruction::new(mach, rotates_6800) }
+    };
+    // TODO: Add clc, sec, daa, and many other instructions
 }
 
 pub fn new_instruction(mach: Machine) -> Instruction {
     match mach {
-        Machine::Motorola6800(_) => { instr_6800() }
-        Machine::Mos6502(_) => { instr_6502() }
-        Machine::PreX86(_) => { instr_prex86() }
-        Machine::Pic(_) => { instr_pic() }
+        Machine::Motorola6800(_) => { instr_6800(mach) }
+        Machine::Mos6502(_) => { instr_6502(mach) }
+        Machine::PreX86(_) => { instr_prex86(mach) }
+        Machine::Pic(_) => { instr_pic(mach) }
     }
 }
 
-fn instr_6502() -> Instruction {
-    fn random_inc_dec(_mach: Machine, instr: &mut Instruction) {
-        instr.operation = if random() {
-            // pick between increment or decrement
-            match instr.operation {
-                Operation::Increment(x) => Operation::Decrement(x),
-                Operation::Decrement(x) => Operation::Increment(x),
-                _ => {
-                    panic!();
-                }
-            }
+fn random_source_6502() -> Datum {
+    if random() {
+        random_immediate()
+    } else {
+        random_absolute()
+    }
+}
+
+fn incdec_6502(mach: Machine) -> Operation {
+    // the CMOS varieties have inc and dec for accumulator
+    // but earlier 6502s can increment and decrement X and Y only.
+    let reg = 
+    match rand::thread_rng().gen_range(0, if mach == Machine::Mos6502(Mos6502Variant::Cmos) { 3 } else { 2 }) {
+        0 => {Datum::X}
+        1 => {Datum::Y}
+        _ => {Datum::A}
+    };
+    if random() {
+        Operation::Increment(reg)
+    } else {
+        Operation::Decrement(reg)
+    }
+}
+
+fn add_6502(_mach: Machine) -> Operation {
+    Operation::AddWithCarry(random_source_6502(), Datum::A)
+}
+
+fn transfers_6502(_mach: Machine) -> Operation {
+    let reg = if random() {
+        Datum::X
+    } else {
+        Datum::Y
+    };
+    if random() {
+        Operation::Move(Datum::A, reg)
+    } else {
+        Operation::Move(reg, Datum::A)
+    }
+}
+
+fn loadstore_6502(mach: Machine) -> Operation {
+    // TODO: STZ operation for CMOS varieties
+    let addr = random_absolute();
+    let reg = match rand::thread_rng().gen_range(0, if mach == Machine::Mos6502(Mos6502Variant::Cmos) { 3 } else { 4 }) {
+        0 => Datum::A,
+        1 => Datum::X,
+        2 => Datum::Y,
+        _ => Datum::Zero,
+    };
+    if random() && reg != Datum::Zero {
+        Operation::Move(addr, reg)
+    } else {
+        Operation::Move(reg, addr)
+    }
+}
+
+fn secl_6502(_mach: Machine) -> Operation {
+    Operation::Carry(random())
+}
+fn shifts_6502(_mach: Machine) -> Operation {
+    let sht = match rand::thread_rng().gen_range(0, 4) {
+        0 => ShiftType::LeftArithmetic,
+        1 => ShiftType::RightArithmetic,
+        2 => ShiftType::LeftRotateThroughCarry,
+        _ => ShiftType::RightRotateThroughCarry,
+    };
+    let dat = if random() {
+        Datum::A
+    }else {
+        random_absolute()
+    };
+    Operation::Shift(sht, dat)
+}
+
+fn instr_6502(mach: Machine) -> Instruction {
+    return match rand::thread_rng().gen_range(0, 5) {
+        0 => { Instruction::new(mach, incdec_6502) }
+        1 => { Instruction::new(mach, add_6502) }
+        2 => { Instruction::new(mach, transfers_6502) }
+        3 => { Instruction::new(mach, shifts_6502) }
+        4 => { Instruction::new(mach, loadstore_6502) }
+        _ => { Instruction::new(mach, secl_6502) }
+    };
+    // TODO: Add clc, sec, and many other instructions
+}
+
+fn random_accumulator_or_absolute() -> Datum {
+    if random() {
+        Datum::A
+    } else {
+        random_absolute()
+    }
+}
+
+fn inc_dec_pic(_mach: Machine) -> Operation {
+    // TODO: These instructions can optionally write to W instead of the F.
+    if random() {
+        Operation::Increment(random_absolute()) // incf f
+    } else {
+        Operation::Decrement(random_absolute()) // decf f
+    }
+}
+
+fn add_pic(mach: Machine) -> Operation {
+    let dst = random_accumulator_or_absolute();
+    if dst == Datum::A && mach != Machine::Pic(PicVariant::Pic12) && random() {
+        // This is an immediate add. Not available on PIC12.
+        Operation::Add(random_immediate(), Datum::A) // addlw k
+    } else {
+        if random() {
+            Operation::Add(random_absolute(), Datum::A) // addwf f
         } else {
-            // pick between X and Y
-            // TODO: check if this machine supports inc/dec on accumulator
-            match instr.operation {
-                Operation::Increment(Datum::X) => Operation::Decrement(Datum::Y),
-                Operation::Increment(Datum::Y) => Operation::Decrement(Datum::X),
-                Operation::Decrement(Datum::X) => Operation::Increment(Datum::Y),
-                Operation::Decrement(Datum::Y) => Operation::Increment(Datum::X),
-                _ => {
-                    panic!();
-                }
-            }
+            Operation::Add(Datum::A, random_absolute()) // addwf f,d
         }
     }
-
-    fn random_add(_mach: Machine, instr: &mut Instruction) {
-        fn random_source() -> Datum {
-            if random() {
-                random_immediate()
-            } else {
-                random_absolute()
-            }
-        }
-
-        instr.operation = Operation::AddWithCarry(random_source(), Datum::A);
-    }
-
-    fn random_t(_mach: Machine, instr: &mut Instruction) {
-        instr.operation = match instr.operation {
-            Operation::Move(Datum::A, Datum::X) => {
-                if random() {
-                    Operation::Move(Datum::A, Datum::Y)
-                } else {
-                    Operation::Move(Datum::X, Datum::A)
-                }
-            }
-            Operation::Move(Datum::A, Datum::Y) => {
-                if random() {
-                    Operation::Move(Datum::A, Datum::X)
-                } else {
-                    Operation::Move(Datum::Y, Datum::A)
-                }
-            }
-            Operation::Move(Datum::X, Datum::A) => {
-                if random() {
-                    Operation::Move(Datum::A, Datum::Y)
-                } else {
-                    Operation::Move(Datum::A, Datum::X)
-                }
-            }
-            Operation::Move(Datum::Y, Datum::A) => {
-                if random() {
-                    Operation::Move(Datum::X, Datum::A)
-                } else {
-                    Operation::Move(Datum::A, Datum::X)
-                }
-            }
-            _ => {
-                unreachable!()
-            }
-        }
-    }
-
-    fn random_store(mach: Machine, instr: &mut Instruction) {
-        fn random_register(z: bool) -> Datum {
-            match rand::thread_rng().gen_range(0, if z { 4 } else { 3 }) {
-                0 => Datum::A,
-                1 => Datum::X,
-                2 => Datum::Y,
-                _ => Datum::Zero,
-            }
-        }
-
-        instr.operation = match instr.operation {
-            Operation::Move(src, dst) => {
-                if random() {
-                    Operation::Move(src, random_absolute())
-                } else {
-                    Operation::Move(
-                        random_register(mach == Machine::Mos6502(Mos6502Variant::Cmos)),
-                        dst,
-                    )
-                }
-            }
-            _ => {
-                unreachable!()
-            }
-        };
-    }
-
-    fn random_load(_mach: Machine, instr: &mut Instruction) {
-        fn random_register() -> Datum {
-            match rand::thread_rng().gen_range(0, 3) {
-                0 => Datum::A,
-                1 => Datum::X,
-                _ => Datum::Y,
-            }
-        }
-        fn random_source() -> Datum {
-            if random() {
-                random_absolute()
-            } else {
-                random_immediate()
-            }
-        }
-
-        instr.operation = match instr.operation {
-            Operation::Move(src, dst) => {
-                if random() {
-                    Operation::Move(src, random_register())
-                } else {
-                    Operation::Move(random_source(), dst)
-                }
-            }
-            _ => {
-                unreachable!()
-            }
-        };
-    }
-
-    fn random_rotate(_mach: Machine, instr: &mut Instruction) {
-        fn randsht() -> ShiftType {
-            match rand::thread_rng().gen_range(0, 4) {
-                0 => ShiftType::LeftArithmetic,
-                1 => ShiftType::RightArithmetic,
-                2 => ShiftType::LeftRotateThroughCarry,
-                _ => ShiftType::RightRotateThroughCarry,
-            }
-        }
-        fn randdat() -> Datum {
-            match rand::thread_rng().gen_range(0, 2) {
-                0 => Datum::A,
-                _ => random_absolute(),
-            }
-        }
-        instr.operation = match instr.operation {
-            Operation::Shift(shtype, dat) => {
-                if random() {
-                    Operation::Shift(shtype, randdat())
-                } else {
-                    Operation::Shift(randsht(), dat)
-                }
-            }
-            _ => {
-                unreachable!()
-            }
-        }
-    }
-
-    *vec![
-        Instruction::new(random_inc_dec, Operation::Increment(Datum::X)),
-        Instruction::new(
-            random_add,
-            Operation::AddWithCarry(Datum::Immediate(0), Datum::A),
-        ),
-        Instruction::new(random_t, Operation::Move(Datum::A, Datum::X)),
-        Instruction::new(random_store, Operation::Move(Datum::A, Datum::Absolute(0))),
-        Instruction::new(random_load, Operation::Move(Datum::Immediate(0), Datum::A)),
-        Instruction::new(
-            random_rotate,
-            Operation::Shift(ShiftType::LeftArithmetic, Datum::A),
-        ),
-        Instruction::inh(Operation::op_clc),
-        Instruction::inh(Operation::op_sec),
-    ].choose(&mut rand::thread_rng()).unwrap()
 }
 
-fn instr_pic() -> Instruction {
-    fn random_inc_dec(_mach: Machine, instr: &mut Instruction) {
-        // TODO: These instructions can optionally write to W instead of the F.
-        instr.operation = match instr.operation {
-            Operation::Decrement(x) => {
-                if random() {
-                    Operation::Increment(x)
-                } else {
-                    Operation::Decrement(random_absolute())
-                }
-            }
-            Operation::Increment(x) => {
-                if random() {
-                    Operation::Decrement(x)
-                } else {
-                    Operation::Increment(random_absolute())
-                }
-            }
-            _ => {
-                unreachable!()
-            }
-        }
-    }
-    fn random_add(mach: Machine, instr: &mut Instruction) {
-        fn addwf() -> Operation {
-            if random() {
-                Operation::Add(random_absolute(), Datum::A)
-            } else {
-                Operation::Add(Datum::A, random_absolute())
-            }
-        }
-        fn addlw() -> Operation {
-            Operation::Add(random_immediate(), Datum::A)
-        }
-
-        instr.operation = match mach {
-            Machine::Pic(PicVariant::Pic12) => addwf(),
-            Machine::Pic(_) => {
-                if random() {
-                    addlw()
-                } else {
-                    addwf()
-                }
-            }
-            _ => {
-                unreachable!();
-            }
-        }
-    }
-
-    fn random_rotate(_mach: Machine, instr: &mut Instruction) {
-        instr.operation = match instr.operation {
-            Operation::Shift(shtype, dat) => {
-                if random() {
-                    Operation::Shift(shtype, random_absolute())
-                } else {
-                    Operation::Shift(
-                        if random() {
-                            ShiftType::RightRotateThroughCarry
-                        } else {
-                            ShiftType::LeftRotateThroughCarry
-                        },
-                        dat,
-                    )
-                }
-            }
-            _ => {
-                unreachable!()
-            }
-        }
-    }
-
-    *vec![
-        Instruction::new(random_add, Operation::Add(Datum::Absolute(0), Datum::A)),
-        Instruction::new(random_inc_dec, Operation::Increment(Datum::X)),
-        Instruction::new(
-            random_rotate,
-            Operation::Shift(ShiftType::RightRotateThroughCarry, Datum::Absolute(0)),
-        ),
-        Instruction::imm(Operation::op_and),//"andlw"
-        Instruction::pic_wf(Operation::op_and),//"andwf"
-        // TODO: bcf bsf btfsc btfss (call)
-        Instruction::pic_wf(Operation::op_stz),//"clr"
-        // TODO: (clrwdt)
-        Instruction::abs(Operation::op_com),//"comf"
-        // TODO: decfsz (goto)
-        // TODO: incfsz iorlw iorwf
-        Instruction::abs(Operation::op_mov),//"movf"
-        Instruction::imm(Operation::op_lda),//"movlw"
-        Instruction::pic_wf(Operation::op_sta),//"movwf"
-        // TODO (nop) (option) (retlw)
-        // TODO: (sleep) subwf swapf (tris) xorlw xorwf
-    ].choose(&mut rand::thread_rng()).unwrap()
+fn shifts_pic(_mach: Machine) -> Operation {
+    // TODO: These instructions can optionally write to W instead of the F.
+    let shtype = if random() {
+        ShiftType::RightRotateThroughCarry
+    } else {
+        ShiftType::LeftRotateThroughCarry
+    };
+    Operation::Shift(shtype, random_absolute()) // rlf f,d and rrf f,d
 }
+
+fn and_pic(_mach: Machine) -> Operation {
+    let dst = random_accumulator_or_absolute();
+    if dst == Datum::A && random() {
+        // andlw
+        Operation::And(random_immediate(), dst)
+    } else {
+        if random() {
+            //
+            Operation::And(random_absolute(), dst)
+        } else {
+            Operation::And(dst, random_absolute())
+        }
+    }
+}
+
+fn store_pic(_mach: Machine) -> Operation {
+    // TODO: There also is movf f,d, which just updates the Z flag
+    match rand::thread_rng().gen_range(0, 4) {
+        0 => { Operation::Move(Datum::Zero, random_accumulator_or_absolute()) } // clrw and clrf f
+        1 => { Operation::Move(random_accumulator_or_absolute(), Datum::A) }    // movf f
+        2 => { Operation::Move(random_immediate(), Datum::A) }                  // movlw k
+        _ => { Operation::Move(Datum::A, random_accumulator_or_absolute()) }    // movwf f
+    }
+}
+
+fn instr_pic(mach: Machine) -> Instruction {
+    return match rand::thread_rng().gen_range(0, 5) {
+        0 => { Instruction::new(mach, shifts_pic) }
+        1 => { Instruction::new(mach, and_pic) }
+        2 => { Instruction::new(mach, add_pic) }
+        3 => { Instruction::new(mach, store_pic) }
+        _ => { Instruction::new(mach, inc_dec_pic) }
+    };
+    // TODO: Add the following other instructions:
+    // bcf bsf btfsc btfss (call) (clrwdt) comf decfsz (goto) incfsz iorlw iorwf (nop) (option) (retlw) (sleep) subwf swapf (tris) xorlw xorwf
+}
+
+

@@ -42,8 +42,7 @@ impl BasicBlock {
             instructions: vec![],
         };
         for _i in 0..max_size {
-            let mut i = new_instruction(mach);
-            (i.randomize)(mach, &mut i);
+            let i = new_instruction(mach);
             bb.push(i);
         }
         bb
@@ -158,7 +157,6 @@ fn mutate_insert(
     };
     let instruction = new_instruction(mach);
     prog.insert(offset, instruction);
-    (prog[offset].randomize)(mach, &mut prog[offset]);
 }
 
 fn mutate(
@@ -173,7 +171,7 @@ fn mutate(
         0 => {
             if prog.len() > 1 {
                 let offset: usize = rand::thread_rng().gen_range(0, prog.len());
-                (prog[offset].randomize)(mach, &mut prog[offset]);
+                prog[offset].randomize();
             }
         }
         /* delete an instruction */
