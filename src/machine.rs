@@ -576,7 +576,10 @@ fn random_absolute() -> Datum {
     Datum::Absolute(*vs.choose(&mut rand::thread_rng()).unwrap())
 }
 
-pub fn motorola6800() -> Vec<Instruction> {
+pub fn instr_prex86() -> Instruction {
+    unimplemented!();
+}
+pub fn instr_6800() -> Instruction {
     fn random_add(_mach: Machine, instr: &mut Instruction) {
         fn random_accumulator() -> Datum {
             if random() {
@@ -638,7 +641,7 @@ pub fn motorola6800() -> Vec<Instruction> {
         }
     }
 
-    vec![
+    *vec![
         Instruction::new(random_add, Operation::Add(Datum::B, Datum::A)),
         Instruction::new(random_t, Operation::Move(Datum::B, Datum::A)),
         Instruction::new(
@@ -648,10 +651,19 @@ pub fn motorola6800() -> Vec<Instruction> {
         Instruction::inh("daa", Operation::op_daa),
         Instruction::inh("clc", Operation::op_clc),
         Instruction::inh("sec", Operation::op_sec),
-    ]
+    ].choose(&mut rand::thread_rng()).unwrap()
 }
 
-pub fn mos6502() -> Vec<Instruction> {
+pub fn new_instruction(mach: Machine) -> Instruction {
+    match mach {
+        Machine::Motorola6800(_) => { instr_6800() }
+        Machine::Mos6502(_) => { instr_6502() }
+        Machine::PreX86(_) => { instr_prex86() }
+        Machine::Pic(_) => { instr_pic() }
+    }
+}
+
+fn instr_6502() -> Instruction {
     fn random_inc_dec(_mach: Machine, instr: &mut Instruction) {
         instr.operation = if random() {
             // pick between increment or decrement
@@ -811,7 +823,7 @@ pub fn mos6502() -> Vec<Instruction> {
         }
     }
 
-    vec![
+    *vec![
         Instruction::new(random_inc_dec, Operation::Increment(Datum::X)),
         Instruction::new(
             random_add,
@@ -826,22 +838,10 @@ pub fn mos6502() -> Vec<Instruction> {
         ),
         Instruction::inh("clc", Operation::op_clc),
         Instruction::inh("sec", Operation::op_sec),
-    ]
+    ].choose(&mut rand::thread_rng()).unwrap()
 }
 
-pub fn z80() -> Vec<Instruction> {
-    Vec::new()
-}
-
-pub fn i8080() -> Vec<Instruction> {
-    Vec::new()
-}
-
-pub fn i8085() -> Vec<Instruction> {
-    Vec::new()
-}
-
-pub fn pic12() -> Vec<Instruction> {
+fn instr_pic() -> Instruction {
     fn random_inc_dec(_mach: Machine, instr: &mut Instruction) {
         // TODO: These instructions can optionally write to W instead of the F.
         instr.operation = match instr.operation {
@@ -913,7 +913,7 @@ pub fn pic12() -> Vec<Instruction> {
         }
     }
 
-    vec![
+    *vec![
         Instruction::new(random_add, Operation::Add(Datum::Absolute(0), Datum::A)),
         Instruction::new(random_inc_dec, Operation::Increment(Datum::X)),
         Instruction::new(
@@ -933,5 +933,5 @@ pub fn pic12() -> Vec<Instruction> {
         Instruction::pic_wf("movwf", Operation::op_sta),
         // TODO (nop) (option) (retlw)
         // TODO: (sleep) subwf swapf (tris) xorlw xorwf
-    ]
+    ].choose(&mut rand::thread_rng()).unwrap()
 }

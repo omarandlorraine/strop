@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use crate::{Datum, Machine};
+use crate::machine::{Datum, Machine};
 
 #[derive(Deserialize, Debug)]
 pub struct DeParameter {

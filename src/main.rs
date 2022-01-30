@@ -8,26 +8,18 @@ mod machine;
 mod search;
 mod test;
 
-use crate::machine::motorola6800;
-use crate::machine::{i8080, i8085, z80};
-use crate::machine::{Machine, PreX86Variant, Mos6502Variant, Motorola8BitVariant, PicVariant};
-use crate::machine::mos6502;
-use crate::machine::{pic12};
-
-use crate::machine::Instruction;
 use crate::machine::State;
-use crate::machine::Datum;
-
+use crate::machine::{Machine, PreX86Variant, Mos6502Variant, Motorola8BitVariant, PicVariant};
 use crate::search::BasicBlock;
-use crate::search::{differance, equivalence};
+use crate::search::differance;
 use crate::search::stochastic_search;
 
-use crate::test::{sanity, DeTestRun, Parameter, Test, TestRun};
+use crate::test::{DeTestRun, Parameter, Test, TestRun};
+use crate::test::sanity;
 
 struct MOpt {
     name: &'static str,
     mach: Machine,
-    func: fn() -> Vec<Instruction>,
     help: &'static str,
 }
 
@@ -35,79 +27,66 @@ const M_OPTS: [MOpt; 13] = [
     MOpt {
         name: "8080",
         mach: Machine::PreX86(PreX86Variant::I8080),
-        func: i8080,
         help: "Intel 8080",
     },
     MOpt {
         name: "8085",
         mach: Machine::PreX86(PreX86Variant::I8085),
-        func: i8085,
         help: "Intel 8085",
     },
     MOpt {
         name: "kr580vm1",
         mach: Machine::PreX86(PreX86Variant::KR580VM1),
-        func: z80,
         help: "KR580VM1, a Soviet Ukrainian 8080 variant",
     },
     MOpt {
         name: "z80",
         mach: Machine::PreX86(PreX86Variant::ZilogZ80),
-        func: z80,
         help: "Zilog Z80",
     },
     MOpt {
         name: "2a03",
         mach: Machine::Mos6502(Mos6502Variant::Ricoh2a03),
-        func: mos6502,
         help: "Ricoh 2A03/2A07, which is a 6502 with no decimal mode",
     },
     MOpt {
         name: "6502",
         mach: Machine::Mos6502(Mos6502Variant::Nmos),
-        func: mos6502,
         help: "generic 6502",
     },
     MOpt {
         name: "65i02",
         mach: Machine::Mos6502(Mos6502Variant::IllegalInstructions),
-        func: mos6502,
         help: "NMOS 6502, but with illegal instructions like lax and dca",
     },
     MOpt {
         name: "65c02",
         mach: Machine::Mos6502(Mos6502Variant::Cmos),
-        func: mos6502,
         help: "CMOS 6502, including new instructions like phx and stz",
     },
     MOpt {
         name: "6800",
         mach: Machine::Motorola6800(Motorola8BitVariant::Motorola6800),
-        func: motorola6800,
         help: "Motorola 6800",
     },
     MOpt {
         name: "6801",
         mach: Machine::Motorola6800(Motorola8BitVariant::Motorola6801),
-        func: motorola6800,
         help: "Motorola 6800",
     },
     MOpt {
         name: "pic12",
         mach: Machine::Pic(PicVariant::Pic12),
-        func: pic12,
         help: "PIC12",
     },
     MOpt {
         name: "pic14",
         mach: Machine::Pic(PicVariant::Pic14),
-        func: pic12,
         help: "PIC14",
     },
     MOpt {
         name: "pic16",
         mach: Machine::Pic(PicVariant::Pic16),
-        func: pic12,
         help: "PIC16",
     },
 ];
@@ -140,10 +119,10 @@ struct Opts {
     constant: Vec<i8>,
 }
 
-fn mach(m: String) -> (Vec<Instruction>, Machine) {
+fn mach(m: String) -> Machine {
     for m_opt in &M_OPTS {
         if m_opt.name == m {
-            return ((m_opt.func)(), m_opt.mach);
+            return m_opt.mach;
         }
     }
     println!("You didn't pick a valid arch, so here's the ones I know:");
@@ -267,15 +246,13 @@ fn testrun_from_args(opts: &Opts, mach: Machine) -> TestRun {
 fn main() {
     let opts: Opts = argh::from_env();
     let machine = mach(opts.arch.clone());
-    let m = machine.0;
-    let msan = machine.1;
 
     let testrun = if let Some(path) = opts.file {
         let data = fs::read_to_string(path).expect("Unable to read file");
         let res: DeTestRun = serde_json::from_str(&data).expect("Unable to parse");
-        sanity(&res, msan)
+        sanity(&res, machine)
     } else {
-        testrun_from_args(&opts, msan)
+        testrun_from_args(&opts, machine)
     };
 
     let convergence = |prog: &BasicBlock| differance(prog, &testrun);
