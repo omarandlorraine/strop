@@ -51,7 +51,6 @@ pub enum AddressingMode {
 
 #[derive(Clone, Copy)]
 pub struct Instruction {
-    opname: &'static str,
     pub operation: Operation,
     pub randomize: fn(Machine, &mut Instruction),
     src: AddressingMode,
@@ -269,7 +268,6 @@ pub enum Operation {
 impl Instruction {
     pub fn inh(opname: &'static str, operation: Operation) -> Instruction {
         Instruction {
-            opname,
             operation,
             randomize: |_m, _i| (),
             src: AddressingMode::Implicit,
@@ -278,7 +276,6 @@ impl Instruction {
 
     pub fn imm(opname: &'static str, operation: Operation) -> Instruction {
         Instruction {
-            opname,
             operation,
             randomize: |_m, _i| (),
             src: AddressingMode::Immediate(0),
@@ -287,7 +284,6 @@ impl Instruction {
 
     pub fn abs(opname: &'static str, operation: Operation) -> Instruction {
         Instruction {
-            opname,
             operation,
             randomize: |_m, _i| (),
             src: AddressingMode::Absolute(0),
@@ -299,7 +295,6 @@ impl Instruction {
         operation: Operation,
     ) -> Instruction {
         Instruction {
-            opname: "bonio", // needs to be removed
             operation,
             randomize,
             src: AddressingMode::Absolute(0), // needs to be removed
@@ -308,7 +303,6 @@ impl Instruction {
 
     pub fn pic_wf(opname: &'static str, operation: Operation) -> Instruction {
         Instruction {
-            opname,
             operation,
             randomize: |_m, _i| (),
             src: AddressingMode::PicWF(false, 0),
