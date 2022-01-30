@@ -127,10 +127,6 @@ struct Opts {
     /// the function to compute
     function: Option<String>,
 
-    #[argh(option)]
-    /// what kind of search to perform
-    search: String,
-
     #[argh(option, long = "in")]
     /// in variables
     r#in: Vec<String>,
@@ -282,20 +278,7 @@ fn main() {
         testrun_from_args(&opts, msan)
     };
 
-    if opts.search == "exh" {
-        let _found_it = |prog: BasicBlock| {
-            if equivalence(prog.clone(), &testrun) {
-                disassemble(prog);
-                true
-            } else {
-                false
-            }
-        };
-        let _vars: Vec<u16> = vec![3, 4, 5];
-        panic!();
-    } else if opts.search == "stoc" {
-        let convergence = |prog: &BasicBlock| differance(prog, &testrun);
-        let prog = stochastic_search(&convergence, msan, &m);
-        disassemble(prog);
-    }
+    let convergence = |prog: &BasicBlock| differance(prog, &testrun);
+    let prog = stochastic_search(&convergence, machine);
+    disassemble(prog);
 }
