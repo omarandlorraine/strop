@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::rand::Rng;
+use std::collections::HashMap;
 extern crate rand;
 use rand::random;
 
@@ -20,7 +20,9 @@ pub enum Motorola8BitVariant {
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum PicVariant {
-    Pic12, Pic14, Pic16,
+    Pic12,
+    Pic14,
+    Pic16,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -28,7 +30,7 @@ pub enum PreX86Variant {
     ZilogZ80,
     I8080,
     I8085,
-    KR580VM1
+    KR580VM1,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -36,7 +38,7 @@ pub enum Machine {
     Mos6502(Mos6502Variant),
     Motorola6800(Motorola8BitVariant),
     Pic(PicVariant),
-    PreX86(PreX86Variant)
+    PreX86(PreX86Variant),
 }
 
 #[derive(Clone, Copy)]
@@ -55,7 +57,6 @@ pub struct Instruction {
     src: AddressingMode,
 }
 
-
 impl std::fmt::Display for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.operation)
@@ -64,7 +65,10 @@ impl std::fmt::Display for Instruction {
 
 #[derive(Copy, Debug, Clone)]
 pub enum Datum {
-    A, B, X, Y,
+    A,
+    B,
+    X,
+    Y,
     Immediate(i8),
     Absolute(u16),
     Zero,
@@ -73,46 +77,42 @@ pub enum Datum {
 impl Machine {
     pub fn register_by_name(self, name: &str) -> Datum {
         match self {
-            Machine::Mos6502(_) => {
-                match name {
-                    "a" => { Datum::A }
-                    "x" => { Datum::X }
-                    "y" => { Datum::Y }
-                    _ => { panic!("No such register as {}", name); }
+            Machine::Mos6502(_) => match name {
+                "a" => Datum::A,
+                "x" => Datum::X,
+                "y" => Datum::Y,
+                _ => {
+                    panic!("No such register as {}", name);
                 }
-            }
-            Machine::Motorola6800(_) => {
-                match name {
-                    "a" => { Datum::A }
-                    "b" => { Datum::B }
-                    _ => { panic!("No such register as {}", name); }
+            },
+            Machine::Motorola6800(_) => match name {
+                "a" => Datum::A,
+                "b" => Datum::B,
+                _ => {
+                    panic!("No such register as {}", name);
                 }
-            }
-            Machine::Pic(_) => {
-                match name {
-                    "w" => { Datum::A }
-                    _ => { panic!("No such register as {}", name); }
+            },
+            Machine::Pic(_) => match name {
+                "w" => Datum::A,
+                _ => {
+                    panic!("No such register as {}", name);
                 }
-            }
+            },
             Machine::PreX86(_variant) => {
                 // TODO: fill in for the other variants
                 match name {
-                    "a" => { Datum::A }
-                    "b" => { Datum::B }
-                    _ => { panic!("No such register as {}", name); }
+                    "a" => Datum::A,
+                    "b" => Datum::B,
+                    _ => {
+                        panic!("No such register as {}", name);
+                    }
                 }
             }
         }
     }
 }
 
-pub fn bitwise_and(
-    reg: Option<i8>,
-    a: Option<i8>
-) -> (
-    Option<i8>,
-    Option<bool>
-) {
+pub fn bitwise_and(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>) {
     if let Some(operand) = a {
         if let Some(r) = reg {
             return (Some(r & operand), Some(r & operand == 0));
@@ -121,13 +121,7 @@ pub fn bitwise_and(
     (None, None)
 }
 
-pub fn bitwise_xor(
-    reg: Option<i8>,
-    a: Option<i8>
-) -> (
-    Option<i8>,
-    Option<bool>
-) {
+pub fn bitwise_xor(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>) {
     if let Some(operand) = a {
         if let Some(r) = reg {
             return (Some(r ^ operand), Some(r ^ operand == 0));
@@ -135,7 +129,6 @@ pub fn bitwise_xor(
     }
     (None, None)
 }
-
 
 #[allow(clippy::many_single_char_names)]
 pub fn add_to_reg8(
@@ -256,9 +249,14 @@ pub enum ShiftType {
 #[derive(Clone, Debug, Copy)]
 #[allow(non_camel_case_types)]
 pub enum Operation {
-    op_sta, op_lda, op_mov, op_stz, // These are still only used for PICs, and may be rewritten as Move(x, y)
-    op_com, op_and,
-    op_sec, op_clc,
+    op_sta,
+    op_lda,
+    op_mov,
+    op_stz, // These are still only used for PICs, and may be rewritten as Move(x, y)
+    op_com,
+    op_and,
+    op_sec,
+    op_clc,
     op_daa,
     Decrement(Datum),
     Increment(Datum),
@@ -269,10 +267,7 @@ pub enum Operation {
 }
 
 impl Instruction {
-    pub fn inh(
-        opname: &'static str,
-        operation: Operation
-    ) -> Instruction {
+    pub fn inh(opname: &'static str, operation: Operation) -> Instruction {
         Instruction {
             opname,
             operation,
@@ -281,10 +276,7 @@ impl Instruction {
         }
     }
 
-    pub fn imm(
-        opname: &'static str,
-        operation: Operation
-    ) -> Instruction {
+    pub fn imm(opname: &'static str, operation: Operation) -> Instruction {
         Instruction {
             opname,
             operation,
@@ -293,10 +285,7 @@ impl Instruction {
         }
     }
 
-    pub fn abs(
-        opname: &'static str,
-        operation: Operation
-    ) -> Instruction {
+    pub fn abs(opname: &'static str, operation: Operation) -> Instruction {
         Instruction {
             opname,
             operation,
@@ -307,7 +296,7 @@ impl Instruction {
 
     pub fn new(
         randomize: for<'r> fn(Machine, &'r mut Instruction),
-        operation: Operation
+        operation: Operation,
     ) -> Instruction {
         Instruction {
             opname: "bonio", // needs to be removed
@@ -317,10 +306,7 @@ impl Instruction {
         }
     }
 
-    pub fn pic_wf(
-        opname: &'static str,
-        operation: Operation
-    ) -> Instruction {
+    pub fn pic_wf(opname: &'static str, operation: Operation) -> Instruction {
         Instruction {
             opname,
             operation,
@@ -366,8 +352,7 @@ impl Instruction {
             AddressingMode::PicWF(f, address) => {
                 if f {
                     m.heap.insert(address, val);
-                }
-                else {
+                } else {
                     m.accumulator = val;
                 }
             }
@@ -378,7 +363,8 @@ impl Instruction {
     pub fn operate(&self, s: &mut State) -> bool {
         match self.operation {
             Operation::Add(source, destination) => {
-                let (result, c, z, n, o, h) = add_to_reg8(get(s, source), get(s, destination), Some(false));
+                let (result, c, z, n, o, h) =
+                    add_to_reg8(get(s, source), get(s, destination), Some(false));
                 set(s, destination, result);
                 s.sign = n;
                 s.carry = c;
@@ -388,7 +374,8 @@ impl Instruction {
                 true
             }
             Operation::AddWithCarry(source, destination) => {
-                let (result, c, z, n, o, h) = add_to_reg8(get(s, source), get(s, destination), s.carry);
+                let (result, c, z, n, o, h) =
+                    add_to_reg8(get(s, source), get(s, destination), s.carry);
                 set(s, destination, result);
                 s.sign = n;
                 s.carry = c;
@@ -408,7 +395,6 @@ impl Instruction {
                 true
             }
 
-
             Operation::op_com => {
                 let (result, z) = bitwise_xor(s.accumulator, Some(-1));
                 s.accumulator = result;
@@ -427,7 +413,8 @@ impl Instruction {
             }
 
             Operation::Increment(register) => {
-                let (result, _c, z, n, _o, _h) = add_to_reg8(get(s, register), Some(1), Some(false));
+                let (result, _c, z, n, _o, _h) =
+                    add_to_reg8(get(s, register), Some(1), Some(false));
                 set(s, register, result);
                 s.zero = z;
                 s.sign = n;
@@ -435,7 +422,8 @@ impl Instruction {
             }
 
             Operation::Decrement(register) => {
-                let (result, _c, z, n, _o, _h) = add_to_reg8(get(s, register), Some(-1), Some(false));
+                let (result, _c, z, n, _o, _h) =
+                    add_to_reg8(get(s, register), Some(-1), Some(false));
                 set(s, register, result);
                 s.zero = z;
                 s.sign = n;
@@ -447,40 +435,38 @@ impl Instruction {
                 true
             }
 
-            Operation::Shift(shtype, datum) => {
-                match shtype {
-                    ShiftType::LeftArithmetic => {
-                        let (val, c) = rotate_left_thru_carry(get(s, datum), Some(false));
-                        set(s, datum, val);
-                        s.carry = c;
-                        true
-                    }
-                    ShiftType::RightArithmetic => {
-                        let (val, c) = rotate_right_thru_carry(get(s, datum), Some(false));
-                        set(s, datum, val);
-                        s.carry = c;
-                        true
-                    }
-                    ShiftType::RightRotateThroughCarry  => {
-                        let (val, c) = rotate_right_thru_carry(get(s, datum), s.carry);
-                        set(s, datum, val);
-                        s.carry = c;
-                        true
-                    }
-                    ShiftType::LeftRotateThroughCarry  => {
-                        let (val, c) = rotate_left_thru_carry(get(s, datum), s.carry);
-                        set(s, datum, val);
-                        s.carry = c;
-                        true
-                    }
-                    ShiftType::RightLogical  => {
-                        let (val, c) = rotate_right_thru_carry(get(s, datum), Some(false));
-                        set(s, datum, val);
-                        s.carry = c;
-                        true
-                    }
+            Operation::Shift(shtype, datum) => match shtype {
+                ShiftType::LeftArithmetic => {
+                    let (val, c) = rotate_left_thru_carry(get(s, datum), Some(false));
+                    set(s, datum, val);
+                    s.carry = c;
+                    true
                 }
-            }
+                ShiftType::RightArithmetic => {
+                    let (val, c) = rotate_right_thru_carry(get(s, datum), Some(false));
+                    set(s, datum, val);
+                    s.carry = c;
+                    true
+                }
+                ShiftType::RightRotateThroughCarry => {
+                    let (val, c) = rotate_right_thru_carry(get(s, datum), s.carry);
+                    set(s, datum, val);
+                    s.carry = c;
+                    true
+                }
+                ShiftType::LeftRotateThroughCarry => {
+                    let (val, c) = rotate_left_thru_carry(get(s, datum), s.carry);
+                    set(s, datum, val);
+                    s.carry = c;
+                    true
+                }
+                ShiftType::RightLogical => {
+                    let (val, c) = rotate_right_thru_carry(get(s, datum), Some(false));
+                    set(s, datum, val);
+                    s.carry = c;
+                    true
+                }
+            },
 
             Operation::op_mov => {
                 self.write_datum(s, self.get_datum(s));
@@ -558,28 +544,17 @@ pub fn set(state: &mut State, register: Datum, val: Option<i8>) {
         Datum::Absolute(address) => {
             state.heap.insert(address, val);
         }
-        Datum::Zero => {
-        }
+        Datum::Zero => {}
     }
 }
 
 pub fn get(state: &State, register: Datum) -> Option<i8> {
     match register {
-        Datum::A => {
-            state.accumulator
-        }
-        Datum::B => {
-            state.reg_b
-        }
-        Datum::X => {
-            state.x8
-        }
-        Datum::Y => {
-            state.y8
-        }
-        Datum::Immediate(x) => {
-            Some(x)
-        }
+        Datum::A => state.accumulator,
+        Datum::B => state.reg_b,
+        Datum::X => state.x8,
+        Datum::Y => state.y8,
+        Datum::Immediate(x) => Some(x),
         Datum::Absolute(address) => {
             if let Some(x) = state.heap.get(&address) {
                 *x
@@ -587,9 +562,7 @@ pub fn get(state: &State, register: Datum) -> Option<i8> {
                 None
             }
         }
-        Datum::Zero => {
-            Some(0)
-        }
+        Datum::Zero => Some(0),
     }
 }
 
@@ -615,38 +588,40 @@ pub fn motorola6800() -> Vec<Instruction> {
 
         fn random_source() -> Datum {
             // TODO: sort it out
-            random_immediate() 
+            random_immediate()
         }
-        
-        instr.operation = match rand::thread_rng().gen_range(0, 3) { 
-            0 => { Operation::Add(Datum::B, Datum::A)},
-            1 => { Operation::AddWithCarry(random_source(), random_accumulator())},
-            _ => { Operation::Add(random_source(), random_accumulator())},
+
+        instr.operation = match rand::thread_rng().gen_range(0, 3) {
+            0 => Operation::Add(Datum::B, Datum::A),
+            1 => Operation::AddWithCarry(random_source(), random_accumulator()),
+            _ => Operation::Add(random_source(), random_accumulator()),
         };
     }
 
     fn random_t(_mach: Machine, instr: &mut Instruction) {
         instr.operation = match instr.operation {
-            Operation::Move(Datum::A, Datum::B) => {Operation::Move(Datum::B, Datum::A)}
-            Operation::Move(Datum::B, Datum::A) => {Operation::Move(Datum::A, Datum::B)}
-            _ => {unreachable!()}
+            Operation::Move(Datum::A, Datum::B) => Operation::Move(Datum::B, Datum::A),
+            Operation::Move(Datum::B, Datum::A) => Operation::Move(Datum::A, Datum::B),
+            _ => {
+                unreachable!()
+            }
         }
     }
 
     fn random_rotate(_mach: Machine, instr: &mut Instruction) {
         fn randsht() -> ShiftType {
-            match rand::thread_rng().gen_range(0, 4) { 
-                0 => { ShiftType::LeftArithmetic }
-                1 => { ShiftType::RightArithmetic }
-                2 => { ShiftType::LeftRotateThroughCarry }
-                _ => { ShiftType::RightRotateThroughCarry }
+            match rand::thread_rng().gen_range(0, 4) {
+                0 => ShiftType::LeftArithmetic,
+                1 => ShiftType::RightArithmetic,
+                2 => ShiftType::LeftRotateThroughCarry,
+                _ => ShiftType::RightRotateThroughCarry,
             }
         }
         fn randdat() -> Datum {
-            match rand::thread_rng().gen_range(0, 3) { 
-                0 => { Datum::A }
-                1 => { Datum::B }
-                _ => { random_absolute() }
+            match rand::thread_rng().gen_range(0, 3) {
+                0 => Datum::A,
+                1 => Datum::B,
+                _ => random_absolute(),
             }
         }
         instr.operation = match instr.operation {
@@ -662,11 +637,14 @@ pub fn motorola6800() -> Vec<Instruction> {
             }
         }
     }
-    
+
     vec![
         Instruction::new(random_add, Operation::Add(Datum::B, Datum::A)),
         Instruction::new(random_t, Operation::Move(Datum::B, Datum::A)),
-        Instruction::new(random_rotate, Operation::Shift(ShiftType::LeftArithmetic, Datum::A)),
+        Instruction::new(
+            random_rotate,
+            Operation::Shift(ShiftType::LeftArithmetic, Datum::A),
+        ),
         Instruction::inh("daa", Operation::op_daa),
         Instruction::inh("clc", Operation::op_clc),
         Instruction::inh("sec", Operation::op_sec),
@@ -678,19 +656,23 @@ pub fn mos6502() -> Vec<Instruction> {
         instr.operation = if random() {
             // pick between increment or decrement
             match instr.operation {
-                Operation::Increment(x) => { Operation::Decrement(x) }
-                Operation::Decrement(x) => { Operation::Increment(x) }
-                _ => { panic!(); }
+                Operation::Increment(x) => Operation::Decrement(x),
+                Operation::Decrement(x) => Operation::Increment(x),
+                _ => {
+                    panic!();
+                }
             }
         } else {
             // pick between X and Y
             // TODO: check if this machine supports inc/dec on accumulator
             match instr.operation {
-                Operation::Increment(Datum::X) => { Operation::Decrement(Datum::Y) }
-                Operation::Increment(Datum::Y) => { Operation::Decrement(Datum::X) }
-                Operation::Decrement(Datum::X) => { Operation::Increment(Datum::Y) }
-                Operation::Decrement(Datum::Y) => { Operation::Increment(Datum::X) }
-                _ => { panic!(); }
+                Operation::Increment(Datum::X) => Operation::Decrement(Datum::Y),
+                Operation::Increment(Datum::Y) => Operation::Decrement(Datum::X),
+                Operation::Decrement(Datum::X) => Operation::Increment(Datum::Y),
+                Operation::Decrement(Datum::Y) => Operation::Increment(Datum::X),
+                _ => {
+                    panic!();
+                }
             }
         }
     }
@@ -698,12 +680,12 @@ pub fn mos6502() -> Vec<Instruction> {
     fn random_add(_mach: Machine, instr: &mut Instruction) {
         fn random_source() -> Datum {
             if random() {
-                random_immediate() 
+                random_immediate()
             } else {
                 random_absolute()
             }
         }
-        
+
         instr.operation = Operation::AddWithCarry(random_source(), Datum::A);
     }
 
@@ -737,17 +719,19 @@ pub fn mos6502() -> Vec<Instruction> {
                     Operation::Move(Datum::A, Datum::X)
                 }
             }
-            _ => {unreachable!()}
+            _ => {
+                unreachable!()
+            }
         }
     }
 
     fn random_store(mach: Machine, instr: &mut Instruction) {
         fn random_register(z: bool) -> Datum {
             match rand::thread_rng().gen_range(0, if z { 4 } else { 3 }) {
-                0 => { Datum::A }
-                1 => { Datum::X }
-                2 => { Datum::Y }
-                _ => { Datum::Zero }
+                0 => Datum::A,
+                1 => Datum::X,
+                2 => Datum::Y,
+                _ => Datum::Zero,
             }
         }
 
@@ -756,19 +740,24 @@ pub fn mos6502() -> Vec<Instruction> {
                 if random() {
                     Operation::Move(src, random_absolute())
                 } else {
-                    Operation::Move(random_register(mach == Machine::Mos6502(Mos6502Variant::Cmos)), dst)
+                    Operation::Move(
+                        random_register(mach == Machine::Mos6502(Mos6502Variant::Cmos)),
+                        dst,
+                    )
                 }
             }
-            _ => { unreachable!() }
+            _ => {
+                unreachable!()
+            }
         };
     }
 
     fn random_load(_mach: Machine, instr: &mut Instruction) {
         fn random_register() -> Datum {
             match rand::thread_rng().gen_range(0, 3) {
-                0 => { Datum::A }
-                1 => { Datum::X }
-                _ => { Datum::Y }
+                0 => Datum::A,
+                1 => Datum::X,
+                _ => Datum::Y,
             }
         }
         fn random_source() -> Datum {
@@ -787,23 +776,25 @@ pub fn mos6502() -> Vec<Instruction> {
                     Operation::Move(random_source(), dst)
                 }
             }
-            _ => { unreachable!() }
+            _ => {
+                unreachable!()
+            }
         };
     }
 
     fn random_rotate(_mach: Machine, instr: &mut Instruction) {
         fn randsht() -> ShiftType {
-            match rand::thread_rng().gen_range(0, 4) { 
-                0 => { ShiftType::LeftArithmetic }
-                1 => { ShiftType::RightArithmetic }
-                2 => { ShiftType::LeftRotateThroughCarry }
-                _ => { ShiftType::RightRotateThroughCarry }
+            match rand::thread_rng().gen_range(0, 4) {
+                0 => ShiftType::LeftArithmetic,
+                1 => ShiftType::RightArithmetic,
+                2 => ShiftType::LeftRotateThroughCarry,
+                _ => ShiftType::RightRotateThroughCarry,
             }
         }
         fn randdat() -> Datum {
-            match rand::thread_rng().gen_range(0, 2) { 
-                0 => { Datum::A }
-                _ => { random_absolute() }
+            match rand::thread_rng().gen_range(0, 2) {
+                0 => Datum::A,
+                _ => random_absolute(),
             }
         }
         instr.operation = match instr.operation {
@@ -822,11 +813,17 @@ pub fn mos6502() -> Vec<Instruction> {
 
     vec![
         Instruction::new(random_inc_dec, Operation::Increment(Datum::X)),
-        Instruction::new(random_add, Operation::AddWithCarry(Datum::Immediate(0), Datum::A)),
+        Instruction::new(
+            random_add,
+            Operation::AddWithCarry(Datum::Immediate(0), Datum::A),
+        ),
         Instruction::new(random_t, Operation::Move(Datum::A, Datum::X)),
         Instruction::new(random_store, Operation::Move(Datum::A, Datum::Absolute(0))),
         Instruction::new(random_load, Operation::Move(Datum::Immediate(0), Datum::A)),
-        Instruction::new(random_rotate, Operation::Shift(ShiftType::LeftArithmetic, Datum::A)),
+        Instruction::new(
+            random_rotate,
+            Operation::Shift(ShiftType::LeftArithmetic, Datum::A),
+        ),
         Instruction::inh("clc", Operation::op_clc),
         Instruction::inh("sec", Operation::op_sec),
     ]
@@ -862,7 +859,9 @@ pub fn pic12() -> Vec<Instruction> {
                     Operation::Increment(random_absolute())
                 }
             }
-            _ => { unreachable!() }
+            _ => {
+                unreachable!()
+            }
         }
     }
     fn random_add(mach: Machine, instr: &mut Instruction) {
@@ -878,13 +877,17 @@ pub fn pic12() -> Vec<Instruction> {
         }
 
         instr.operation = match mach {
-            Machine::Pic(PicVariant::Pic12) => {
-                addwf()
-            }
+            Machine::Pic(PicVariant::Pic12) => addwf(),
             Machine::Pic(_) => {
-                if random() { addlw() } else { addwf() }
+                if random() {
+                    addlw()
+                } else {
+                    addwf()
+                }
             }
-            _ => { unreachable!(); }
+            _ => {
+                unreachable!();
+            }
         }
     }
 
@@ -894,24 +897,32 @@ pub fn pic12() -> Vec<Instruction> {
                 if random() {
                     Operation::Shift(shtype, random_absolute())
                 } else {
-                    Operation::Shift(if random() {ShiftType::RightRotateThroughCarry} else {ShiftType::LeftRotateThroughCarry},
-                    dat)
+                    Operation::Shift(
+                        if random() {
+                            ShiftType::RightRotateThroughCarry
+                        } else {
+                            ShiftType::LeftRotateThroughCarry
+                        },
+                        dat,
+                    )
                 }
             }
             _ => {
                 unreachable!()
             }
         }
-
     }
 
     vec![
         Instruction::new(random_add, Operation::Add(Datum::Absolute(0), Datum::A)),
         Instruction::new(random_inc_dec, Operation::Increment(Datum::X)),
-        Instruction::new(random_rotate, Operation::Shift(ShiftType::RightRotateThroughCarry, Datum::Absolute(0))),
+        Instruction::new(
+            random_rotate,
+            Operation::Shift(ShiftType::RightRotateThroughCarry, Datum::Absolute(0)),
+        ),
         Instruction::imm("andlw", Operation::op_and),
         Instruction::pic_wf("andwf", Operation::op_and),
-        // TODO: bcf bsf btfsc btfss (call) 
+        // TODO: bcf bsf btfsc btfss (call)
         Instruction::pic_wf("clr  ", Operation::op_stz),
         // TODO: (clrwdt)
         Instruction::abs("comf ", Operation::op_com),
@@ -921,6 +932,6 @@ pub fn pic12() -> Vec<Instruction> {
         Instruction::imm("movlw", Operation::op_lda),
         Instruction::pic_wf("movwf", Operation::op_sta),
         // TODO (nop) (option) (retlw)
-        // TODO: (sleep) subwf swapf (tris) xorlw xorwf 
+        // TODO: (sleep) subwf swapf (tris) xorlw xorwf
     ]
 }
