@@ -305,7 +305,6 @@ pub fn stochastic_search(
                 next_generation.push((fit, d));
             }
         }
-        println!("generation {}", b.0);
 
         if !next_generation.is_empty() {
             population = next_generation;
