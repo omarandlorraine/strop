@@ -50,7 +50,22 @@ pub struct Instruction {
 
 impl std::fmt::Display for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.operation)
+        match (self.machine, self.operation) {
+            (Machine::Mos6502(_), Operation::Move(Datum::A, Datum::X)) => { write!(f, "\ttax") }
+            (Machine::Mos6502(_), Operation::Move(Datum::A, Datum::Y)) => { write!(f, "\ttay") }
+            (Machine::Mos6502(_), Operation::Move(Datum::X, Datum::A)) => { write!(f, "\ttxa") }
+            (Machine::Mos6502(_), Operation::Move(Datum::Y, Datum::A)) => { write!(f, "\ttya") }
+            (Machine::Motorola6800(_), Operation::Move(Datum::B, Datum::A)) => { write!(f, "\ttba") } 
+            (Machine::Motorola6800(_), Operation::Move(Datum::A, Datum::B)) => { write!(f, "\ttab") } 
+            (Machine::Motorola6800(_), Operation::Add(Datum::B, Datum::A)) => { write!(f, "\taba") } 
+            (Machine::Motorola6800(_), Operation::Shift(ShiftType::LeftRotateThroughCarry, Datum::A)) => { write!(f, "\tror a") }
+            (Machine::Motorola6800(_), Operation::Shift(ShiftType::LeftArithmetic, Datum::A)) => { write!(f, "\tasl a") }
+            (Machine::Motorola6800(_), Operation::Shift(ShiftType::LeftRotateThroughCarry, Datum::B)) => { write!(f, "\tror b") }
+            (Machine::Motorola6800(_), Operation::Shift(ShiftType::LeftArithmetic, Datum::B)) => { write!(f, "\tasl b") }
+            (Machine::Mos6502(_), Operation::Move(Datum::A, Datum::Absolute(a))) => { write!(f, "\tsta {}", a) }
+            (Machine::Mos6502(_), Operation::Move(Datum::Absolute(a), Datum::A)) => { write!(f, "\tlda {}", a) }
+            _ => { write!(f, "{:?}", self.operation) }
+        }
     }
 }
 
