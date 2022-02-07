@@ -203,33 +203,31 @@ fn decimal_adjust(
 }
 
 fn rotate_left_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>, Option<bool>) {
-    if val.is_none() || carry.is_none() {
-        (None, None)
-    } else {
-        let c = carry.unwrap();
-        let v = val.unwrap();
-        let high_bit_set = v & -128 != 0;
-        let shifted = (v & 0x7f).rotate_left(1);
-        (
-            Some(if c { shifted + 1 } else { shifted }),
-            Some(high_bit_set),
-        )
+    if let Some(v) = val {
+        if let Some(c) = carry {
+            let high_bit_set = v & -128 != 0;
+            let shifted = (v & 0x7f).rotate_left(1);
+            return (
+                Some(if c { shifted + 1 } else { shifted }),
+                Some(high_bit_set),
+            );
+        }
     }
+    (None, None)
 }
 
 fn rotate_right_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>, Option<bool>) {
-    if val.is_none() || carry.is_none() {
-        (None, None)
-    } else {
-        let c = carry.unwrap();
-        let v = val.unwrap();
-        let low_bit_set = v & 1 != 0;
-        let shifted = (v & 0x7f).rotate_right(1);
-        (
-            Some(if c { shifted | -128i8 } else { shifted }),
-            Some(low_bit_set),
-        )
+    if let Some(v) = val {
+        if let Some(c) = carry {
+            let low_bit_set = v & 1 != 0;
+            let shifted = (v & 0x7f).rotate_right(1);
+            return (
+                Some(if c { shifted | -128i8 } else { shifted }),
+                Some(low_bit_set),
+            )
+        }
     }
+    (None, None)
 }
 
 #[test]
@@ -521,11 +519,11 @@ fn rotates_6800(_mach: Machine) -> Operation {
 }
 
 pub fn instr_6800(mach: Machine) -> Instruction {
-    return match rand::thread_rng().gen_range(0, 4) {
+    match rand::thread_rng().gen_range(0, 4) {
         0 => { Instruction::new(mach, add_6800) }
         1 => { Instruction::new(mach, transfers_6800) }
         _ => { Instruction::new(mach, rotates_6800) }
-    };
+    }
     // TODO: Add clc, sec, daa, and many other instructions
 }
 
@@ -614,14 +612,14 @@ fn shifts_6502(_mach: Machine) -> Operation {
 }
 
 fn instr_6502(mach: Machine) -> Instruction {
-    return match rand::thread_rng().gen_range(0, 5) {
+    match rand::thread_rng().gen_range(0, 5) {
         0 => { Instruction::new(mach, incdec_6502) }
         1 => { Instruction::new(mach, add_6502) }
         2 => { Instruction::new(mach, transfers_6502) }
         3 => { Instruction::new(mach, shifts_6502) }
         4 => { Instruction::new(mach, loadstore_6502) }
         _ => { Instruction::new(mach, secl_6502) }
-    };
+    }
     // TODO: Add clc, sec, and many other instructions
 }
 
@@ -647,12 +645,10 @@ fn add_pic(mach: Machine) -> Operation {
     if dst == Datum::A && mach != Machine::Pic(PicVariant::Pic12) && random() {
         // This is an immediate add. Not available on PIC12.
         Operation::Add(random_immediate(), Datum::A) // addlw k
+    } else if random() {
+        Operation::Add(random_absolute(), Datum::A) // addwf f
     } else {
-        if random() {
-            Operation::Add(random_absolute(), Datum::A) // addwf f
-        } else {
-            Operation::Add(Datum::A, random_absolute()) // addwf f,d
-        }
+        Operation::Add(Datum::A, random_absolute()) // addwf f,d
     }
 }
 
@@ -671,13 +667,10 @@ fn and_pic(_mach: Machine) -> Operation {
     if dst == Datum::A && random() {
         // andlw
         Operation::And(random_immediate(), dst)
+    } else if random() {
+        Operation::And(random_absolute(), dst)
     } else {
-        if random() {
-            //
-            Operation::And(random_absolute(), dst)
-        } else {
-            Operation::And(dst, random_absolute())
-        }
+        Operation::And(dst, random_absolute())
     }
 }
 
@@ -692,13 +685,13 @@ fn store_pic(_mach: Machine) -> Operation {
 }
 
 fn instr_pic(mach: Machine) -> Instruction {
-    return match rand::thread_rng().gen_range(0, 5) {
+    match rand::thread_rng().gen_range(0, 5) {
         0 => { Instruction::new(mach, shifts_pic) }
         1 => { Instruction::new(mach, and_pic) }
         2 => { Instruction::new(mach, add_pic) }
         3 => { Instruction::new(mach, store_pic) }
         _ => { Instruction::new(mach, inc_dec_pic) }
-    };
+    }
     // TODO: Add the following other instructions:
     // bcf bsf btfsc btfss (call) (clrwdt) comf decfsz (goto) incfsz iorlw iorwf (nop) (option) (retlw) (sleep) subwf swapf (tris) xorlw xorwf
 }
