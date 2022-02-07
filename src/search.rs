@@ -1,9 +1,8 @@
-use crate::machine::Instruction;
-use crate::{State, Test, TestRun};
-use rand::prelude::SliceRandom;
+use crate::machine::{Instruction, set, get};
+use crate::{State, Test, TestRun, Machine};
 use rand::Rng;
-use rayon::prelude::*;
 use std::ops::{Index, IndexMut};
+use crate::machine::new_instruction;
 
 #[derive(Clone)]
 pub struct BasicBlock {
@@ -14,9 +13,7 @@ struct BasicBlockSpawn {
     parent: BasicBlock,
     mutant: BasicBlock,
     ncount: usize,
-    instructions: Vec<Instruction>,
-    constants: Vec<i8>,
-    vars: Vec<u16>,
+    mach: Machine
 }
 
 impl Iterator for BasicBlockSpawn {
@@ -30,34 +27,22 @@ impl Iterator for BasicBlockSpawn {
         self.ncount -= 1;
         mutate(
             &mut self.mutant,
-            &self.instructions,
-            &self.constants,
-            &self.vars,
+            self.mach,
         );
         Some(self.mutant.clone())
     }
 }
 
 impl BasicBlock {
-    fn new() -> BasicBlock {
-        BasicBlock {
-            instructions: vec![],
-        }
-    }
-
     fn initial_guess(
-        instructions: &Vec<Instruction>,
-        constants: &Vec<i8>,
-        vars: &Vec<u16>,
+        mach: Machine,
         max_size: i32,
     ) -> BasicBlock {
         let mut bb = BasicBlock {
             instructions: vec![],
         };
         for _i in 0..max_size {
-            let instruction = instructions.choose(&mut rand::thread_rng()).unwrap();
-            let mut i = instruction.clone();
-            i.randomize(&constants, &vars);
+            let i = new_instruction(mach);
             bb.push(i);
         }
         bb
@@ -65,9 +50,7 @@ impl BasicBlock {
 
     fn spawn(
         &self,
-        instructions: Vec<Instruction>,
-        constants: Vec<i8>,
-        vars: Vec<u16>,
+        mach: Machine,
     ) -> BasicBlockSpawn {
         let parent: BasicBlock = BasicBlock {
             instructions: self.instructions.clone(),
@@ -76,9 +59,7 @@ impl BasicBlock {
             parent,
             mutant: self.clone(),
             ncount: 0,
-            instructions,
-            constants,
-            vars,
+            mach,
         }
     }
 
@@ -92,10 +73,6 @@ impl BasicBlock {
 
     fn insert(&mut self, offset: usize, instr: Instruction) {
         self.instructions.insert(offset, instr)
-    }
-
-    fn pop(&mut self) -> Option<Instruction> {
-        self.instructions.pop()
     }
 
     fn push(&mut self, instr: Instruction) {
@@ -121,12 +98,12 @@ fn run_program(prog: &BasicBlock, test_run: &TestRun, test: &Test) -> Option<Sta
     let mut s = State::new();
 
     for param in test_run.ins.iter().zip(test.ins.iter()) {
-        (param.0.setter)(&mut s, *param.1);
+        set(&mut s, param.0.register, Some(*param.1));
     }
     if prog
         .instructions
         .iter()
-        .fold(true, |valid: bool, i| valid && (i.operation)(i, &mut s))
+        .all(|i| i.operate(&mut s))
     {
         Some(s)
     } else {
@@ -134,28 +111,12 @@ fn run_program(prog: &BasicBlock, test_run: &TestRun, test: &Test) -> Option<Sta
     }
 }
 
-pub fn equivalence(prog: BasicBlock, test_run: &TestRun) -> bool {
-    for tc in test_run.tests.iter() {
-        if let Some(state) = run_program(&prog, test_run, &tc) {
-            for param in test_run.outs.iter().zip(tc.outs.iter()) {
-                let result = (param.0.getter)(&state);
-                if result != Some(*param.1) {
-                    return false;
-                }
-            }
-        } else {
-            return false;
-        }
-    }
-    true
-}
-
-pub fn differance(prog: &BasicBlock, test_run: &TestRun) -> f64 {
+pub fn difference(prog: &BasicBlock, test_run: &TestRun) -> f64 {
     let mut ret: f64 = 0.0;
     for tc in test_run.tests.iter() {
-        if let Some(state) = run_program(&prog, test_run, &tc) {
+        if let Some(state) = run_program(prog, test_run, tc) {
             for param in test_run.outs.iter().zip(tc.outs.iter()) {
-                if let Some(v) = (param.0.getter)(&state) {
+                if let Some(v) = get(&state, param.0.register) {
                     let d: f64 = v.into();
                     let e: f64 = (*param.1).into();
                     ret += (d - e).abs();
@@ -187,25 +148,20 @@ fn mutate_delete(prog: &mut BasicBlock) {
 
 fn mutate_insert(
     prog: &mut BasicBlock,
-    instructions: &Vec<Instruction>,
-    constants: &Vec<i8>,
-    vars: &Vec<u16>,
+    mach: Machine,
 ) {
     let offset: usize = if prog.len() > 0 {
         rand::thread_rng().gen_range(0, prog.len())
     } else {
         0
     };
-    let instruction = instructions.choose(&mut rand::thread_rng()).unwrap();
-    prog.insert(offset, *instruction);
-    prog[offset].randomize(&constants, &vars);
+    let instruction = new_instruction(mach);
+    prog.insert(offset, instruction);
 }
 
 fn mutate(
     prog: &mut BasicBlock,
-    instructions: &Vec<Instruction>,
-    constants: &Vec<i8>,
-    vars: &Vec<u16>,
+    mach: Machine,
 ) {
     let mutate: usize = rand::thread_rng().gen_range(0, 3);
     match mutate {
@@ -215,7 +171,7 @@ fn mutate(
         0 => {
             if prog.len() > 1 {
                 let offset: usize = rand::thread_rng().gen_range(0, prog.len());
-                prog[offset].randomize(&constants, &vars);
+                prog[offset].randomize();
             }
         }
         /* delete an instruction */
@@ -224,7 +180,7 @@ fn mutate(
         }
         /* insert a new instruction */
         2 => {
-            mutate_insert(prog, instructions, constants, vars);
+            mutate_insert(prog, mach);
         }
         /* Pick two instructions and swap them round */
         3 => {
@@ -283,28 +239,27 @@ pub fn quick_dce(convergence: &dyn Fn(&BasicBlock) -> f64, prog: &BasicBlock) ->
 pub fn optimize(
     convergence: &dyn Fn(&BasicBlock) -> f64,
     prog: &BasicBlock,
-    instructions: &Vec<Instruction>,
-    constants: &Vec<i8>,
-    vars: &Vec<u16>,
+    mach: Machine,
+    instructions: &[Instruction]
 ) -> BasicBlock {
     let mut population: Vec<(f64, BasicBlock)> = vec![];
 
-    let fitness = convergence(&prog);
-    let ccost = cost(&prog);
+    let fitness = convergence(prog);
+    let ccost = cost(prog);
     population.push((cost(prog), prog.clone()));
 
     let best = prog;
 
     // if we find a better version, try to optimize that as well.
-    for s in best
-        .spawn(instructions.to_vec(), constants.to_vec(), vars.to_vec())
+    if let Some(s) = best
+        .spawn(mach)
         .take(1000000)
-        .filter(|s| convergence(&s) <= fitness)
+        .filter(|s| convergence(s) <= fitness)
         .map(|s| (cost(&s), s))
         .min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"))
     {
         if s.0 < ccost {
-            return optimize(convergence, &s.1, instructions, constants, vars);
+            return optimize(convergence, &s.1, mach, instructions);
         }
     }
 
@@ -314,15 +269,13 @@ pub fn optimize(
 
 pub fn stochastic_search(
     convergence: &dyn Fn(&BasicBlock) -> f64,
-    instructions: &Vec<Instruction>,
-    constants: &Vec<i8>,
-    vars: &Vec<u16>,
+    mach: Machine,
 ) -> BasicBlock {
     // Initial population of a bajillion stupid programs
     // which are of course unlikely to be any good
     let mut population: Vec<(f64, BasicBlock)> = vec![];
     for _i in 1..1000 {
-        let program = BasicBlock::initial_guess(instructions, constants, vars, 20);
+        let program = BasicBlock::initial_guess(mach, 20);
         population.push((convergence(&program), program));
     }
 
@@ -343,8 +296,8 @@ pub fn stochastic_search(
         let mut next_generation: Vec<(f64, BasicBlock)> = vec![];
 
         for s in best
-            .spawn(instructions.to_vec(), constants.to_vec(), vars.to_vec())
-            .take(5000000)
+            .spawn(mach)
+            .take(500)
         {
             let fit = convergence(&s);
             if fit < b.0 {
@@ -355,46 +308,6 @@ pub fn stochastic_search(
 
         if !next_generation.is_empty() {
             population = next_generation;
-        }
-    }
-}
-
-pub fn exhaustive_search(
-    found_it: &dyn Fn(BasicBlock) -> bool,
-    instructions: Vec<Instruction>,
-    constants: Vec<i8>,
-    vars: Vec<u16>,
-) {
-    let instrs = instructions
-        .iter()
-        .map(|i| i.vectorize(&constants, &vars))
-        .flatten()
-        .collect();
-
-    fn try_all(
-        term: &dyn Fn(BasicBlock) -> bool,
-        prog: &mut BasicBlock,
-        instrs: &Vec<Instruction>,
-        len: u32,
-    ) -> bool {
-        if len == 0 {
-            term(prog.clone())
-        } else {
-            for ins in instrs {
-                prog.push(*ins);
-                if try_all(term, prog, &instrs, len - 1) {
-                    return true;
-                }
-                prog.pop();
-            }
-            false
-        }
-    }
-
-    for i in 1..10 {
-        println!("Trying programs of length {}.", i);
-        if try_all(&found_it, &mut BasicBlock::new(), &instrs, i) {
-            return;
         }
     }
 }

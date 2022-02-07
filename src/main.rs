@@ -8,232 +8,86 @@ mod machine;
 mod search;
 mod test;
 
-use crate::machine::motorola6800;
-use crate::machine::{i8080, i8085, iz80, z80};
-use crate::machine::{mos6502, mos65c02};
-use crate::machine::{pic12, pic14, pic16};
-
-use crate::machine::Instruction;
 use crate::machine::State;
-use crate::machine::{get_a, get_b, get_x, get_y, set_a, set_b, set_x, set_y};
-
+use crate::machine::{Machine, PreX86Variant, Mos6502Variant, Motorola8BitVariant, PicVariant};
 use crate::search::BasicBlock;
-use crate::search::{differance, equivalence};
-use crate::search::{exhaustive_search, optimize, stochastic_search};
+use crate::search::difference;
+use crate::search::stochastic_search;
 
-use crate::test::{sanity, DeParameter, DeTestRun, Parameter, Test, TestRun};
+use crate::test::{DeTestRun, Parameter, Test, TestRun};
+use crate::test::sanity;
 
 struct MOpt {
     name: &'static str,
-    func: fn() -> Vec<Instruction>,
-    sanity: fn(&DeParameter) -> Parameter,
+    mach: Machine,
     help: &'static str,
 }
 
-fn registers8080(regname: &Option<String>) -> Option<Parameter> {
-    if let Some(r) = regname {
-        match r.as_str() {
-            "a" => Some(Parameter {
-                name: "a".to_string(),
-                address: None,
-                cost: None,
-                getter: get_a,
-                setter: set_a,
-            }),
-            "b" => Some(Parameter {
-                name: "b".to_string(),
-                address: None,
-                cost: None,
-                getter: get_b,
-                setter: set_b,
-            }),
-            // TODO: The rest of the registers for this architecture
-            _ => None,
-        }
-    } else {
-        None
-    }
-}
-
-fn registers6502(regname: &Option<String>) -> Option<Parameter> {
-    if let Some(r) = regname {
-        match r.as_str() {
-            "a" => Some(Parameter {
-                name: "a".to_string(),
-                address: None,
-                cost: None,
-                getter: get_a,
-                setter: set_a,
-            }),
-            "x" => Some(Parameter {
-                name: "x".to_string(),
-                address: None,
-                cost: None,
-                getter: get_x,
-                setter: set_x,
-            }),
-            "y" => Some(Parameter {
-                name: "y".to_string(),
-                address: None,
-                cost: None,
-                getter: get_y,
-                setter: set_y,
-            }),
-            // TODO: The rest of the registers for this architecture
-            _ => None,
-        }
-    } else {
-        None
-    }
-}
-
-fn registers6800(regname: &Option<String>) -> Option<Parameter> {
-    if let Some(r) = regname {
-        match r.as_str() {
-            "a" => Some(Parameter {
-                name: "a".to_string(),
-                address: None,
-                cost: None,
-                getter: get_a,
-                setter: set_a,
-            }),
-            "b" => Some(Parameter {
-                name: "b".to_string(),
-                address: None,
-                cost: None,
-                getter: get_b,
-                setter: set_b,
-            }),
-            // TODO: The rest of the registers for this architecture
-            _ => None,
-        }
-    } else {
-        None
-    }
-}
-
-fn registers_pic(regname: &Option<String>) -> Option<Parameter> {
-    if let Some(r) = regname {
-        match r.as_str() {
-            // just use the stter & getter for the A register
-            "w" => Some(Parameter {
-                name: "w".to_string(),
-                address: None,
-                cost: None,
-                getter: get_a,
-                setter: set_a,
-            }),
-            _ => None,
-        }
-    } else {
-        None
-    }
-}
-
-fn sanity_i8080(dp: &DeParameter) -> Parameter {
-    if let Some(dp) = registers8080(&dp.register) {
-        dp
-    } else {
-        panic!(
-            "No such register as {} for the specified architecture.",
-            dp.register.as_ref().unwrap()
-        );
-    }
-}
-
-fn sanity_mos6502(dp: &DeParameter) -> Parameter {
-    if let Some(dp) = registers6502(&dp.register) {
-        dp
-    } else {
-        panic!(
-            "No such register as {} for the specified architecture.",
-            dp.register.as_ref().unwrap()
-        );
-    }
-}
-
-fn sanity_6800(dp: &DeParameter) -> Parameter {
-    if let Some(dp) = registers6800(&dp.register) {
-        dp
-    } else {
-        panic!(
-            "No such register as {} for the specified architecture.",
-            dp.register.as_ref().unwrap()
-        );
-    }
-}
-
-fn sanity_pic(dp: &DeParameter) -> Parameter {
-    if let Some(dp) = registers_pic(&dp.register) {
-        dp
-    } else {
-        panic!(
-            "No such register as {} for the specified architecture.",
-            dp.register.as_ref().unwrap()
-        );
-    }
-}
-
-const M_OPTS: [MOpt; 10] = [
+const M_OPTS: [MOpt; 13] = [
     MOpt {
-        name: "i8080",
-        func: i8080,
-        sanity: sanity_i8080,
+        name: "8080",
+        mach: Machine::PreX86(PreX86Variant::I8080),
         help: "Intel 8080",
     },
     MOpt {
-        name: "i8085",
-        func: i8085,
-        sanity: sanity_i8080,
+        name: "8085",
+        mach: Machine::PreX86(PreX86Variant::I8085),
         help: "Intel 8085",
     },
     MOpt {
-        name: "iz80",
-        func: iz80,
-        sanity: sanity_i8080,
-        help: "for compatibility with both z80 and i8080",
+        name: "kr580vm1",
+        mach: Machine::PreX86(PreX86Variant::KR580VM1),
+        help: "KR580VM1, a Soviet Ukrainian 8080 variant",
     },
     MOpt {
-        name: "mos6502",
-        func: mos6502,
-        sanity: sanity_mos6502,
+        name: "z80",
+        mach: Machine::PreX86(PreX86Variant::ZilogZ80),
+        help: "Zilog Z80",
+    },
+    MOpt {
+        name: "2a03",
+        mach: Machine::Mos6502(Mos6502Variant::Ricoh2a03),
+        help: "Ricoh 2A03/2A07, which is a 6502 with no decimal mode",
+    },
+    MOpt {
+        name: "6502",
+        mach: Machine::Mos6502(Mos6502Variant::Nmos),
         help: "generic 6502",
     },
     MOpt {
-        name: "mos65c02",
-        func: mos65c02,
-        sanity: sanity_mos6502,
+        name: "65i02",
+        mach: Machine::Mos6502(Mos6502Variant::IllegalInstructions),
+        help: "NMOS 6502, but with illegal instructions like lax and dca",
+    },
+    MOpt {
+        name: "65c02",
+        mach: Machine::Mos6502(Mos6502Variant::Cmos),
         help: "CMOS 6502, including new instructions like phx and stz",
     },
     MOpt {
-        name: "motorola6800",
-        func: motorola6800,
-        sanity: sanity_6800,
+        name: "6800",
+        mach: Machine::Motorola6800(Motorola8BitVariant::Motorola6800),
+        help: "Motorola 6800",
+    },
+    MOpt {
+        name: "6801",
+        mach: Machine::Motorola6800(Motorola8BitVariant::Motorola6801),
         help: "Motorola 6800",
     },
     MOpt {
         name: "pic12",
-        func: pic12,
-        sanity: sanity_pic,
+        mach: Machine::Pic(PicVariant::Pic12),
         help: "PIC12",
     },
     MOpt {
         name: "pic14",
-        func: pic14,
-        sanity: sanity_pic,
+        mach: Machine::Pic(PicVariant::Pic14),
         help: "PIC14",
     },
     MOpt {
         name: "pic16",
-        func: pic16,
-        sanity: sanity_pic,
+        mach: Machine::Pic(PicVariant::Pic16),
         help: "PIC16",
-    },
-    MOpt {
-        name: "z80",
-        func: z80,
-        sanity: sanity_i8080, // TODO: needs a different sanity checker.
-        help: "Zilog Z80",
     },
 ];
 
@@ -252,10 +106,6 @@ struct Opts {
     /// the function to compute
     function: Option<String>,
 
-    #[argh(option)]
-    /// what kind of search to perform
-    search: String,
-
     #[argh(option, long = "in")]
     /// in variables
     r#in: Vec<String>,
@@ -269,15 +119,15 @@ struct Opts {
     constant: Vec<i8>,
 }
 
-fn mach(m: String) -> (Vec<Instruction>, fn(&DeParameter) -> Parameter) {
+fn mach(m: String) -> Machine {
     for m_opt in &M_OPTS {
         if m_opt.name == m {
-            return ((m_opt.func)(), m_opt.sanity);
+            return m_opt.mach;
         }
     }
     println!("You didn't pick a valid arch, so here's the ones I know:");
     for m_opt in &M_OPTS {
-        println!("\t{}  {}", format!("{:>12}", m_opt.name), m_opt.help);
+        println!("\t{}  {}", format!("{:>8}", m_opt.name), m_opt.help);
     }
     process::exit(1);
 }
@@ -375,31 +225,19 @@ fn disassemble(prog: BasicBlock) {
     }
 }
 
-fn constants(c: Vec<i8>) -> Vec<i8> {
-    let mut v = Vec::<i8>::new();
-    for i in 0..16 {
-        v.push(i);
-        v.push(0 - i);
-    }
-    for i in 0..7 {
-        v.push(2i8.pow(i));
-    }
-    c.into_iter().chain(v).collect()
-}
-
-fn testrun_from_args(opts: &Opts, pinj: fn(&DeParameter) -> Parameter) -> TestRun {
+fn testrun_from_args(opts: &Opts, mach: Machine) -> TestRun {
     TestRun {
         ins: opts
             .r#in
             .clone()
             .into_iter()
-            .map(|reg| pinj(&DeParameter{register: Some(reg.clone()), cost: Some(0.0), address: None, name: Some(reg.clone())}))
+            .map(|reg| Parameter{register: mach.register_by_name(&reg), cost: Some(0.0), address: None, name: reg.clone()})
             .collect(),
         outs: opts
             .out
             .clone()
             .into_iter()
-            .map(|reg| pinj(&DeParameter{register: Some(reg.clone()), cost: Some(0.0), address: None, name: Some(reg.clone())}))
+            .map(|reg| Parameter{register: mach.register_by_name(&reg), cost: Some(0.0), address: None, name: reg.clone()})
             .collect(),
         tests: function(opts.function.clone().unwrap()),
     }
@@ -408,34 +246,16 @@ fn testrun_from_args(opts: &Opts, pinj: fn(&DeParameter) -> Parameter) -> TestRu
 fn main() {
     let opts: Opts = argh::from_env();
     let machine = mach(opts.arch.clone());
-    let m = machine.0;
-    let msan = machine.1;
 
     let testrun = if let Some(path) = opts.file {
         let data = fs::read_to_string(path).expect("Unable to read file");
         let res: DeTestRun = serde_json::from_str(&data).expect("Unable to parse");
-        sanity(&res, msan)
+        sanity(&res, machine)
     } else {
-        testrun_from_args(&opts, msan)
+        testrun_from_args(&opts, machine)
     };
 
-    if opts.search == "exh" {
-        let found_it = |prog: BasicBlock| {
-            if equivalence(prog.clone(), &testrun) {
-                disassemble(prog);
-                true
-            } else {
-                false
-            }
-        };
-        let vars: Vec<u16> = vec![3, 4, 5];
-        exhaustive_search(&found_it, m, constants(opts.constant), vars);
-    } else if opts.search == "stoc" {
-        let convergence = |prog: &BasicBlock| differance(prog, &testrun);
-        let vars: Vec<u16> = vec![3, 4, 5];
-        let c = constants(opts.constant);
-        let prog = stochastic_search(&convergence, &m, &c, &vars);
-        let opt = optimize(&convergence, &prog, &m, &c, &vars);
-        disassemble(opt);
-    }
+    let convergence = |prog: &BasicBlock| difference(prog, &testrun);
+    let prog = stochastic_search(&convergence, machine);
+    disassemble(prog);
 }

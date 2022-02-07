@@ -1,10 +1,15 @@
 # strop
 Superoptimizer written in Rust
 
-I made the decision to abandon [stoc](https://github.com/omarandlorraine/stoc)
-when I realized it was simply too unwieldly to work with. I needed an excuse to
-learn Rust, plus I wanted a superoptimizer that could target things other than
-the 6502., So, strop was born, the *st*ochastic *op*timizer, written in *R*ust.
+This program stochastically generates assembly language programs that compute a
+given function. The idea is you give it a function to compute, and it'll spit
+out the correct program.
+
+I abandoned [stoc](https://github.com/omarandlorraine/stoc), a similar thing
+done in C, when I realized it was simply too unwieldly to work with. I needed
+an excuse to learn Rust, plus I wanted a superoptimizer that could target
+things other than the 6502, So, strop was born, the *st*ochastic *op*timizer,
+written in *R*ust.
 
 ### Supported architectures:
 Not much here (yet). There are a few placeholders for miscellaneous
@@ -14,9 +19,9 @@ best ones are:
 
 - *pic12*, precursor to the '14
 - *pic14*, because I use these in my day job
-- *mos6502*, because why not
-- *mos65c02*, which has all the same instructions as mos6502 plus some extras
-- *motorola6800*, it's related to the 6502s but has an extra register and some
+- *6502*, because why not
+- *65c02*, which has all the same instructions as mos6502 plus some extras
+- *6800*, it's related to the 6502s but has an extra register and some
   other goodies
 
 I've tried to pick ones I use or like, and then I've added the low-hanging
@@ -55,39 +60,19 @@ What if we want to multiply some number by a constant? For this example, the
 number is in register B, the constant is 15, and the output is in register A.
 So you'd run:
 
-    strop --arch motorola6800 --function mult15 --search exh --in b --out a
+    strop --arch 6800 --function mult15 --in b --out a
 
-More than 7 hours later, the program outputs:
+A couple of seconds later, the program outputs:
+		tba
+		aba
+		aba
+		tab
+		aba
+		asl a
+		aba
 
-	tba
-	aba
-	aba
-	asla
-	aba
-	asla
-	aba
-
-It took too long, so of course we can now run a random search instead of an
-exhaustive search:
-
-    strop --arch motorola6800 --function mult15 --search stoc --in b --out a
-
-And six seconds later, the program outputs:
-
-	tba
-	aba
-	rol
-	aba
-	tab
-	rol
-	aba
-
-On some architectures, such as the 6502, the equivalent of the above code would
-require a store instruction, and absolute add. This is because the 6502 lacks a
-any register-to-register add instruction. I find that the current iteration of
-the search algorithm, doesn't seem to come across the appropriate instruction 
-mix. For this reason, the exhaustive search is usually better than the 
-stochastic one for the 6502. At least, for now!
+Since the Motorola 6800 has no multiply instruction, it's generated some shifts
+and adds and things that implement a multiplication by 15.
 
 You might need something other than the miscellaneous built-in functions that
 I've decided to put in. You might want to define your own functions. If you can
@@ -95,7 +80,7 @@ generate an appropriate JSON file, you can pass it to strop and have strop
 generate the code that satisfies all test cases in the file. See the
 `examples/` folder for examples. 
 
-    strop --search exh -m motorola6800 -f examples/decimal_adjust.json
+    strop --arch 6800 -f examples/decimal_adjust.json
 
 produces the following code,
 

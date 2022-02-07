@@ -1,9 +1,9 @@
 {
 	"ins": [
-		{"register": "a"}
+		{"name": "a"}
 	],
 	"outs": [
-		{"register": "a"}
+		{"name": "a"}
 	],
 	"tests": [
 		{"ins": [0], "outs": [0]},
