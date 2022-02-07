@@ -63,13 +63,14 @@ So you'd run:
     strop --arch 6800 --function mult15 --in b --out a
 
 A couple of seconds later, the program outputs:
-		tba
-		aba
-		aba
-		tab
-		aba
-		asl a
-		aba
+
+    	tba
+    	aba
+    	aba
+    	tab
+    	aba
+    	asl a
+    	aba
 
 Since the Motorola 6800 has no multiply instruction, it's generated some shifts
 and adds and things that implement a multiplication by 15.
