@@ -580,7 +580,7 @@ fn transfers_6502(_mach: Machine) -> Operation {
 fn loadstore_6502(mach: Machine) -> Operation {
     // TODO: STZ operation for CMOS varieties
     let addr = random_absolute();
-    let reg = match rand::thread_rng().gen_range(0, if mach == Machine::Mos6502(Mos6502Variant::Cmos) { 3 } else { 4 }) {
+    let reg = match rand::thread_rng().gen_range(0, if mach == Machine::Mos6502(Mos6502Variant::Cmos) { 4 } else { 3 }) {
         0 => Datum::A,
         1 => Datum::X,
         2 => Datum::Y,
