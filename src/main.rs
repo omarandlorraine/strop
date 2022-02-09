@@ -11,7 +11,7 @@ mod test;
 use crate::machine::State;
 use crate::machine::{Machine, PreX86Variant, Mos6502Variant, Motorola8BitVariant, PicVariant};
 use crate::search::BasicBlock;
-use crate::search::difference;
+use crate::search::{difference, optimize};
 use crate::search::stochastic_search;
 
 use crate::test::{DeTestRun, Parameter, Test, TestRun};
@@ -257,5 +257,6 @@ fn main() {
 
     let convergence = |prog: &BasicBlock| difference(prog, &testrun);
     let prog = stochastic_search(&convergence, machine);
-    disassemble(prog);
+    let opt = optimize(&convergence, &prog, machine);
+    disassemble(opt);
 }

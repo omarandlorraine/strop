@@ -240,7 +240,6 @@ pub fn optimize(
     convergence: &dyn Fn(&BasicBlock) -> f64,
     prog: &BasicBlock,
     mach: Machine,
-    instructions: &[Instruction]
 ) -> BasicBlock {
     let mut population: Vec<(f64, BasicBlock)> = vec![];
 
@@ -259,7 +258,7 @@ pub fn optimize(
         .min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"))
     {
         if s.0 < ccost {
-            return optimize(convergence, &s.1, mach, instructions);
+            return optimize(convergence, &s.1, mach);
         }
     }
 
