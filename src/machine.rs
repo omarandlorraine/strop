@@ -50,6 +50,28 @@ pub struct Instruction {
 
 impl std::fmt::Display for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn da_1operand(f: &mut std::fmt::Formatter<'_>, opcode: &str, operand: Datum) -> std::fmt::Result {
+            match operand {
+                Datum::A => { write!(f, "\t{} a", opcode) }
+                Datum::B => { write!(f, "\t{} b", opcode) }
+                Datum::X => { write!(f, "\t{} x", opcode) }
+                Datum::Y => { write!(f, "\t{} y", opcode) }
+                Datum::Zero => { write!(f, "\t{} zero", opcode) }
+                Datum::Immediate(i) => { write!(f, "\t{} #{}", opcode, i) }
+                Datum::Absolute(a) => { write!(f, "\t{} {}", opcode, a) }
+            }
+        }
+
+        fn da_sh(f: &mut std::fmt::Formatter<'_>, shtype: ShiftType, d: Datum) -> std::fmt::Result {
+            let opcode = match shtype {
+                ShiftType::LeftRotateThroughCarry => { "rol" }
+                ShiftType::RightRotateThroughCarry => { "ror" }
+                ShiftType::LeftArithmetic => { "asl" }
+                ShiftType::RightArithmetic => { "asr" }
+            };
+            da_1operand(f, opcode, d)
+        }
+
         match (self.machine, self.operation) {
             (Machine::Mos6502(_), Operation::Move(Datum::A, Datum::X)) => { write!(f, "\ttax") }
             (Machine::Mos6502(_), Operation::Move(Datum::A, Datum::Y)) => { write!(f, "\ttay") }
@@ -58,14 +80,19 @@ impl std::fmt::Display for Instruction {
             (Machine::Motorola6800(_), Operation::Move(Datum::B, Datum::A)) => { write!(f, "\ttba") } 
             (Machine::Motorola6800(_), Operation::Move(Datum::A, Datum::B)) => { write!(f, "\ttab") } 
             (Machine::Motorola6800(_), Operation::Add(Datum::B, Datum::A)) => { write!(f, "\taba") } 
-            (_, Operation::Shift(ShiftType::LeftRotateThroughCarry, Datum::A)) => { write!(f, "\tror a") }
-            (_, Operation::Shift(ShiftType::LeftArithmetic, Datum::A)) => { write!(f, "\tasl a") }
-            (_, Operation::Shift(ShiftType::LeftRotateThroughCarry, Datum::B)) => { write!(f, "\tror b") }
-            (_, Operation::Shift(ShiftType::LeftArithmetic, Datum::B)) => { write!(f, "\tasl b") }
-            (_, Operation::Shift(ShiftType::RightArithmetic, Datum::A)) => { write!(f, "\tlsr a") }
-            (_, Operation::Shift(ShiftType::RightArithmetic, Datum::B)) => { write!(f, "\tlsr b") }
+            (_, Operation::Shift(shtype, datum)) => { da_sh(f, shtype, datum) }
+            (Machine::Motorola6800(_), Operation::Increment(Datum::A)) => { write!(f, "inc a") }
+            (Machine::Motorola6800(_), Operation::Increment(Datum::B)) => { write!(f, "inc b") }
+            (Machine::Mos6502(_), Operation::Increment(Datum::A)) => { write!(f, "ina") }
+            (Machine::Mos6502(_), Operation::Increment(Datum::X)) => { write!(f, "inx") }
+            (Machine::Mos6502(_), Operation::Increment(Datum::Y)) => { write!(f, "iny") }
+            (Machine::Mos6502(_), Operation::Decrement(Datum::A)) => { write!(f, "dea") }
+            (Machine::Mos6502(_), Operation::Decrement(Datum::X)) => { write!(f, "dex") }
+            (Machine::Mos6502(_), Operation::Decrement(Datum::Y)) => { write!(f, "dey") }
             (Machine::Mos6502(_), Operation::Move(Datum::A, Datum::Absolute(a))) => { write!(f, "\tsta {}", a) }
             (Machine::Mos6502(_), Operation::Move(Datum::Absolute(a), Datum::A)) => { write!(f, "\tlda {}", a) }
+            (_, Operation::AddWithCarry(Datum::Absolute(a), Datum::A)) => { write!(f, "\tadc {}", a) }
+            (_, Operation::AddWithCarry(Datum::Zero, Datum::Absolute(a))) => { write!(f, "\tstz {}", a) }
             _ => { write!(f, "{:?}", self.operation) }
         }
     }
