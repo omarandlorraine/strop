@@ -79,7 +79,7 @@ impl std::fmt::Display for Instruction {
             (Machine::Mos6502(_), Operation::Move(Datum::Y, Datum::A)) => { write!(f, "\ttya") }
             (Machine::Motorola6800(_), Operation::Move(Datum::B, Datum::A)) => { write!(f, "\ttba") } 
             (Machine::Motorola6800(_), Operation::Move(Datum::A, Datum::B)) => { write!(f, "\ttab") } 
-            (Machine::Motorola6800(_), Operation::Add(Datum::B, Datum::A)) => { write!(f, "\taba") } 
+            (Machine::Motorola6800(_), Operation::Add(Datum::B, Datum::A, false)) => { write!(f, "\taba") } 
             (_, Operation::Shift(shtype, datum)) => { da_sh(f, shtype, datum) }
             (Machine::Mos6502(_), Operation::Increment(Datum::A)) => { write!(f, "ina") }
             (Machine::Mos6502(_), Operation::Increment(Datum::X)) => { write!(f, "inx") }
@@ -89,10 +89,9 @@ impl std::fmt::Display for Instruction {
             (Machine::Mos6502(_), Operation::Decrement(Datum::Y)) => { write!(f, "dey") }
             (_, Operation::Increment(datum)) => { da_1operand(f, "inc", datum) }
             (_, Operation::Decrement(datum)) => { da_1operand(f, "dec", datum) }
+            (Machine::Mos6502(_), Operation::Move(Datum::Zero, Datum::Absolute(a))) => { write!(f, "\tstz {}", a) }
             (Machine::Mos6502(_), Operation::Move(Datum::A, Datum::Absolute(a))) => { write!(f, "\tsta {}", a) }
             (Machine::Mos6502(_), Operation::Move(Datum::Absolute(a), Datum::A)) => { write!(f, "\tlda {}", a) }
-            (_, Operation::AddWithCarry(Datum::Absolute(a), Datum::A)) => { write!(f, "\tadc {}", a) }
-            (_, Operation::AddWithCarry(Datum::Zero, Datum::Absolute(a))) => { write!(f, "\tstz {}", a) }
             _ => { write!(f, "{:?}", self.operation) }
         }
     }
@@ -284,8 +283,7 @@ pub enum Operation {
     DecimalAdjustAccumulator,
     Decrement(Datum),
     Increment(Datum),
-    Add(Datum, Datum),
-    AddWithCarry(Datum, Datum),
+    Add(Datum, Datum, bool),
     And(Datum, Datum),
     Move(Datum, Datum),
     Shift(ShiftType, Datum),
@@ -311,18 +309,8 @@ impl Instruction {
     #[allow(clippy::many_single_char_names)]
     pub fn operate(&self, s: &mut State) -> bool {
         match self.operation {
-            Operation::Add(source, destination) => {
-                let (result, c, z, n, o, h) =
-                    add_to_reg8(get(s, source), get(s, destination), Some(false));
-                set(s, destination, result);
-                s.sign = n;
-                s.carry = c;
-                s.zero = z;
-                s.overflow = o;
-                s.halfcarry = h;
-                true
-            }
-            Operation::AddWithCarry(source, destination) => {
+            Operation::Add(source, destination, carry) => {
+                if !carry { s.carry = Some(false) };
                 let (result, c, z, n, o, h) =
                     add_to_reg8(get(s, source), get(s, destination), s.carry);
                 set(s, destination, result);
@@ -518,13 +506,9 @@ fn rmw_datum_6800() -> Datum {
 fn add_6800(_mach: Machine) -> Operation {
     let dst = random_accumulator_6800();
     if dst == Datum::A && random() {
-        return Operation::Add(Datum::B, dst); // ABA
-    }
-    let src = random_source_6800();
-    if random() {
-        Operation::Add(src, dst) // ADDA and ADDB
+        Operation::Add(Datum::B, dst, false) // ABA
     } else {
-        Operation::AddWithCarry(src, dst) // ADCA and ADCB
+        Operation::Add(random_source_6800(), dst, random()) // ADCA, ADCB, ADDA, ADDB
     }
 }
 
@@ -589,7 +573,7 @@ fn incdec_6502(mach: Machine) -> Operation {
 }
 
 fn add_6502(_mach: Machine) -> Operation {
-    Operation::AddWithCarry(random_source_6502(), Datum::A)
+    Operation::Add(random_source_6502(), Datum::A, true)
 }
 
 fn transfers_6502(_mach: Machine) -> Operation {
@@ -672,11 +656,11 @@ fn add_pic(mach: Machine) -> Operation {
     let dst = random_accumulator_or_absolute();
     if dst == Datum::A && mach != Machine::Pic(PicVariant::Pic12) && random() {
         // This is an immediate add. Not available on PIC12.
-        Operation::Add(random_immediate(), Datum::A) // addlw k
+        Operation::Add(random_immediate(), Datum::A, false) // addlw k
     } else if random() {
-        Operation::Add(random_absolute(), Datum::A) // addwf f
+        Operation::Add(random_absolute(), Datum::A, false) // addwf f
     } else {
-        Operation::Add(Datum::A, random_absolute()) // addwf f,d
+        Operation::Add(Datum::A, random_absolute(), false) // addwf f,d
     }
 }
 
