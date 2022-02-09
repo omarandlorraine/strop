@@ -81,14 +81,14 @@ impl std::fmt::Display for Instruction {
             (Machine::Motorola6800(_), Operation::Move(Datum::A, Datum::B)) => { write!(f, "\ttab") } 
             (Machine::Motorola6800(_), Operation::Add(Datum::B, Datum::A)) => { write!(f, "\taba") } 
             (_, Operation::Shift(shtype, datum)) => { da_sh(f, shtype, datum) }
-            (Machine::Motorola6800(_), Operation::Increment(Datum::A)) => { write!(f, "inc a") }
-            (Machine::Motorola6800(_), Operation::Increment(Datum::B)) => { write!(f, "inc b") }
             (Machine::Mos6502(_), Operation::Increment(Datum::A)) => { write!(f, "ina") }
             (Machine::Mos6502(_), Operation::Increment(Datum::X)) => { write!(f, "inx") }
             (Machine::Mos6502(_), Operation::Increment(Datum::Y)) => { write!(f, "iny") }
             (Machine::Mos6502(_), Operation::Decrement(Datum::A)) => { write!(f, "dea") }
             (Machine::Mos6502(_), Operation::Decrement(Datum::X)) => { write!(f, "dex") }
             (Machine::Mos6502(_), Operation::Decrement(Datum::Y)) => { write!(f, "dey") }
+            (_, Operation::Increment(datum)) => { da_1operand(f, "inc", datum) }
+            (_, Operation::Decrement(datum)) => { da_1operand(f, "dec", datum) }
             (Machine::Mos6502(_), Operation::Move(Datum::A, Datum::Absolute(a))) => { write!(f, "\tsta {}", a) }
             (Machine::Mos6502(_), Operation::Move(Datum::Absolute(a), Datum::A)) => { write!(f, "\tlda {}", a) }
             (_, Operation::AddWithCarry(Datum::Absolute(a), Datum::A)) => { write!(f, "\tadc {}", a) }
@@ -722,5 +722,3 @@ fn instr_pic(mach: Machine) -> Instruction {
     // TODO: Add the following other instructions:
     // bcf bsf btfsc btfss (call) (clrwdt) comf decfsz (goto) incfsz iorlw iorwf (nop) (option) (retlw) (sleep) subwf swapf (tris) xorlw xorwf
 }
-
-
