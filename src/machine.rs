@@ -281,7 +281,7 @@ pub enum ShiftType {
 #[derive(Clone, Debug, Copy)]
 #[allow(non_camel_case_types)]
 pub enum Operation {
-    op_daa,
+    DecimalAdjustAccumulator,
     Decrement(Datum),
     Increment(Datum),
     Add(Datum, Datum),
@@ -344,7 +344,7 @@ impl Instruction {
                 true
             }
 
-            Operation::op_daa => {
+            Operation::DecimalAdjustAccumulator => {
                 s.accumulator = decimal_adjust(s.accumulator, s.carry, s.halfcarry);
                 true
             }
@@ -549,6 +549,7 @@ pub fn instr_6800(mach: Machine) -> Instruction {
     match rand::thread_rng().gen_range(0, 4) {
         0 => { Instruction::new(mach, add_6800) }
         1 => { Instruction::new(mach, transfers_6800) }
+        2 => { Instruction::new(mach, |_| Operation::DecimalAdjustAccumulator) }
         _ => { Instruction::new(mach, rotates_6800) }
     }
     // TODO: Add clc, sec, daa, and many other instructions
