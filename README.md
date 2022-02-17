@@ -19,11 +19,11 @@ them. But I don't want to say they're *supported* as such yet. Probably the
 best ones, grouped below by clade, are:
 
 - *PIC*, because I use these in my day-job.
-- - *pic12*, *pic14*, *pic16*, etc.
+  - *pic12*, *pic14*, *pic16*, etc.
 - *MOS 6502*, because why not.
-- - *6502*, *65c02*
+  - *6502*, *65c02*
 - *Motorola 6800 Family*
-- - *6800*, *6801*, *6809*
+  - *6800*, *6801*, *6809*
 
 I've tried to pick ones I use or like, and then I've added the low-hanging
 fruit like their relatives and so on. I've also tried to make this extensible,
