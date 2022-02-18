@@ -4,7 +4,7 @@ Superoptimizer written in Rust
 This program stochastically generates assembly language programs that compute a
 given function. The idea is you give it a function to compute and specify which
 registers and things to use, and strop will generate and output a pretty good
-program which does the.
+program which does the specified thing.
 
 I abandoned [stoc](https://github.com/omarandlorraine/stoc), a similar thing
 done in C, when I realized it was simply too unwieldly to work with. I needed
