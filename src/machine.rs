@@ -48,86 +48,84 @@ pub struct Instruction {
     machine: Machine
 }
 
+enum Width {
+    Width8, Width16
+}
+
 impl std::fmt::Display for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        fn da_1operand(f: &mut std::fmt::Formatter<'_>, opcode: &str, operand: Datum) -> std::fmt::Result {
-            match operand {
-                Datum::A => { write!(f, "\t{} a", opcode) }
-                Datum::B => { write!(f, "\t{} b", opcode) }
-                Datum::X => { write!(f, "\t{} x", opcode) }
-                Datum::Y => { write!(f, "\t{} y", opcode) }
-                Datum::Zero => { write!(f, "\t{} zero", opcode) }
-                Datum::Immediate(i) => { write!(f, "\t{} #{}", opcode, i) }
-                Datum::Absolute(a) => { write!(f, "\t{} {}", opcode, a) }
+        fn transfer(f: &mut std::fmt::Formatter<'_>, from: R, to: R) -> std::fmt::Result {
+            fn name(r: R) -> &'static str {
+                match r {
+                    R::A => { "a" }
+                    R::B => { "b" }
+                    R::Xl => { "x" }
+                    R::Yl => { "y" }
+                    _ => { panic!() }
+                }
             }
-        }
-
-        fn da_sh(f: &mut std::fmt::Formatter<'_>, shtype: ShiftType, d: Datum) -> std::fmt::Result {
-            let opcode = match shtype {
-                ShiftType::LeftRotateThroughCarry => { "rol" }
-                ShiftType::RightRotateThroughCarry => { "ror" }
-                ShiftType::LeftArithmetic => { "asl" }
-                ShiftType::RightArithmetic => { "asr" }
-            };
-            da_1operand(f, opcode, d)
+            write!(f, "\tt{}{}", name(from), name(to))
         }
 
         match (self.machine, self.operation) {
-            (Machine::Mos6502(_), Operation::Move(Datum::A, Datum::X)) => { write!(f, "\ttax") }
-            (Machine::Mos6502(_), Operation::Move(Datum::A, Datum::Y)) => { write!(f, "\ttay") }
-            (Machine::Mos6502(_), Operation::Move(Datum::X, Datum::A)) => { write!(f, "\ttxa") }
-            (Machine::Mos6502(_), Operation::Move(Datum::Y, Datum::A)) => { write!(f, "\ttya") }
-            (Machine::Motorola6800(_), Operation::Move(Datum::B, Datum::A)) => { write!(f, "\ttba") } 
-            (Machine::Motorola6800(_), Operation::Move(Datum::A, Datum::B)) => { write!(f, "\ttab") } 
-            (Machine::Motorola6800(_), Operation::Add(Datum::B, Datum::A, false)) => { write!(f, "\taba") } 
-            (_, Operation::Shift(shtype, datum)) => { da_sh(f, shtype, datum) }
-            (Machine::Mos6502(_), Operation::Increment(Datum::A)) => { write!(f, "ina") }
-            (Machine::Mos6502(_), Operation::Increment(Datum::X)) => { write!(f, "inx") }
-            (Machine::Mos6502(_), Operation::Increment(Datum::Y)) => { write!(f, "iny") }
-            (Machine::Mos6502(_), Operation::Decrement(Datum::A)) => { write!(f, "dea") }
-            (Machine::Mos6502(_), Operation::Decrement(Datum::X)) => { write!(f, "dex") }
-            (Machine::Mos6502(_), Operation::Decrement(Datum::Y)) => { write!(f, "dey") }
-            (_, Operation::Increment(datum)) => { da_1operand(f, "inc", datum) }
-            (_, Operation::Decrement(datum)) => { da_1operand(f, "dec", datum) }
-            (Machine::Mos6502(_), Operation::Move(Datum::Zero, Datum::Absolute(a))) => { write!(f, "\tstz {}", a) }
-            (Machine::Mos6502(_), Operation::Move(Datum::A, Datum::Absolute(a))) => { write!(f, "\tsta {}", a) }
-            (Machine::Mos6502(_), Operation::Move(Datum::Absolute(a), Datum::A)) => { write!(f, "\tlda {}", a) }
+            (Machine::Mos6502(_), Operation::Move(Datum::Register(from), Datum::Register(to))) => { transfer(f, from, to) }
+            (Machine::Motorola6800(_), Operation::Move(Datum::Register(from), Datum::Register(to))) => { transfer(f, from, to) }
             _ => { write!(f, "{:?}", self.operation) }
         }
     }
 }
 
 #[derive(Copy, Debug, Clone, PartialEq)]
-pub enum Datum {
+pub enum R {
     A,
     B,
-    X,
-    Y,
-    Immediate(i8),
+    Xh, Xl,
+    Yh, Yl,
+}
+
+#[derive(Copy, Debug, Clone, PartialEq)]
+pub enum Datum {
+    Register(R),
+    RegisterPair(R, R),
+    Imm8(i8),
     Absolute(u16),
     Zero,
+}
+
+impl Datum {
+    fn width(&self) -> Width {
+        match self {
+            Self::Register(_) => { Width::Width8 }
+            Self::RegisterPair(_, _) => { Width::Width16 }
+            Self::Imm8(_) => { Width::Width8 }
+            Self::Absolute(_) => { Width::Width8 }
+            Self::Zero => { Width::Width8 }
+        }
+    }
 }
 
 impl Machine {
     pub fn register_by_name(self, name: &str) -> Datum {
         match self {
             Machine::Mos6502(_) => match name {
-                "a" => Datum::A,
-                "x" => Datum::X,
-                "y" => Datum::Y,
+                "a" => Datum::Register(R::A),
+                "x" => Datum::Register(R::Xl),
+                "y" => Datum::Register(R::Yl),
                 _ => {
                     panic!("No such register as {}", name);
                 }
             },
             Machine::Motorola6800(_) => match name {
-                "a" => Datum::A,
-                "b" => Datum::B,
+                "a" => Datum::Register(R::A),
+                "b" => Datum::Register(R::B),
+                "ix" => Datum::RegisterPair(R::Xh, R::Xl),
+                "iy" => Datum::RegisterPair(R::Yh, R::Yl),
                 _ => {
                     panic!("No such register as {}", name);
                 }
             },
             Machine::Pic(_) => match name {
-                "w" => Datum::A,
+                "w" => Datum::Register(R::A),
                 _ => {
                     panic!("No such register as {}", name);
                 }
@@ -135,8 +133,8 @@ impl Machine {
             Machine::PreX86(_variant) => {
                 // TODO: fill in for the other variants
                 match name {
-                    "a" => Datum::A,
-                    "b" => Datum::B,
+                    "a" => Datum::Register(R::A),
+                    "b" => Datum::Register(R::B),
                     _ => {
                         panic!("No such register as {}", name);
                     }
@@ -312,8 +310,9 @@ impl Instruction {
             Operation::Add(source, destination, carry) => {
                 if !carry { s.carry = Some(false) };
                 let (result, c, z, n, o, h) =
-                    add_to_reg8(get(s, source), get(s, destination), s.carry);
-                set(s, destination, result);
+                    add_to_reg8(s.get_i8(source), s.get_i8(destination), s.carry);
+
+                s.set_i8(destination, result);
                 s.sign = n;
                 s.carry = c;
                 s.zero = z;
@@ -322,13 +321,13 @@ impl Instruction {
                 true
             }
             Operation::And(source, destination) => {
-                let (result, z) = bitwise_and(get(s, source), get(s, destination));
-                set(s, destination, result);
+                let (result, z) = bitwise_and(s.get_i8(source), s.get_i8(destination));
+                s.set_i8(destination, result);
                 s.zero = z;
                 true
             }
             Operation::Move(source, destination) => {
-                set(s, destination, get(s, source));
+                s.set_i8(destination, s.get_i8(source));
                 true
             }
 
@@ -339,8 +338,8 @@ impl Instruction {
 
             Operation::Increment(register) => {
                 let (result, _c, z, n, _o, _h) =
-                    add_to_reg8(get(s, register), Some(1), Some(false));
-                set(s, register, result);
+                    add_to_reg8(s.get_i8(register), Some(1), Some(false));
+                s.set_i8(register, result);
                 s.zero = z;
                 s.sign = n;
                 true
@@ -348,8 +347,8 @@ impl Instruction {
 
             Operation::Decrement(register) => {
                 let (result, _c, z, n, _o, _h) =
-                    add_to_reg8(get(s, register), Some(-1), Some(false));
-                set(s, register, result);
+                    add_to_reg8(s.get_i8(register), Some(-1), Some(false));
+                s.set_i8(register, result);
                 s.zero = z;
                 s.sign = n;
                 true
@@ -357,26 +356,26 @@ impl Instruction {
 
             Operation::Shift(shtype, datum) => match shtype {
                 ShiftType::LeftArithmetic => {
-                    let (val, c) = rotate_left_thru_carry(get(s, datum), Some(false));
-                    set(s, datum, val);
+                    let (val, c) = rotate_left_thru_carry(s.get_i8(datum), Some(false));
+                    s.set_i8(datum, val);
                     s.carry = c;
                     true
                 }
                 ShiftType::RightArithmetic => {
-                    let (val, c) = rotate_right_thru_carry(get(s, datum), Some(false));
-                    set(s, datum, val);
+                    let (val, c) = rotate_right_thru_carry(s.get_i8(datum), Some(false));
+                    s.set_i8(datum, val);
                     s.carry = c;
                     true
                 }
                 ShiftType::RightRotateThroughCarry => {
-                    let (val, c) = rotate_right_thru_carry(get(s, datum), s.carry);
-                    set(s, datum, val);
+                    let (val, c) = rotate_right_thru_carry(s.get_i8(datum), s.carry);
+                    s.set_i8(datum, val);
                     s.carry = c;
                     true
                 }
                 ShiftType::LeftRotateThroughCarry => {
-                    let (val, c) = rotate_left_thru_carry(get(s, datum), s.carry);
-                    set(s, datum, val);
+                    let (val, c) = rotate_left_thru_carry(s.get_i8(datum), s.carry);
+                    s.set_i8(datum, val);
                     s.carry = c;
                     true
                 }
@@ -395,8 +394,10 @@ impl Instruction {
 pub struct State {
     accumulator: Option<i8>,
     reg_b: Option<i8>,
-    x8: Option<i8>,
-    y8: Option<i8>,
+    xl: Option<i8>,
+    yl: Option<i8>,
+    xh: Option<i8>,
+    yh: Option<i8>,
     zero: Option<bool>,
     carry: Option<bool>,
     sign: Option<bool>,
@@ -410,8 +411,10 @@ impl State {
         State {
             accumulator: None,
             reg_b: None,
-            x8: None,
-            y8: None,
+            xl: None,
+            yl: None,
+            xh: None,
+            yh: None,
             zero: None,
             carry: None,
             sign: None,
@@ -420,53 +423,103 @@ impl State {
             heap: HashMap::new(),
         }
     }
-}
 
-pub fn set(state: &mut State, register: Datum, val: Option<i8>) {
-    match register {
-        Datum::A => {
-            state.accumulator = val;
-        }
-        Datum::B => {
-            state.reg_b = val;
-        }
-        Datum::X => {
-            state.x8 = val;
-        }
-        Datum::Y => {
-            state.y8 = val;
-        }
-        Datum::Immediate(_) => {
-            panic!();
-        }
-        Datum::Absolute(address) => {
-            state.heap.insert(address, val);
-        }
-        Datum::Zero => {}
-    }
-}
-
-pub fn get(state: &State, register: Datum) -> Option<i8> {
-    match register {
-        Datum::A => state.accumulator,
-        Datum::B => state.reg_b,
-        Datum::X => state.x8,
-        Datum::Y => state.y8,
-        Datum::Immediate(x) => Some(x),
-        Datum::Absolute(address) => {
-            if let Some(x) = state.heap.get(&address) {
-                *x
-            } else {
-                None
+    pub fn get_i8(&self, d: Datum) -> Option<i8> {
+        match d {
+            Datum::Register(x) => {
+                match x {
+                    R::A => { self.accumulator }
+                    R::B => { self.reg_b }
+                    R::Xl => { self.xl }
+                    R::Yl => { self.yl }
+                    R::Xh => { self.xh }
+                    R::Yh => { self.yh }
+                }
+            }
+            Datum::RegisterPair(_, x) => {
+                self.get_i8(Datum::Register(x))
+            }
+            Datum::Imm8(d) => {Some(d)}
+            Datum::Absolute(addr) => {
+                if let Some(x) = self.heap.get(&addr) {
+                    *x
+                } else {
+                    None
+                }
+            }
+            Datum::Zero => {
+                Some(0)
             }
         }
-        Datum::Zero => Some(0),
+    }
+
+    pub fn get_i16(&self, d: Datum) -> Option<i16> {
+        match d {
+            Datum::Register(_) => { self.get_i8(d).map(|x| x as i16) }
+            Datum::RegisterPair(x, y) => {
+                if let Some(msb) = self.get_i8(Datum::Register(x)) {
+                    if let Some(lsb) = self.get_i8(Datum::Register(y)) {
+                        return Some(msb as i16 * 256 + lsb as i16);
+                    }
+                }
+                None
+            }
+            Datum::Imm8(d) => { Some(d as i16) }
+            Datum::Absolute(addr) => {
+                if let Some(l) = self.heap.get(&addr) {
+                    if let Some(h) = self.heap.get(&(addr + 1)) {
+                        if let Some(low) = l {
+                            if let Some(high) = h {
+                                return Some((*high as i16 * 256) + *low as i16);
+                            }
+                        }
+                    }
+                }
+                None
+            }
+            Datum::Zero => {
+                Some(0)
+            }
+        }
+    }
+
+    pub fn set_i8(&mut self, d: Datum, val: Option<i8>) {
+        match d {
+            Datum::Register(register) => {
+                match register {
+                    R::A => {
+                        self.accumulator = val;
+                    }
+                    R::B => {
+                        self.reg_b = val;
+                    }
+                    R::Xl => {
+                        self.xl = val;
+                    }
+                    R::Yl => {
+                        self.yl = val;
+                    }
+                    R::Xh => {
+                        self.xh = val;
+                    }
+                    R::Yh => {
+                        self.yh = val;
+                    }
+                }
+            }
+            Datum::RegisterPair(x, y) => {panic!()}
+            Datum::Imm8(_) => {panic!()}
+            Datum::Absolute(address) => {
+                self.heap.insert(address, val);
+            }
+            Datum::Zero => {}
+        }
     }
 }
 
 fn random_immediate() -> Datum {
     let vs = vec![0, 1, 2, 3, 4];
-    Datum::Immediate(*vs.choose(&mut rand::thread_rng()).unwrap())
+    Datum::Imm8(*vs.choose(&mut rand::thread_rng()).unwrap())
 }
 
 fn random_absolute() -> Datum {
@@ -480,9 +533,9 @@ pub fn instr_prex86(_mach: Machine) -> Instruction {
 
 fn random_accumulator_6800() -> Datum {
     if random() {
-        Datum::A
+        Datum::Register(R::A)
     } else {
-        Datum::B
+        Datum::Register(R::B)
     }
 }
 
@@ -505,8 +558,8 @@ fn rmw_datum_6800() -> Datum {
 
 fn add_6800(_mach: Machine) -> Operation {
     let dst = random_accumulator_6800();
-    if dst == Datum::A && random() {
-        Operation::Add(Datum::B, dst, false) // ABA
+    if dst == Datum::Register(R::A) && random() {
+        Operation::Add(Datum::Register(R::B), dst, false) // ABA
     } else {
         Operation::Add(random_source_6800(), dst, random()) // ADCA, ADCB, ADDA, ADDB
     }
@@ -514,9 +567,9 @@ fn add_6800(_mach: Machine) -> Operation {
 
 fn transfers_6800(_mach: Machine) -> Operation {
     if random() {
-        Operation::Move(Datum::A, Datum::B)
+        Operation::Move(Datum::Register(R::A), Datum::Register(R::B))
     } else {
-        Operation::Move(Datum::B, Datum::A)
+        Operation::Move(Datum::Register(R::B), Datum::Register(R::A))
     }
 }
 
@@ -561,9 +614,9 @@ fn incdec_6502(mach: Machine) -> Operation {
     // but earlier 6502s can increment and decrement X and Y only.
     let reg = 
     match rand::thread_rng().gen_range(0, if mach == Machine::Mos6502(Mos6502Variant::Cmos) { 3 } else { 2 }) {
-        0 => {Datum::X}
-        1 => {Datum::Y}
-        _ => {Datum::A}
+        0 => {Datum::Register(R::Xl)}
+        1 => {Datum::Register(R::Yl)}
+        _ => {Datum::Register(R::A)}
     };
     if random() {
         Operation::Increment(reg)
@@ -573,19 +626,19 @@ fn incdec_6502(mach: Machine) -> Operation {
 }
 
 fn add_6502(_mach: Machine) -> Operation {
-    Operation::Add(random_source_6502(), Datum::A, true)
+    Operation::Add(random_source_6502(), Datum::Register(R::A), true)
 }
 
 fn transfers_6502(_mach: Machine) -> Operation {
     let reg = if random() {
-        Datum::X
+        Datum::Register(R::Xl)
     } else {
-        Datum::Y
+        Datum::Register(R::Yl)
     };
     if random() {
-        Operation::Move(Datum::A, reg)
+        Operation::Move(Datum::Register(R::A), reg)
     } else {
-        Operation::Move(reg, Datum::A)
+        Operation::Move(reg, Datum::Register(R::A))
     }
 }
 
@@ -593,9 +646,9 @@ fn loadstore_6502(mach: Machine) -> Operation {
     // TODO: STZ operation for CMOS varieties
     let addr = random_absolute();
     let reg = match rand::thread_rng().gen_range(0, if mach == Machine::Mos6502(Mos6502Variant::Cmos) { 4 } else { 3 }) {
-        0 => Datum::A,
-        1 => Datum::X,
-        2 => Datum::Y,
+        0 => Datum::Register(R::A),
+        1 => Datum::Register(R::Xl),
+        2 => Datum::Register(R::Yl),
         _ => Datum::Zero,
     };
     if random() && reg != Datum::Zero {
@@ -616,7 +669,7 @@ fn shifts_6502(_mach: Machine) -> Operation {
         _ => ShiftType::RightRotateThroughCarry,
     };
     let dat = if random() {
-        Datum::A
+        Datum::Register(R::A)
     }else {
         random_absolute()
     };
@@ -637,7 +690,7 @@ fn instr_6502(mach: Machine) -> Instruction {
 
 fn random_accumulator_or_absolute() -> Datum {
     if random() {
-        Datum::A
+        Datum::Register(R::A)
     } else {
         random_absolute()
     }
@@ -654,13 +707,13 @@ fn inc_dec_pic(_mach: Machine) -> Operation {
 
 fn add_pic(mach: Machine) -> Operation {
     let dst = random_accumulator_or_absolute();
-    if dst == Datum::A && mach != Machine::Pic(PicVariant::Pic12) && random() {
+    if dst == Datum::Register(R::A) && mach != Machine::Pic(PicVariant::Pic12) && random() {
         // This is an immediate add. Not available on PIC12.
-        Operation::Add(random_immediate(), Datum::A, false) // addlw k
+        Operation::Add(random_immediate(), Datum::Register(R::A), false) // addlw k
     } else if random() {
-        Operation::Add(random_absolute(), Datum::A, false) // addwf f
+        Operation::Add(random_absolute(), Datum::Register(R::A), false) // addwf f
     } else {
-        Operation::Add(Datum::A, random_absolute(), false) // addwf f,d
+        Operation::Add(Datum::Register(R::A), random_absolute(), false) // addwf f,d
     }
 }
 
@@ -676,7 +729,7 @@ fn shifts_pic(_mach: Machine) -> Operation {
 
 fn and_pic(_mach: Machine) -> Operation {
     let dst = random_accumulator_or_absolute();
-    if dst == Datum::A && random() {
+    if dst == Datum::Register(R::A) && random() {
         // andlw
         Operation::And(random_immediate(), dst)
     } else if random() {
@@ -689,10 +742,10 @@ fn and_pic(_mach: Machine) -> Operation {
 fn store_pic(_mach: Machine) -> Operation {
     // TODO: There also is movf f,d, which just updates the Z flag
     match rand::thread_rng().gen_range(0, 4) {
-        0 => { Operation::Move(Datum::Zero, random_accumulator_or_absolute()) } // clrw and clrf f
-        1 => { Operation::Move(random_accumulator_or_absolute(), Datum::A) }    // movf f
-        2 => { Operation::Move(random_immediate(), Datum::A) }                  // movlw k
-        _ => { Operation::Move(Datum::A, random_accumulator_or_absolute()) }    // movwf f
+        0 => { Operation::Move(Datum::Zero, random_accumulator_or_absolute()) }              // clrw and clrf f
+        1 => { Operation::Move(random_accumulator_or_absolute(), Datum::Register(R::A)) }    // movf f
+        2 => { Operation::Move(random_immediate(), Datum::Register(R::A)) }                  // movlw k
+        _ => { Operation::Move(Datum::Register(R::A), random_accumulator_or_absolute()) }    // movwf f
     }
 }
 
