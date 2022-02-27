@@ -78,7 +78,7 @@ impl std::fmt::Display for Instruction {
 #[derive(Copy, Debug, Clone, PartialEq)]
 pub enum R {
     A,
-    B,
+    B, C, D, E, H, L, H1, L1,
     Xh, Xl,
     Yh, Yl,
 }
@@ -130,11 +130,20 @@ impl Machine {
                     panic!("No such register as {}", name);
                 }
             },
-            Machine::PreX86(_variant) => {
-                // TODO: fill in for the other variants
+            Machine::PreX86(variant) => {
+                if variant == PreX86Variant::KR580VM1 {
+                    if name == "h1" { return Datum::Register(R::H1); }
+                    if name == "l1" { return Datum::Register(R::L1); }
+                    if name == "h1l1" { return Datum::RegisterPair(R::H1, R::L1); }
+                }
                 match name {
                     "a" => Datum::Register(R::A),
                     "b" => Datum::Register(R::B),
+                    "c" => Datum::Register(R::C),
+                    "d" => Datum::Register(R::D),
+                    "e" => Datum::Register(R::E),
+                    "h" => Datum::Register(R::H),
+                    "l" => Datum::Register(R::L),
                     _ => {
                         panic!("No such register as {}", name);
                     }
@@ -394,6 +403,13 @@ impl Instruction {
 pub struct State {
     accumulator: Option<i8>,
     reg_b: Option<i8>,
+    reg_c: Option<i8>,
+    reg_d: Option<i8>,
+    reg_e: Option<i8>,
+    reg_h: Option<i8>,
+    reg_l: Option<i8>,
+    reg_h1: Option<i8>,
+    reg_l1: Option<i8>,
     xl: Option<i8>,
     yl: Option<i8>,
     xh: Option<i8>,
@@ -411,6 +427,13 @@ impl State {
         State {
             accumulator: None,
             reg_b: None,
+            reg_c: None,
+            reg_d: None,
+            reg_e: None,
+            reg_h: None,
+            reg_l: None,
+            reg_h1: None,
+            reg_l1: None,
             xl: None,
             yl: None,
             xh: None,
@@ -430,6 +453,13 @@ impl State {
                 match x {
                     R::A => { self.accumulator }
                     R::B => { self.reg_b }
+                    R::C => { self.reg_c }
+                    R::D => { self.reg_d }
+                    R::E => { self.reg_e }
+                    R::H => { self.reg_h }
+                    R::L => { self.reg_l }
+                    R::H1 => { self.reg_h1 }
+                    R::L1 => { self.reg_l1 }
                     R::Xl => { self.xl }
                     R::Yl => { self.yl }
                     R::Xh => { self.xh }
@@ -487,24 +517,19 @@ impl State {
         match d {
             Datum::Register(register) => {
                 match register {
-                    R::A => {
-                        self.accumulator = val;
-                    }
-                    R::B => {
-                        self.reg_b = val;
-                    }
-                    R::Xl => {
-                        self.xl = val;
-                    }
-                    R::Yl => {
-                        self.yl = val;
-                    }
-                    R::Xh => {
-                        self.xh = val;
-                    }
-                    R::Yh => {
-                        self.yh = val;
-                    }
+                    R::A => { self.accumulator = val; }
+                    R::B => { self.reg_b = val; }
+                    R::C => { self.reg_c = val; }
+                    R::D => { self.reg_d = val; }
+                    R::E => { self.reg_e = val; }
+                    R::H => { self.reg_h = val; }
+                    R::L => { self.reg_l = val; }
+                    R::H1 => { self.reg_h1 = val; }
+                    R::L1 => { self.reg_l1 = val; }
+                    R::Xl => { self.xl = val; }
+                    R::Yl => { self.yl = val; }
+                    R::Xh => { self.xh = val; }
+                    R::Yh => { self.yh = val; }
                 }
             }
             Datum::RegisterPair(x, y) => {panic!()}
