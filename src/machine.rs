@@ -144,6 +144,9 @@ impl Machine {
                     "e" => Datum::Register(R::E),
                     "h" => Datum::Register(R::H),
                     "l" => Datum::Register(R::L),
+                    "bc" => Datum::RegisterPair(R::B, R::C),
+                    "de" => Datum::RegisterPair(R::D, R::E),
+                    "hl" => Datum::RegisterPair(R::H, R::L),
                     _ => {
                         panic!("No such register as {}", name);
                     }
@@ -577,7 +580,10 @@ impl State {
                     R::Yh => { self.yh = val; }
                 }
             }
-            Datum::RegisterPair(_x, _y) => {panic!()}
+            Datum::RegisterPair(h, l) => {
+                self.set_i8(Datum::Register(l), val);
+                self.set_i8(Datum::Register(h), Some(0));
+            }
             Datum::Imm8(_) => {panic!()}
             Datum::Absolute(address) => {
                 self.heap.insert(address, val);
@@ -618,14 +624,41 @@ fn random_absolute() -> Datum {
     Datum::Absolute(*vs.choose(&mut rand::thread_rng()).unwrap())
 }
 
-fn fn random_r_or_rp_prex86(_mach: Machine) -> Datum {
-    
+fn random_r_prex86(_mach: Machine) -> Datum {
+    match rand::thread_rng().gen_range(0, 1) {
+        0 => {Datum::Register(R::A)}
+        1 => {Datum::Register(R::B)}
+        2 => {Datum::Register(R::C)}
+        3 => {Datum::Register(R::D)}
+        4 => {Datum::Register(R::E)}
+        5 => {Datum::Register(R::A)} // TODO: this should be (HL) in the zilog syntax; the byte pointed to by HL.
+        6 => {Datum::Register(R::H)}
+        _ => {Datum::Register(R::L)}
+    }
 }
 
-pub fn instr_prex86(_mach: Machine) -> Instruction {
+fn random_rp_prex86(_mach: Machine) -> Datum {
+    match rand::thread_rng().gen_range(0, 3) {
+        0 => {Datum::RegisterPair(R::B, R::C)}
+        1 => {Datum::RegisterPair(R::D, R::E)}
+        _ => {Datum::RegisterPair(R::H, R::L)}
+    }
+}
 
+fn inc_dec_prex86(mach: Machine) -> Operation {
+    match rand::thread_rng().gen_range(0, 1) {
+        0 => { Operation::Increment(random_r_prex86(mach)) }
+        1 => { Operation::Increment(random_rp_prex86(mach)) }
+        2 => { Operation::Decrement(random_r_prex86(mach)) }
+        _ => { Operation::Decrement(random_rp_prex86(mach)) }
+    }
+}
 
-    unimplemented!();
+pub fn instr_prex86(mach: Machine) -> Instruction {
+    match rand::thread_rng().gen_range(0, 1) {
+        0 => { Instruction::new(mach, inc_dec_prex86) }
+        _ => { Instruction::new(mach, |_| Operation::DecimalAdjustAccumulator) }
+    }
 }
 
 fn random_accumulator_6800() -> Datum {
