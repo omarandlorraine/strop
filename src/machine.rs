@@ -172,6 +172,42 @@ pub fn bitwise_xor(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>)
 }
 
 #[allow(clippy::many_single_char_names)]
+pub fn add_to_reg16(
+    reg: Option<i16>,
+    a: Option<i16>,
+    carry: Option<bool>,
+) -> (
+    Option<i16>,
+    Option<bool>,
+    Option<bool>,
+    Option<bool>,
+    Option<bool>,
+    Option<bool>,
+) {
+    // The return values are the result of the addition, then the flags, carry, zero, sign, overflow, half-carry.
+    if let Some(operand) = a {
+        if let Some(r) = reg {
+            if let Some(c) = carry {
+                let v = operand.wrapping_add(if c { 1 } else { 0 });
+                let result = r.wrapping_add(v);
+                let z = result == 0;
+                let c = r.checked_add(v).is_none();
+                let n = result < 0;
+                let o = (r < 0 && v < 0 && result >= 0) || (r > 0 && v > 0 && result <= 0);
+                let h = ((r ^ v ^ result) & 0x10) == 0x10;
+                (Some(result), Some(c), Some(z), Some(n), Some(o), Some(h))
+            } else {
+                (None, None, None, None, None, None)
+            }
+        } else {
+            (None, None, None, None, None, None)
+        }
+    } else {
+        (None, None, None, None, None, None)
+    }
+}
+
+#[allow(clippy::many_single_char_names)]
 pub fn add_to_reg8(
     reg: Option<i8>,
     a: Option<i8>,
@@ -346,11 +382,20 @@ impl Instruction {
             }
 
             Operation::Increment(register) => {
-                let (result, _c, z, n, _o, _h) =
-                    add_to_reg8(s.get_i8(register), Some(1), Some(false));
-                s.set_i8(register, result);
-                s.zero = z;
-                s.sign = n;
+                match register.width() {
+                    Width::Width8 => {
+                        let (result, _c, z, n, _o, _h) = add_to_reg8(s.get_i8(register), Some(1), Some(false));
+                        s.set_i8(register, result);
+                        s.zero = z;
+                        s.sign = n;
+                    } 
+                    Width::Width16 => {
+                        let (result, _c, z, n, _o, _h) = add_to_reg16(s.get_i16(register), Some(1), Some(false));
+                        s.set_i16(register, result);
+                        s.zero = z;
+                        s.sign = n;
+                    }
+                }
                 true
             }
 
@@ -532,10 +577,31 @@ impl State {
                     R::Yh => { self.yh = val; }
                 }
             }
-            Datum::RegisterPair(x, y) => {panic!()}
+            Datum::RegisterPair(_x, _y) => {panic!()}
             Datum::Imm8(_) => {panic!()}
             Datum::Absolute(address) => {
                 self.heap.insert(address, val);
+            }
+            Datum::Zero => {}
+        }
+    }
+    pub fn set_i16(&mut self, d: Datum, val: Option<i16>) {
+        let high = val.map(|v| (v / 256) as i8);
+        let low = val.map(|v| (v % 256) as i8);
+        match d {
+            Datum::Register(_) => {
+                self.set_i8(d, low);
+            }
+            Datum::RegisterPair(h, l) => {
+                self.set_i8(Datum::Register(h), high);
+                self.set_i8(Datum::Register(l), low);
+            }
+            Datum::Imm8(_x) => {
+                panic!();
+            }
+            Datum::Absolute(addr) => {
+                self.set_i8(Datum::Absolute(addr + 1), high);
+                self.set_i8(Datum::Absolute(addr), low);
             }
             Datum::Zero => {}
         }
@@ -552,7 +618,13 @@ fn random_absolute() -> Datum {
     Datum::Absolute(*vs.choose(&mut rand::thread_rng()).unwrap())
 }
 
+fn fn random_r_or_rp_prex86(_mach: Machine) -> Datum {
+    
+}
+
 pub fn instr_prex86(_mach: Machine) -> Instruction {
+
+
     unimplemented!();
 }
 
