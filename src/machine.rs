@@ -625,7 +625,7 @@ fn random_absolute() -> Datum {
 }
 
 fn random_r_prex86(_mach: Machine) -> Datum {
-    match rand::thread_rng().gen_range(0, 1) {
+    match rand::thread_rng().gen_range(0, 8) {
         0 => {Datum::Register(R::A)}
         1 => {Datum::Register(R::B)}
         2 => {Datum::Register(R::C)}
@@ -646,7 +646,7 @@ fn random_rp_prex86(_mach: Machine) -> Datum {
 }
 
 fn inc_dec_prex86(mach: Machine) -> Operation {
-    match rand::thread_rng().gen_range(0, 1) {
+    match rand::thread_rng().gen_range(0, 4) {
         0 => { Operation::Increment(random_r_prex86(mach)) }
         1 => { Operation::Increment(random_rp_prex86(mach)) }
         2 => { Operation::Decrement(random_r_prex86(mach)) }
