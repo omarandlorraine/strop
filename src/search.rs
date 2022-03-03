@@ -203,9 +203,9 @@ pub fn dead_code_elimination(
 ) -> BasicBlock {
     let mut better = prog.clone();
 
-    for _m in 1..1000 {
+    for _m in 1..100 {
         let mut putative = prog.clone();
-        for _n in 1..100 {
+        for _n in 1..10 {
             mutate_delete(&mut putative);
             if convergence(&better) >= convergence(&putative) {
                 better = putative.clone();
@@ -252,7 +252,7 @@ pub fn optimize(
     // if we find a better version, try to optimize that as well.
     if let Some(s) = best
         .spawn(mach)
-        .take(1000000)
+        .take(1000)
         .filter(|s| convergence(s) <= fitness)
         .map(|s| (cost(&s), s))
         .min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"))
