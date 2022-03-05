@@ -92,6 +92,7 @@ const M_OPTS: [MOpt; 13] = [
 ];
 
 #[derive(FromArgs, PartialEq, Debug)]
+/// command line arguments
 struct Opts {
     #[argh(option, short = 'm')]
     /// the name of the architecture.
