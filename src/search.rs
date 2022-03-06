@@ -1,4 +1,4 @@
-use crate::machine::{Instruction, set, get};
+use crate::machine::Instruction;
 use crate::{State, Test, TestRun, Machine};
 use rand::Rng;
 use std::ops::{Index, IndexMut};
@@ -98,7 +98,7 @@ fn run_program(prog: &BasicBlock, test_run: &TestRun, test: &Test) -> Option<Sta
     let mut s = State::new();
 
     for param in test_run.ins.iter().zip(test.ins.iter()) {
-        set(&mut s, param.0.register, Some(*param.1));
+        s.set_i8(param.0.register, Some(*param.1));
     }
     if prog
         .instructions
@@ -116,7 +116,7 @@ pub fn difference(prog: &BasicBlock, test_run: &TestRun) -> f64 {
     for tc in test_run.tests.iter() {
         if let Some(state) = run_program(prog, test_run, tc) {
             for param in test_run.outs.iter().zip(tc.outs.iter()) {
-                if let Some(v) = get(&state, param.0.register) {
+                if let Some(v) = state.get_i8(param.0.register) {
                     let d: f64 = v.into();
                     let e: f64 = (*param.1).into();
                     ret += (d - e).abs();
@@ -203,9 +203,9 @@ pub fn dead_code_elimination(
 ) -> BasicBlock {
     let mut better = prog.clone();
 
-    for _m in 1..1000 {
+    for _m in 1..100 {
         let mut putative = prog.clone();
-        for _n in 1..100 {
+        for _n in 1..10 {
             mutate_delete(&mut putative);
             if convergence(&better) >= convergence(&putative) {
                 better = putative.clone();
@@ -252,7 +252,7 @@ pub fn optimize(
     // if we find a better version, try to optimize that as well.
     if let Some(s) = best
         .spawn(mach)
-        .take(1000000)
+        .take(1000)
         .filter(|s| convergence(s) <= fitness)
         .map(|s| (cost(&s), s))
         .min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"))
