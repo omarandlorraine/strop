@@ -67,9 +67,33 @@ impl std::fmt::Display for Instruction {
             write!(f, "\tt{}{}", name(from), name(to))
         }
 
+        fn prex86_name(d: Datum) -> &'static str{
+            match d {
+                Datum::Register(R::A) => { "a" }
+                Datum::Register(R::B) => { "b" }
+                Datum::Register(R::C) => { "c" }
+                Datum::Register(R::D) => { "d" }
+                Datum::Register(R::E) => { "e" }
+                Datum::Register(R::H) => { "h" }
+                Datum::Register(R::L) => { "l" }
+                Datum::Register(R::H1) => { "h1" }
+                Datum::Register(R::L1) => { "l1" }
+                Datum::RegisterPair(R::B, R::C) => { "bc" }
+                Datum::RegisterPair(R::D, R::E) => { "de" }
+                Datum::RegisterPair(R::H, R::L) => { "hl" }
+                Datum::RegisterPair(R::H1, R::L1) => { "h1l1" }
+                _ => "<something>"
+            }
+        }
+
+        fn prex86_load(f: &mut std::fmt::Formatter<'_>, from: Datum, to: Datum) -> std::fmt::Result {
+            write!(f, "\tld {}, {}", prex86_name(from), prex86_name(to))
+        }
+
         match (self.machine, self.operation) {
             (Machine::Mos6502(_), Operation::Move(Datum::Register(from), Datum::Register(to))) => { transfer(f, from, to) }
             (Machine::Motorola6800(_), Operation::Move(Datum::Register(from), Datum::Register(to))) => { transfer(f, from, to) }
+            (Machine::PreX86(_), Operation::Move(from, to)) => { prex86_load(f, from, to) }
             _ => { write!(f, "{:?}", self.operation) }
         }
     }
