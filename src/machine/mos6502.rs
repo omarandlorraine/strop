@@ -17,14 +17,40 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             R::A => "a",
             R::Xl => "x",
             R::Yl => "y",
-            _ => unimplemented!()
+            _ => unimplemented!(),
+        }
+    }
+
+    fn syn(f: &mut std::fmt::Formatter, s: &'static str, d: Datum) -> std::fmt::Result {
+        match d {
+            Datum::Absolute(address) => {
+                write!(f, "\t{} {}", s, address)
+            }
+            Datum::Register(R::A) => {
+                write!(f, "\t{} a", s)
+            }
+            _ => {
+                write!(f, "\t{} {:?}", s, d)
+            }
         }
     }
 
     match op {
         Operation::Move(Datum::Register(from), Datum::Register(to)) => {
+            // tax, txa, tay, tya, txs, tsx, txy, tyx (the latter two exist on 65816)
             write!(f, "\tt{}{}", regname(from), regname(to))
         }
+        Operation::Move(Datum::Register(R::A), thing) => syn(f, "sta", thing),
+        Operation::Move(Datum::Register(R::Xl), thing) => syn(f, "stx", thing),
+        Operation::Move(Datum::Register(R::Yl), thing) => syn(f, "sty", thing),
+        Operation::Move(thing, Datum::Register(R::A)) => syn(f, "lda", thing),
+        Operation::Move(thing, Datum::Register(R::Xl)) => syn(f, "ldx", thing),
+        Operation::Move(thing, Datum::Register(R::Yl)) => syn(f, "ldy", thing),
+        Operation::Shift(ShiftType::RightArithmetic, thing) => syn(f, "lsr", thing),
+        Operation::Shift(ShiftType::LeftArithmetic, thing) => syn(f, "asl", thing),
+        Operation::Shift(ShiftType::RightRotateThroughCarry, thing) => syn(f, "ror", thing),
+        Operation::Shift(ShiftType::LeftRotateThroughCarry, thing) => syn(f, "rol", thing),
+        Operation::Add(thing, Datum::Register(R::A), true) => syn(f, "adc", thing),
         _ => {
             write!(f, "{:?}", op)
         }
