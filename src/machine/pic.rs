@@ -11,6 +11,10 @@ use crate::machine::random_absolute;
 use crate::machine::rand::Rng;
 use rand::random;
 
+fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{:?}", op)
+}
+
 fn random_accumulator_or_absolute() -> Datum {
     if random() {
         Datum::Register(R::A)

@@ -10,6 +10,29 @@ use crate::machine::random_absolute;
 use crate::machine::rand::Rng;
 use rand::random;
 
+fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn regname(r: R) -> &'static str {
+        match r {
+            R::A => "a",
+            R::B => "b",
+            R::Xl => "x",
+            R::Yl => "y",
+            _ => unimplemented!()
+        }
+    }
+    match op {
+        Operation::Move(Datum::Register(from), Datum::Register(to)) => {
+            write!(f, "\tt{}{}", regname(from), regname(to))
+        }
+        Operation::Add(Datum::Register(R::B), Datum::Register(R::A), false) => {
+            write!(f, "\taba")
+        }
+        _ => {
+            write!(f, "{:?}", op)
+        }
+    }
+}
+
 fn random_accumulator_6800() -> Datum {
     if random() {
         Datum::Register(R::A)

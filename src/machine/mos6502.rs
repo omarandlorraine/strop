@@ -11,6 +11,26 @@ use crate::machine::random_absolute;
 use crate::machine::rand::Rng;
 use rand::random;
 
+fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn regname(r: R) -> &'static str {
+        match r {
+            R::A => "a",
+            R::Xl => "x",
+            R::Yl => "y",
+            _ => unimplemented!()
+        }
+    }
+
+    match op {
+        Operation::Move(Datum::Register(from), Datum::Register(to)) => {
+            write!(f, "\tt{}{}", regname(from), regname(to))
+        }
+        _ => {
+            write!(f, "{:?}", op)
+        }
+    }
+}
+
 fn random_source_6502() -> Datum {
     if random() {
         random_immediate()
@@ -88,12 +108,12 @@ fn shifts_6502(_mach: Machine) -> Operation {
 
 pub fn instr_6502(mach: Machine) -> Instruction {
     match rand::thread_rng().gen_range(0, 5) {
-        0 => { Instruction::new(mach, incdec_6502) }
-        1 => { Instruction::new(mach, add_6502) }
-        2 => { Instruction::new(mach, transfers_6502) }
-        3 => { Instruction::new(mach, shifts_6502) }
-        4 => { Instruction::new(mach, loadstore_6502) }
-        _ => { Instruction::new(mach, secl_6502) }
+        0 => Instruction::new(mach, incdec_6502, dasm),
+        1 => Instruction::new(mach, add_6502, dasm),
+        2 => Instruction::new(mach, transfers_6502, dasm),
+        3 => Instruction::new(mach, shifts_6502, dasm),
+        4 => Instruction::new(mach, loadstore_6502, dasm),
+        _ => Instruction::new(mach, secl_6502, dasm),
     }
     // TODO: Add clc, sec, and many other instructions
 }
