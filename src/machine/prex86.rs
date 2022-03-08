@@ -39,6 +39,29 @@ fn inc_dec_prex86(mach: Machine) -> Operation {
     }
 }
 
+fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn name(datum: Datum) -> &'static str {
+        match datum {
+            Datum::Register(R::A) => { "a" }
+            Datum::Register(R::B) => { "b" }
+            Datum::Register(R::C) => { "c" }
+            Datum::Register(R::D) => { "d" }
+            Datum::Register(R::E) => { "e" }
+            Datum::Register(R::H) => { "h" }
+            Datum::Register(R::L) => { "l" }
+            Datum::Register(R::A) => { "a" }
+            _ => "<something>"
+        }
+    }
+    match op {
+        Operation::Add(thing, Datum::Register(R::A), false) => { write!(f, "\tadd a, {}", name(thing)) }
+        Operation::Add(thing, Datum::Register(R::A), true)  => { write!(f, "\tadc a, {}", name(thing)) }
+        Operation::Move(from, to) => { write!(f, "\tld {}, {}", name(from), name(to)) }
+        Operation::DecimalAdjustAccumulator => { write!(f, "\tdaa") }
+        _ => { write!(f, "{:?}", op) }
+    }
+}
+
 fn add8_prex86(mach: Machine) -> Operation {
     // From what I can see, the KR580VM1 and similar CPUs, can do:
     //  - 8 bit adds with or without carry, destination is the Accumulator
@@ -64,10 +87,10 @@ fn ld_prex86(mach: Machine) -> Operation {
 
 pub fn instr_prex86(mach: Machine) -> Instruction {
     match rand::thread_rng().gen_range(0, 5) {
-        0 => { Instruction::new(mach, inc_dec_prex86) }
-        1 => { Instruction::new(mach, add8_prex86) }
-        2 => { Instruction::new(mach, rot_a_prex86) }
-        3 => { Instruction::new(mach, ld_prex86) }
-        _ => { Instruction::new(mach, |_| Operation::DecimalAdjustAccumulator) }
+        0 => { Instruction::new(mach, inc_dec_prex86, dasm) }
+        1 => { Instruction::new(mach, add8_prex86, dasm) }
+        2 => { Instruction::new(mach, rot_a_prex86, dasm) }
+        3 => { Instruction::new(mach, ld_prex86, dasm) }
+        _ => { Instruction::new(mach, |_| Operation::DecimalAdjustAccumulator, dasm) }
     }
 }
