@@ -2,10 +2,10 @@ use crate::machine::rand::prelude::SliceRandom;
 use std::collections::HashMap;
 extern crate rand;
 
-mod prex86;
-mod pic;
-mod mos6502;
 mod m6800;
+mod mos6502;
+mod pic;
+mod prex86;
 use crate::machine::m6800::instr_6800;
 use crate::machine::mos6502::instr_6502;
 use crate::machine::pic::instr_pic;
@@ -57,7 +57,8 @@ pub struct Instruction {
 }
 
 enum Width {
-    Width8, Width16
+    Width8,
+    Width16,
 }
 
 impl std::fmt::Display for Instruction {
@@ -69,9 +70,18 @@ impl std::fmt::Display for Instruction {
 #[derive(Copy, Debug, Clone, PartialEq)]
 pub enum R {
     A,
-    B, C, D, E, H, L, H1, L1,
-    Xh, Xl,
-    Yh, Yl,
+    B,
+    C,
+    D,
+    E,
+    H,
+    L,
+    H1,
+    L1,
+    Xh,
+    Xl,
+    Yh,
+    Yl,
 }
 
 #[derive(Copy, Debug, Clone, PartialEq)]
@@ -86,11 +96,11 @@ pub enum Datum {
 impl Datum {
     fn width(&self) -> Width {
         match self {
-            Self::Register(_) => { Width::Width8 }
-            Self::RegisterPair(_, _) => { Width::Width16 }
-            Self::Imm8(_) => { Width::Width8 }
-            Self::Absolute(_) => { Width::Width8 }
-            Self::Zero => { Width::Width8 }
+            Self::Register(_) => Width::Width8,
+            Self::RegisterPair(_, _) => Width::Width16,
+            Self::Imm8(_) => Width::Width8,
+            Self::Absolute(_) => Width::Width8,
+            Self::Zero => Width::Width8,
         }
     }
 }
@@ -123,9 +133,15 @@ impl Machine {
             },
             Machine::PreX86(variant) => {
                 if variant == PreX86Variant::KR580VM1 {
-                    if name == "h1" { return Datum::Register(R::H1); }
-                    if name == "l1" { return Datum::Register(R::L1); }
-                    if name == "h1l1" { return Datum::RegisterPair(R::H1, R::L1); }
+                    if name == "h1" {
+                        return Datum::Register(R::H1);
+                    }
+                    if name == "l1" {
+                        return Datum::Register(R::L1);
+                    }
+                    if name == "h1l1" {
+                        return Datum::RegisterPair(R::H1, R::L1);
+                    }
                 }
                 match name {
                     "a" => Datum::Register(R::A),
@@ -287,7 +303,7 @@ fn rotate_right_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>,
             return (
                 Some(if c { shifted | -128i8 } else { shifted }),
                 Some(low_bit_set),
-            )
+            );
         }
     }
     (None, None)
@@ -297,13 +313,30 @@ fn rotate_right_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>,
 fn add_to_reg8_test() {
     assert_eq!(
         add_to_reg8(Some(3), Some(3), Some(false)),
-        (Some(6), Some(false), Some(false), Some(false), Some(false), Some(false))
+        (
+            Some(6),
+            Some(false),
+            Some(false),
+            Some(false),
+            Some(false),
+            Some(false)
+        )
     );
     assert_eq!(
         add_to_reg8(Some(127), Some(1), Some(false)),
-        (Some(-128), Some(true), Some(false), Some(true), Some(true), Some(true))
+        (
+            Some(-128),
+            Some(true),
+            Some(false),
+            Some(true),
+            Some(true),
+            Some(true)
+        )
     );
-    assert_eq!(add_to_reg8(None, Some(3), Some(false)), (None, None, None, None, None, None));
+    assert_eq!(
+        add_to_reg8(None, Some(3), Some(false)),
+        (None, None, None, None, None, None)
+    );
 }
 
 #[derive(Clone, Debug, Copy)]
@@ -349,7 +382,9 @@ impl Instruction {
     pub fn operate(&self, s: &mut State) -> bool {
         match self.operation {
             Operation::Add(source, destination, carry) => {
-                if !carry { s.carry = Some(false) };
+                if !carry {
+                    s.carry = Some(false)
+                };
                 let (result, c, z, n, o, h) =
                     add_to_reg8(s.get_i8(source), s.get_i8(destination), s.carry);
 
@@ -380,13 +415,15 @@ impl Instruction {
             Operation::Increment(register) => {
                 match register.width() {
                     Width::Width8 => {
-                        let (result, _c, z, n, _o, _h) = add_to_reg8(s.get_i8(register), Some(1), Some(false));
+                        let (result, _c, z, n, _o, _h) =
+                            add_to_reg8(s.get_i8(register), Some(1), Some(false));
                         s.set_i8(register, result);
                         s.zero = z;
                         s.sign = n;
-                    } 
+                    }
                     Width::Width16 => {
-                        let (result, _c, z, n, _o, _h) = add_to_reg16(s.get_i16(register), Some(1), Some(false));
+                        let (result, _c, z, n, _o, _h) =
+                            add_to_reg16(s.get_i16(register), Some(1), Some(false));
                         s.set_i16(register, result);
                         s.zero = z;
                         s.sign = n;
@@ -435,7 +472,6 @@ impl Instruction {
                 s.carry = Some(b);
                 true
             }
-
         }
     }
 }
@@ -490,27 +526,23 @@ impl State {
 
     pub fn get_i8(&self, d: Datum) -> Option<i8> {
         match d {
-            Datum::Register(x) => {
-                match x {
-                    R::A => { self.accumulator }
-                    R::B => { self.reg_b }
-                    R::C => { self.reg_c }
-                    R::D => { self.reg_d }
-                    R::E => { self.reg_e }
-                    R::H => { self.reg_h }
-                    R::L => { self.reg_l }
-                    R::H1 => { self.reg_h1 }
-                    R::L1 => { self.reg_l1 }
-                    R::Xl => { self.xl }
-                    R::Yl => { self.yl }
-                    R::Xh => { self.xh }
-                    R::Yh => { self.yh }
-                }
-            }
-            Datum::RegisterPair(_, x) => {
-                self.get_i8(Datum::Register(x))
-            }
-            Datum::Imm8(d) => {Some(d)}
+            Datum::Register(x) => match x {
+                R::A => self.accumulator,
+                R::B => self.reg_b,
+                R::C => self.reg_c,
+                R::D => self.reg_d,
+                R::E => self.reg_e,
+                R::H => self.reg_h,
+                R::L => self.reg_l,
+                R::H1 => self.reg_h1,
+                R::L1 => self.reg_l1,
+                R::Xl => self.xl,
+                R::Yl => self.yl,
+                R::Xh => self.xh,
+                R::Yh => self.yh,
+            },
+            Datum::RegisterPair(_, x) => self.get_i8(Datum::Register(x)),
+            Datum::Imm8(d) => Some(d),
             Datum::Absolute(addr) => {
                 if let Some(x) = self.heap.get(&addr) {
                     *x
@@ -518,15 +550,13 @@ impl State {
                     None
                 }
             }
-            Datum::Zero => {
-                Some(0)
-            }
+            Datum::Zero => Some(0),
         }
     }
 
     pub fn get_i16(&self, d: Datum) -> Option<i16> {
         match d {
-            Datum::Register(_) => { self.get_i8(d).map(|x| x as i16) }
+            Datum::Register(_) => self.get_i8(d).map(|x| x as i16),
             Datum::RegisterPair(x, y) => {
                 if let Some(msb) = self.get_i8(Datum::Register(x)) {
                     if let Some(lsb) = self.get_i8(Datum::Register(y)) {
@@ -535,7 +565,7 @@ impl State {
                 }
                 None
             }
-            Datum::Imm8(d) => { Some(d as i16) }
+            Datum::Imm8(d) => Some(d as i16),
             Datum::Absolute(addr) => {
                 if let Some(l) = self.heap.get(&addr) {
                     if let Some(h) = self.heap.get(&(addr + 1)) {
@@ -548,36 +578,60 @@ impl State {
                 }
                 None
             }
-            Datum::Zero => {
-                Some(0)
-            }
+            Datum::Zero => Some(0),
         }
     }
 
     pub fn set_i8(&mut self, d: Datum, val: Option<i8>) {
         match d {
-            Datum::Register(register) => {
-                match register {
-                    R::A => { self.accumulator = val; }
-                    R::B => { self.reg_b = val; }
-                    R::C => { self.reg_c = val; }
-                    R::D => { self.reg_d = val; }
-                    R::E => { self.reg_e = val; }
-                    R::H => { self.reg_h = val; }
-                    R::L => { self.reg_l = val; }
-                    R::H1 => { self.reg_h1 = val; }
-                    R::L1 => { self.reg_l1 = val; }
-                    R::Xl => { self.xl = val; }
-                    R::Yl => { self.yl = val; }
-                    R::Xh => { self.xh = val; }
-                    R::Yh => { self.yh = val; }
+            Datum::Register(register) => match register {
+                R::A => {
+                    self.accumulator = val;
                 }
-            }
+                R::B => {
+                    self.reg_b = val;
+                }
+                R::C => {
+                    self.reg_c = val;
+                }
+                R::D => {
+                    self.reg_d = val;
+                }
+                R::E => {
+                    self.reg_e = val;
+                }
+                R::H => {
+                    self.reg_h = val;
+                }
+                R::L => {
+                    self.reg_l = val;
+                }
+                R::H1 => {
+                    self.reg_h1 = val;
+                }
+                R::L1 => {
+                    self.reg_l1 = val;
+                }
+                R::Xl => {
+                    self.xl = val;
+                }
+                R::Yl => {
+                    self.yl = val;
+                }
+                R::Xh => {
+                    self.xh = val;
+                }
+                R::Yh => {
+                    self.yh = val;
+                }
+            },
             Datum::RegisterPair(h, l) => {
                 self.set_i8(Datum::Register(l), val);
                 self.set_i8(Datum::Register(h), Some(0));
             }
-            Datum::Imm8(_) => {panic!()}
+            Datum::Imm8(_) => {
+                panic!()
+            }
             Datum::Absolute(address) => {
                 self.heap.insert(address, val);
             }
@@ -617,12 +671,11 @@ fn random_absolute() -> Datum {
     Datum::Absolute(*vs.choose(&mut rand::thread_rng()).unwrap())
 }
 
-
 pub fn new_instruction(mach: Machine) -> Instruction {
     match mach {
-        Machine::Motorola6800(_) => { instr_6800(mach) }
-        Machine::Mos6502(_) => { instr_6502(mach) }
-        Machine::PreX86(_) => { instr_prex86(mach) }
-        Machine::Pic(_) => { instr_pic(mach) }
+        Machine::Motorola6800(_) => instr_6800(mach),
+        Machine::Mos6502(_) => instr_6502(mach),
+        Machine::PreX86(_) => instr_prex86(mach),
+        Machine::Pic(_) => instr_pic(mach),
     }
 }

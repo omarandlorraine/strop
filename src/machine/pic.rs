@@ -1,12 +1,12 @@
-use crate::machine::Instruction;
-use crate::machine::R;
-use crate::machine::Machine;
-use crate::machine::PicVariant;
-use crate::machine::Operation;
-use crate::machine::Datum;
-use crate::machine::ShiftType;
-use crate::machine::random_immediate;
 use crate::machine::random_absolute;
+use crate::machine::random_immediate;
+use crate::machine::Datum;
+use crate::machine::Instruction;
+use crate::machine::Machine;
+use crate::machine::Operation;
+use crate::machine::PicVariant;
+use crate::machine::ShiftType;
+use crate::machine::R;
 
 use crate::machine::rand::Rng;
 use rand::random;
@@ -69,20 +69,20 @@ fn and_pic(_mach: Machine) -> Operation {
 fn store_pic(_mach: Machine) -> Operation {
     // TODO: There also is movf f,d, which just updates the Z flag
     match rand::thread_rng().gen_range(0, 4) {
-        0 => { Operation::Move(Datum::Zero, random_accumulator_or_absolute()) }              // clrw and clrf f
-        1 => { Operation::Move(random_accumulator_or_absolute(), Datum::Register(R::A)) }    // movf f
-        2 => { Operation::Move(random_immediate(), Datum::Register(R::A)) }                  // movlw k
-        _ => { Operation::Move(Datum::Register(R::A), random_accumulator_or_absolute()) }    // movwf f
+        0 => Operation::Move(Datum::Zero, random_accumulator_or_absolute()), // clrw and clrf f
+        1 => Operation::Move(random_accumulator_or_absolute(), Datum::Register(R::A)), // movf f
+        2 => Operation::Move(random_immediate(), Datum::Register(R::A)),     // movlw k
+        _ => Operation::Move(Datum::Register(R::A), random_accumulator_or_absolute()), // movwf f
     }
 }
 
 pub fn instr_pic(mach: Machine) -> Instruction {
     match rand::thread_rng().gen_range(0, 5) {
-        0 => { Instruction::new(mach, shifts_pic) }
-        1 => { Instruction::new(mach, and_pic) }
-        2 => { Instruction::new(mach, add_pic) }
-        3 => { Instruction::new(mach, store_pic) }
-        _ => { Instruction::new(mach, inc_dec_pic) }
+        0 => Instruction::new(mach, shifts_pic, dasm),
+        1 => Instruction::new(mach, and_pic, dasm),
+        2 => Instruction::new(mach, add_pic, dasm),
+        3 => Instruction::new(mach, store_pic, dasm),
+        _ => Instruction::new(mach, inc_dec_pic, dasm),
     }
     // TODO: Add the following other instructions:
     // bcf bsf btfsc btfss (call) (clrwdt) comf decfsz (goto) incfsz iorlw iorwf (nop) (option) (retlw) (sleep) subwf swapf (tris) xorlw xorwf

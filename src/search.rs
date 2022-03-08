@@ -1,8 +1,8 @@
+use crate::machine::new_instruction;
 use crate::machine::Instruction;
-use crate::{State, Test, TestRun, Machine};
+use crate::{Machine, State, Test, TestRun};
 use rand::Rng;
 use std::ops::{Index, IndexMut};
-use crate::machine::new_instruction;
 
 #[derive(Clone)]
 pub struct BasicBlock {
@@ -13,7 +13,7 @@ struct BasicBlockSpawn {
     parent: BasicBlock,
     mutant: BasicBlock,
     ncount: usize,
-    mach: Machine
+    mach: Machine,
 }
 
 impl Iterator for BasicBlockSpawn {
@@ -25,19 +25,13 @@ impl Iterator for BasicBlockSpawn {
             self.ncount = 100;
         }
         self.ncount -= 1;
-        mutate(
-            &mut self.mutant,
-            self.mach,
-        );
+        mutate(&mut self.mutant, self.mach);
         Some(self.mutant.clone())
     }
 }
 
 impl BasicBlock {
-    fn initial_guess(
-        mach: Machine,
-        max_size: i32,
-    ) -> BasicBlock {
+    fn initial_guess(mach: Machine, max_size: i32) -> BasicBlock {
         let mut bb = BasicBlock {
             instructions: vec![],
         };
@@ -48,10 +42,7 @@ impl BasicBlock {
         bb
     }
 
-    fn spawn(
-        &self,
-        mach: Machine,
-    ) -> BasicBlockSpawn {
+    fn spawn(&self, mach: Machine) -> BasicBlockSpawn {
         let parent: BasicBlock = BasicBlock {
             instructions: self.instructions.clone(),
         };
@@ -100,11 +91,7 @@ fn run_program(prog: &BasicBlock, test_run: &TestRun, test: &Test) -> Option<Sta
     for param in test_run.ins.iter().zip(test.ins.iter()) {
         s.set_i8(param.0.register, Some(*param.1));
     }
-    if prog
-        .instructions
-        .iter()
-        .all(|i| i.operate(&mut s))
-    {
+    if prog.instructions.iter().all(|i| i.operate(&mut s)) {
         Some(s)
     } else {
         None
@@ -146,10 +133,7 @@ fn mutate_delete(prog: &mut BasicBlock) {
     }
 }
 
-fn mutate_insert(
-    prog: &mut BasicBlock,
-    mach: Machine,
-) {
+fn mutate_insert(prog: &mut BasicBlock, mach: Machine) {
     let offset: usize = if prog.len() > 0 {
         rand::thread_rng().gen_range(0, prog.len())
     } else {
@@ -159,10 +143,7 @@ fn mutate_insert(
     prog.insert(offset, instruction);
 }
 
-fn mutate(
-    prog: &mut BasicBlock,
-    mach: Machine,
-) {
+fn mutate(prog: &mut BasicBlock, mach: Machine) {
     let mutate: usize = rand::thread_rng().gen_range(0, 3);
     match mutate {
         /* randomize an instruction
@@ -266,10 +247,7 @@ pub fn optimize(
     prog.clone()
 }
 
-pub fn stochastic_search(
-    convergence: &dyn Fn(&BasicBlock) -> f64,
-    mach: Machine,
-) -> BasicBlock {
+pub fn stochastic_search(convergence: &dyn Fn(&BasicBlock) -> f64, mach: Machine) -> BasicBlock {
     // Initial population of a bajillion stupid programs
     // which are of course unlikely to be any good
     let mut population: Vec<(f64, BasicBlock)> = vec![];
@@ -294,10 +272,7 @@ pub fn stochastic_search(
 
         let mut next_generation: Vec<(f64, BasicBlock)> = vec![];
 
-        for s in best
-            .spawn(mach)
-            .take(500)
-        {
+        for s in best.spawn(mach).take(500) {
             let fit = convergence(&s);
             if fit < b.0 {
                 let d = quick_dce(convergence, &s);

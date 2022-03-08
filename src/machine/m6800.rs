@@ -1,11 +1,11 @@
+use crate::machine::random_absolute;
+use crate::machine::random_immediate;
+use crate::machine::Datum;
 use crate::machine::Instruction;
-use crate::machine::R;
 use crate::machine::Machine;
 use crate::machine::Operation;
-use crate::machine::Datum;
 use crate::machine::ShiftType;
-use crate::machine::random_immediate;
-use crate::machine::random_absolute;
+use crate::machine::R;
 
 use crate::machine::rand::Rng;
 use rand::random;
@@ -17,7 +17,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             R::B => "b",
             R::Xl => "x",
             R::Yl => "y",
-            _ => unimplemented!()
+            _ => unimplemented!(),
         }
     }
     match op {
@@ -77,19 +77,19 @@ fn transfers_6800(_mach: Machine) -> Operation {
 
 fn rotates_6800(_mach: Machine) -> Operation {
     match rand::thread_rng().gen_range(0, 4) {
-        0 => {Operation::Shift(ShiftType::LeftArithmetic, rmw_datum_6800())}
-        1 => {Operation::Shift(ShiftType::RightArithmetic,rmw_datum_6800())}
-        2 => {Operation::Shift(ShiftType::LeftRotateThroughCarry, rmw_datum_6800())}
-        _ => {Operation::Shift(ShiftType::RightRotateThroughCarry, rmw_datum_6800())}
+        0 => Operation::Shift(ShiftType::LeftArithmetic, rmw_datum_6800()),
+        1 => Operation::Shift(ShiftType::RightArithmetic, rmw_datum_6800()),
+        2 => Operation::Shift(ShiftType::LeftRotateThroughCarry, rmw_datum_6800()),
+        _ => Operation::Shift(ShiftType::RightRotateThroughCarry, rmw_datum_6800()),
     }
 }
 
 pub fn instr_6800(mach: Machine) -> Instruction {
     match rand::thread_rng().gen_range(0, 4) {
-        0 => { Instruction::new(mach, add_6800) }
-        1 => { Instruction::new(mach, transfers_6800) }
-        2 => { Instruction::new(mach, |_| Operation::DecimalAdjustAccumulator) }
-        _ => { Instruction::new(mach, rotates_6800) }
+        0 => Instruction::new(mach, add_6800, dasm),
+        1 => Instruction::new(mach, transfers_6800, dasm),
+        2 => Instruction::new(mach, |_| Operation::DecimalAdjustAccumulator, dasm),
+        _ => Instruction::new(mach, rotates_6800, dasm),
     }
     // TODO: Add clc, sec, daa, and many other instructions
 }

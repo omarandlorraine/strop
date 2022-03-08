@@ -9,13 +9,13 @@ mod search;
 mod test;
 
 use crate::machine::State;
-use crate::machine::{Machine, PreX86Variant, Mos6502Variant, Motorola8BitVariant, PicVariant};
+use crate::machine::{Machine, Mos6502Variant, Motorola8BitVariant, PicVariant, PreX86Variant};
+use crate::search::stochastic_search;
 use crate::search::BasicBlock;
 use crate::search::{difference, optimize};
-use crate::search::stochastic_search;
 
-use crate::test::{DeTestRun, Parameter, Test, TestRun};
 use crate::test::sanity;
+use crate::test::{DeTestRun, Parameter, Test, TestRun};
 
 struct MOpt {
     name: &'static str,
@@ -231,13 +231,23 @@ fn testrun_from_args(opts: &Opts, mach: Machine) -> TestRun {
             .r#in
             .clone()
             .into_iter()
-            .map(|reg| Parameter{register: mach.register_by_name(&reg), cost: Some(0.0), address: None, name: reg.clone()})
+            .map(|reg| Parameter {
+                register: mach.register_by_name(&reg),
+                cost: Some(0.0),
+                address: None,
+                name: reg.clone(),
+            })
             .collect(),
         outs: opts
             .out
             .clone()
             .into_iter()
-            .map(|reg| Parameter{register: mach.register_by_name(&reg), cost: Some(0.0), address: None, name: reg.clone()})
+            .map(|reg| Parameter {
+                register: mach.register_by_name(&reg),
+                cost: Some(0.0),
+                address: None,
+                name: reg.clone(),
+            })
             .collect(),
         tests: function(opts.function.clone().unwrap()),
     }

@@ -1,12 +1,12 @@
+use crate::machine::random_absolute;
+use crate::machine::random_immediate;
+use crate::machine::Datum;
 use crate::machine::Instruction;
-use crate::machine::R;
 use crate::machine::Machine;
 use crate::machine::Mos6502Variant;
 use crate::machine::Operation;
-use crate::machine::Datum;
 use crate::machine::ShiftType;
-use crate::machine::random_immediate;
-use crate::machine::random_absolute;
+use crate::machine::R;
 
 use crate::machine::rand::Rng;
 use rand::random;
@@ -42,12 +42,18 @@ fn random_source_6502() -> Datum {
 fn incdec_6502(mach: Machine) -> Operation {
     // the CMOS varieties have inc and dec for accumulator
     // but earlier 6502s can increment and decrement X and Y only.
-    let reg = 
-        match rand::thread_rng().gen_range(0, if mach == Machine::Mos6502(Mos6502Variant::Cmos) { 3 } else { 2 }) {
-            0 => {Datum::Register(R::Xl)}
-            1 => {Datum::Register(R::Yl)}
-            _ => {Datum::Register(R::A)}
-        };
+    let reg = match rand::thread_rng().gen_range(
+        0,
+        if mach == Machine::Mos6502(Mos6502Variant::Cmos) {
+            3
+        } else {
+            2
+        },
+    ) {
+        0 => Datum::Register(R::Xl),
+        1 => Datum::Register(R::Yl),
+        _ => Datum::Register(R::A),
+    };
     if random() {
         Operation::Increment(reg)
     } else {
@@ -75,7 +81,14 @@ fn transfers_6502(_mach: Machine) -> Operation {
 fn loadstore_6502(mach: Machine) -> Operation {
     // TODO: STZ operation for CMOS varieties
     let addr = random_absolute();
-    let reg = match rand::thread_rng().gen_range(0, if mach == Machine::Mos6502(Mos6502Variant::Cmos) { 4 } else { 3 }) {
+    let reg = match rand::thread_rng().gen_range(
+        0,
+        if mach == Machine::Mos6502(Mos6502Variant::Cmos) {
+            4
+        } else {
+            3
+        },
+    ) {
         0 => Datum::Register(R::A),
         1 => Datum::Register(R::Xl),
         2 => Datum::Register(R::Yl),
@@ -100,7 +113,7 @@ fn shifts_6502(_mach: Machine) -> Operation {
     };
     let dat = if random() {
         Datum::Register(R::A)
-    }else {
+    } else {
         random_absolute()
     };
     Operation::Shift(sht, dat)
