@@ -30,11 +30,6 @@ const M_OPTS: [MOpt; 13] = [
         help: "Intel 8080",
     },
     MOpt {
-        name: "8085",
-        mach: Machine::PreX86(PreX86Variant::I8085),
-        help: "Intel 8085",
-    },
-    MOpt {
         name: "kr580vm1",
         mach: Machine::PreX86(PreX86Variant::KR580VM1),
         help: "KR580VM1, a Soviet Ukrainian 8080 variant",
@@ -43,6 +38,11 @@ const M_OPTS: [MOpt; 13] = [
         name: "z80",
         mach: Machine::PreX86(PreX86Variant::ZilogZ80),
         help: "Zilog Z80",
+    },
+    MOpt {
+        name: "sm83",
+        mach: Machine::PreX86(PreX86Variant::Sm83),
+        help: "Weirdo found in some nintendos",
     },
     MOpt {
         name: "2a03",

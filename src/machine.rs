@@ -36,8 +36,8 @@ pub enum PicVariant {
 pub enum PreX86Variant {
     ZilogZ80,
     I8080,
-    I8085,
     KR580VM1,
+    Sm83,
 }
 
 #[derive(Clone, Copy, PartialEq)]
