@@ -18,14 +18,19 @@ missing, which will result in suboptimal programs being generated for some
 functions. Notably, branching and other control flow instructions are completely
 absent from strop. But probably the best instruction sets so far are:
 
-- *PIC*, because I use these in my day-job.
-  - *pic12*, *pic14*, *pic16*, etc.
-- *MOS 6502*, because why not.
-  - *6502*, *65c02*
-- *Motorola 6800 Family*
-  - *6800*, *6801*, *6809*
-- *PreX86*, the clade of CPUs that evolved from the Intel 8080
-  - Intel 8080, КР580ВМ1 (KR580VM1)
+ - 8080
+ - kr580vm1
+ - z80
+ - sm83
+ - 2a03
+ - 6502
+ - 65i02
+ - 65c02
+ - 6800
+ - 6801
+ - pic12
+ - pic14
+ - pic16
 
 I've tried to pick ones I use or like, and then I've added the low-hanging
 fruit like their relatives and so on. I've also tried to make this extensible,
