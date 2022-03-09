@@ -18,19 +18,19 @@ missing, which will result in suboptimal programs being generated for some
 functions. Notably, branching and other control flow instructions are completely
 absent from strop. But probably the best instruction sets so far are:
 
- - 8080
- - kr580vm1
- - z80
- - sm83
- - 2a03
- - 6502
- - 65i02
- - 65c02
- - 6800
- - 6801
- - pic12
- - pic14
- - pic16
+ - 8080, *the famous Intel chip*
+ - kr580vm1, *a Ukrainian 8080 variant*
+ - z80, *the famous Z80, very popular with retrocomputing enthusiasts*
+ - sm83, *weirdo found in certain nintendos*
+ - 2a03, *another weirdo found in certain nintendos; this is a 6502 with no decimal mode*
+ - 6502, *famous 8-bitter from the 1970s*
+ - 65i02, *6502 core instruction set plus some illegal opcodes*
+ - 65c02, *6502 plus CMOS extensions*
+ - 6800, *Motorola 8-bitter*
+ - 6801, *successor to the 6800*
+ - pic12, *low-end microcontroller from Microchip*
+ - pic14, *extension to PIC12*
+ - pic16, *extension to PIC12*
 
 I've tried to pick ones I use or like, and then I've added the low-hanging
 fruit like their relatives and so on. I've also tried to make this extensible,
