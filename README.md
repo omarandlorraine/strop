@@ -12,11 +12,11 @@ an excuse to learn Rust, plus I wanted a superoptimizer that could target
 things other than the 6502, So, strop was born, the *st*ochastic *op*timizer,
 written in *R*ust.
 
-### Supported architectures:
-Not much here (yet). There are a few placeholders for miscellaneous
-architectures, and some of the instructions have been implemented for some of
-them. But I don't want to say they're *supported* as such yet. Probably the
-best ones, grouped below by clade, are:
+### Supported instruction sets:
+I don't want to say they're *supported* as such yet: many instructions are still
+missing, which will result in suboptimal programs being generated for some
+functions. Notably, branching and other control flow instructions are completely
+absent from strop. But probably the best instruction sets so far are:
 
 - *PIC*, because I use these in my day-job.
   - *pic12*, *pic14*, *pic16*, etc.
@@ -24,6 +24,8 @@ best ones, grouped below by clade, are:
   - *6502*, *65c02*
 - *Motorola 6800 Family*
   - *6800*, *6801*, *6809*
+- *PreX86*, the clade of CPUs that evolved from the Intel 8080
+  - Intel 8080, КР580ВМ1 (KR580VM1)
 
 I've tried to pick ones I use or like, and then I've added the low-hanging
 fruit like their relatives and so on. I've also tried to make this extensible,
@@ -89,8 +91,8 @@ generate the code that satisfies all test cases in the file. See the
 
 produces the following code,
 
-    add #0
-    daa
+    	add #0
+    	daa
 
 As to why the `add #0` was generated, my guess is that `daa` depends on the
 state of certain flags, and `add #0` sets these flags right.
