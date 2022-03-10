@@ -72,7 +72,7 @@ const M_OPTS: [MOpt; 13] = [
     MOpt {
         name: "6801",
         mach: Machine::Motorola6800(Motorola8BitVariant::Motorola6801),
-        help: "Motorola 6800",
+        help: "Motorola 6801",
     },
     MOpt {
         name: "pic12",
