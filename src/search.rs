@@ -1,6 +1,6 @@
 use crate::machine::new_instruction;
 use crate::machine::Instruction;
-use crate::{Machine, State, Test, TestRun};
+use crate::{Machine, State, Test, TestRun, Step};
 use rand::Rng;
 use std::ops::{Index, IndexMut};
 
@@ -85,34 +85,26 @@ impl IndexMut<usize> for BasicBlock {
     }
 }
 
-fn run_program(prog: &BasicBlock, test_run: &TestRun, test: &Test) -> Option<State> {
-    let mut s = State::new();
-
-    for param in test_run.ins.iter().zip(test.ins.iter()) {
-        s.set_i8(param.0.register, Some(*param.1));
-    }
-    if prog.instructions.iter().all(|i| i.operate(&mut s)) {
-        Some(s)
-    } else {
-        None
-    }
-}
-
 pub fn difference(prog: &BasicBlock, test_run: &TestRun) -> f64 {
     let mut ret: f64 = 0.0;
+
     for tc in test_run.tests.iter() {
-        if let Some(state) = run_program(prog, test_run, tc) {
-            for param in test_run.outs.iter().zip(tc.outs.iter()) {
-                if let Some(v) = state.get_i8(param.0.register) {
-                    let d: f64 = v.into();
-                    let e: f64 = (*param.1).into();
-                    ret += (d - e).abs();
-                } else {
-                    ret += 256.0; // the cost of an output variable that's never been written to
+        let mut s = State::new();
+
+        for step in tc.steps {
+            match step {
+                Step::Run => {
+                    prog.instructions.iter().all(|i| i.operate(&mut s));
+                }
+                Step::Diff(datum, val) => {
+                    if let Some(v) = s.get_i16(datum) {
+                        let d: f64 = (val - v as i32).into();
+                        ret += d.abs();
+                    } else {
+                        ret += 65536.0;
+                    }
                 }
             }
-        } else {
-            ret += 1000.0; // what am I doing
         }
     }
     ret

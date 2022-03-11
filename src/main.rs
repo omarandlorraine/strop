@@ -15,7 +15,7 @@ use crate::search::BasicBlock;
 use crate::search::{difference, optimize};
 
 use crate::test::sanity;
-use crate::test::{DeTestRun, Parameter, Test, TestRun};
+use crate::test::{DeTestRun, Parameter, Test, TestRun, Step};
 
 struct MOpt {
     name: &'static str,
