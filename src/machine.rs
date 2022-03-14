@@ -338,6 +338,21 @@ fn disassembler_6800() {
 }
 
 #[test]
+fn disassembler_prex86() {
+    dasm(Machine::PreX86(PreX86Variant::ZilogZ80));
+    dasm(Machine::PreX86(PreX86Variant::I8080));
+    dasm(Machine::PreX86(PreX86Variant::Sm83));
+    dasm(Machine::PreX86(PreX86Variant::KR580VM1));
+}
+
+#[test]
+fn disassembler_pic() {
+    dasm(Machine::Pic(PicVariant::Pic12));
+    dasm(Machine::Pic(PicVariant::Pic14));
+    dasm(Machine::Pic(PicVariant::Pic16));
+}
+
+#[test]
 fn add_to_reg8_test() {
     assert_eq!(
         add_to_reg8(Some(3), Some(3), Some(false)),
