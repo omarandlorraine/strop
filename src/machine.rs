@@ -310,9 +310,9 @@ fn rotate_right_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>,
 }
 
 fn dasm(mach: Machine) {
-    for i in 0..5000 {
+    for _i in 0..5000 {
         let mut instr = new_instruction(mach);
-        for j in 0..50 {
+        for _j in 0..50 {
             instr.randomize();
             let d = format!("{}", instr);
             if d[0..1] != "\t".to_owned() {
