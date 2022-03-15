@@ -56,7 +56,7 @@ pub struct TestRun {
 }
 
 fn step(mach: Machine, s: &DeStep) -> Step {
-    match (s.set, s.dontcare, s.ham, s.diff, s.check) {
+    match (s.set, s.dontcare, s.ham, s.diff, s.check.as_ref()) {
         (val, None, None, None, None) => { Step::Set(mach.register_by_name(&s.datum), val.unwrap()) }
         (None, None, val, None, None) => { Step::Ham(mach.register_by_name(&s.datum), val.unwrap(), -1) }
         (None, dc, val, None, None) => { Step::Ham(mach.register_by_name(&s.datum), val.unwrap(), dc.unwrap()) }
@@ -66,20 +66,21 @@ fn step(mach: Machine, s: &DeStep) -> Step {
                 "nonzero" => { Step::NonZero(mach.register_by_name(&s.datum)) }
                 "positive" => { Step::Positive(mach.register_by_name(&s.datum)) }
                 "negative" => { Step::Negative(mach.register_by_name(&s.datum)) }
+                _ => unimplemented!()
             }
         }
         _ => panic!()
     }
 }
 
-fn de_step(mach: Machine, d: Vec<DeStep>) -> Vec<Step> {
+fn de_step(mach: Machine, d: &Vec<DeStep>) -> Vec<Step> {
     let st: Vec<Step> = d.iter().map(|t| step(mach, t)).collect();
-    let (setup, checks): (Vec<Step>, Vec<Step>) = st.iter().partition(|s|
-                                       match s {
-                                           Step::Set(_, _) => { true }
-                                           _ => { false }
-                                       }
-                                       );
+    let (mut setup, mut checks): (Vec<Step>, Vec<Step>) = st.iter().partition(|s|
+        match s {
+            Step::Set(_, _) => { true }
+            _ => { false }
+        }
+    );
 
     setup.push(Step::Run);
     setup.append(&mut checks);
@@ -88,7 +89,7 @@ fn de_step(mach: Machine, d: Vec<DeStep>) -> Vec<Step> {
 
 fn de_test(mach: Machine, d: &DeTest) -> Test {
     Test {
-        steps: de_step(mach, d.steps)
+        steps: de_step(mach, &d.steps)
     }
 }
 
