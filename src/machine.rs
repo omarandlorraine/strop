@@ -56,7 +56,7 @@ pub struct Instruction {
     machine: Machine,
 }
 
-enum Width {
+pub enum Width {
     Width8,
     Width16,
 }
@@ -94,7 +94,7 @@ pub enum Datum {
 }
 
 impl Datum {
-    fn width(&self) -> Width {
+    pub fn width(&self) -> Width {
         match self {
             Self::Register(_) => Width::Width8,
             Self::RegisterPair(_, _) => Width::Width16,
@@ -603,7 +603,7 @@ impl State {
             Datum::RegisterPair(x, y) => {
                 if let Some(msb) = self.get_i8(Datum::Register(x)) {
                     if let Some(lsb) = self.get_i8(Datum::Register(y)) {
-                        return Some(msb as i16 * 256 + lsb as i16);
+                        return Some(((msb as i16) << 8) | lsb as i16);
                     }
                 }
                 None
