@@ -10,12 +10,13 @@ mod test;
 
 use crate::machine::State;
 use crate::machine::{Machine, Mos6502Variant, Motorola8BitVariant, PicVariant, PreX86Variant};
+use crate::machine::Datum;
 use crate::search::stochastic_search;
 use crate::search::BasicBlock;
 use crate::search::{difference, optimize};
 
 use crate::test::sanity;
-use crate::test::{DeTestRun, Parameter, Test, TestRun};
+use crate::test::{DeTestRun, Test, TestRun, Step};
 
 struct MOpt {
     name: &'static str,
@@ -132,37 +133,9 @@ fn mach(m: String) -> Machine {
     process::exit(1);
 }
 
-fn function(m: String) -> Vec<Test> {
+fn function(m: String, ins: Vec<Datum>, outs: Vec<Datum>) -> Vec<Test> {
     // TODO: test_cases does not need to be mutable..
     let mut test_cases = Vec::new();
-    if m == *"id" {
-        for n in -128..=127 {
-            test_cases.push(Test {
-                ins: vec![n],
-                outs: vec![n],
-            });
-        }
-        return test_cases;
-    }
-    if m == *"signum" {
-        for n in -128..=-1 {
-            test_cases.push(Test {
-                ins: vec![n],
-                outs: vec![-1],
-            });
-        }
-        test_cases.push(Test {
-            ins: vec![0],
-            outs: vec![0],
-        });
-        for n in 1..=127 {
-            test_cases.push(Test {
-                ins: vec![n],
-                outs: vec![1],
-            });
-        }
-        return test_cases;
-    }
     if m[0..4] == *"mult" {
         let arg = m[4..].to_string();
         let a = arg.parse::<i8>();
@@ -171,30 +144,13 @@ fn function(m: String) -> Vec<Test> {
             for n in -128_i8..=127 {
                 if let Some(res) = n.checked_mul(f) {
                     test_cases.push(Test {
-                        ins: vec![n],
-                        outs: vec![res],
+                        steps: vec!(Step::Set(ins[0], n as i32), Step::Run, Step::Diff(outs[0], res as i32))
                     });
                 }
             }
             return test_cases;
         } else {
             println!("Can't multiply by {}", arg);
-        }
-    }
-    if m[0..4] == *"idiv" {
-        let arg = m[4..].to_string();
-        let a = arg.parse::<i8>();
-
-        if let Ok(f) = a {
-            for n in 0..=127 {
-                test_cases.push(Test {
-                    ins: vec![n],
-                    outs: vec![n / f],
-                });
-            }
-            return test_cases;
-        } else {
-            println!("Can't divide by {}", arg);
         }
     }
     if m[0..3] == *"add" {
@@ -205,8 +161,7 @@ fn function(m: String) -> Vec<Test> {
             for n in -128_i8..=127 {
                 if let Some(res) = n.checked_add(f) {
                     test_cases.push(Test {
-                        ins: vec![n],
-                        outs: vec![res],
+                        steps: vec!(Step::Set(ins[0], n as i32), Step::Run, Step::Diff(outs[0], res as i32))
                     });
                 }
             }
@@ -226,30 +181,10 @@ fn disassemble(prog: BasicBlock) {
 }
 
 fn testrun_from_args(opts: &Opts, mach: Machine) -> TestRun {
+    let ins: Vec<Datum> = opts.r#in.clone().into_iter().map(|reg| mach.register_by_name(&reg)).collect();
+    let outs: Vec<Datum> = opts.out.clone().into_iter().map(|reg| mach.register_by_name(&reg)).collect();
     TestRun {
-        ins: opts
-            .r#in
-            .clone()
-            .into_iter()
-            .map(|reg| Parameter {
-                register: mach.register_by_name(&reg),
-                cost: Some(0.0),
-                address: None,
-                name: reg.clone(),
-            })
-            .collect(),
-        outs: opts
-            .out
-            .clone()
-            .into_iter()
-            .map(|reg| Parameter {
-                register: mach.register_by_name(&reg),
-                cost: Some(0.0),
-                address: None,
-                name: reg.clone(),
-            })
-            .collect(),
-        tests: function(opts.function.clone().unwrap()),
+        tests: function(opts.function.clone().unwrap(), ins, outs),
     }
 }
 

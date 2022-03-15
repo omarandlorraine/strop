@@ -1,6 +1,7 @@
 use crate::machine::new_instruction;
 use crate::machine::Instruction;
-use crate::{Machine, State, Test, TestRun};
+use crate::machine::Width;
+use crate::{Machine, State, TestRun, Step};
 use rand::Rng;
 use std::ops::{Index, IndexMut};
 
@@ -85,34 +86,66 @@ impl IndexMut<usize> for BasicBlock {
     }
 }
 
-fn run_program(prog: &BasicBlock, test_run: &TestRun, test: &Test) -> Option<State> {
-    let mut s = State::new();
-
-    for param in test_run.ins.iter().zip(test.ins.iter()) {
-        s.set_i8(param.0.register, Some(*param.1));
-    }
-    if prog.instructions.iter().all(|i| i.operate(&mut s)) {
-        Some(s)
-    } else {
-        None
-    }
-}
-
 pub fn difference(prog: &BasicBlock, test_run: &TestRun) -> f64 {
     let mut ret: f64 = 0.0;
+
     for tc in test_run.tests.iter() {
-        if let Some(state) = run_program(prog, test_run, tc) {
-            for param in test_run.outs.iter().zip(tc.outs.iter()) {
-                if let Some(v) = state.get_i8(param.0.register) {
-                    let d: f64 = v.into();
-                    let e: f64 = (*param.1).into();
-                    ret += (d - e).abs();
-                } else {
-                    ret += 256.0; // the cost of an output variable that's never been written to
+        let mut s = State::new();
+
+        for step in &tc.steps {
+            match step {
+                Step::Run => {
+                    prog.instructions.iter().all(|i| i.operate(&mut s));
+                }
+                Step::Set(datum, val) => {
+                    match datum.width() {
+                        Width::Width8 => { s.set_i8(*datum, Some(*val as i8)); }
+                        Width::Width16 => { s.set_i16(*datum, Some(*val as i16)); }
+                    }
+                }
+                Step::Diff(datum, val) => {
+                    if let Some(v) = s.get_i16(*datum) {
+                        let d: f64 = (val - v as i32).into();
+                        ret += d.abs();
+                    } else {
+                        ret += 65536.0;
+                    }
+                }
+                Step::NonZero(datum) => {
+                    if let Some(v) = s.get_i16(*datum) {
+                        if !(v == 0) {
+                            ret += 2.0;
+                        }
+                    } else {
+                        ret += 100.0;
+                    }
+                }
+                Step::Positive(datum) => {
+                    if let Some(v) = s.get_i16(*datum) {
+                        if !(v > 0) {
+                            ret += 2.0;
+                        }
+                    } else {
+                        ret += 100.0;
+                    }
+                }
+                Step::Negative(datum) => {
+                    if let Some(v) = s.get_i16(*datum) {
+                        if !(v < 0) {
+                            ret += 2.0;
+                        }
+                    } else {
+                        ret += 100.0;
+                    }
+                }
+                Step::Ham(datum, val, dontcare) => {
+                    if let Some(v) = s.get_i16(*datum) {
+                        ret += (((v as i32) ^ val) & dontcare).count_ones() as f64;
+                    } else {
+                        ret += 1000.0
+                    }
                 }
             }
-        } else {
-            ret += 1000.0; // what am I doing
         }
     }
     ret
