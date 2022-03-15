@@ -72,14 +72,11 @@ fn shifts_pic(_mach: Machine) -> Operation {
 }
 
 fn and_pic(_mach: Machine) -> Operation {
-    let dst = random_accumulator_or_absolute();
-    if dst == Datum::Register(R::A) && random() {
-        // andlw
-        Operation::And(random_immediate(), dst)
-    } else if random() {
-        Operation::And(random_absolute(), dst)
-    } else {
-        Operation::And(dst, random_absolute())
+    let w = Datum::Register(R::A);
+    match rand::thread_rng().gen_range(0, 3) {
+        0 => Operation::And(random_immediate(), w), // andlw
+        1 => Operation::And(random_absolute(), w),  // andwf something, 0
+        _ => Operation::And(w, random_absolute()),  // andwf something, 1
     }
 }
 
@@ -87,9 +84,9 @@ fn store_pic(_mach: Machine) -> Operation {
     // TODO: There also is movf f,d, which just updates the Z flag
     match rand::thread_rng().gen_range(0, 4) {
         0 => Operation::Move(Datum::Zero, random_accumulator_or_absolute()), // clrw and clrf f
-        1 => Operation::Move(random_accumulator_or_absolute(), Datum::Register(R::A)), // movf f
+        1 => Operation::Move(random_absolute(), Datum::Register(R::A)), // movf f
         2 => Operation::Move(random_immediate(), Datum::Register(R::A)),     // movlw k
-        _ => Operation::Move(Datum::Register(R::A), random_accumulator_or_absolute()), // movwf f
+        _ => Operation::Move(Datum::Register(R::A), random_absolute()), // movwf f
     }
 }
 
@@ -103,4 +100,37 @@ pub fn instr_pic(mach: Machine) -> Instruction {
     }
     // TODO: Add the following other instructions:
     // bcf bsf btfsc btfss (call) (clrwdt) comf decfsz (goto) incfsz iorlw iorwf (nop) (option) (retlw) (sleep) subwf swapf (tris) xorlw xorwf
+}
+
+#[test]
+fn exclude_instructions() {
+    // I've seen some instructions generated that are not part of any PIC's instruction set.
+    // This test fails if it can get the same instruction again.
+
+    fn check(_pic: PicVariant, fname: &'static str, op: Operation) {
+        match op {
+            Operation::Move(Datum::Register(R::A), Datum::Register(R::A)) => panic!("{} produced a move from W to W", fname),
+            Operation::Add(Datum::Absolute(_), Datum::Absolute(_), _) => panic!("{} produced an Add operation with two operands in memory", fname),
+            Operation::And(Datum::Absolute(_), Datum::Absolute(_)) => panic!("{} produced an And operation with two operands in memory", fname),
+            _ => {}
+        }
+    }
+    
+    fn excl(pic: PicVariant) {
+        for _i in 0..50000 {
+            check(pic, "store_pic", store_pic(Machine::Pic(pic)));
+            check(pic, "and_pic", and_pic(Machine::Pic(pic)));
+            check(pic, "shifts_pic", shifts_pic(Machine::Pic(pic)));
+            check(pic, "inc_dec_pic", inc_dec_pic(Machine::Pic(pic)));
+        }
+        for _i in 0..5000 {
+            let mut instr = instr_pic(Machine::Pic(PicVariant::Pic12));
+            for _j in 0..500 {
+                instr.randomize();
+                check(pic, "something", instr.operation);
+            }
+        }
+    }
+
+    excl(PicVariant::Pic12);
 }
