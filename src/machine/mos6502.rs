@@ -43,6 +43,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Move(Datum::Register(R::A), thing) => syn(f, "sta", thing),
         Operation::Move(Datum::Register(R::Xl), thing) => syn(f, "stx", thing),
         Operation::Move(Datum::Register(R::Yl), thing) => syn(f, "sty", thing),
+        Operation::Move(Datum::Zero, thing) => syn(f, "stz", thing),
         Operation::Move(thing, Datum::Register(R::A)) => syn(f, "lda", thing),
         Operation::Move(thing, Datum::Register(R::Xl)) => syn(f, "ldx", thing),
         Operation::Move(thing, Datum::Register(R::Yl)) => syn(f, "ldy", thing),
@@ -51,6 +52,8 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Shift(ShiftType::RightRotateThroughCarry, thing) => syn(f, "ror", thing),
         Operation::Shift(ShiftType::LeftRotateThroughCarry, thing) => syn(f, "rol", thing),
         Operation::Add(thing, Datum::Register(R::A), true) => syn(f, "adc", thing),
+        Operation::Increment(Datum::Register(reg)) => write!(f, "\tin{}", regname(reg)),
+        Operation::Decrement(Datum::Register(reg)) => write!(f, "\tde{}", regname(reg)),
         _ => {
             write!(f, "{:?}", op)
         }

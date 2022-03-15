@@ -309,6 +309,49 @@ fn rotate_right_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>,
     (None, None)
 }
 
+fn dasm(mach: Machine) {
+    for _i in 0..5000 {
+        let mut instr = new_instruction(mach);
+        for _j in 0..50 {
+            instr.randomize();
+            let d = format!("{}", instr);
+            if d[0..1] != "\t".to_owned() {
+                println!("No disassembly for instruction {}", d);
+                panic!();
+            }
+        }
+    }
+}
+
+#[test]
+fn disassembler_6502() {
+    dasm(Machine::Mos6502(Mos6502Variant::Nmos));
+    dasm(Machine::Mos6502(Mos6502Variant::Cmos));
+    dasm(Machine::Mos6502(Mos6502Variant::Ricoh2a03));
+    dasm(Machine::Mos6502(Mos6502Variant::IllegalInstructions));
+}
+
+#[test]
+fn disassembler_6800() {
+    dasm(Machine::Motorola6800(Motorola8BitVariant::Motorola6800));
+    dasm(Machine::Motorola6800(Motorola8BitVariant::Motorola6801));
+}
+
+#[test]
+fn disassembler_prex86() {
+    dasm(Machine::PreX86(PreX86Variant::ZilogZ80));
+    dasm(Machine::PreX86(PreX86Variant::I8080));
+    dasm(Machine::PreX86(PreX86Variant::Sm83));
+    dasm(Machine::PreX86(PreX86Variant::KR580VM1));
+}
+
+#[test]
+fn disassembler_pic() {
+    dasm(Machine::Pic(PicVariant::Pic12));
+    dasm(Machine::Pic(PicVariant::Pic14));
+    dasm(Machine::Pic(PicVariant::Pic16));
+}
+
 #[test]
 fn add_to_reg8_test() {
     assert_eq!(
