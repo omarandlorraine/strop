@@ -59,15 +59,21 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             (R::B, R::C) => "bc",
             (R::D, R::E) => "de",
             (R::H1, R::L1) => "h1l1",
-            _ => unimplemented!()
+            _ => unimplemented!(),
         }
     }
 
-    fn monadic(f: &mut std::fmt::Formatter<'_>, ins: &'static str, operand: Datum) -> std::fmt::Result {
+    fn monadic(
+        f: &mut std::fmt::Formatter<'_>,
+        ins: &'static str,
+        operand: Datum,
+    ) -> std::fmt::Result {
         match operand {
             Datum::Register(_) => write!(f, "\t{} {}", ins, name(operand)),
             Datum::RegisterPair(a, b) => write!(f, "\t{} {}", ins, rpname(a, b)),
-            _ => {unimplemented!()}
+            _ => {
+                unimplemented!()
+            }
         }
     }
 
@@ -90,8 +96,8 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::DecimalAdjustAccumulator => {
             write!(f, "\tdaa")
         }
-        Operation::Decrement(d) => { monadic(f, "dec", d) }
-        Operation::Increment(d) => { monadic(f, "inc", d) }
+        Operation::Decrement(d) => monadic(f, "dec", d),
+        Operation::Increment(d) => monadic(f, "inc", d),
         _ => {
             write!(f, "{:?}", op)
         }

@@ -13,22 +13,52 @@ use rand::random;
 
 fn dasm(op: Operation, fr: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match op {
-        Operation::Add(Datum::Register(R::A), Datum::Absolute(f), false) => { write!(fr, "\taddwf {}, 1", f) }
-        Operation::Add(Datum::Absolute(f), Datum::Register(R::A), false) => { write!(fr, "\taddwf {}, 0", f) }
-        Operation::Add(Datum::Imm8(k), Datum::Register(R::A), false) => { write!(fr, "\taddlw {}, 0", k) }
-        Operation::And(Datum::Imm8(k), Datum::Register(R::A)) => { write!(fr, "\tandlw {}, 0", k) }
-        Operation::And(Datum::Absolute(f), Datum::Register(R::A)) => { write!(fr, "\tandwf {}, 0", f) }
-        Operation::And(Datum::Register(R::A), Datum::Absolute(f)) => { write!(fr, "\tandwf {}, 1", f) }
-        Operation::Move(Datum::Absolute(f), Datum::Register(R::A)) => { write!(fr, "\tmovf {}, 0", f) }
-        Operation::Move(Datum::Register(R::A), Datum::Absolute(f)) => { write!(fr, "\tmovwf {}", f) }
-        Operation::Move(Datum::Zero, Datum::Absolute(f)) => { write!(fr, "\tclrf {}", f) }
-        Operation::Move(Datum::Zero, Datum::Register(R::A)) => { write!(fr, "\tclrw") }
-        Operation::Move(Datum::Imm8(k), Datum::Register(R::A)) => { write!(fr, "\tmovlw {}", k) }
-        Operation::Increment(Datum::Absolute(f)) => { write!(fr, "\tinc f {}, 1", f) }
-        Operation::Decrement(Datum::Absolute(f)) => { write!(fr, "\tdec f {}, 1", f) }
-        Operation::Shift(ShiftType::LeftRotateThroughCarry, Datum::Absolute(f)) => { write!(fr, "\trlf {}, 1", f) }
-        Operation::Shift(ShiftType::RightRotateThroughCarry, Datum::Absolute(f)) => { write!(fr, "\trrf {}, 1", f) }
-        _ => write!(fr, "{:?}", op)
+        Operation::Add(Datum::Register(R::A), Datum::Absolute(f), false) => {
+            write!(fr, "\taddwf {}, 1", f)
+        }
+        Operation::Add(Datum::Absolute(f), Datum::Register(R::A), false) => {
+            write!(fr, "\taddwf {}, 0", f)
+        }
+        Operation::Add(Datum::Imm8(k), Datum::Register(R::A), false) => {
+            write!(fr, "\taddlw {}, 0", k)
+        }
+        Operation::And(Datum::Imm8(k), Datum::Register(R::A)) => {
+            write!(fr, "\tandlw {}, 0", k)
+        }
+        Operation::And(Datum::Absolute(f), Datum::Register(R::A)) => {
+            write!(fr, "\tandwf {}, 0", f)
+        }
+        Operation::And(Datum::Register(R::A), Datum::Absolute(f)) => {
+            write!(fr, "\tandwf {}, 1", f)
+        }
+        Operation::Move(Datum::Absolute(f), Datum::Register(R::A)) => {
+            write!(fr, "\tmovf {}, 0", f)
+        }
+        Operation::Move(Datum::Register(R::A), Datum::Absolute(f)) => {
+            write!(fr, "\tmovwf {}", f)
+        }
+        Operation::Move(Datum::Zero, Datum::Absolute(f)) => {
+            write!(fr, "\tclrf {}", f)
+        }
+        Operation::Move(Datum::Zero, Datum::Register(R::A)) => {
+            write!(fr, "\tclrw")
+        }
+        Operation::Move(Datum::Imm8(k), Datum::Register(R::A)) => {
+            write!(fr, "\tmovlw {}", k)
+        }
+        Operation::Increment(Datum::Absolute(f)) => {
+            write!(fr, "\tinc f {}, 1", f)
+        }
+        Operation::Decrement(Datum::Absolute(f)) => {
+            write!(fr, "\tdec f {}, 1", f)
+        }
+        Operation::Shift(ShiftType::LeftRotateThroughCarry, Datum::Absolute(f)) => {
+            write!(fr, "\trlf {}, 1", f)
+        }
+        Operation::Shift(ShiftType::RightRotateThroughCarry, Datum::Absolute(f)) => {
+            write!(fr, "\trrf {}, 1", f)
+        }
+        _ => write!(fr, "{:?}", op),
     }
 }
 
@@ -84,9 +114,9 @@ fn store_pic(_mach: Machine) -> Operation {
     // TODO: There also is movf f,d, which just updates the Z flag
     match rand::thread_rng().gen_range(0, 4) {
         0 => Operation::Move(Datum::Zero, random_accumulator_or_absolute()), // clrw and clrf f
-        1 => Operation::Move(random_absolute(), Datum::Register(R::A)), // movf f
+        1 => Operation::Move(random_absolute(), Datum::Register(R::A)),      // movf f
         2 => Operation::Move(random_immediate(), Datum::Register(R::A)),     // movlw k
-        _ => Operation::Move(Datum::Register(R::A), random_absolute()), // movwf f
+        _ => Operation::Move(Datum::Register(R::A), random_absolute()),      // movwf f
     }
 }
 
@@ -109,13 +139,21 @@ fn exclude_instructions() {
 
     fn check(_pic: PicVariant, fname: &'static str, op: Operation) {
         match op {
-            Operation::Move(Datum::Register(R::A), Datum::Register(R::A)) => panic!("{} produced a move from W to W", fname),
-            Operation::Add(Datum::Absolute(_), Datum::Absolute(_), _) => panic!("{} produced an Add operation with two operands in memory", fname),
-            Operation::And(Datum::Absolute(_), Datum::Absolute(_)) => panic!("{} produced an And operation with two operands in memory", fname),
+            Operation::Move(Datum::Register(R::A), Datum::Register(R::A)) => {
+                panic!("{} produced a move from W to W", fname)
+            }
+            Operation::Add(Datum::Absolute(_), Datum::Absolute(_), _) => panic!(
+                "{} produced an Add operation with two operands in memory",
+                fname
+            ),
+            Operation::And(Datum::Absolute(_), Datum::Absolute(_)) => panic!(
+                "{} produced an And operation with two operands in memory",
+                fname
+            ),
             _ => {}
         }
     }
-    
+
     fn excl(pic: PicVariant) {
         for _i in 0..50000 {
             check(pic, "store_pic", store_pic(Machine::Pic(pic)));
