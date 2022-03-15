@@ -20,13 +20,52 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             _ => unimplemented!(),
         }
     }
+
+    fn monadic(f: &mut std::fmt::Formatter, s: &'static str, d: Datum) -> std::fmt::Result {
+        match d {
+            Datum::Absolute(address) => {
+                write!(f, "\t{} {}", s, address)
+            }
+            Datum::Register(R::A) => {
+                write!(f, "\t{} a", s)
+            }
+            _ => {
+                write!(f, "\t{} {:?}", s, d)
+            }
+        }
+    }
+
+    fn dyadic(f: &mut std::fmt::Formatter, s: &'static str, r: R, d: Datum) -> std::fmt::Result {
+        match d {
+            Datum::Absolute(address) => {
+                write!(f, "\t{}{} {}", s, regname(r), address)
+            }
+            Datum::Imm8(value) => {
+                write!(f, "\t{}{} #{}", s, regname(r), value)
+            }
+            _ => { panic!() }
+        }
+    }
+
     match op {
         Operation::Move(Datum::Register(from), Datum::Register(to)) => {
             write!(f, "\tt{}{}", regname(from), regname(to))
         }
+        Operation::Move(Datum::Register(from), to) => {
+            dyadic(f, "sta", from, to)
+        }
+        Operation::DecimalAdjustAccumulator => {
+            write!(f, "\tdaa")
+        }
         Operation::Add(Datum::Register(R::B), Datum::Register(R::A), false) => {
             write!(f, "\taba")
         }
+        Operation::Add(d, Datum::Register(r), true) => {dyadic(f, "adc", r, d)}
+        Operation::Add(d, Datum::Register(r), false) => {dyadic(f, "add", r, d)}
+        Operation::Shift(ShiftType::LeftArithmetic, d) => {monadic(f, "asl", d) }
+        Operation::Shift(ShiftType::RightArithmetic, d) => {monadic(f, "lsr", d) }
+        Operation::Shift(ShiftType::LeftRotateThroughCarry, d) => {monadic(f, "rol", d) }
+        Operation::Shift(ShiftType::RightRotateThroughCarry, d) => {monadic(f, "ror", d) }
         _ => {
             write!(f, "{:?}", op)
         }
