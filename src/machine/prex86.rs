@@ -52,6 +52,25 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             _ => "<something>",
         }
     }
+
+    fn rpname(a: R, b: R) -> &'static str {
+        match (a, b) {
+            (R::H, R::L) => "hl",
+            (R::B, R::C) => "bc",
+            (R::D, R::E) => "de",
+            (R::H1, R::L1) => "h1l1",
+            _ => unimplemented!()
+        }
+    }
+
+    fn monadic(f: &mut std::fmt::Formatter<'_>, ins: &'static str, operand: Datum) -> std::fmt::Result {
+        match operand {
+            Datum::Register(_) => write!(f, "\t{} {}", ins, name(operand)),
+            Datum::RegisterPair(a, b) => write!(f, "\t{} {}", ins, rpname(a, b)),
+            _ => {unimplemented!()}
+        }
+    }
+
     match op {
         Operation::Add(thing, Datum::Register(R::A), false) => {
             write!(f, "\tadd a, {}", name(thing))
@@ -62,9 +81,17 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Move(from, to) => {
             write!(f, "\tld {}, {}", name(from), name(to))
         }
+        Operation::Shift(ShiftType::LeftArithmetic, operand) => {
+            write!(f, "\tsla {}", name(operand))
+        }
+        Operation::Shift(ShiftType::RightArithmetic, operand) => {
+            write!(f, "\tsra {}", name(operand))
+        }
         Operation::DecimalAdjustAccumulator => {
             write!(f, "\tdaa")
         }
+        Operation::Decrement(d) => { monadic(f, "dec", d) }
+        Operation::Increment(d) => { monadic(f, "inc", d) }
         _ => {
             write!(f, "{:?}", op)
         }
