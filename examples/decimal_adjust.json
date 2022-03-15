@@ -1,26 +1,20 @@
 {
-	"ins": [
-		{"name": "a"}
-	],
-	"outs": [
-		{"name": "a"}
-	],
 	"tests": [
-		{"ins": [0], "outs": [0]},
-		{"ins": [1], "outs": [1]},
-		{"ins": [2], "outs": [2]},
-		{"ins": [3], "outs": [3]},
-		{"ins": [4], "outs": [4]},
-		{"ins": [5], "outs": [5]},
-		{"ins": [6], "outs": [6]},
-		{"ins": [7], "outs": [7]},
-		{"ins": [8], "outs": [8]},
-		{"ins": [9], "outs": [9]},
-		{"ins": [10], "outs": [16]},
-		{"ins": [11], "outs": [17]},
-		{"ins": [12], "outs": [18]},
-		{"ins": [13], "outs": [19]},
-		{"ins": [14], "outs": [20]},
-		{"ins": [15], "outs": [21]}
+		{"steps": [{"datum": "a", "set": 0}, {"datum": "a", "diff": 0}]},
+		{"steps": [{"datum": "a", "set": 1}, {"datum": "a", "diff": 1}]},
+		{"steps": [{"datum": "a", "set": 2}, {"datum": "a", "diff": 2}]},
+		{"steps": [{"datum": "a", "set": 3}, {"datum": "a", "diff": 3}]},
+		{"steps": [{"datum": "a", "set": 4}, {"datum": "a", "diff": 4}]},
+		{"steps": [{"datum": "a", "set": 5}, {"datum": "a", "diff": 5}]},
+		{"steps": [{"datum": "a", "set": 6}, {"datum": "a", "diff": 6}]},
+		{"steps": [{"datum": "a", "set": 7}, {"datum": "a", "diff": 7}]},
+		{"steps": [{"datum": "a", "set": 8}, {"datum": "a", "diff": 8}]},
+		{"steps": [{"datum": "a", "set": 9}, {"datum": "a", "diff": 9}]},
+		{"steps": [{"datum": "a", "set": 10}, {"datum": "a", "diff": 16}]},
+		{"steps": [{"datum": "a", "set": 11}, {"datum": "a", "diff": 17}]},
+		{"steps": [{"datum": "a", "set": 12}, {"datum": "a", "diff": 18}]},
+		{"steps": [{"datum": "a", "set": 13}, {"datum": "a", "diff": 19}]},
+		{"steps": [{"datum": "a", "set": 14}, {"datum": "a", "diff": 20}]},
+		{"steps": [{"datum": "a", "set": 15}, {"datum": "a", "diff": 21}]}
 	]
 }
