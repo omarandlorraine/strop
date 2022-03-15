@@ -109,11 +109,9 @@ fn add8_prex86(mach: Machine) -> Operation {
 }
 
 fn rot_a_prex86(_mach: Machine) -> Operation {
-    match rand::thread_rng().gen_range(0, 4) {
+    match rand::thread_rng().gen_range(0, 2) {
         0 => Operation::Shift(ShiftType::LeftArithmetic, Datum::Register(R::A)),
-        1 => Operation::Shift(ShiftType::RightArithmetic, Datum::Register(R::A)),
-        2 => Operation::Shift(ShiftType::LeftRotateThroughCarry, Datum::Register(R::A)),
-        _ => Operation::Shift(ShiftType::RightRotateThroughCarry, Datum::Register(R::A)),
+        _ => Operation::Shift(ShiftType::RightArithmetic, Datum::Register(R::A)),
     }
 }
 
