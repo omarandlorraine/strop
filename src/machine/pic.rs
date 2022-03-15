@@ -11,8 +11,25 @@ use crate::machine::R;
 use crate::machine::rand::Rng;
 use rand::random;
 
-fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{:?}", op)
+fn dasm(op: Operation, fr: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match op {
+        Operation::Add(Datum::Register(R::A), Datum::Absolute(f), false) => { write!(fr, "\taddwf {}, 1", f) }
+        Operation::Add(Datum::Absolute(f), Datum::Register(R::A), false) => { write!(fr, "\taddwf {}, 0", f) }
+        Operation::Add(Datum::Imm8(k), Datum::Register(R::A), false) => { write!(fr, "\taddlw {}, 0", k) }
+        Operation::And(Datum::Imm8(k), Datum::Register(R::A)) => { write!(fr, "\tandlw {}, 0", k) }
+        Operation::And(Datum::Absolute(f), Datum::Register(R::A)) => { write!(fr, "\tandwf {}, 0", f) }
+        Operation::And(Datum::Register(R::A), Datum::Absolute(f)) => { write!(fr, "\tandwf {}, 1", f) }
+        Operation::Move(Datum::Absolute(f), Datum::Register(R::A)) => { write!(fr, "\tmovf {}, 0", f) }
+        Operation::Move(Datum::Register(R::A), Datum::Absolute(f)) => { write!(fr, "\tmovwf {}", f) }
+        Operation::Move(Datum::Zero, Datum::Absolute(f)) => { write!(fr, "\tclrf {}", f) }
+        Operation::Move(Datum::Zero, Datum::Register(R::A)) => { write!(fr, "\tclrw") }
+        Operation::Move(Datum::Imm8(k), Datum::Register(R::A)) => { write!(fr, "\tmovlw {}", k) }
+        Operation::Increment(Datum::Absolute(f)) => { write!(fr, "\tinc f {}, 1", f) }
+        Operation::Decrement(Datum::Absolute(f)) => { write!(fr, "\tdec f {}, 1", f) }
+        Operation::Shift(ShiftType::LeftRotateThroughCarry, Datum::Absolute(f)) => { write!(fr, "\trlf {}, 1", f) }
+        Operation::Shift(ShiftType::RightRotateThroughCarry, Datum::Absolute(f)) => { write!(fr, "\trrf {}, 1", f) }
+        _ => write!(fr, "{:?}", op)
+    }
 }
 
 fn random_accumulator_or_absolute() -> Datum {
