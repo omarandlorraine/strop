@@ -309,6 +309,7 @@ fn rotate_right_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>,
     (None, None)
 }
 
+#[cfg(test)]
 fn dasm(mach: Machine) {
     for _i in 0..5000 {
         let mut instr = new_instruction(mach);
