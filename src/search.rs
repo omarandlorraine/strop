@@ -56,7 +56,7 @@ impl BasicBlock {
     }
 
     fn len(&self) -> usize {
-        self.instructions.len()
+        self.instructions.iter().map(|i| i.len()).sum()
     }
 
     fn remove(&mut self, offset: usize) -> Instruction {
