@@ -56,7 +56,7 @@ impl BasicBlock {
     }
 
     fn len(&self) -> usize {
-        self.instructions.len()
+        self.instructions.iter().map(|i| i.len()).sum()
     }
 
     fn remove(&mut self, offset: usize) -> Instruction {
@@ -160,15 +160,17 @@ fn cost(prog: &BasicBlock) -> f64 {
 }
 
 fn mutate_delete(prog: &mut BasicBlock) {
-    if prog.len() > 1 {
-        let offset: usize = rand::thread_rng().gen_range(0, prog.len());
+    let instr_count = prog.instructions.len();
+    if instr_count > 1 {
+        let offset: usize = rand::thread_rng().gen_range(0, instr_count);
         prog.remove(offset);
     }
 }
 
 fn mutate_insert(prog: &mut BasicBlock, mach: Machine) {
-    let offset: usize = if prog.len() > 0 {
-        rand::thread_rng().gen_range(0, prog.len())
+    let instr_count = prog.instructions.len();
+    let offset: usize = if instr_count > 0 {
+        rand::thread_rng().gen_range(0, instr_count)
     } else {
         0
     };
@@ -178,13 +180,14 @@ fn mutate_insert(prog: &mut BasicBlock, mach: Machine) {
 
 fn mutate(prog: &mut BasicBlock, mach: Machine) {
     let mutate: usize = rand::thread_rng().gen_range(0, 3);
+    let instr_count = prog.instructions.len();
     match mutate {
         /* randomize an instruction
          * (this could involve changing an operand, addressing mode, etc etc.
          */
         0 => {
             if prog.len() > 1 {
-                let offset: usize = rand::thread_rng().gen_range(0, prog.len());
+                let offset: usize = rand::thread_rng().gen_range(0, instr_count);
                 prog[offset].randomize();
             }
         }
@@ -198,8 +201,8 @@ fn mutate(prog: &mut BasicBlock, mach: Machine) {
         }
         /* Pick two instructions and swap them round */
         3 => {
-            let offset_a: usize = rand::thread_rng().gen_range(0, prog.len());
-            let offset_b: usize = rand::thread_rng().gen_range(0, prog.len());
+            let offset_a: usize = rand::thread_rng().gen_range(0, instr_count);
+            let offset_b: usize = rand::thread_rng().gen_range(0, instr_count);
             let ins_a = prog[offset_a];
             let ins_b = prog[offset_b];
             prog[offset_a] = ins_b;
@@ -238,7 +241,7 @@ pub fn quick_dce(convergence: &dyn Fn(&BasicBlock) -> f64, prog: &BasicBlock) ->
 
     loop {
         let mut putative = better.clone();
-        if cur >= better.len() {
+        if cur >= better.instructions.len() {
             return better;
         }
         putative.remove(cur);

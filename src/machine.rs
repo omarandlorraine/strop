@@ -1,15 +1,19 @@
 use crate::machine::rand::prelude::SliceRandom;
 use std::collections::HashMap;
+use crate::machine::mos6502::instr_length_6502;
 extern crate rand;
 
 mod m6800;
 mod mos6502;
 mod pic;
 mod prex86;
+mod stm8;
+
 use crate::machine::m6800::instr_6800;
 use crate::machine::mos6502::instr_6502;
 use crate::machine::pic::instr_pic;
 use crate::machine::prex86::instr_prex86;
+use crate::machine::stm8::instr_stm8;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Mos6502Variant {
@@ -46,6 +50,7 @@ pub enum Machine {
     Motorola6800(Motorola8BitVariant),
     Pic(PicVariant),
     PreX86(PreX86Variant),
+    Stm8,
 }
 
 #[derive(Clone, Copy)]
@@ -154,6 +159,18 @@ impl Machine {
                     "bc" => Datum::RegisterPair(R::B, R::C),
                     "de" => Datum::RegisterPair(R::D, R::E),
                     "hl" => Datum::RegisterPair(R::H, R::L),
+                    _ => {
+                        panic!("No such register as {}", name);
+                    }
+                }
+            }
+            Machine::Stm8 => {
+                match name {
+                    "a" => Datum::Register(R::A),
+                    "x" => Datum::RegisterPair(R::Xh, R::Xl),
+                    "y" => Datum::RegisterPair(R::Yh, R::Yl),
+                    "xl" => Datum::Register(R::Xl),
+                    "yl" => Datum::Register(R::Yl),
                     _ => {
                         panic!("No such register as {}", name);
                     }
@@ -309,6 +326,7 @@ fn rotate_right_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>,
     (None, None)
 }
 
+#[cfg(test)]
 fn dasm(mach: Machine) {
     for _i in 0..5000 {
         let mut instr = new_instruction(mach);
@@ -319,6 +337,18 @@ fn dasm(mach: Machine) {
                 println!("No disassembly for instruction {}", d);
                 panic!();
             }
+        }
+    }
+}
+
+#[test]
+fn instruction_lengths_6502() {
+    for _i in 0..5000 {
+        let instr = new_instruction(Machine::Mos6502(Mos6502Variant::Nmos));
+        let len = instr_length_6502(instr.operation);
+        if !(len > 0) {
+            println!("unknown length for instruction: {}", instr);
+            panic!();
         }
     }
 }
@@ -419,6 +449,16 @@ impl Instruction {
 
     pub fn randomize(&mut self) {
         self.operation = (self.randomizer)(self.machine);
+    }
+
+    pub fn len(&self) -> usize {
+        match self.machine {
+            Machine::Mos6502(_) => { instr_length_6502(self.operation) }
+            // these architectures have fixed instruction widths
+            Machine::Pic(_) => 1,
+            // In case of unknown instruction length, assume 1 so that optimizer still works
+            _ => 1
+        }
     }
 
     #[allow(clippy::many_single_char_names)]
@@ -720,5 +760,6 @@ pub fn new_instruction(mach: Machine) -> Instruction {
         Machine::Mos6502(_) => instr_6502(mach),
         Machine::PreX86(_) => instr_prex86(mach),
         Machine::Pic(_) => instr_pic(mach),
+        Machine::Stm8 => instr_stm8(mach),
     }
 }

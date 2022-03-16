@@ -24,7 +24,7 @@ struct MOpt {
     help: &'static str,
 }
 
-const M_OPTS: [MOpt; 13] = [
+const M_OPTS: [MOpt; 14] = [
     MOpt {
         name: "8080",
         mach: Machine::PreX86(PreX86Variant::I8080),
@@ -90,6 +90,11 @@ const M_OPTS: [MOpt; 13] = [
         mach: Machine::Pic(PicVariant::Pic16),
         help: "PIC16",
     },
+    MOpt {
+        name: "stm8",
+        mach: Machine::Stm8,
+        help: "low-cost microcontroller family by STMicroelectronics",
+    }
 ];
 
 #[derive(FromArgs, PartialEq, Debug)]
