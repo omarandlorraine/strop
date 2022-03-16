@@ -329,7 +329,7 @@ fn dasm(mach: Machine) {
 fn instruction_lengths_6502() {
     for _i in 0..5000 {
         let instr = new_instruction(Machine::Mos6502(Mos6502Variant::Nmos));
-        let len = instr.len();
+        let len = instr_length_6502(instr.operation);
         if !(len > 0) {
             println!("unknown length for instruction: {}", instr);
             panic!();
@@ -437,9 +437,11 @@ impl Instruction {
 
     pub fn len(&self) -> usize {
         match self.machine {
-            Machine::Mos6502(_) => instr_length_6502(self.operation),
-            Machine::Pic(_) => 1, // these architectures have fixed instruction widths
-            _ => 0
+            Machine::Mos6502(_) => { instr_length_6502(self.operation) }
+            // these architectures have fixed instruction widths
+            Machine::Pic(_) => 1,
+            // In case of unknown instruction length, assume 1 so that optimizer still works
+            _ => 1
         }
     }
 
