@@ -29,6 +29,9 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             Datum::Register(R::A) => {
                 write!(f, "\t{} a", s)
             }
+            Datum::Imm8(val) => {
+                write!(f, "\t{} #{}", s, val)
+            }
             _ => {
                 write!(f, "\t{} {:?}", s, d)
             }
