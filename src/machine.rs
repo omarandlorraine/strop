@@ -1,5 +1,6 @@
 use crate::machine::rand::prelude::SliceRandom;
 use std::collections::HashMap;
+use crate::machine::mos6502::instr_length_6502;
 extern crate rand;
 
 mod m6800;
@@ -325,6 +326,18 @@ fn dasm(mach: Machine) {
 }
 
 #[test]
+fn instruction_lengths_6502() {
+    for _i in 0..5000 {
+        let instr = new_instruction(Machine::Mos6502(Mos6502Variant::Nmos));
+        let len = instr.len();
+        if !(len > 0) {
+            println!("unknown length for instruction: {}", instr);
+            panic!();
+        }
+    }
+}
+
+#[test]
 fn disassembler_6502() {
     dasm(Machine::Mos6502(Mos6502Variant::Nmos));
     dasm(Machine::Mos6502(Mos6502Variant::Cmos));
@@ -420,6 +433,14 @@ impl Instruction {
 
     pub fn randomize(&mut self) {
         self.operation = (self.randomizer)(self.machine);
+    }
+
+    pub fn len(&self) -> usize {
+        match self.machine {
+            Machine::Mos6502(_) => instr_length_6502(self.operation),
+            Machine::Pic(_) => 1, // these architectures have fixed instruction widths
+            _ => 0
+        }
     }
 
     #[allow(clippy::many_single_char_names)]
