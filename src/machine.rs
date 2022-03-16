@@ -7,10 +7,13 @@ mod m6800;
 mod mos6502;
 mod pic;
 mod prex86;
+mod stm8;
+
 use crate::machine::m6800::instr_6800;
 use crate::machine::mos6502::instr_6502;
 use crate::machine::pic::instr_pic;
 use crate::machine::prex86::instr_prex86;
+use crate::machine::stm8::instr_stm8;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Mos6502Variant {
@@ -47,6 +50,7 @@ pub enum Machine {
     Motorola6800(Motorola8BitVariant),
     Pic(PicVariant),
     PreX86(PreX86Variant),
+    Stm8,
 }
 
 #[derive(Clone, Copy)]
@@ -155,6 +159,18 @@ impl Machine {
                     "bc" => Datum::RegisterPair(R::B, R::C),
                     "de" => Datum::RegisterPair(R::D, R::E),
                     "hl" => Datum::RegisterPair(R::H, R::L),
+                    _ => {
+                        panic!("No such register as {}", name);
+                    }
+                }
+            }
+            Machine::Stm8 => {
+                match name {
+                    "a" => Datum::Register(R::A),
+                    "x" => Datum::RegisterPair(R::Xh, R::Xl),
+                    "y" => Datum::RegisterPair(R::Yh, R::Yl),
+                    "xl" => Datum::Register(R::Xl),
+                    "yl" => Datum::Register(R::Yl),
                     _ => {
                         panic!("No such register as {}", name);
                     }
@@ -744,5 +760,6 @@ pub fn new_instruction(mach: Machine) -> Instruction {
         Machine::Mos6502(_) => instr_6502(mach),
         Machine::PreX86(_) => instr_prex86(mach),
         Machine::Pic(_) => instr_pic(mach),
+        Machine::Stm8 => instr_stm8(mach),
     }
 }
