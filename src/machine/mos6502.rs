@@ -63,6 +63,28 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     }
 }
 
+pub fn instr_length_6502(operation: Operation) -> usize {
+    fn length(dat: Datum) -> usize {
+        match dat {
+            Datum::Register(_) => 1,
+            Datum::Imm8(_) => 2,
+            Datum::Absolute(addr) => if addr < 256 { 2 } else { 3 },
+            _ => 0
+        }
+    }
+
+    match operation {
+        Operation::Move(Datum::Register(_), Datum::Register(_)) => 1,
+        Operation::Move(Datum::Register(_), dat) => length(dat),
+        Operation::Move(dat, Datum::Register(_)) => length(dat),
+        Operation::Shift(_, dat) => length(dat),
+        Operation::Increment(dat) => length(dat),
+        Operation::Decrement(dat) => length(dat),
+        Operation::Add(dat, Datum::Register(R::A), true) => length(dat),
+        _ => 0
+    }
+}
+
 fn random_source_6502() -> Datum {
     if random() {
         random_immediate()
