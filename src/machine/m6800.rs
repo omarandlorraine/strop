@@ -27,7 +27,10 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 write!(f, "\t{} {}", s, address)
             }
             Datum::Register(R::A) => {
-                write!(f, "\t{} a", s)
+                write!(f, "\t{}a", s)
+            }
+            Datum::Register(R::B) => {
+                write!(f, "\t{}b", s)
             }
             _ => {
                 write!(f, "\t{} {:?}", s, d)
