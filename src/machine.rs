@@ -1,6 +1,6 @@
+use crate::machine::mos6502::instr_length_6502;
 use crate::machine::rand::prelude::SliceRandom;
 use std::collections::HashMap;
-use crate::machine::mos6502::instr_length_6502;
 extern crate rand;
 
 mod m6800;
@@ -164,18 +164,16 @@ impl Machine {
                     }
                 }
             }
-            Machine::Stm8 => {
-                match name {
-                    "a" => Datum::Register(R::A),
-                    "x" => Datum::RegisterPair(R::Xh, R::Xl),
-                    "y" => Datum::RegisterPair(R::Yh, R::Yl),
-                    "xl" => Datum::Register(R::Xl),
-                    "yl" => Datum::Register(R::Yl),
-                    _ => {
-                        panic!("No such register as {}", name);
-                    }
+            Machine::Stm8 => match name {
+                "a" => Datum::Register(R::A),
+                "x" => Datum::RegisterPair(R::Xh, R::Xl),
+                "y" => Datum::RegisterPair(R::Yh, R::Yl),
+                "xl" => Datum::Register(R::Xl),
+                "yl" => Datum::Register(R::Yl),
+                _ => {
+                    panic!("No such register as {}", name);
                 }
-            }
+            },
         }
     }
 }
@@ -453,11 +451,11 @@ impl Instruction {
 
     pub fn len(&self) -> usize {
         match self.machine {
-            Machine::Mos6502(_) => { instr_length_6502(self.operation) }
+            Machine::Mos6502(_) => instr_length_6502(self.operation),
             // these architectures have fixed instruction widths
             Machine::Pic(_) => 1,
             // In case of unknown instruction length, assume 1 so that optimizer still works
-            _ => 1
+            _ => 1,
         }
     }
 

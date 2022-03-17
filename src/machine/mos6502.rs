@@ -68,8 +68,14 @@ pub fn instr_length_6502(operation: Operation) -> usize {
         match dat {
             Datum::Register(_) => 1,
             Datum::Imm8(_) => 2,
-            Datum::Absolute(addr) => if addr < 256 { 2 } else { 3 },
-            _ => 0
+            Datum::Absolute(addr) => {
+                if addr < 256 {
+                    2
+                } else {
+                    3
+                }
+            }
+            _ => 0,
         }
     }
 
@@ -81,7 +87,7 @@ pub fn instr_length_6502(operation: Operation) -> usize {
         Operation::Increment(dat) => length(dat),
         Operation::Decrement(dat) => length(dat),
         Operation::Add(dat, Datum::Register(R::A), true) => length(dat),
-        _ => 0
+        _ => 0,
     }
 }
 
