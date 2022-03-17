@@ -430,6 +430,7 @@ pub enum Operation {
     Increment(Datum),
     Add(Datum, Datum, bool),
     And(Datum, Datum),
+    ExclusiveOr(Datum, Datum),
     Move(Datum, Datum),
     Shift(ShiftType, Datum),
     Carry(bool),
@@ -483,6 +484,12 @@ impl Instruction {
             }
             Operation::And(source, destination) => {
                 let (result, z) = bitwise_and(s.get_i8(source), s.get_i8(destination));
+                s.set_i8(destination, result);
+                s.zero = z;
+                true
+            }
+            Operation::ExclusiveOr(source, destination) => {
+                let (result, z) = bitwise_xor(s.get_i8(source), s.get_i8(destination));
                 s.set_i8(destination, result);
                 s.zero = z;
                 true

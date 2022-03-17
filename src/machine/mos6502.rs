@@ -55,6 +55,8 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Shift(ShiftType::RightRotateThroughCarry, thing) => syn(f, "ror", thing),
         Operation::Shift(ShiftType::LeftRotateThroughCarry, thing) => syn(f, "rol", thing),
         Operation::Add(thing, Datum::Register(R::A), true) => syn(f, "adc", thing),
+        Operation::And(thing, Datum::Register(R::A)) => syn(f, "and", thing),
+        Operation::ExclusiveOr(thing, Datum::Register(R::A)) => syn(f, "eor", thing),
         Operation::Increment(Datum::Register(reg)) => write!(f, "\tin{}", regname(reg)),
         Operation::Decrement(Datum::Register(reg)) => write!(f, "\tde{}", regname(reg)),
         Operation::Carry(false) => write!(f, "\tclc"),
@@ -89,6 +91,8 @@ pub fn instr_length_6502(operation: Operation) -> usize {
         Operation::Increment(dat) => length(dat),
         Operation::Decrement(dat) => length(dat),
         Operation::Add(dat, Datum::Register(R::A), true) => length(dat),
+        Operation::And(dat, Datum::Register(R::A)) => length(dat),
+        Operation::ExclusiveOr(dat, Datum::Register(R::A)) => length(dat),
         Operation::Carry(_) => 1,
         _ => 0,
     }
@@ -124,8 +128,14 @@ fn incdec_6502(mach: Machine) -> Operation {
     }
 }
 
-fn add_6502(_mach: Machine) -> Operation {
-    Operation::Add(random_source_6502(), Datum::Register(R::A), true)
+fn alu_6502(_mach: Machine) -> Operation {
+    // randomly generate the instructions ora, and, eor, adc, sbc, cmp
+    // these all have the same available addressing modes
+    match rand::thread_rng().gen_range(0, 3) {
+        0 => Operation::Add(random_source_6502(), Datum::Register(R::A), true),
+        1 => Operation::And(random_source_6502(), Datum::Register(R::A)),
+        _ => Operation::ExclusiveOr(random_source_6502(), Datum::Register(R::A)),
+    }
 }
 
 fn transfers_6502(_mach: Machine) -> Operation {
@@ -185,13 +195,12 @@ fn shifts_6502(_mach: Machine) -> Operation {
 pub fn instr_6502(mach: Machine) -> Instruction {
     match rand::thread_rng().gen_range(0, 6) {
         0 => Instruction::new(mach, incdec_6502, dasm),
-        1 => Instruction::new(mach, add_6502, dasm),
+        1 => Instruction::new(mach, alu_6502, dasm),
         2 => Instruction::new(mach, transfers_6502, dasm),
         3 => Instruction::new(mach, shifts_6502, dasm),
         4 => Instruction::new(mach, loadstore_6502, dasm),
         _ => Instruction::new(mach, secl_6502, dasm),
     }
-    // TODO: Add clc, sec, and many other instructions
 }
 
 #[cfg(test)]
@@ -210,8 +219,8 @@ mod tests {
     }
 
     fn core_instruction_set(mach: Mos6502Variant) {
-        find_it("adc", add_6502, mach);
-        // TODO: and
+        find_it("adc", alu_6502, mach);
+        find_it("and", alu_6502, mach);
         find_it("asl", shifts_6502, mach);
         // TODO: bcc bcs beq bit bmi bne bpl
         // I don't think we need to bother with brk
@@ -222,7 +231,8 @@ mod tests {
         // TODO clv cmp cpx cpy dec
         find_it("dex", incdec_6502, mach);
         find_it("dey", incdec_6502, mach);
-        // TODO: eor inc
+        find_it("eor", alu_6502, mach);
+        // TODO: inc
         find_it("inx", incdec_6502, mach);
         find_it("iny", incdec_6502, mach);
         // TODO: jmp
