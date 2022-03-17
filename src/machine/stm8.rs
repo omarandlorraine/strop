@@ -1,11 +1,11 @@
-use crate::Machine;
-use crate::machine::Instruction;
-use crate::Datum;
-use crate::machine::R;
-use crate::machine::random_immediate;
 use crate::machine::random_absolute;
+use crate::machine::random_immediate;
+use crate::machine::Instruction;
 use crate::machine::Operation;
 use crate::machine::ShiftType;
+use crate::machine::R;
+use crate::Datum;
+use crate::Machine;
 
 use crate::machine::rand::Rng;
 use rand::random;
@@ -47,7 +47,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Add(d, Datum::Register(R::A), false) => syn(f, "add", d),
         Operation::Shift(ShiftType::RightRotateThroughCarry, d) => syn(f, "rrc", d),
         Operation::Shift(ShiftType::LeftArithmetic, d) => syn(f, "sla", d),
-        _ => write!(f, "{:?}", op)
+        _ => write!(f, "{:?}", op),
     }
 }
 
@@ -62,7 +62,7 @@ fn shifts(_mach: Machine) -> Operation {
         0 => ShiftType::LeftArithmetic,
         1 => ShiftType::RightArithmetic,
         2 => ShiftType::RightRotateThroughCarry,
-        _ => ShiftType::LeftRotateThroughCarry
+        _ => ShiftType::LeftRotateThroughCarry,
     };
 
     let operand = if random() {

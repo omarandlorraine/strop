@@ -8,15 +8,15 @@ mod machine;
 mod search;
 mod test;
 
+use crate::machine::Datum;
 use crate::machine::State;
 use crate::machine::{Machine, Mos6502Variant, Motorola8BitVariant, PicVariant, PreX86Variant};
-use crate::machine::Datum;
 use crate::search::stochastic_search;
 use crate::search::BasicBlock;
 use crate::search::{difference, optimize};
 
 use crate::test::sanity;
-use crate::test::{DeTestRun, Test, TestRun, Step};
+use crate::test::{DeTestRun, Step, Test, TestRun};
 
 struct MOpt {
     name: &'static str,
@@ -94,7 +94,7 @@ const M_OPTS: [MOpt; 14] = [
         name: "stm8",
         mach: Machine::Stm8,
         help: "low-cost microcontroller family by STMicroelectronics",
-    }
+    },
 ];
 
 #[derive(FromArgs, PartialEq, Debug)]
@@ -149,7 +149,11 @@ fn function(m: String, ins: Vec<Datum>, outs: Vec<Datum>) -> Vec<Test> {
             for n in -128_i8..=127 {
                 if let Some(res) = n.checked_mul(f) {
                     test_cases.push(Test {
-                        steps: vec!(Step::Set(ins[0], n as i32), Step::Run, Step::Diff(outs[0], res as i32))
+                        steps: vec![
+                            Step::Set(ins[0], n as i32),
+                            Step::Run,
+                            Step::Diff(outs[0], res as i32),
+                        ],
                     });
                 }
             }
@@ -166,7 +170,11 @@ fn function(m: String, ins: Vec<Datum>, outs: Vec<Datum>) -> Vec<Test> {
             for n in -128_i8..=127 {
                 if let Some(res) = n.checked_add(f) {
                     test_cases.push(Test {
-                        steps: vec!(Step::Set(ins[0], n as i32), Step::Run, Step::Diff(outs[0], res as i32))
+                        steps: vec![
+                            Step::Set(ins[0], n as i32),
+                            Step::Run,
+                            Step::Diff(outs[0], res as i32),
+                        ],
                     });
                 }
             }
@@ -186,8 +194,18 @@ fn disassemble(prog: BasicBlock) {
 }
 
 fn testrun_from_args(opts: &Opts, mach: Machine) -> TestRun {
-    let ins: Vec<Datum> = opts.r#in.clone().into_iter().map(|reg| mach.register_by_name(&reg)).collect();
-    let outs: Vec<Datum> = opts.out.clone().into_iter().map(|reg| mach.register_by_name(&reg)).collect();
+    let ins: Vec<Datum> = opts
+        .r#in
+        .clone()
+        .into_iter()
+        .map(|reg| mach.register_by_name(&reg))
+        .collect();
+    let outs: Vec<Datum> = opts
+        .out
+        .clone()
+        .into_iter()
+        .map(|reg| mach.register_by_name(&reg))
+        .collect();
     TestRun {
         tests: function(opts.function.clone().unwrap(), ins, outs),
     }
