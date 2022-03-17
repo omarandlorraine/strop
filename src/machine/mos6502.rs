@@ -190,3 +190,84 @@ pub fn instr_6502(mach: Machine) -> Instruction {
     }
     // TODO: Add clc, sec, and many other instructions
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn find_it(opcode: &'static str, rnd: fn(Machine) -> Operation, mach: Mos6502Variant) {
+        for _i in 0..5000 {
+            let i = Instruction::new(Machine::Mos6502(mach), rnd, dasm);
+            let d = format!("{}", i);
+            if d.contains(opcode) {
+                return;
+            }
+        }
+        panic!("Couldn't find instruction {}", opcode);
+    }
+
+    fn core_instruction_set(mach: Mos6502Variant) {
+        find_it("adc", add_6502, mach);
+        // TODO: and
+        find_it("asl", shifts_6502, mach);
+        // TODO: bcc bcs beq bit bmi bne bpl
+        // I don't think we need to bother with brk
+        // TODO: bvc bvs
+        find_it("clc", secl_6502, mach);
+        // TODO: cld
+        // I don't think we'll bother with cli
+        // TODO clv cmp cpx cpy dec
+        find_it("dex", incdec_6502, mach);
+        find_it("dey", incdec_6502, mach);
+        // TODO: eor inc
+        find_it("inx", incdec_6502, mach);
+        find_it("iny", incdec_6502, mach);
+        // TODO: jmp
+        // I don't think we'll bother with jsr
+        find_it("lda", loadstore_6502, mach);
+        find_it("ldx", loadstore_6502, mach);
+        find_it("ldy", loadstore_6502, mach);
+        find_it("lsr", shifts_6502, mach);
+        // I don't think we'll bother with nop
+        // TODO: ora pha pla
+        // I don't think we'll bother with php plp
+        find_it("rol", shifts_6502, mach);
+        find_it("ror", shifts_6502, mach);
+        // I don't think we'll bother with rti rts
+        // TODO: sbc
+        find_it("sec", secl_6502, mach);
+        // TODO: sed
+        // I don't think we'll bother with sei
+        find_it("sta", loadstore_6502, mach);
+        find_it("stx", loadstore_6502, mach);
+        find_it("sty", loadstore_6502, mach);
+        find_it("tax", transfers_6502, mach);
+        find_it("tay", transfers_6502, mach);
+        // TODO: tsx
+        find_it("txa", transfers_6502, mach);
+        // TODO: txs
+        find_it("tya", transfers_6502, mach);
+    }
+
+    #[test]
+    fn instruction_set_65c02() {
+        core_instruction_set(Mos6502Variant::Cmos);
+        // TODO: bra phx plx phy ply stz trb tsb bbr bbs rmb smb
+        find_it("dea", incdec_6502, Mos6502Variant::Cmos);
+        find_it("dea", incdec_6502, Mos6502Variant::Cmos);
+        find_it("ina", incdec_6502, Mos6502Variant::Cmos);
+        find_it("ina", incdec_6502, Mos6502Variant::Cmos);
+        find_it("stz", loadstore_6502, Mos6502Variant::Cmos);
+    }
+
+    #[test]
+    fn instruction_set_6502() {
+        core_instruction_set(Mos6502Variant::Nmos);
+    }
+
+    #[test]
+    fn instruction_set_65i02() {
+        core_instruction_set(Mos6502Variant::IllegalInstructions);
+    }
+
+}
