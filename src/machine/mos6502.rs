@@ -57,6 +57,8 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Add(thing, Datum::Register(R::A), true) => syn(f, "adc", thing),
         Operation::Increment(Datum::Register(reg)) => write!(f, "\tin{}", regname(reg)),
         Operation::Decrement(Datum::Register(reg)) => write!(f, "\tde{}", regname(reg)),
+        Operation::Carry(false) => write!(f, "\tclc"),
+        Operation::Carry(true) => write!(f, "\tsec"),
         _ => {
             write!(f, "{:?}", op)
         }
@@ -87,6 +89,7 @@ pub fn instr_length_6502(operation: Operation) -> usize {
         Operation::Increment(dat) => length(dat),
         Operation::Decrement(dat) => length(dat),
         Operation::Add(dat, Datum::Register(R::A), true) => length(dat),
+        Operation::Carry(_) => 1,
         _ => 0,
     }
 }
@@ -180,7 +183,7 @@ fn shifts_6502(_mach: Machine) -> Operation {
 }
 
 pub fn instr_6502(mach: Machine) -> Instruction {
-    match rand::thread_rng().gen_range(0, 5) {
+    match rand::thread_rng().gen_range(0, 6) {
         0 => Instruction::new(mach, incdec_6502, dasm),
         1 => Instruction::new(mach, add_6502, dasm),
         2 => Instruction::new(mach, transfers_6502, dasm),
