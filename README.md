@@ -31,6 +31,7 @@ absent from strop. But probably the best instruction sets so far are:
  - pic12, *low-end microcontroller from Microchip*
  - pic14, *extension to PIC12*
  - pic16, *extension to PIC12*
+ - stm8, *microcontroller that's similar to a beefed-up 6502*
 
 I've tried to pick ones I use or like, and then I've added the low-hanging
 fruit like their relatives and so on. I've also tried to make this extensible,
