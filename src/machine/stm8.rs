@@ -79,5 +79,47 @@ pub fn instr_stm8(mach: Machine) -> Instruction {
         0 => Instruction::new(mach, add_adc, dasm),
         _ => Instruction::new(mach, shifts, dasm),
     }
-    // TODO: Add clc, sec, and many other instructions
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn find_it(opcode: &'static str, rnd: fn(Machine) -> Operation) {
+        for _i in 0..5000 {
+            let i = Instruction::new(Machine::Stm8, rnd, dasm);
+            let d = format!("{}", i);
+            if d.contains(opcode) {
+                return;
+            }
+        }
+        panic!("Couldn't find instruction {}", opcode);
+    }
+
+    #[test]
+    fn instruction_set_stm8() {
+        find_it("adc", add_adc);
+        find_it("add", add_adc);
+        // TODO: addw and bccm bcp bcpl bres bset btjf btjt
+        // I don't think we need call, callf or callr
+        // TODO: ccf clr clrw cp cpw cpl cplw dec decw div divw exg exgw
+        // I don't think we need halt
+        // TODO: inc inw
+        // I don't think we need iret
+        // TODO: conditional jumps, relative jump
+        // TODO: ld ldw mov mul neg negw
+        // I don't think we need nop
+        // TODO: or pop popw push pushw rcf
+        // I don't think we need ret, retf, rim
+        // TODO: rlc rlcw rlwa rrc rrcw rrwa rvf sbc scf
+        find_it("rrc", shifts);
+        // I don't think we need sim
+        // TODO: sla slaw sll sllw sra sraw srl srlw sub subw swap tnz tnzw
+        find_it("sla", shifts);
+        // I don't think we need trap, wfe, wfi
+        // TODO: xor
+        // note: IIRC some of the shift instructions are aliased to each other which the
+        // disassembler is not going to care about, which means some of the TODOs up there are
+        // automatically done. Just need to figure out which.
+    }
 }
