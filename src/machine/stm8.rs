@@ -32,27 +32,48 @@ fn random_register() -> Datum {
 
 fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     fn syn(f: &mut std::fmt::Formatter, s: &'static str, d: Datum) -> std::fmt::Result {
-        let t = match d {
-            Datum::Imm8(val) => format!("#${:2}", val),
-            Datum::Absolute(addr) if addr < 256 => format!("${:2}", addr),
-            Datum::Absolute(addr) => format!("${:4}", addr),
-            Datum::Register(R::A) => "a".into(),
-            _ => format!("{:?}", d),
+        match d {
+            Datum::Imm8(val) => write!(f, "\t{} #${:2}", s, val),
+            Datum::Absolute(addr) if addr < 256 => write!(f, "\t {} ${:2}", s, addr),
+            Datum::Absolute(addr) => write!(f, "\t {} ${:4}", s, addr),
+            Datum::Register(R::A) => write!(f, "\t {} a", s),
+            Datum::RegisterPair(R::Xh, R::Xl) => write!(f, "\t {}w x", s),
+            Datum::RegisterPair(R::Yh, R::Yl) => write!(f, "\t {}w y", s),
+            _ => write!(f, "{} {:?}", s, d),
+        }
+    }
+
+    fn dsyn(f: &mut std::fmt::Formatter, s: &'static str, r: Datum, d: Datum) -> std::fmt::Result {
+        let (suffix, regname) = match r {
+            Datum::Register(R::A) => ("", "a"),
+            Datum::RegisterPair(R::Xh, R::Xl) => ("w", "x"),
+            Datum::RegisterPair(R::Yh, R::Yl) => ("w", "y"),
+            _ => panic!(),
         };
-        write!(f, "\t{} {}", s, t)
+
+        match d {
+            Datum::Imm8(val) => write!(f, "\t{}{} {}, #${:4}", s, suffix, regname, val),
+            Datum::Absolute(addr) if addr < 256 => write!(f, "\t {}{} {}, ${:2}", s, suffix, regname, addr),
+            Datum::Absolute(addr) => write!(f, "\t {}{} {}, ${:4}", s,suffix, regname,  addr),
+            Datum::Register(R::A) => write!(f, "\t {}{} {}, a", suffix, regname, s),
+            _ => write!(f, "{}{} {}, {:?}", s,suffix, regname,  d),
+        }
+
     }
 
     match op {
-        Operation::Add(d, Datum::Register(R::A), true) => syn(f, "adc", d),
-        Operation::Add(d, Datum::Register(R::A), false) => syn(f, "add", d),
+        Operation::Add(d, r, true) => dsyn(f, "adc", r, d),
+        Operation::Add(d, r, false) => dsyn(f, "add", r, d),
+        Operation::Shift(ShiftType::LeftRotateThroughCarry, d) => syn(f, "rlc", d),
         Operation::Shift(ShiftType::RightRotateThroughCarry, d) => syn(f, "rrc", d),
         Operation::Shift(ShiftType::LeftArithmetic, d) => syn(f, "sla", d),
+        Operation::Shift(ShiftType::RightArithmetic, d) => syn(f, "sra", d),
         _ => write!(f, "{:?}", op),
     }
 }
 
 fn add_adc(_mach: Machine) -> Operation {
-    Operation::Add(random_stm8_operand(), Datum::Register(R::A), random())
+    Operation::Add(random_stm8_operand(), random_register(), random())
 }
 
 fn shifts(_mach: Machine) -> Operation {
@@ -100,22 +121,27 @@ mod tests {
     fn instruction_set_stm8() {
         find_it("adc", add_adc);
         find_it("add", add_adc);
-        // TODO: addw and bccm bcp bcpl bres bset btjf btjt
+        find_it("addw", add_adc);
+        // TODO: and bccm bcp bcpl bres bset btjf btjt
         // I don't think we need call, callf or callr
         // TODO: ccf clr clrw cp cpw cpl cplw dec decw div divw exg exgw
         // I don't think we need halt
-        // TODO: inc inw
+        // TODO: inc incw
         // I don't think we need iret
         // TODO: conditional jumps, relative jump
         // TODO: ld ldw mov mul neg negw
         // I don't think we need nop
         // TODO: or pop popw push pushw rcf
         // I don't think we need ret, retf, rim
-        // TODO: rlc rlcw rlwa rrc rrcw rrwa rvf sbc scf
+        // TODO: rlwa rrwa rvf sbc scf
+        find_it("rlc", shifts);
+        find_it("rlcw", shifts);
         find_it("rrc", shifts);
+        find_it("rrcw", shifts);
         // I don't think we need sim
-        // TODO: sla slaw sll sllw sra sraw srl srlw sub subw swap tnz tnzw
+        // TODO: sll sllw sra sraw srl srlw sub subw swap tnz tnzw
         find_it("sla", shifts);
+        find_it("slaw", shifts);
         // I don't think we need trap, wfe, wfi
         // TODO: xor
         // note: IIRC some of the shift instructions are aliased to each other which the
