@@ -377,6 +377,11 @@ mod tests {
     }
 
     #[test]
+    fn disassembler_stm8() {
+        dasm(Machine::Stm8);
+    }
+
+    #[test]
     fn disassembler_pic() {
         dasm(Machine::Pic(PicVariant::Pic12));
         dasm(Machine::Pic(PicVariant::Pic14));
