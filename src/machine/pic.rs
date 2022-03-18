@@ -47,10 +47,10 @@ fn dasm(op: Operation, fr: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             write!(fr, "\tmovlw {}", k)
         }
         Operation::Increment(Datum::Absolute(f)) => {
-            write!(fr, "\tinc f {}, 1", f)
+            write!(fr, "\tincf {}, 1", f)
         }
         Operation::Decrement(Datum::Absolute(f)) => {
-            write!(fr, "\tdec f {}, 1", f)
+            write!(fr, "\tdecf {}, 1", f)
         }
         Operation::Shift(ShiftType::LeftRotateThroughCarry, Datum::Absolute(f)) => {
             write!(fr, "\trlf {}, 1", f)
