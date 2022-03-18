@@ -198,13 +198,10 @@ mod tests {
         find_it("rrc", shifts);
         find_it("rrcw", shifts);
         // I don't think we need sim
-        // TODO: sll sllw sra sraw srl srlw sub subw swap tnz tnzw
-        find_it("sla", shifts);
-        find_it("slaw", shifts);
+        // TODO: sra sraw srl srlw sub subw swap tnz tnzw
+        find_it("sla", shifts); // aka. sll
+        find_it("slaw", shifts); // aka. sllw
         // I don't think we need trap, wfe, wfi
         // TODO: xor
-        // note: IIRC some of the shift instructions are aliased to each other which the
-        // disassembler is not going to care about, which means some of the TODOs up there are
-        // automatically done. Just need to figure out which.
     }
 }
