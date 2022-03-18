@@ -61,6 +61,17 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 
     }
 
+    fn regname(r: R) -> &'static str {
+        match r {
+            R::A => "a",
+            R::Xh => "xh",
+            R::Xl => "xl",
+            R::Yh => "yh",
+            R::Yl => "yl",
+            _ => panic!()
+        }
+    }
+
     match op {
         Operation::Add(d, r, true) => dsyn(f, "adc", r, d),
         Operation::Add(d, r, false) => dsyn(f, "add", r, d),
@@ -69,6 +80,9 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Shift(ShiftType::LeftArithmetic, d) => syn(f, "sla", d),
         Operation::Shift(ShiftType::RightArithmetic, d) => syn(f, "sra", d),
         Operation::Move(Datum::Zero, r) => syn(f, "clr", r),
+        Operation::Increment(r) => syn(f, "inc", r),
+        Operation::Decrement(r) => syn(f, "dec", r),
+        Operation::Move(Datum::Register(from), Datum::Register(to)) => write!(f, "\tld {}, {}", regname(to), regname(from)),
         _ => write!(f, "{:?}", op),
     }
 }
@@ -104,10 +118,38 @@ fn shifts(_mach: Machine) -> Operation {
     Operation::Shift(sht, operand)
 }
 
+fn incdec(_mach: Machine) -> Operation {
+    let operand = if random() {
+        random_absolute()
+    } else {
+        random_register()
+    };
+    
+    if random() {
+        Operation::Increment(operand)
+    } else {
+        Operation::Decrement(operand)
+    }
+}
+
+fn transfers(_mach: Machine) -> Operation {
+    fn rando() -> Datum {
+        match rand::thread_rng().gen_range(0, 5) {
+            0 => Datum::Register(R::A),
+            1 => Datum::Register(R::Xl),
+            2 => Datum::Register(R::Xh),
+            3 => Datum::Register(R::Yl),
+            _ => Datum::Register(R::Yh),
+        }
+    }
+    Operation::Move(rando(), rando())
+}
+
 pub fn instr_stm8(mach: Machine) -> Instruction {
-    match rand::thread_rng().gen_range(0, 2) {
+    match rand::thread_rng().gen_range(0, 4) {
         0 => Instruction::new(mach, add_adc, dasm),
         1 => Instruction::new(mach, clear, dasm),
+        2 => Instruction::new(mach, incdec, dasm),
         _ => Instruction::new(mach, shifts, dasm),
     }
 }
@@ -134,13 +176,18 @@ mod tests {
         find_it("addw", add_adc);
         // TODO: and bccm bcp bcpl bres bset btjf btjt
         // I don't think we need call, callf or callr
-        // TODO: ccf cp cpw cpl cplw dec decw div divw exg exgw
+        // TODO: ccf cp cpw cpl cplw div divw exg exgw
         find_it("clr", clear);
         find_it("clrw", clear);
+        find_it("dec", incdec);
+        find_it("decw", incdec);
         // I don't think we need halt
-        // TODO: inc incw
         // I don't think we need iret
+        find_it("inc", incdec);
+        find_it("incw", incdec);
         // TODO: conditional jumps, relative jump
+        find_it("ld a, xh", transfers);
+        find_it("ld yl, a", transfers);
         // TODO: ld ldw mov mul neg negw
         // I don't think we need nop
         // TODO: or pop popw push pushw rcf
