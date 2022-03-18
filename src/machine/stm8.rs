@@ -68,7 +68,16 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Shift(ShiftType::RightRotateThroughCarry, d) => syn(f, "rrc", d),
         Operation::Shift(ShiftType::LeftArithmetic, d) => syn(f, "sla", d),
         Operation::Shift(ShiftType::RightArithmetic, d) => syn(f, "sra", d),
+        Operation::Move(Datum::Zero, r) => syn(f, "clr", r),
         _ => write!(f, "{:?}", op),
+    }
+}
+
+fn clear(_mach: Machine) -> Operation {
+    if random() {
+        Operation::Move(Datum::Zero, random_register())
+    } else {
+        Operation::Move(Datum::Zero, random_stm8_operand())
     }
 }
 
@@ -98,6 +107,7 @@ fn shifts(_mach: Machine) -> Operation {
 pub fn instr_stm8(mach: Machine) -> Instruction {
     match rand::thread_rng().gen_range(0, 2) {
         0 => Instruction::new(mach, add_adc, dasm),
+        1 => Instruction::new(mach, clear, dasm),
         _ => Instruction::new(mach, shifts, dasm),
     }
 }
@@ -124,7 +134,9 @@ mod tests {
         find_it("addw", add_adc);
         // TODO: and bccm bcp bcpl bres bset btjf btjt
         // I don't think we need call, callf or callr
-        // TODO: ccf clr clrw cp cpw cpl cplw dec decw div divw exg exgw
+        // TODO: ccf cp cpw cpl cplw dec decw div divw exg exgw
+        find_it("clr", clear);
+        find_it("clrw", clear);
         // I don't think we need halt
         // TODO: inc incw
         // I don't think we need iret
