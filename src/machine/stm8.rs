@@ -58,7 +58,7 @@ fn add_adc(_mach: Machine) -> Operation {
 fn shifts(_mach: Machine) -> Operation {
     // TODO: instructions SRA or SRAW.
     // TODO: instructions RLWA or RRWA.
-    let sht = match rand::thread_rng().gen_range(0, 2) {
+    let sht = match rand::thread_rng().gen_range(0, 4) {
         0 => ShiftType::LeftArithmetic,
         1 => ShiftType::RightArithmetic,
         2 => ShiftType::RightRotateThroughCarry,
