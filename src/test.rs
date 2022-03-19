@@ -70,10 +70,7 @@ fn step(mach: Machine, s: &DeStep) -> Step {
 
 fn de_step(mach: Machine, d: &Vec<DeStep>) -> Vec<Step> {
     let st: Vec<Step> = d.iter().map(|t| step(mach, t)).collect();
-    let (mut setup, mut checks): (Vec<Step>, Vec<Step>) = st.iter().partition(|s| match s {
-        Step::Set(_, _) => true,
-        _ => false,
-    });
+    let (mut setup, mut checks): (Vec<Step>, Vec<Step>) = st.iter().partition(|s| matches!(s, Step::Set(_, _)));
 
     setup.push(Step::Run);
     setup.append(&mut checks);
