@@ -21,12 +21,10 @@ fn random_stm8_operand() -> Datum {
 fn random_register() -> Datum {
     if random() {
         Datum::Register(R::A)
+    } else if random() {
+        Datum::RegisterPair(R::Xh, R::Xl)
     } else {
-        if random() {
-            Datum::RegisterPair(R::Xh, R::Xl)
-        } else {
-            Datum::RegisterPair(R::Yh, R::Yl)
-        }
+        Datum::RegisterPair(R::Yh, R::Yl)
     }
 }
 
