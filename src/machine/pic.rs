@@ -47,10 +47,10 @@ fn dasm(op: Operation, fr: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             write!(fr, "\tmovlw {}", k)
         }
         Operation::Increment(Datum::Absolute(f)) => {
-            write!(fr, "\tinc f {}, 1", f)
+            write!(fr, "\tincf {}, 1", f)
         }
         Operation::Decrement(Datum::Absolute(f)) => {
-            write!(fr, "\tdec f {}, 1", f)
+            write!(fr, "\tdecf {}, 1", f)
         }
         Operation::Shift(ShiftType::LeftRotateThroughCarry, Datum::Absolute(f)) => {
             write!(fr, "\trlf {}, 1", f)
@@ -132,43 +132,84 @@ pub fn instr_pic(mach: Machine) -> Instruction {
     // bcf bsf btfsc btfss (call) (clrwdt) comf decfsz (goto) incfsz iorlw iorwf (nop) (option) (retlw) (sleep) subwf swapf (tris) xorlw xorwf
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
 #[test]
-fn exclude_instructions() {
-    // I've seen some instructions generated that are not part of any PIC's instruction set.
-    // This test fails if it can get the same instruction again.
+    fn exclude_instructions() {
+        // I've seen some instructions generated that are not part of any PIC's instruction set.
+        // This test fails if it can get the same instruction again.
 
-    fn check(_pic: PicVariant, fname: &'static str, op: Operation) {
-        match op {
-            Operation::Move(Datum::Register(R::A), Datum::Register(R::A)) => {
-                panic!("{} produced a move from W to W", fname)
-            }
-            Operation::Add(Datum::Absolute(_), Datum::Absolute(_), _) => panic!(
-                "{} produced an Add operation with two operands in memory",
-                fname
-            ),
-            Operation::And(Datum::Absolute(_), Datum::Absolute(_)) => panic!(
-                "{} produced an And operation with two operands in memory",
-                fname
-            ),
-            _ => {}
-        }
-    }
-
-    fn excl(pic: PicVariant) {
-        for _i in 0..50000 {
-            check(pic, "store_pic", store_pic(Machine::Pic(pic)));
-            check(pic, "and_pic", and_pic(Machine::Pic(pic)));
-            check(pic, "shifts_pic", shifts_pic(Machine::Pic(pic)));
-            check(pic, "inc_dec_pic", inc_dec_pic(Machine::Pic(pic)));
-        }
-        for _i in 0..5000 {
-            let mut instr = instr_pic(Machine::Pic(PicVariant::Pic12));
-            for _j in 0..500 {
-                instr.randomize();
-                check(pic, "something", instr.operation);
+        fn check(_pic: PicVariant, fname: &'static str, op: Operation) {
+            match op {
+                Operation::Move(Datum::Register(R::A), Datum::Register(R::A)) => {
+                    panic!("{} produced a move from W to W", fname)
+                }
+                Operation::Add(Datum::Absolute(_), Datum::Absolute(_), _) => panic!(
+                    "{} produced an Add operation with two operands in memory",
+                    fname
+                    ),
+                    Operation::And(Datum::Absolute(_), Datum::Absolute(_)) => panic!(
+                        "{} produced an And operation with two operands in memory",
+                        fname
+                        ),
+                    _ => {}
             }
         }
+
+        fn excl(pic: PicVariant) {
+            for _i in 0..50000 {
+                check(pic, "store_pic", store_pic(Machine::Pic(pic)));
+                check(pic, "and_pic", and_pic(Machine::Pic(pic)));
+                check(pic, "shifts_pic", shifts_pic(Machine::Pic(pic)));
+                check(pic, "inc_dec_pic", inc_dec_pic(Machine::Pic(pic)));
+            }
+            for _i in 0..5000 {
+                let mut instr = instr_pic(Machine::Pic(PicVariant::Pic12));
+                for _j in 0..500 {
+                    instr.randomize();
+                    check(pic, "something", instr.operation);
+                }
+            }
+        }
+
+        excl(PicVariant::Pic12);
     }
 
-    excl(PicVariant::Pic12);
+    fn find_it(opcode: &'static str, rnd: fn(Machine) -> Operation, mach: PicVariant) {
+        for _i in 0..500 {
+            let i = Instruction::new(Machine::Pic(mach), rnd, dasm);
+            let d = format!("{}", i);
+            if d.contains(opcode) {
+                return;
+            }
+        }
+        panic!("Couldn't find instruction {}", opcode);
+    }
+
+    #[test]
+    fn instr_set_pic14() {
+        find_it("addwf", add_pic, PicVariant::Pic14);
+        find_it("addlw", add_pic, PicVariant::Pic14);
+        find_it("andwf", and_pic, PicVariant::Pic14);
+        find_it("andlw", and_pic, PicVariant::Pic14);
+        // TODO: bcf bsf btfsc btfss
+        // I don't think we need to bother with call, clrwdt
+        find_it("clrf", store_pic, PicVariant::Pic14);
+        find_it("clrw", store_pic, PicVariant::Pic14);
+        // TODO: comf
+        find_it("decf", inc_dec_pic, PicVariant::Pic14);
+        find_it("incf", inc_dec_pic, PicVariant::Pic14);
+        // TODO: decfsz incfsz
+        // TODO: iorlw iorwf
+        // I don't think we'll bother with retfie, retlw, return, sleep
+        find_it("movf", store_pic, PicVariant::Pic14);
+        find_it("movlw", store_pic, PicVariant::Pic14);
+        find_it("movwf", store_pic, PicVariant::Pic14);
+        // I don't think we need to bother with nop (well maybe)
+        find_it("rlf", shifts_pic, PicVariant::Pic14);
+        // TODO: subwf sublw swapf xorwf xorlw
+        find_it("rrf", shifts_pic, PicVariant::Pic14);
+    }
 }

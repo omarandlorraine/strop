@@ -1,6 +1,6 @@
+use crate::machine::mos6502::instr_length_6502;
 use crate::machine::rand::prelude::SliceRandom;
 use std::collections::HashMap;
-use crate::machine::mos6502::instr_length_6502;
 extern crate rand;
 
 mod m6800;
@@ -164,18 +164,16 @@ impl Machine {
                     }
                 }
             }
-            Machine::Stm8 => {
-                match name {
-                    "a" => Datum::Register(R::A),
-                    "x" => Datum::RegisterPair(R::Xh, R::Xl),
-                    "y" => Datum::RegisterPair(R::Yh, R::Yl),
-                    "xl" => Datum::Register(R::Xl),
-                    "yl" => Datum::Register(R::Yl),
-                    _ => {
-                        panic!("No such register as {}", name);
-                    }
+            Machine::Stm8 => match name {
+                "a" => Datum::Register(R::A),
+                "x" => Datum::RegisterPair(R::Xh, R::Xl),
+                "y" => Datum::RegisterPair(R::Yh, R::Yl),
+                "xl" => Datum::Register(R::Xl),
+                "yl" => Datum::Register(R::Yl),
+                _ => {
+                    panic!("No such register as {}", name);
                 }
-            }
+            },
         }
     }
 }
@@ -327,89 +325,98 @@ fn rotate_right_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>,
 }
 
 #[cfg(test)]
-fn dasm(mach: Machine) {
-    for _i in 0..5000 {
-        let mut instr = new_instruction(mach);
-        for _j in 0..50 {
-            instr.randomize();
-            let d = format!("{}", instr);
-            if d[0..1] != "\t".to_owned() {
-                println!("No disassembly for instruction {}", d);
+mod tests {
+    use super::*;
+
+    fn dasm(mach: Machine) {
+        for _i in 0..5000 {
+            let mut instr = new_instruction(mach);
+            for _j in 0..50 {
+                instr.randomize();
+                let d = format!("{}", instr);
+                if d[0..1] != "\t".to_owned() {
+                    println!("No disassembly for instruction {}", d);
+                    panic!();
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn instruction_lengths_6502() {
+        for _i in 0..5000 {
+            let instr = new_instruction(Machine::Mos6502(Mos6502Variant::Nmos));
+            let len = instr_length_6502(instr.operation);
+            if !(len > 0) {
+                println!("unknown length for instruction: {}", instr);
                 panic!();
             }
         }
     }
-}
 
-#[test]
-fn instruction_lengths_6502() {
-    for _i in 0..5000 {
-        let instr = new_instruction(Machine::Mos6502(Mos6502Variant::Nmos));
-        let len = instr_length_6502(instr.operation);
-        if !(len > 0) {
-            println!("unknown length for instruction: {}", instr);
-            panic!();
-        }
+    #[test]
+    fn disassembler_6502() {
+        dasm(Machine::Mos6502(Mos6502Variant::Nmos));
+        dasm(Machine::Mos6502(Mos6502Variant::Cmos));
+        dasm(Machine::Mos6502(Mos6502Variant::Ricoh2a03));
+        dasm(Machine::Mos6502(Mos6502Variant::IllegalInstructions));
     }
-}
 
-#[test]
-fn disassembler_6502() {
-    dasm(Machine::Mos6502(Mos6502Variant::Nmos));
-    dasm(Machine::Mos6502(Mos6502Variant::Cmos));
-    dasm(Machine::Mos6502(Mos6502Variant::Ricoh2a03));
-    dasm(Machine::Mos6502(Mos6502Variant::IllegalInstructions));
-}
+    #[test]
+    fn disassembler_6800() {
+        dasm(Machine::Motorola6800(Motorola8BitVariant::Motorola6800));
+        dasm(Machine::Motorola6800(Motorola8BitVariant::Motorola6801));
+    }
 
-#[test]
-fn disassembler_6800() {
-    dasm(Machine::Motorola6800(Motorola8BitVariant::Motorola6800));
-    dasm(Machine::Motorola6800(Motorola8BitVariant::Motorola6801));
-}
+    #[test]
+    fn disassembler_prex86() {
+        dasm(Machine::PreX86(PreX86Variant::ZilogZ80));
+        dasm(Machine::PreX86(PreX86Variant::I8080));
+        dasm(Machine::PreX86(PreX86Variant::Sm83));
+        dasm(Machine::PreX86(PreX86Variant::KR580VM1));
+    }
 
-#[test]
-fn disassembler_prex86() {
-    dasm(Machine::PreX86(PreX86Variant::ZilogZ80));
-    dasm(Machine::PreX86(PreX86Variant::I8080));
-    dasm(Machine::PreX86(PreX86Variant::Sm83));
-    dasm(Machine::PreX86(PreX86Variant::KR580VM1));
-}
+    #[test]
+    fn disassembler_stm8() {
+        dasm(Machine::Stm8);
+    }
 
-#[test]
-fn disassembler_pic() {
-    dasm(Machine::Pic(PicVariant::Pic12));
-    dasm(Machine::Pic(PicVariant::Pic14));
-    dasm(Machine::Pic(PicVariant::Pic16));
-}
+    #[test]
+    fn disassembler_pic() {
+        dasm(Machine::Pic(PicVariant::Pic12));
+        dasm(Machine::Pic(PicVariant::Pic14));
+        dasm(Machine::Pic(PicVariant::Pic16));
+    }
 
-#[test]
-fn add_to_reg8_test() {
-    assert_eq!(
-        add_to_reg8(Some(3), Some(3), Some(false)),
-        (
-            Some(6),
-            Some(false),
-            Some(false),
-            Some(false),
-            Some(false),
-            Some(false)
-        )
-    );
-    assert_eq!(
-        add_to_reg8(Some(127), Some(1), Some(false)),
-        (
-            Some(-128),
-            Some(true),
-            Some(false),
-            Some(true),
-            Some(true),
-            Some(true)
-        )
-    );
-    assert_eq!(
-        add_to_reg8(None, Some(3), Some(false)),
-        (None, None, None, None, None, None)
-    );
+    #[test]
+    fn add_to_reg8_test() {
+        assert_eq!(
+            add_to_reg8(Some(3), Some(3), Some(false)),
+            (
+                Some(6),
+                Some(false),
+                Some(false),
+                Some(false),
+                Some(false),
+                Some(false)
+            )
+        );
+        assert_eq!(
+            add_to_reg8(Some(127), Some(1), Some(false)),
+            (
+                Some(-128),
+                Some(true),
+                Some(false),
+                Some(true),
+                Some(true),
+                Some(true)
+            )
+        );
+        assert_eq!(
+            add_to_reg8(None, Some(3), Some(false)),
+            (None, None, None, None, None, None)
+        );
+    }
 }
 
 #[derive(Clone, Debug, Copy)]
@@ -428,6 +435,7 @@ pub enum Operation {
     Increment(Datum),
     Add(Datum, Datum, bool),
     And(Datum, Datum),
+    ExclusiveOr(Datum, Datum),
     Move(Datum, Datum),
     Shift(ShiftType, Datum),
     Carry(bool),
@@ -453,11 +461,11 @@ impl Instruction {
 
     pub fn len(&self) -> usize {
         match self.machine {
-            Machine::Mos6502(_) => { instr_length_6502(self.operation) }
+            Machine::Mos6502(_) => instr_length_6502(self.operation),
             // these architectures have fixed instruction widths
             Machine::Pic(_) => 1,
             // In case of unknown instruction length, assume 1 so that optimizer still works
-            _ => 1
+            _ => 1,
         }
     }
 
@@ -481,6 +489,12 @@ impl Instruction {
             }
             Operation::And(source, destination) => {
                 let (result, z) = bitwise_and(s.get_i8(source), s.get_i8(destination));
+                s.set_i8(destination, result);
+                s.zero = z;
+                true
+            }
+            Operation::ExclusiveOr(source, destination) => {
+                let (result, z) = bitwise_xor(s.get_i8(source), s.get_i8(destination));
                 s.set_i8(destination, result);
                 s.zero = z;
                 true

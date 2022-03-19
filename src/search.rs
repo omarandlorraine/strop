@@ -1,7 +1,7 @@
 use crate::machine::new_instruction;
 use crate::machine::Instruction;
 use crate::machine::Width;
-use crate::{Machine, State, TestRun, Step};
+use crate::{Machine, State, Step, TestRun};
 use rand::Rng;
 use std::ops::{Index, IndexMut};
 
@@ -97,12 +97,14 @@ pub fn difference(prog: &BasicBlock, test_run: &TestRun) -> f64 {
                 Step::Run => {
                     prog.instructions.iter().all(|i| i.operate(&mut s));
                 }
-                Step::Set(datum, val) => {
-                    match datum.width() {
-                        Width::Width8 => { s.set_i8(*datum, Some(*val as i8)); }
-                        Width::Width16 => { s.set_i16(*datum, Some(*val as i16)); }
+                Step::Set(datum, val) => match datum.width() {
+                    Width::Width8 => {
+                        s.set_i8(*datum, Some(*val as i8));
                     }
-                }
+                    Width::Width16 => {
+                        s.set_i16(*datum, Some(*val as i16));
+                    }
+                },
                 Step::Diff(datum, val) => {
                     if let Some(v) = s.get_i16(*datum) {
                         let d: f64 = (val - v as i32).into();

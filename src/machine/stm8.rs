@@ -1,11 +1,11 @@
-use crate::Machine;
-use crate::machine::Instruction;
-use crate::Datum;
-use crate::machine::R;
-use crate::machine::random_immediate;
 use crate::machine::random_absolute;
+use crate::machine::random_immediate;
+use crate::machine::Instruction;
 use crate::machine::Operation;
 use crate::machine::ShiftType;
+use crate::machine::R;
+use crate::Datum;
+use crate::Machine;
 
 use crate::machine::rand::Rng;
 use rand::random;
@@ -32,37 +32,81 @@ fn random_register() -> Datum {
 
 fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     fn syn(f: &mut std::fmt::Formatter, s: &'static str, d: Datum) -> std::fmt::Result {
-        let t = match d {
-            Datum::Imm8(val) => format!("#${:2}", val),
-            Datum::Absolute(addr) if addr < 256 => format!("${:2}", addr),
-            Datum::Absolute(addr) => format!("${:4}", addr),
-            Datum::Register(R::A) => "a".into(),
-            _ => format!("{:?}", d),
+        match d {
+            Datum::Imm8(val) => write!(f, "\t{} #${:2}", s, val),
+            Datum::Absolute(addr) if addr < 256 => write!(f, "\t {} ${:2}", s, addr),
+            Datum::Absolute(addr) => write!(f, "\t {} ${:4}", s, addr),
+            Datum::Register(R::A) => write!(f, "\t {} a", s),
+            Datum::RegisterPair(R::Xh, R::Xl) => write!(f, "\t {}w x", s),
+            Datum::RegisterPair(R::Yh, R::Yl) => write!(f, "\t {}w y", s),
+            _ => write!(f, "{} {:?}", s, d),
+        }
+    }
+
+    fn dsyn(f: &mut std::fmt::Formatter, s: &'static str, r: Datum, d: Datum) -> std::fmt::Result {
+        let (suffix, regname) = match r {
+            Datum::Register(R::A) => ("", "a"),
+            Datum::RegisterPair(R::Xh, R::Xl) => ("w", "x"),
+            Datum::RegisterPair(R::Yh, R::Yl) => ("w", "y"),
+            _ => panic!(),
         };
-        write!(f, "\t{} {}", s, t)
+
+        match d {
+            Datum::Imm8(val) => write!(f, "\t{}{} {}, #${:4}", s, suffix, regname, val),
+            Datum::Absolute(addr) if addr < 256 => write!(f, "\t {}{} {}, ${:2}", s, suffix, regname, addr),
+            Datum::Absolute(addr) => write!(f, "\t {}{} {}, ${:4}", s,suffix, regname,  addr),
+            Datum::Register(R::A) => write!(f, "\t {}{} {}, a", suffix, regname, s),
+            _ => write!(f, "{}{} {}, {:?}", s,suffix, regname,  d),
+        }
+
+    }
+
+    fn regname(r: R) -> &'static str {
+        match r {
+            R::A => "a",
+            R::Xh => "xh",
+            R::Xl => "xl",
+            R::Yh => "yh",
+            R::Yl => "yl",
+            _ => panic!()
+        }
     }
 
     match op {
-        Operation::Add(d, Datum::Register(R::A), true) => syn(f, "adc", d),
-        Operation::Add(d, Datum::Register(R::A), false) => syn(f, "add", d),
+        Operation::Add(d, r, true) => dsyn(f, "adc", r, d),
+        Operation::Add(d, r, false) => dsyn(f, "add", r, d),
+        Operation::Shift(ShiftType::LeftRotateThroughCarry, d) => syn(f, "rlc", d),
         Operation::Shift(ShiftType::RightRotateThroughCarry, d) => syn(f, "rrc", d),
         Operation::Shift(ShiftType::LeftArithmetic, d) => syn(f, "sla", d),
-        _ => write!(f, "{:?}", op)
+        Operation::Shift(ShiftType::RightArithmetic, d) => syn(f, "sra", d),
+        Operation::Move(Datum::Zero, r) => syn(f, "clr", r),
+        Operation::Increment(r) => syn(f, "inc", r),
+        Operation::Decrement(r) => syn(f, "dec", r),
+        Operation::Move(Datum::Register(from), Datum::Register(to)) => write!(f, "\tld {}, {}", regname(to), regname(from)),
+        _ => write!(f, "{:?}", op),
+    }
+}
+
+fn clear(_mach: Machine) -> Operation {
+    if random() {
+        Operation::Move(Datum::Zero, random_register())
+    } else {
+        Operation::Move(Datum::Zero, random_stm8_operand())
     }
 }
 
 fn add_adc(_mach: Machine) -> Operation {
-    Operation::Add(random_stm8_operand(), Datum::Register(R::A), random())
+    Operation::Add(random_stm8_operand(), random_register(), random())
 }
 
 fn shifts(_mach: Machine) -> Operation {
     // TODO: instructions SRA or SRAW.
     // TODO: instructions RLWA or RRWA.
-    let sht = match rand::thread_rng().gen_range(0, 2) {
+    let sht = match rand::thread_rng().gen_range(0, 4) {
         0 => ShiftType::LeftArithmetic,
         1 => ShiftType::RightArithmetic,
         2 => ShiftType::RightRotateThroughCarry,
-        _ => ShiftType::LeftRotateThroughCarry
+        _ => ShiftType::LeftRotateThroughCarry,
     };
 
     let operand = if random() {
@@ -74,10 +118,91 @@ fn shifts(_mach: Machine) -> Operation {
     Operation::Shift(sht, operand)
 }
 
+fn incdec(_mach: Machine) -> Operation {
+    let operand = if random() {
+        random_absolute()
+    } else {
+        random_register()
+    };
+    
+    if random() {
+        Operation::Increment(operand)
+    } else {
+        Operation::Decrement(operand)
+    }
+}
+
+fn transfers(_mach: Machine) -> Operation {
+    fn rando() -> Datum {
+        match rand::thread_rng().gen_range(0, 5) {
+            0 => Datum::Register(R::A),
+            1 => Datum::Register(R::Xl),
+            2 => Datum::Register(R::Xh),
+            3 => Datum::Register(R::Yl),
+            _ => Datum::Register(R::Yh),
+        }
+    }
+    Operation::Move(rando(), rando())
+}
+
 pub fn instr_stm8(mach: Machine) -> Instruction {
-    match rand::thread_rng().gen_range(0, 2) {
+    match rand::thread_rng().gen_range(0, 5) {
         0 => Instruction::new(mach, add_adc, dasm),
+        1 => Instruction::new(mach, clear, dasm),
+        2 => Instruction::new(mach, incdec, dasm),
+        3 => Instruction::new(mach, transfers, dasm),
         _ => Instruction::new(mach, shifts, dasm),
     }
-    // TODO: Add clc, sec, and many other instructions
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn find_it(opcode: &'static str, rnd: fn(Machine) -> Operation) {
+        for _i in 0..5000 {
+            let i = Instruction::new(Machine::Stm8, rnd, dasm);
+            let d = format!("{}", i);
+            if d.contains(opcode) {
+                return;
+            }
+        }
+        panic!("Couldn't find instruction {}", opcode);
+    }
+
+    #[test]
+    fn instruction_set_stm8() {
+        find_it("adc", add_adc);
+        find_it("add", add_adc);
+        find_it("addw", add_adc);
+        // TODO: and bccm bcp bcpl bres bset btjf btjt
+        // I don't think we need call, callf or callr
+        // TODO: ccf cp cpw cpl cplw div divw exg exgw
+        find_it("clr", clear);
+        find_it("clrw", clear);
+        find_it("dec", incdec);
+        find_it("decw", incdec);
+        // I don't think we need halt
+        // I don't think we need iret
+        find_it("inc", incdec);
+        find_it("incw", incdec);
+        // TODO: conditional jumps, relative jump
+        find_it("ld a, xh", transfers);
+        find_it("ld yl, a", transfers);
+        // TODO: ld ldw mov mul neg negw
+        // I don't think we need nop
+        // TODO: or pop popw push pushw rcf
+        // I don't think we need ret, retf, rim
+        // TODO: rlwa rrwa rvf sbc scf
+        find_it("rlc", shifts);
+        find_it("rlcw", shifts);
+        find_it("rrc", shifts);
+        find_it("rrcw", shifts);
+        // I don't think we need sim
+        // TODO: sra sraw srl srlw sub subw swap tnz tnzw
+        find_it("sla", shifts); // aka. sll
+        find_it("slaw", shifts); // aka. sllw
+        // I don't think we need trap, wfe, wfi
+        // TODO: xor
+    }
 }

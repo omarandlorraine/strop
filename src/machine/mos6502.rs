@@ -55,8 +55,12 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Shift(ShiftType::RightRotateThroughCarry, thing) => syn(f, "ror", thing),
         Operation::Shift(ShiftType::LeftRotateThroughCarry, thing) => syn(f, "rol", thing),
         Operation::Add(thing, Datum::Register(R::A), true) => syn(f, "adc", thing),
+        Operation::And(thing, Datum::Register(R::A)) => syn(f, "and", thing),
+        Operation::ExclusiveOr(thing, Datum::Register(R::A)) => syn(f, "eor", thing),
         Operation::Increment(Datum::Register(reg)) => write!(f, "\tin{}", regname(reg)),
         Operation::Decrement(Datum::Register(reg)) => write!(f, "\tde{}", regname(reg)),
+        Operation::Carry(false) => write!(f, "\tclc"),
+        Operation::Carry(true) => write!(f, "\tsec"),
         _ => {
             write!(f, "{:?}", op)
         }
@@ -68,8 +72,14 @@ pub fn instr_length_6502(operation: Operation) -> usize {
         match dat {
             Datum::Register(_) => 1,
             Datum::Imm8(_) => 2,
-            Datum::Absolute(addr) => if addr < 256 { 2 } else { 3 },
-            _ => 0
+            Datum::Absolute(addr) => {
+                if addr < 256 {
+                    2
+                } else {
+                    3
+                }
+            }
+            _ => 0,
         }
     }
 
@@ -81,7 +91,10 @@ pub fn instr_length_6502(operation: Operation) -> usize {
         Operation::Increment(dat) => length(dat),
         Operation::Decrement(dat) => length(dat),
         Operation::Add(dat, Datum::Register(R::A), true) => length(dat),
-        _ => 0
+        Operation::And(dat, Datum::Register(R::A)) => length(dat),
+        Operation::ExclusiveOr(dat, Datum::Register(R::A)) => length(dat),
+        Operation::Carry(_) => 1,
+        _ => 0,
     }
 }
 
@@ -115,8 +128,14 @@ fn incdec_6502(mach: Machine) -> Operation {
     }
 }
 
-fn add_6502(_mach: Machine) -> Operation {
-    Operation::Add(random_source_6502(), Datum::Register(R::A), true)
+fn alu_6502(_mach: Machine) -> Operation {
+    // randomly generate the instructions ora, and, eor, adc, sbc, cmp
+    // these all have the same available addressing modes
+    match rand::thread_rng().gen_range(0, 3) {
+        0 => Operation::Add(random_source_6502(), Datum::Register(R::A), true),
+        1 => Operation::And(random_source_6502(), Datum::Register(R::A)),
+        _ => Operation::ExclusiveOr(random_source_6502(), Datum::Register(R::A)),
+    }
 }
 
 fn transfers_6502(_mach: Machine) -> Operation {
@@ -174,13 +193,94 @@ fn shifts_6502(_mach: Machine) -> Operation {
 }
 
 pub fn instr_6502(mach: Machine) -> Instruction {
-    match rand::thread_rng().gen_range(0, 5) {
+    match rand::thread_rng().gen_range(0, 6) {
         0 => Instruction::new(mach, incdec_6502, dasm),
-        1 => Instruction::new(mach, add_6502, dasm),
+        1 => Instruction::new(mach, alu_6502, dasm),
         2 => Instruction::new(mach, transfers_6502, dasm),
         3 => Instruction::new(mach, shifts_6502, dasm),
         4 => Instruction::new(mach, loadstore_6502, dasm),
         _ => Instruction::new(mach, secl_6502, dasm),
     }
-    // TODO: Add clc, sec, and many other instructions
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn find_it(opcode: &'static str, rnd: fn(Machine) -> Operation, mach: Mos6502Variant) {
+        for _i in 0..5000 {
+            let i = Instruction::new(Machine::Mos6502(mach), rnd, dasm);
+            let d = format!("{}", i);
+            if d.contains(opcode) {
+                return;
+            }
+        }
+        panic!("Couldn't find instruction {}", opcode);
+    }
+
+    fn core_instruction_set(mach: Mos6502Variant) {
+        find_it("adc", alu_6502, mach);
+        find_it("and", alu_6502, mach);
+        find_it("asl", shifts_6502, mach);
+        // TODO: bcc bcs beq bit bmi bne bpl
+        // I don't think we need to bother with brk
+        // TODO: bvc bvs
+        find_it("clc", secl_6502, mach);
+        // TODO: cld
+        // I don't think we'll bother with cli
+        // TODO clv cmp cpx cpy dec
+        find_it("dex", incdec_6502, mach);
+        find_it("dey", incdec_6502, mach);
+        find_it("eor", alu_6502, mach);
+        // TODO: inc
+        find_it("inx", incdec_6502, mach);
+        find_it("iny", incdec_6502, mach);
+        // TODO: jmp
+        // I don't think we'll bother with jsr
+        find_it("lda", loadstore_6502, mach);
+        find_it("ldx", loadstore_6502, mach);
+        find_it("ldy", loadstore_6502, mach);
+        find_it("lsr", shifts_6502, mach);
+        // I don't think we'll bother with nop
+        // TODO: ora pha pla
+        // I don't think we'll bother with php plp
+        find_it("rol", shifts_6502, mach);
+        find_it("ror", shifts_6502, mach);
+        // I don't think we'll bother with rti rts
+        // TODO: sbc
+        find_it("sec", secl_6502, mach);
+        // TODO: sed
+        // I don't think we'll bother with sei
+        find_it("sta", loadstore_6502, mach);
+        find_it("stx", loadstore_6502, mach);
+        find_it("sty", loadstore_6502, mach);
+        find_it("tax", transfers_6502, mach);
+        find_it("tay", transfers_6502, mach);
+        // TODO: tsx
+        find_it("txa", transfers_6502, mach);
+        // TODO: txs
+        find_it("tya", transfers_6502, mach);
+    }
+
+    #[test]
+    fn instruction_set_65c02() {
+        core_instruction_set(Mos6502Variant::Cmos);
+        // TODO: bra phx plx phy ply stz trb tsb bbr bbs rmb smb
+        find_it("dea", incdec_6502, Mos6502Variant::Cmos);
+        find_it("dea", incdec_6502, Mos6502Variant::Cmos);
+        find_it("ina", incdec_6502, Mos6502Variant::Cmos);
+        find_it("ina", incdec_6502, Mos6502Variant::Cmos);
+        find_it("stz", loadstore_6502, Mos6502Variant::Cmos);
+    }
+
+    #[test]
+    fn instruction_set_6502() {
+        core_instruction_set(Mos6502Variant::Nmos);
+    }
+
+    #[test]
+    fn instruction_set_65i02() {
+        core_instruction_set(Mos6502Variant::IllegalInstructions);
+    }
+
 }
