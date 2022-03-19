@@ -9,13 +9,6 @@ pub struct DeParameter {
     pub cost: Option<f64>,
 }
 
-pub struct Parameter {
-    pub name: String,
-    pub address: Option<u16>,
-    pub cost: Option<f64>,
-    pub register: Datum,
-}
-
 #[derive(Deserialize, Debug)]
 pub struct DeTest {
     pub steps: Vec<DeStep>
