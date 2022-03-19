@@ -146,10 +146,11 @@ fn transfers(_mach: Machine) -> Operation {
 }
 
 pub fn instr_stm8(mach: Machine) -> Instruction {
-    match rand::thread_rng().gen_range(0, 4) {
+    match rand::thread_rng().gen_range(0, 5) {
         0 => Instruction::new(mach, add_adc, dasm),
         1 => Instruction::new(mach, clear, dasm),
         2 => Instruction::new(mach, incdec, dasm),
+        3 => Instruction::new(mach, transfers, dasm),
         _ => Instruction::new(mach, shifts, dasm),
     }
 }
