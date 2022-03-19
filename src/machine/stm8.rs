@@ -25,7 +25,7 @@ fn random_register() -> Datum {
         if random() {
             Datum::RegisterPair(R::Xh, R::Xl)
         } else {
-            Datum::RegisterPair(R::Xh, R::Xl)
+            Datum::RegisterPair(R::Yh, R::Yl)
         }
     }
 }
