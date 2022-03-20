@@ -73,6 +73,9 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match op {
         Operation::Add(d, r, true) => dsyn(f, "adc", r, d),
         Operation::Add(d, r, false) => dsyn(f, "add", r, d),
+        Operation::And(d, r) => dsyn(f, "and", r, d),
+        Operation::Or(d, r) => dsyn(f, "or", r, d),
+        Operation::Xor(d, r) => dsyn(f, "xor", r, d),
         Operation::Shift(ShiftType::LeftRotateThroughCarry, d) => syn(f, "rlc", d),
         Operation::Shift(ShiftType::RightRotateThroughCarry, d) => syn(f, "rrc", d),
         Operation::Shift(ShiftType::LeftArithmetic, d) => syn(f, "sla", d),
@@ -95,6 +98,15 @@ fn clear(_mach: Machine) -> Operation {
 
 fn add_adc(_mach: Machine) -> Operation {
     Operation::Add(random_stm8_operand(), random_register(), random())
+}
+
+fn alu8(_mach: Machine) -> Operation {
+    // the eight-bit diadic operations like and, xor, or, etc
+    match rand::thread_rng().gen_range(0, 3) {
+        0 => Operation::And(random_stm8_operand(), Datum::Register(R::A)),
+        1 => Operation::Or(random_stm8_operand(), Datum::Register(R::A)),
+        _ => Operation::Xor(random_stm8_operand(), Datum::Register(R::A)),
+    }
 }
 
 fn shifts(_mach: Machine) -> Operation {
@@ -144,11 +156,12 @@ fn transfers(_mach: Machine) -> Operation {
 }
 
 pub fn instr_stm8(mach: Machine) -> Instruction {
-    match rand::thread_rng().gen_range(0, 5) {
+    match rand::thread_rng().gen_range(0, 6) {
         0 => Instruction::new(mach, add_adc, dasm),
         1 => Instruction::new(mach, clear, dasm),
         2 => Instruction::new(mach, incdec, dasm),
         3 => Instruction::new(mach, transfers, dasm),
+        4 => Instruction::new(mach, alu8, dasm),
         _ => Instruction::new(mach, shifts, dasm),
     }
 }
@@ -173,7 +186,8 @@ mod tests {
         find_it("adc", add_adc);
         find_it("add", add_adc);
         find_it("addw", add_adc);
-        // TODO: and bccm bcp bcpl bres bset btjf btjt
+        find_it("and", alu8);
+        // TODO: bccm bcp bcpl bres bset btjf btjt
         // I don't think we need call, callf or callr
         // TODO: ccf cp cpw cpl cplw div divw exg exgw
         find_it("clr", clear);
@@ -189,7 +203,8 @@ mod tests {
         find_it("ld yl, a", transfers);
         // TODO: ld ldw mov mul neg negw
         // I don't think we need nop
-        // TODO: or pop popw push pushw rcf
+        find_it("or", alu8);
+        // TODO: pop popw push pushw rcf
         // I don't think we need ret, retf, rim
         // TODO: rlwa rrwa rvf sbc scf
         find_it("rlc", shifts);
@@ -201,6 +216,6 @@ mod tests {
         find_it("sla", shifts); // aka. sll
         find_it("slaw", shifts); // aka. sllw
         // I don't think we need trap, wfe, wfi
-        // TODO: xor
+        find_it("xor", alu8);
     }
 }

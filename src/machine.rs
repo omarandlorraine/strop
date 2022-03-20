@@ -196,6 +196,15 @@ pub fn bitwise_xor(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>)
     (None, None)
 }
 
+pub fn bitwise_or(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>) {
+    if let Some(operand) = a {
+        if let Some(r) = reg {
+            return (Some(r | operand), Some(r | operand == 0));
+        }
+    }
+    (None, None)
+}
+
 #[allow(clippy::many_single_char_names)]
 pub fn add_to_reg16(
     reg: Option<i16>,
@@ -435,6 +444,8 @@ pub enum Operation {
     Increment(Datum),
     Add(Datum, Datum, bool),
     And(Datum, Datum),
+    Or(Datum, Datum),
+    Xor(Datum, Datum),
     ExclusiveOr(Datum, Datum),
     Move(Datum, Datum),
     Shift(ShiftType, Datum),
@@ -489,6 +500,18 @@ impl Instruction {
             }
             Operation::And(source, destination) => {
                 let (result, z) = bitwise_and(s.get_i8(source), s.get_i8(destination));
+                s.set_i8(destination, result);
+                s.zero = z;
+                true
+            }
+            Operation::Or(source, destination) => {
+                let (result, z) = bitwise_or(s.get_i8(source), s.get_i8(destination));
+                s.set_i8(destination, result);
+                s.zero = z;
+                true
+            }
+            Operation::Xor(source, destination) => {
+                let (result, z) = bitwise_xor(s.get_i8(source), s.get_i8(destination));
                 s.set_i8(destination, result);
                 s.zero = z;
                 true
