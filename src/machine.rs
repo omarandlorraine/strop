@@ -481,7 +481,7 @@ impl Instruction {
     }
 
     #[allow(clippy::many_single_char_names)]
-    pub fn operate(&self, s: &mut State) -> bool {
+    pub fn operate(&self, s: &mut State) -> i8 {
         match self.operation {
             Operation::Add(source, destination, carry) => {
                 if !carry {
@@ -496,13 +496,13 @@ impl Instruction {
                 s.zero = z;
                 s.overflow = o;
                 s.halfcarry = h;
-                true
+                1
             }
             Operation::And(source, destination) => {
                 let (result, z) = bitwise_and(s.get_i8(source), s.get_i8(destination));
                 s.set_i8(destination, result);
                 s.zero = z;
-                true
+                1
             }
             Operation::Or(source, destination) => {
                 let (result, z) = bitwise_or(s.get_i8(source), s.get_i8(destination));
@@ -520,16 +520,16 @@ impl Instruction {
                 let (result, z) = bitwise_xor(s.get_i8(source), s.get_i8(destination));
                 s.set_i8(destination, result);
                 s.zero = z;
-                true
+                1
             }
             Operation::Move(source, destination) => {
                 s.set_i8(destination, s.get_i8(source));
-                true
+                1
             }
 
             Operation::DecimalAdjustAccumulator => {
                 s.accumulator = decimal_adjust(s.accumulator, s.carry, s.halfcarry);
-                true
+                1
             }
 
             Operation::Increment(register) => {
@@ -549,7 +549,7 @@ impl Instruction {
                         s.sign = n;
                     }
                 }
-                true
+                1
             }
 
             Operation::Decrement(register) => {
@@ -558,7 +558,7 @@ impl Instruction {
                 s.set_i8(register, result);
                 s.zero = z;
                 s.sign = n;
-                true
+                1
             }
 
             Operation::Shift(shtype, datum) => match shtype {
@@ -566,31 +566,31 @@ impl Instruction {
                     let (val, c) = rotate_left_thru_carry(s.get_i8(datum), Some(false));
                     s.set_i8(datum, val);
                     s.carry = c;
-                    true
+                    1
                 }
                 ShiftType::RightArithmetic => {
                     let (val, c) = rotate_right_thru_carry(s.get_i8(datum), Some(false));
                     s.set_i8(datum, val);
                     s.carry = c;
-                    true
+                    1
                 }
                 ShiftType::RightRotateThroughCarry => {
                     let (val, c) = rotate_right_thru_carry(s.get_i8(datum), s.carry);
                     s.set_i8(datum, val);
                     s.carry = c;
-                    true
+                    1
                 }
                 ShiftType::LeftRotateThroughCarry => {
                     let (val, c) = rotate_left_thru_carry(s.get_i8(datum), s.carry);
                     s.set_i8(datum, val);
                     s.carry = c;
-                    true
+                    1
                 }
             },
 
             Operation::Carry(b) => {
                 s.carry = Some(b);
-                true
+                1
             }
         }
     }
