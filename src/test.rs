@@ -9,13 +9,6 @@ pub struct DeParameter {
     pub cost: Option<f64>,
 }
 
-pub struct Parameter {
-    pub name: String,
-    pub address: Option<u16>,
-    pub cost: Option<f64>,
-    pub register: Datum,
-}
-
 #[derive(Deserialize, Debug)]
 pub struct DeTest {
     pub steps: Vec<DeStep>,
@@ -75,12 +68,9 @@ fn step(mach: Machine, s: &DeStep) -> Step {
     }
 }
 
-fn de_step(mach: Machine, d: &Vec<DeStep>) -> Vec<Step> {
+fn de_step(mach: Machine, d: &[DeStep]) -> Vec<Step> {
     let st: Vec<Step> = d.iter().map(|t| step(mach, t)).collect();
-    let (mut setup, mut checks): (Vec<Step>, Vec<Step>) = st.iter().partition(|s| match s {
-        Step::Set(_, _) => true,
-        _ => false,
-    });
+    let (mut setup, mut checks): (Vec<Step>, Vec<Step>) = st.iter().partition(|s| matches!(s, Step::Set(_, _)));
 
     setup.push(Step::Run);
     setup.append(&mut checks);

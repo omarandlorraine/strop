@@ -133,7 +133,7 @@ fn mach(m: String) -> Machine {
     }
     println!("You didn't pick a valid arch, so here's the ones I know:");
     for m_opt in &M_OPTS {
-        println!("\t{}  {}", format!("{:>8}", m_opt.name), m_opt.help);
+        println!("\t{:>8}  {}", m_opt.name, m_opt.help);
     }
     process::exit(1);
 }

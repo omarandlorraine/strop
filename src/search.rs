@@ -115,7 +115,7 @@ pub fn difference(prog: &BasicBlock, test_run: &TestRun) -> f64 {
                 }
                 Step::NonZero(datum) => {
                     if let Some(v) = s.get_i16(*datum) {
-                        if !(v == 0) {
+                        if v != 0 {
                             ret += 2.0;
                         }
                     } else {
@@ -124,7 +124,7 @@ pub fn difference(prog: &BasicBlock, test_run: &TestRun) -> f64 {
                 }
                 Step::Positive(datum) => {
                     if let Some(v) = s.get_i16(*datum) {
-                        if !(v > 0) {
+                        if v <= 0 {
                             ret += 2.0;
                         }
                     } else {
@@ -133,7 +133,7 @@ pub fn difference(prog: &BasicBlock, test_run: &TestRun) -> f64 {
                 }
                 Step::Negative(datum) => {
                     if let Some(v) = s.get_i16(*datum) {
-                        if !(v < 0) {
+                        if v >= 0 {
                             ret += 2.0;
                         }
                     } else {
