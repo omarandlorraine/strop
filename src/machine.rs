@@ -508,13 +508,13 @@ impl Instruction {
                 let (result, z) = bitwise_or(s.get_i8(source), s.get_i8(destination));
                 s.set_i8(destination, result);
                 s.zero = z;
-                true
+                1
             }
             Operation::Xor(source, destination) => {
                 let (result, z) = bitwise_xor(s.get_i8(source), s.get_i8(destination));
                 s.set_i8(destination, result);
                 s.zero = z;
-                true
+                1
             }
             Operation::ExclusiveOr(source, destination) => {
                 let (result, z) = bitwise_xor(s.get_i8(source), s.get_i8(destination));
