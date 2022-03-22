@@ -437,7 +437,6 @@ pub enum ShiftType {
 }
 
 #[derive(Clone, Debug, Copy)]
-#[allow(non_camel_case_types)]
 pub enum Operation {
     DecimalAdjustAccumulator,
     Decrement(Datum),
