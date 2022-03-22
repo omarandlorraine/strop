@@ -437,6 +437,20 @@ pub enum ShiftType {
 }
 
 #[derive(Clone, Debug, Copy)]
+pub enum FlowControl {
+    FallThrough,
+    Forward(u8),
+    Backward(u8),
+}
+
+#[derive(Clone, Debug, Copy)]
+pub enum Test {
+    True,
+    False,
+    Carry(bool)
+}
+
+#[derive(Clone, Debug, Copy)]
 pub enum Operation {
     DecimalAdjustAccumulator,
     Decrement(Datum),
@@ -449,6 +463,32 @@ pub enum Operation {
     Move(Datum, Datum),
     Shift(ShiftType, Datum),
     Carry(bool),
+}
+
+impl Test {
+    fn evaluate(&self, s: State) -> Option<bool> {
+        match self {
+            Test::True => Some(true),
+            Test::False => Some(false),
+            Test::Carry(b) => {
+                if let Some(carry) = s.carry {
+                    Some(&carry == b)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+}
+
+impl FlowControl {
+    pub fn newpc(self, pc: usize) -> Option<usize> {
+        match self {
+            FlowControl::FallThrough => Some(pc + 1),
+            FlowControl::Forward(offs) => pc.checked_add(offs.into()),
+            FlowControl::Backward(offs) => pc.checked_sub(offs.into()),
+        }
+    }
 }
 
 impl Instruction {
@@ -480,7 +520,7 @@ impl Instruction {
     }
 
     #[allow(clippy::many_single_char_names)]
-    pub fn operate(&self, s: &mut State) -> i8 {
+    pub fn operate(&self, s: &mut State) -> FlowControl {
         match self.operation {
             Operation::Add(source, destination, carry) => {
                 if !carry {
@@ -495,40 +535,40 @@ impl Instruction {
                 s.zero = z;
                 s.overflow = o;
                 s.halfcarry = h;
-                1
+                FlowControl::FallThrough
             }
             Operation::And(source, destination) => {
                 let (result, z) = bitwise_and(s.get_i8(source), s.get_i8(destination));
                 s.set_i8(destination, result);
                 s.zero = z;
-                1
+                FlowControl::FallThrough
             }
             Operation::Or(source, destination) => {
                 let (result, z) = bitwise_or(s.get_i8(source), s.get_i8(destination));
                 s.set_i8(destination, result);
                 s.zero = z;
-                1
+                FlowControl::FallThrough
             }
             Operation::Xor(source, destination) => {
                 let (result, z) = bitwise_xor(s.get_i8(source), s.get_i8(destination));
                 s.set_i8(destination, result);
                 s.zero = z;
-                1
+                FlowControl::FallThrough
             }
             Operation::ExclusiveOr(source, destination) => {
                 let (result, z) = bitwise_xor(s.get_i8(source), s.get_i8(destination));
                 s.set_i8(destination, result);
                 s.zero = z;
-                1
+                FlowControl::FallThrough
             }
             Operation::Move(source, destination) => {
                 s.set_i8(destination, s.get_i8(source));
-                1
+                FlowControl::FallThrough
             }
 
             Operation::DecimalAdjustAccumulator => {
                 s.accumulator = decimal_adjust(s.accumulator, s.carry, s.halfcarry);
-                1
+                FlowControl::FallThrough
             }
 
             Operation::Increment(register) => {
@@ -548,7 +588,7 @@ impl Instruction {
                         s.sign = n;
                     }
                 }
-                1
+                FlowControl::FallThrough
             }
 
             Operation::Decrement(register) => {
@@ -557,7 +597,7 @@ impl Instruction {
                 s.set_i8(register, result);
                 s.zero = z;
                 s.sign = n;
-                1
+                FlowControl::FallThrough
             }
 
             Operation::Shift(shtype, datum) => match shtype {
@@ -565,31 +605,31 @@ impl Instruction {
                     let (val, c) = rotate_left_thru_carry(s.get_i8(datum), Some(false));
                     s.set_i8(datum, val);
                     s.carry = c;
-                    1
+                    FlowControl::FallThrough
                 }
                 ShiftType::RightArithmetic => {
                     let (val, c) = rotate_right_thru_carry(s.get_i8(datum), Some(false));
                     s.set_i8(datum, val);
                     s.carry = c;
-                    1
+                    FlowControl::FallThrough
                 }
                 ShiftType::RightRotateThroughCarry => {
                     let (val, c) = rotate_right_thru_carry(s.get_i8(datum), s.carry);
                     s.set_i8(datum, val);
                     s.carry = c;
-                    1
+                    FlowControl::FallThrough
                 }
                 ShiftType::LeftRotateThroughCarry => {
                     let (val, c) = rotate_left_thru_carry(s.get_i8(datum), s.carry);
                     s.set_i8(datum, val);
                     s.carry = c;
-                    1
+                    FlowControl::FallThrough
                 }
             },
 
             Operation::Carry(b) => {
                 s.carry = Some(b);
-                1
+                FlowControl::FallThrough
             }
         }
     }
