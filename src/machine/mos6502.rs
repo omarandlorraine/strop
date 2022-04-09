@@ -56,6 +56,9 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Shift(ShiftType::LeftRotateThroughCarry, thing) => syn(f, "rol", thing),
         Operation::Add(thing, Datum::Register(R::A), true) => syn(f, "adc", thing),
         Operation::And(thing, Datum::Register(R::A)) => syn(f, "and", thing),
+        Operation::Compare(thing, Datum::Register(R::A)) => syn(f, "cmp", thing),
+        Operation::Compare(thing, Datum::Register(R::Xl)) => syn(f, "cpx", thing),
+        Operation::Compare(thing, Datum::Register(R::Yl)) => syn(f, "cpy", thing),
         Operation::ExclusiveOr(thing, Datum::Register(R::A)) => syn(f, "eor", thing),
         Operation::Increment(Datum::Register(reg)) => write!(f, "\tin{}", regname(reg)),
         Operation::Decrement(Datum::Register(reg)) => write!(f, "\tde{}", regname(reg)),
@@ -93,6 +96,7 @@ pub fn instr_length_6502(operation: Operation) -> usize {
         Operation::Add(dat, Datum::Register(R::A), true) => length(dat),
         Operation::And(dat, Datum::Register(R::A)) => length(dat),
         Operation::ExclusiveOr(dat, Datum::Register(R::A)) => length(dat),
+        Operation::Compare(dat, _) => length(dat),
         Operation::Carry(_) => 1,
         _ => 0,
     }
@@ -106,20 +110,28 @@ fn random_source_6502() -> Datum {
     }
 }
 
-fn incdec_6502(mach: Machine) -> Operation {
-    // the CMOS varieties have inc and dec for accumulator
-    // but earlier 6502s can increment and decrement X and Y only.
-    let reg = match rand::thread_rng().gen_range(
-        0,
-        if mach == Machine::Mos6502(Mos6502Variant::Cmos) {
-            3
-        } else {
-            2
-        },
-    ) {
+fn random_xy() -> Datum {
+    match rand::thread_rng().gen_range(0, 2) {
+        0 => Datum::Register(R::Xl),
+        _ => Datum::Register(R::Yl),
+    }
+}
+
+fn random_axy() -> Datum {
+    match rand::thread_rng().gen_range(0, 3) {
         0 => Datum::Register(R::Xl),
         1 => Datum::Register(R::Yl),
         _ => Datum::Register(R::A),
+    }
+}
+
+fn incdec_6502(mach: Machine) -> Operation {
+    // the CMOS varieties have inc and dec for accumulator
+    // but earlier 6502s can increment and decrement X and Y only.
+    let reg = if mach == Machine::Mos6502(Mos6502Variant::Cmos) {
+        random_axy()
+    } else {
+        random_xy()
     };
     if random() {
         Operation::Increment(reg)
@@ -131,10 +143,11 @@ fn incdec_6502(mach: Machine) -> Operation {
 fn alu_6502(_mach: Machine) -> Operation {
     // randomly generate the instructions ora, and, eor, adc, sbc, cmp
     // these all have the same available addressing modes
-    match rand::thread_rng().gen_range(0, 3) {
+    match rand::thread_rng().gen_range(0, 4) {
         0 => Operation::Add(random_source_6502(), Datum::Register(R::A), true),
         1 => Operation::And(random_source_6502(), Datum::Register(R::A)),
-        _ => Operation::ExclusiveOr(random_source_6502(), Datum::Register(R::A)),
+        2 => Operation::ExclusiveOr(random_source_6502(), Datum::Register(R::A)),
+        _ => Operation::Compare(random_source_6502(), random_axy()),
     }
 }
 
@@ -228,7 +241,10 @@ mod tests {
         find_it("clc", secl_6502, mach);
         // TODO: cld
         // I don't think we'll bother with cli
-        // TODO clv cmp cpx cpy dec
+        // TODO clv dec
+        find_it("cmp", alu_6502, mach);
+        find_it("cpx", alu_6502, mach);
+        find_it("cpy", alu_6502, mach);
         find_it("dex", incdec_6502, mach);
         find_it("dey", incdec_6502, mach);
         find_it("eor", alu_6502, mach);
