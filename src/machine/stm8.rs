@@ -205,7 +205,9 @@ mod tests {
         find_it("addw", add_adc);
         find_it("and", alu8);
         find_it("bccm", bits);
-        // TODO: bccm bcp bcpl bres bset btjf btjt
+        // TODO: bcp bcpl btjf btjt
+        find_it("bset", bits);
+        find_it("bres", bits);
         // I don't think we need call, callf or callr
         // TODO: ccf cp cpw cpl cplw div divw exg exgw
         find_it("clr", clear);
