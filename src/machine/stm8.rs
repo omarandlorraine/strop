@@ -91,6 +91,9 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::BitClear(Datum::Absolute(addr), bitnumber) => bit(f, "bres", addr, bitnumber),
         Operation::BitSet(Datum::Absolute(addr), bitnumber) => bit(f, "bset", addr, bitnumber),
         Operation::BitCopyCarry(Datum::Absolute(addr), bitnumber) => bit(f, "bccm", addr, bitnumber),
+        Operation::Carry(false) => write!(f, "\trcf"),
+        Operation::Carry(true) => write!(f, "\tscf"),
+        Operation::ComplementCarry => write!(f, "\tccf"),
         _ => write!(f, "{:?}", op),
     }
 }
@@ -144,6 +147,14 @@ fn shifts(_mach: Machine) -> Operation {
     Operation::Shift(sht, operand)
 }
 
+fn carry(_mach: Machine) -> Operation {
+    match rand::thread_rng().gen_range(0, 3) {
+        0 => Operation::Carry(false),
+        1 => Operation::Carry(true),
+        _ => Operation::ComplementCarry
+    }
+}
+
 fn incdec(_mach: Machine) -> Operation {
     let operand = if random() {
         random_absolute()
@@ -172,13 +183,14 @@ fn transfers(_mach: Machine) -> Operation {
 }
 
 pub fn instr_stm8(mach: Machine) -> Instruction {
-    match rand::thread_rng().gen_range(0, 7) {
+    match rand::thread_rng().gen_range(0, 8) {
         0 => Instruction::new(mach, add_adc, dasm),
         1 => Instruction::new(mach, clear, dasm),
         2 => Instruction::new(mach, incdec, dasm),
         3 => Instruction::new(mach, transfers, dasm),
         4 => Instruction::new(mach, alu8, dasm),
         5 => Instruction::new(mach, bits, dasm),
+        6 => Instruction::new(mach, carry, dasm),
         _ => Instruction::new(mach, shifts, dasm),
     }
 }
@@ -209,7 +221,8 @@ mod tests {
         find_it("bset", bits);
         find_it("bres", bits);
         // I don't think we need call, callf or callr
-        // TODO: ccf cp cpw cpl cplw div divw exg exgw
+        // TODO: cp cpw cpl cplw div divw exg exgw
+        find_it("ccf", carry);
         find_it("clr", clear);
         find_it("clrw", clear);
         find_it("dec", incdec);
@@ -224,9 +237,11 @@ mod tests {
         // TODO: ld ldw mov mul neg negw
         // I don't think we need nop
         find_it("or", alu8);
-        // TODO: pop popw push pushw rcf
+        // TODO: pop popw push pushw
+        find_it("rcf", carry);
         // I don't think we need ret, retf, rim
-        // TODO: rlwa rrwa rvf sbc scf
+        // TODO: rlwa rrwa rvf sbc
+        find_it("scf", carry);
         find_it("rlc", shifts);
         find_it("rlcw", shifts);
         find_it("rrc", shifts);

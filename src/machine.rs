@@ -499,6 +499,7 @@ pub enum Operation {
     Move(Datum, Datum),
     Shift(ShiftType, Datum),
     Carry(bool),
+    ComplementCarry,
     BitSet(Datum, u8),
     BitClear(Datum, u8),
     BitCopyCarry(Datum, u8),
@@ -675,6 +676,12 @@ impl Instruction {
             },
             Operation::Carry(b) => {
                 s.carry = Some(b);
+                FlowControl::FallThrough
+            }
+            Operation::ComplementCarry => {
+                if let Some(b) = s.carry {
+                    s.carry = Some(!b)
+                }
                 FlowControl::FallThrough
             }
             Operation::BitSet(d, b) => {
