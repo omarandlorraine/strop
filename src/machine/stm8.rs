@@ -29,6 +29,10 @@ fn random_register() -> Datum {
 }
 
 fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn bit(f: &mut std::fmt::Formatter, s: &'static str, d: u16, bitnumber: u8) -> std::fmt::Result {
+        write!(f, "\t{}, ${:4}, #{}", s, d, bitnumber)
+
+    }
     fn syn(f: &mut std::fmt::Formatter, s: &'static str, d: Datum) -> std::fmt::Result {
         match d {
             Datum::Imm8(val) => write!(f, "\t{} #${:2}", s, val),
@@ -84,9 +88,9 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Increment(r) => syn(f, "inc", r),
         Operation::Decrement(r) => syn(f, "dec", r),
         Operation::Move(Datum::Register(from), Datum::Register(to)) => write!(f, "\tld {}, {}", regname(to), regname(from)),
-        Operation::BitClear(datum, bitnumber) => syn(f, "bres", datum),
-        Operation::BitSet(datum, bitnumber) => syn(f, "bset", datum),
-        Operation::BitCopyCarry(datum, bitnumber) => syn(f, "bccm", datum),
+        Operation::BitClear(Datum::Absolute(addr), bitnumber) => bit(f, "bres", addr, bitnumber),
+        Operation::BitSet(Datum::Absolute(addr), bitnumber) => bit(f, "bset", addr, bitnumber),
+        Operation::BitCopyCarry(Datum::Absolute(addr), bitnumber) => bit(f, "bccm", addr, bitnumber),
         _ => write!(f, "{:?}", op),
     }
 }
