@@ -84,6 +84,9 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Increment(r) => syn(f, "inc", r),
         Operation::Decrement(r) => syn(f, "dec", r),
         Operation::Move(Datum::Register(from), Datum::Register(to)) => write!(f, "\tld {}, {}", regname(to), regname(from)),
+        Operation::BitClear(datum, bitnumber) => syn(f, "bres", datum),
+        Operation::BitSet(datum, bitnumber) => syn(f, "bset", datum),
+        Operation::BitCopyCarry(datum, bitnumber) => syn(f, "bccm", datum),
         _ => write!(f, "{:?}", op),
     }
 }
@@ -98,6 +101,15 @@ fn clear(_mach: Machine) -> Operation {
 
 fn add_adc(_mach: Machine) -> Operation {
     Operation::Add(random_stm8_operand(), random_register(), random())
+}
+
+fn bits(_mach: Machine) -> Operation {
+    // the eight-bit diadic operations like and, xor, or, etc
+    match rand::thread_rng().gen_range(0, 3) {
+        0 => Operation::BitSet(random_absolute(), rand::thread_rng().gen_range(0, 7)),
+        1 => Operation::BitClear(random_absolute(), rand::thread_rng().gen_range(0, 7)),
+        _ => Operation::BitCopyCarry(random_absolute(), rand::thread_rng().gen_range(0, 7)),
+    }
 }
 
 fn alu8(_mach: Machine) -> Operation {
@@ -156,12 +168,13 @@ fn transfers(_mach: Machine) -> Operation {
 }
 
 pub fn instr_stm8(mach: Machine) -> Instruction {
-    match rand::thread_rng().gen_range(0, 6) {
+    match rand::thread_rng().gen_range(0, 7) {
         0 => Instruction::new(mach, add_adc, dasm),
         1 => Instruction::new(mach, clear, dasm),
         2 => Instruction::new(mach, incdec, dasm),
         3 => Instruction::new(mach, transfers, dasm),
         4 => Instruction::new(mach, alu8, dasm),
+        5 => Instruction::new(mach, bits, dasm),
         _ => Instruction::new(mach, shifts, dasm),
     }
 }
@@ -187,6 +200,7 @@ mod tests {
         find_it("add", add_adc);
         find_it("addw", add_adc);
         find_it("and", alu8);
+        find_it("bccm", bits);
         // TODO: bccm bcp bcpl bres bset btjf btjt
         // I don't think we need call, callf or callr
         // TODO: ccf cp cpw cpl cplw div divw exg exgw

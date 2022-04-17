@@ -499,6 +499,9 @@ pub enum Operation {
     Move(Datum, Datum),
     Shift(ShiftType, Datum),
     Carry(bool),
+    BitSet(Datum, u8),
+    BitClear(Datum, u8),
+    BitCopyCarry(Datum, u8),
 }
 
 impl Test {
@@ -670,9 +673,35 @@ impl Instruction {
                     FlowControl::FallThrough
                 }
             },
-
             Operation::Carry(b) => {
                 s.carry = Some(b);
+                FlowControl::FallThrough
+            }
+            Operation::BitSet(d, b) => {
+                if let Some(v) = s.get_i8(d) {
+                    let new = v | (1 << b);
+                    s.set_i8(d, Some(new));
+                }
+                FlowControl::FallThrough
+            }
+            Operation::BitClear(d, b) => {
+                if let Some(v) = s.get_i8(d) {
+                    let new = v & !(1 << b);
+                    s.set_i8(d, Some(new));
+                }
+                FlowControl::FallThrough
+            }
+            Operation::BitCopyCarry(d, b) => {
+                if let (Some(v), Some(c)) = (s.get_i8(d), s.carry) {
+                    let new = if c {
+                        v & !(1 << b)
+                    } else {
+                        v | (1 << b)
+                    };
+                    s.set_i8(d, Some(new));
+                } else {
+                    s.set_i8(d, None);
+                }
                 FlowControl::FallThrough
             }
         }
