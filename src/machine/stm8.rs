@@ -239,8 +239,7 @@ mod tests {
         find_it("clrw", clear);
         find_it("dec", incdec);
         find_it("decw", incdec);
-        // I don't think we need halt
-        // I don't think we need iret
+        // I don't think we need halt, iret
         find_it("inc", incdec);
         find_it("incw", incdec);
         // TODO: conditional jumps, relative jump
