@@ -451,6 +451,7 @@ pub enum FlowControl {
     FallThrough,
     Forward(u8),
     Backward(u8),
+    Invalid
 }
 
 #[derive(Clone, Debug, Copy)]
@@ -479,10 +480,11 @@ pub enum Operation {
     BitSet(Datum, u8),
     BitClear(Datum, u8),
     BitCopyCarry(Datum, u8),
+    Jump(Test, FlowControl)
 }
 
 impl Test {
-    fn evaluate(&self, s: State) -> Option<bool> {
+    fn evaluate(&self, s: &State) -> Option<bool> {
         match self {
             Test::True => Some(true),
             Test::False => Some(false),
@@ -503,6 +505,7 @@ impl FlowControl {
             FlowControl::FallThrough => Some(pc + 1),
             FlowControl::Forward(offs) => pc.checked_add(offs.into()),
             FlowControl::Backward(offs) => pc.checked_sub(offs.into()),
+            FlowControl::Invalid => None
         }
     }
 }
@@ -696,6 +699,17 @@ impl Instruction {
                     s.set_i8(d, None);
                 }
                 FlowControl::FallThrough
+            }
+            Operation::Jump(test, flowcontrol) => {
+                if let Some(b) = test.evaluate(s) {
+                    if b {
+                        flowcontrol
+                    } else {
+                        FlowControl::FallThrough
+                    }
+                } else {
+                    FlowControl::Invalid
+                }
             }
         }
     }

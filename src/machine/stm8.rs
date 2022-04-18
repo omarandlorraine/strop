@@ -4,6 +4,8 @@ use crate::machine::Instruction;
 use crate::machine::Operation;
 use crate::machine::ShiftType;
 use crate::machine::R;
+use crate::machine::FlowControl;
+use crate::machine::Test;
 use crate::Datum;
 use crate::Machine;
 
@@ -74,6 +76,24 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         }
     }
 
+    fn distest(test: Test) -> &'static str {
+        match test {
+            Test::Carry(true) => "jrc",
+            Test::Carry(false) => "jrnc",
+            Test::True => "jr",
+            _ => panic!(),
+        }
+    }
+
+    fn jump(f: &mut std::fmt::Formatter, s: &'static str, target: FlowControl) -> std::fmt::Result {
+        match target {
+            FlowControl::Forward(offs) => write!(f, "\t{} +{}", s, offs),
+            FlowControl::Backward(offs) => write!(f, "\t{} -{}", s, offs),
+            FlowControl::Invalid => panic!(),
+            FlowControl::FallThrough => panic!(),
+        }
+    }
+
     match op {
         Operation::Add(d, r, true) => dsyn(f, "adc", r, d),
         Operation::Add(d, r, false) => dsyn(f, "add", r, d),
@@ -96,6 +116,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Carry(false) => write!(f, "\trcf"),
         Operation::Carry(true) => write!(f, "\tscf"),
         Operation::ComplementCarry => write!(f, "\tccf"),
+        Operation::Jump(test, target) => jump(f, distest(test), target),
         _ => write!(f, "{:?}", op),
     }
 }
@@ -193,8 +214,25 @@ fn transfers(_mach: Machine) -> Operation {
     Operation::Move(rando(), rando())
 }
 
+pub fn jumps(_mach: Machine) -> Operation {
+    fn j() -> FlowControl {
+        // TODO: backward jumps.
+        FlowControl::Forward(rand::thread_rng().gen_range(0, 3))
+    }
+
+    fn cond() -> Test {
+        if random() {
+            Test::True
+        } else {
+            Test::Carry(random())
+        }
+    }
+
+    Operation::Jump(cond(), j())
+}
+
 pub fn instr_stm8(mach: Machine) -> Instruction {
-    match rand::thread_rng().gen_range(0, 9) {
+    match rand::thread_rng().gen_range(0, 10) {
         0 => Instruction::new(mach, add_adc, dasm),
         1 => Instruction::new(mach, clear, dasm),
         2 => Instruction::new(mach, incdec, dasm),
@@ -203,6 +241,7 @@ pub fn instr_stm8(mach: Machine) -> Instruction {
         5 => Instruction::new(mach, bits, dasm),
         6 => Instruction::new(mach, carry, dasm),
         7 => Instruction::new(mach, compare, dasm),
+        8 => Instruction::new(mach, jumps, dasm),
         _ => Instruction::new(mach, shifts, dasm),
     }
 }
@@ -252,6 +291,9 @@ mod tests {
         find_it("inc", incdec);
         find_it("incw", incdec);
         // TODO: conditional jumps, relative jump
+        find_it("jrc", jumps);
+        // I don't think we need jrf, jrih, jril, jrm
+        find_it("jrnc", jumps);
         find_it("ld a, xh", transfers);
         find_it("ld yl, a", transfers);
         // TODO: ld ldw mov mul neg negw
