@@ -231,7 +231,9 @@ mod tests {
         find_it("bset", bits);
         find_it("bres", bits);
         // I don't think we need call, callf or callr
-        // TODO: cp cpw cpl cplw div divw exg exgw
+        // TODO: cpl cplw div divw exg exgw
+        find_it("cp", compare);
+        find_it("cpw", compare);
         find_it("ccf", carry);
         find_it("clr", clear);
         find_it("clrw", clear);
