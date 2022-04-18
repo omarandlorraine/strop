@@ -104,7 +104,7 @@ fn clear(_mach: Machine) -> Operation {
     if random() {
         Operation::Move(Datum::Zero, random_register())
     } else {
-        Operation::Move(Datum::Zero, random_stm8_operand())
+        Operation::Move(Datum::Zero, random_absolute())
     }
 }
 
