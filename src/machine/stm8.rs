@@ -78,6 +78,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Add(d, r, true) => dsyn(f, "adc", r, d),
         Operation::Add(d, r, false) => dsyn(f, "add", r, d),
         Operation::And(d, r) => dsyn(f, "and", r, d),
+        Operation::Compare(d, r) => dsyn(f, "cp", r, d),
         Operation::Or(d, r) => dsyn(f, "or", r, d),
         Operation::Xor(d, r) => dsyn(f, "xor", r, d),
         Operation::Shift(ShiftType::LeftRotateThroughCarry, d) => syn(f, "rlc", d),
@@ -155,6 +156,14 @@ fn carry(_mach: Machine) -> Operation {
     }
 }
 
+fn compare(_mach: Machine) -> Operation {
+    match rand::thread_rng().gen_range(0, 3) {
+        0 => Operation::Compare(random_stm8_operand(), Datum::Register(R::A)),
+        1 => Operation::Compare(random_stm8_operand(), Datum::RegisterPair(R::Xh, R::Xl)),
+        _ => Operation::Compare(random_stm8_operand(), Datum::RegisterPair(R::Yh, R::Yl)),
+    }
+}
+
 fn incdec(_mach: Machine) -> Operation {
     let operand = if random() {
         random_absolute()
@@ -183,7 +192,7 @@ fn transfers(_mach: Machine) -> Operation {
 }
 
 pub fn instr_stm8(mach: Machine) -> Instruction {
-    match rand::thread_rng().gen_range(0, 8) {
+    match rand::thread_rng().gen_range(0, 9) {
         0 => Instruction::new(mach, add_adc, dasm),
         1 => Instruction::new(mach, clear, dasm),
         2 => Instruction::new(mach, incdec, dasm),
@@ -191,6 +200,7 @@ pub fn instr_stm8(mach: Machine) -> Instruction {
         4 => Instruction::new(mach, alu8, dasm),
         5 => Instruction::new(mach, bits, dasm),
         6 => Instruction::new(mach, carry, dasm),
+        7 => Instruction::new(mach, compare, dasm),
         _ => Instruction::new(mach, shifts, dasm),
     }
 }
