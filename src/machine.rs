@@ -491,6 +491,7 @@ pub enum Operation {
     Decrement(Datum),
     Increment(Datum),
     Add(Datum, Datum, bool),
+    BitCompare(Datum, Datum),
     Compare(Datum, Datum),
     And(Datum, Datum),
     Or(Datum, Datum),
@@ -575,6 +576,16 @@ impl Instruction {
                 s.zero = z;
                 s.overflow = o;
                 s.halfcarry = h;
+                FlowControl::FallThrough
+            }
+            Operation::BitCompare(source, destination) => {
+                let (result, z) = bitwise_and(s.get_i8(source), s.get_i8(destination));
+                if let Some(result) = result {
+                    s.sign = Some(result < 0);
+                } else {
+                    s.sign = None
+                }
+                s.zero = z;
                 FlowControl::FallThrough
             }
             Operation::Compare(source, destination) => {

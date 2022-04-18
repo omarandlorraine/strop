@@ -79,6 +79,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Add(d, r, false) => dsyn(f, "add", r, d),
         Operation::And(d, r) => dsyn(f, "and", r, d),
         Operation::Compare(d, r) => dsyn(f, "cp", r, d),
+        Operation::BitCompare(d, r) => dsyn(f, "bcp", r, d),
         Operation::Or(d, r) => dsyn(f, "or", r, d),
         Operation::Xor(d, r) => dsyn(f, "xor", r, d),
         Operation::Shift(ShiftType::LeftRotateThroughCarry, d) => syn(f, "rlc", d),
@@ -157,10 +158,11 @@ fn carry(_mach: Machine) -> Operation {
 }
 
 fn compare(_mach: Machine) -> Operation {
-    match rand::thread_rng().gen_range(0, 3) {
+    match rand::thread_rng().gen_range(0, 4) {
         0 => Operation::Compare(random_stm8_operand(), Datum::Register(R::A)),
         1 => Operation::Compare(random_stm8_operand(), Datum::RegisterPair(R::Xh, R::Xl)),
-        _ => Operation::Compare(random_stm8_operand(), Datum::RegisterPair(R::Yh, R::Yl)),
+        2 => Operation::Compare(random_stm8_operand(), Datum::RegisterPair(R::Yh, R::Yl)),
+        _ => Operation::BitCompare(random_stm8_operand(), Datum::Register(R::A)),
     }
 }
 
