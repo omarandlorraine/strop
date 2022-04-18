@@ -210,6 +210,7 @@ pub fn instr_stm8(mach: Machine) -> Instruction {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::machine::tests::disasm;
 
     fn find_it(opcode: &'static str, rnd: fn(Machine) -> Operation) {
         for _i in 0..5000 {
@@ -220,6 +221,11 @@ mod tests {
             }
         }
         panic!("Couldn't find instruction {}", opcode);
+    }
+
+    #[test]
+    fn disassembler() {
+        crate::machine::tests::disasm(Machine::Stm8);
     }
 
     #[test]
