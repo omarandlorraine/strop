@@ -387,26 +387,6 @@ mod tests {
     }
 
     #[test]
-    fn instruction_lengths_6502() {
-        for _i in 0..5000 {
-            let instr = new_instruction(Machine::Mos6502(Mos6502Variant::Nmos));
-            let len = instr_length_6502(instr.operation);
-            if !(len > 0) {
-                println!("unknown length for instruction: {}", instr);
-                panic!();
-            }
-        }
-    }
-
-    #[test]
-    fn disassembler_6502() {
-        disasm(Machine::Mos6502(Mos6502Variant::Nmos));
-        disasm(Machine::Mos6502(Mos6502Variant::Cmos));
-        disasm(Machine::Mos6502(Mos6502Variant::Ricoh2a03));
-        disasm(Machine::Mos6502(Mos6502Variant::IllegalInstructions));
-    }
-
-    #[test]
     fn disassembler_6800() {
         disasm(Machine::Motorola6800(Motorola8BitVariant::Motorola6800));
         disasm(Machine::Motorola6800(Motorola8BitVariant::Motorola6801));

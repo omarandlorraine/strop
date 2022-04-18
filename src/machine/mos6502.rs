@@ -219,6 +219,7 @@ pub fn instr_6502(mach: Machine) -> Instruction {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::machine::tests::disasm;
 
     fn find_it(opcode: &'static str, rnd: fn(Machine) -> Operation, mach: Mos6502Variant) {
         for _i in 0..5000 {
@@ -299,4 +300,27 @@ mod tests {
         core_instruction_set(Mos6502Variant::IllegalInstructions);
     }
 
+    fn instrlen(m: Machine) {
+        for _i in 0..5000 {
+            let instr = instr_6502(m);
+            let len = instr_length_6502(instr.operation);
+            if !(len > 0) {
+                println!("unknown length for instruction: {}", instr);
+                panic!();
+            }
+        }
+    }
+
+    #[test]
+    fn instruction_lengths_6502() {
+        instrlen(Machine::Mos6502(Mos6502Variant::Nmos));
+    }
+
+    #[test]
+    fn disassembler() {
+        disasm(Machine::Mos6502(Mos6502Variant::Nmos));
+        disasm(Machine::Mos6502(Mos6502Variant::Cmos));
+        disasm(Machine::Mos6502(Mos6502Variant::Ricoh2a03));
+        disasm(Machine::Mos6502(Mos6502Variant::IllegalInstructions));
+    }
 }
