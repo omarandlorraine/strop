@@ -81,7 +81,7 @@ A couple of seconds later, the program outputs:
     	aba
     	tab
     	aba
-    	asl a
+    	asla
     	aba
 
 Since the Motorola 6800 has no multiply instruction, it's generated some shifts
