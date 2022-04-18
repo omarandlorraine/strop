@@ -141,6 +141,19 @@ fn mach(m: String) -> Machine {
 fn function(m: String, ins: Vec<Datum>, outs: Vec<Datum>) -> Vec<Test> {
     // TODO: test_cases does not need to be mutable..
     let mut test_cases = Vec::new();
+    if m == *"abs" {
+        for n in -127_i8..=127 {
+            test_cases.push(Test {
+                steps: vec![
+                    Step::Set(ins[0], n as i32),
+                    Step::Run,
+                    Step::Diff(outs[0], n.abs() as i32),
+                ],
+            });
+        }
+        return test_cases;
+    }
+
     if m[0..4] == *"mult" {
         let arg = m[4..].to_string();
         let a = arg.parse::<i8>();
