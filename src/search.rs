@@ -2,6 +2,7 @@ use crate::machine::new_instruction;
 use crate::machine::Instruction;
 use crate::machine::Width;
 use crate::{Machine, State, Step, TestRun};
+use crate::disassemble;
 use rand::Rng;
 use std::ops::{Index, IndexMut};
 
@@ -319,8 +320,11 @@ pub fn stochastic_search(convergence: &dyn Fn(&BasicBlock) -> f64, mach: Machine
         let best = quick_dce(convergence, &b.1);
 
         if b.0 < 0.1 {
+            println!("dce.");
             return dead_code_elimination(convergence, &quick_dce(convergence, &b.1));
         }
+        println!("best {}", b.0);
+        disassemble(b.1.clone());
 
         let mut next_generation: Vec<(f64, BasicBlock)> = vec![];
 
