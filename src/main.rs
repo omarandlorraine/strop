@@ -196,6 +196,25 @@ fn function(m: String, ins: Vec<Datum>, outs: Vec<Datum>) -> Vec<Test> {
             println!("Can't add {}", arg);
         }
     }
+    if m[0..3] == *"max" {
+        let arg = m[3..].to_string();
+        let a = arg.parse::<i8>();
+
+        if let Ok(f) = a {
+            for n in -128_i8..=127 {
+                test_cases.push(Test {
+                    steps: vec![
+                        Step::Set(ins[0], n as i32),
+                        Step::Run,
+                        Step::Diff(outs[0], if n < f { n } else { f }  as i32),
+                    ],
+                });
+            }
+            return test_cases;
+        } else {
+            println!("Can't add {}", arg);
+        }
+    }
     println!("I don't understand what you mean by the argument {}", m);
     process::exit(1);
 }
