@@ -211,11 +211,7 @@ fn transfers(_mach: Machine) -> Operation {
             _ => Datum::Register(R::Yh),
         }
     }
-    match rand::thread_rng().gen_range(0, 3) {
-        0 => Operation::Move(rando(), rando()), // Register-to-register
-        1 => Operation::Move(Datum::Register(R::A), random_absolute()), // store accumulator
-        _ => Operation::Move(random_stm8_operand(), Datum::Register(R::A)) // load accumulator
-    }
+    Operation::Move(rando(), rando())
 }
 
 pub fn jumps(_mach: Machine) -> Operation {
