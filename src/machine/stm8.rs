@@ -38,11 +38,11 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     fn syn(f: &mut std::fmt::Formatter, s: &'static str, d: Datum) -> std::fmt::Result {
         match d {
             Datum::Imm8(val) => write!(f, "\t{} #${:2}", s, val),
-            Datum::Absolute(addr) if addr < 256 => write!(f, "\t {} ${:2}", s, addr),
-            Datum::Absolute(addr) => write!(f, "\t {} ${:4}", s, addr),
-            Datum::Register(R::A) => write!(f, "\t {} a", s),
-            Datum::RegisterPair(R::Xh, R::Xl) => write!(f, "\t {}w x", s),
-            Datum::RegisterPair(R::Yh, R::Yl) => write!(f, "\t {}w y", s),
+            Datum::Absolute(addr) if addr < 256 => write!(f, "\t{} ${:2}", s, addr),
+            Datum::Absolute(addr) => write!(f, "\t{} ${:4}", s, addr),
+            Datum::Register(R::A) => write!(f, "\t{} a", s),
+            Datum::RegisterPair(R::Xh, R::Xl) => write!(f, "\t{}w x", s),
+            Datum::RegisterPair(R::Yh, R::Yl) => write!(f, "\t{}w y", s),
             _ => write!(f, "{} {:?}", s, d),
         }
     }
@@ -57,9 +57,9 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 
         match d {
             Datum::Imm8(val) => write!(f, "\t{}{} {}, #${:4}", s, suffix, regname, val),
-            Datum::Absolute(addr) if addr < 256 => write!(f, "\t {}{} {}, ${:2}", s, suffix, regname, addr),
-            Datum::Absolute(addr) => write!(f, "\t {}{} {}, ${:4}", s,suffix, regname,  addr),
-            Datum::Register(R::A) => write!(f, "\t {}{} {}, a", suffix, regname, s),
+            Datum::Absolute(addr) if addr < 256 => write!(f, "\t{}{} {}, ${:2}", s, suffix, regname, addr),
+            Datum::Absolute(addr) => write!(f, "\t{}{} {}, ${:4}", s,suffix, regname,  addr),
+            Datum::Register(R::A) => write!(f, "\t{}{} {}, a", suffix, regname, s),
             _ => write!(f, "{}{} {}, {:?}", s,suffix, regname,  d),
         }
 
