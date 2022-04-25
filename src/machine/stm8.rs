@@ -85,6 +85,16 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         }
     }
 
+    fn btjt(f: &mut std::fmt::Formatter, addr: u16, bit_no: u8, v: bool, target: FlowControl) -> std::fmt::Result {
+        let op = if v { "btft" } else { "btjf" };
+        match target {
+            FlowControl::Forward(offs) => write!(f, "\t{} {}, {}, +{}", op, addr, bit_no, offs),
+            FlowControl::Backward(offs) => write!(f, "\t{} {}, {}, -{}", op, addr, bit_no, offs),
+            FlowControl::Invalid => panic!(),
+            FlowControl::FallThrough => panic!(),
+        }
+    }
+
     fn jump(f: &mut std::fmt::Formatter, s: &'static str, target: FlowControl) -> std::fmt::Result {
         match target {
             FlowControl::Forward(offs) => write!(f, "\t{} +{}", s, offs),
@@ -110,12 +120,17 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Increment(r) => syn(f, "inc", r),
         Operation::Decrement(r) => syn(f, "dec", r),
         Operation::Move(Datum::Register(from), Datum::Register(to)) => write!(f, "\tld {}, {}", regname(to), regname(from)),
+        Operation::Move(Datum::Absolute(addr), Datum::Register(to)) => write!(f, "\tld {}, {}", regname(to), addr),
+        Operation::Move(Datum::Register(to), Datum::Absolute(addr)) => write!(f, "\tld {}, {}", addr, regname(to)),
+        Operation::Move(Datum::Imm8(val), Datum::Register(to)) => write!(f, "\tld #{}, {}", val, regname(to)),
         Operation::BitClear(Datum::Absolute(addr), bitnumber) => bit(f, "bres", addr, bitnumber),
         Operation::BitSet(Datum::Absolute(addr), bitnumber) => bit(f, "bset", addr, bitnumber),
+        Operation::BitComplement(Datum::Absolute(addr), bitnumber) => bit(f, "bcpl", addr, bitnumber),
         Operation::BitCopyCarry(Datum::Absolute(addr), bitnumber) => bit(f, "bccm", addr, bitnumber),
         Operation::Carry(false) => write!(f, "\trcf"),
         Operation::Carry(true) => write!(f, "\tscf"),
         Operation::ComplementCarry => write!(f, "\tccf"),
+        Operation::Jump(Test::Bit(addr, bit_no, t), target) => btjt(f, addr, bit_no, t, target),
         Operation::Jump(test, target) => jump(f, distest(test), target),
         _ => write!(f, "{:?}", op),
     }
@@ -134,11 +149,15 @@ fn add_adc(_mach: Machine) -> Operation {
 }
 
 fn bits(_mach: Machine) -> Operation {
+    let addr = random_absolute();
+    let bit  = rand::thread_rng().gen_range(0, 7);
+
     // the eight-bit diadic operations like and, xor, or, etc
-    match rand::thread_rng().gen_range(0, 3) {
-        0 => Operation::BitSet(random_absolute(), rand::thread_rng().gen_range(0, 7)),
-        1 => Operation::BitClear(random_absolute(), rand::thread_rng().gen_range(0, 7)),
-        _ => Operation::BitCopyCarry(random_absolute(), rand::thread_rng().gen_range(0, 7)),
+    match rand::thread_rng().gen_range(0, 4) {
+        0 => Operation::BitSet(addr, bit),
+        1 => Operation::BitClear(addr, bit),
+        2 => Operation::BitComplement(addr, bit),
+        _ => Operation::BitCopyCarry(addr, bit),
     }
 }
 
@@ -221,18 +240,36 @@ pub fn jumps(_mach: Machine) -> Operation {
     }
 
     fn cond() -> Test {
-        if random() {
-            Test::True
-        } else {
-            Test::Carry(random())
+        match rand::thread_rng().gen_range(0, 3) {
+            0 => Test::True,
+            1 => Test::Carry(random()),
+            _ => Test::Bit(random(), rand::thread_rng().gen_range(0, 7), random()),
         }
     }
 
     Operation::Jump(cond(), j())
 }
 
+fn oneargs(_mach: Machine) -> Operation {
+    fn arg() -> Datum {
+        match rand::thread_rng().gen_range(0, 4) {
+            // TODO: Add the rest of the possibilities here.
+            0 => Datum::Register(R::A),
+            1 => Datum::RegisterPair(R::Xh, R::Xl),
+            2 => Datum::RegisterPair(R::Yh, R::Yl),
+            _ => random_absolute(),
+        }
+    }
+
+    if random() {
+        Operation::Complement(arg())
+    } else {
+        Operation::Negate(arg())
+    }
+}
+
 pub fn instr_stm8(mach: Machine) -> Instruction {
-    match rand::thread_rng().gen_range(0, 10) {
+    match rand::thread_rng().gen_range(0, 11) {
         0 => Instruction::new(mach, add_adc, dasm),
         1 => Instruction::new(mach, clear, dasm),
         2 => Instruction::new(mach, incdec, dasm),
@@ -242,6 +279,7 @@ pub fn instr_stm8(mach: Machine) -> Instruction {
         6 => Instruction::new(mach, carry, dasm),
         7 => Instruction::new(mach, compare, dasm),
         8 => Instruction::new(mach, jumps, dasm),
+        9 => Instruction::new(mach, oneargs, dasm),
         _ => Instruction::new(mach, shifts, dasm),
     }
 }
@@ -275,7 +313,9 @@ mod tests {
         find_it("and", alu8);
         find_it("bccm", bits);
         find_it("bcp", compare);
-        // TODO: bcpl btjf btjt
+        find_it("btjf", jumps);
+        find_it("btjt", jumps);
+        find_it("bcpl", bits);
         find_it("bset", bits);
         find_it("bres", bits);
         // I don't think we need call, callf or callr
