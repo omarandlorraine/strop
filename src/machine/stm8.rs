@@ -332,6 +332,9 @@ mod tests {
 
     #[test]
     fn instruction_set_stm8() {
+        // I don't think we need call callf callr halt iret jrf jrih jril jrm nop ret retf rim sim trap, wfe, wfi
+        // TODO: div divw exg exgw ld ldw mov mul pop popw push pushw rvf sbc sub subw swap tnz tnzw
+        // TODO: conditional jumps, relative jump, more shifts
         find_it("adc", add_adc);
         find_it("add", add_adc);
         find_it("addw", add_adc);
@@ -343,8 +346,6 @@ mod tests {
         find_it("bcpl", bits);
         find_it("bset", bits);
         find_it("bres", bits);
-        // I don't think we need call, callf or callr
-        // TODO: div divw exg exgw
         find_it("cpl", oneargs);
         find_it("cplw", oneargs);
         find_it("cp", compare);
@@ -354,34 +355,23 @@ mod tests {
         find_it("clrw", clear);
         find_it("dec", incdec);
         find_it("decw", incdec);
-        // I don't think we need halt, iret
         find_it("inc", incdec);
         find_it("incw", incdec);
-        // TODO: conditional jumps, relative jump
         find_it("jrc", jumps);
-        // I don't think we need jrf, jrih, jril, jrm
         find_it("jrnc", jumps);
         find_it("ld a, xh", transfers);
         find_it("ld yl, a", transfers);
-        // TODO: ld ldw mov mul
         find_it("neg", oneargs);
         find_it("negw", oneargs);
-        // I don't think we need nop
         find_it("or", alu8);
-        // TODO: pop popw push pushw
         find_it("rcf", carry);
-        // I don't think we need ret, retf, rim
-        // TODO: rlwa rrwa rvf sbc
         find_it("scf", carry);
         find_it("rlc", shifts);
         find_it("rlcw", shifts);
         find_it("rrc", shifts);
         find_it("rrcw", shifts);
-        // I don't think we need sim
-        // TODO: sra sraw srl srlw sub subw swap tnz tnzw
-        find_it("sla", shifts); // aka. sll
-        find_it("slaw", shifts); // aka. sllw
-                                 // I don't think we need trap, wfe, wfi
+        find_it("sla", shifts);
+        find_it("slaw", shifts);
         find_it("xor", alu8);
     }
 }
