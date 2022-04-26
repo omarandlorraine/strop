@@ -1,8 +1,8 @@
+use crate::disassemble;
 use crate::machine::new_instruction;
 use crate::machine::Instruction;
 use crate::machine::Width;
 use crate::{Machine, State, Step, TestRun};
-use crate::disassemble;
 use rand::Rng;
 use std::ops::{Index, IndexMut};
 

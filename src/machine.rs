@@ -242,7 +242,7 @@ pub fn add_to_reg16(
 }
 
 #[allow(clippy::many_single_char_names)]
-pub fn subtract_reg8 (
+pub fn subtract_reg8(
     reg: Option<i8>,
     a: Option<i8>,
     carry: Option<bool>,
@@ -451,7 +451,7 @@ pub enum FlowControl {
     FallThrough,
     Forward(u8),
     Backward(u8),
-    Invalid
+    Invalid,
 }
 
 #[derive(Clone, Debug, Copy)]
@@ -459,7 +459,7 @@ pub enum Test {
     True,
     False,
     Carry(bool),
-    Bit(u16, u8, bool)
+    Bit(u16, u8, bool),
 }
 
 #[derive(Clone, Debug, Copy)]
@@ -484,7 +484,7 @@ pub enum Operation {
     BitClear(Datum, u8),
     BitComplement(Datum, u8),
     BitCopyCarry(Datum, u8),
-    Jump(Test, FlowControl)
+    Jump(Test, FlowControl),
 }
 
 impl Test {
@@ -517,7 +517,7 @@ impl FlowControl {
             FlowControl::FallThrough => Some(pc + 1),
             FlowControl::Forward(offs) => pc.checked_add(offs.into()),
             FlowControl::Backward(offs) => pc.checked_sub(offs.into()),
-            FlowControl::Invalid => None
+            FlowControl::Invalid => None,
         }
     }
 }
@@ -643,14 +643,14 @@ impl Instruction {
             Operation::Negate(register) => {
                 let c = s.get_i8(register).map(|x| !x);
                 s.set_i8(register, c);
-                s.zero = c.map(|x| x==0);
+                s.zero = c.map(|x| x == 0);
                 FlowControl::FallThrough
             }
 
             Operation::Complement(register) => {
                 let c = s.get_i8(register).map(|x| 0 - x);
                 s.set_i8(register, c);
-                s.zero = c.map(|x| x==0);
+                s.zero = c.map(|x| x == 0);
                 FlowControl::FallThrough
             }
 
@@ -722,11 +722,7 @@ impl Instruction {
             }
             Operation::BitCopyCarry(d, b) => {
                 if let (Some(v), Some(c)) = (s.get_i8(d), s.carry) {
-                    let new = if c {
-                        v & !(1 << b)
-                    } else {
-                        v | (1 << b)
-                    };
+                    let new = if c { v & !(1 << b) } else { v | (1 << b) };
                     s.set_i8(d, Some(new));
                 } else {
                     s.set_i8(d, None);

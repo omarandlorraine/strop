@@ -136,7 +136,7 @@ pub fn instr_pic(mach: Machine) -> Instruction {
 mod tests {
     use super::*;
 
-#[test]
+    #[test]
     fn exclude_instructions() {
         // I've seen some instructions generated that are not part of any PIC's instruction set.
         // This test fails if it can get the same instruction again.
@@ -149,12 +149,12 @@ mod tests {
                 Operation::Add(Datum::Absolute(_), Datum::Absolute(_), _) => panic!(
                     "{} produced an Add operation with two operands in memory",
                     fname
-                    ),
-                    Operation::And(Datum::Absolute(_), Datum::Absolute(_)) => panic!(
-                        "{} produced an And operation with two operands in memory",
-                        fname
-                        ),
-                    _ => {}
+                ),
+                Operation::And(Datum::Absolute(_), Datum::Absolute(_)) => panic!(
+                    "{} produced an And operation with two operands in memory",
+                    fname
+                ),
+                _ => {}
             }
         }
 
