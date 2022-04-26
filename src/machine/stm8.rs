@@ -321,7 +321,9 @@ mod tests {
         find_it("bset", bits);
         find_it("bres", bits);
         // I don't think we need call, callf or callr
-        // TODO: cpl cplw div divw exg exgw
+        // TODO: div divw exg exgw
+        find_it("cpl", oneargs);
+        find_it("cplw", oneargs);
         find_it("cp", compare);
         find_it("cpw", compare);
         find_it("ccf", carry);
@@ -338,7 +340,9 @@ mod tests {
         find_it("jrnc", jumps);
         find_it("ld a, xh", transfers);
         find_it("ld yl, a", transfers);
-        // TODO: ld ldw mov mul neg negw
+        // TODO: ld ldw mov mul
+        find_it("neg", oneargs);
+        find_it("negw", oneargs);
         // I don't think we need nop
         find_it("or", alu8);
         // TODO: pop popw push pushw
