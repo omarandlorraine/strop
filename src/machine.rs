@@ -492,13 +492,7 @@ impl Test {
         match self {
             Test::True => Some(true),
             Test::False => Some(false),
-            Test::Carry(b) => {
-                if let Some(carry) = s.carry {
-                    Some(&carry == b)
-                } else {
-                    None
-                }
-            }
+            Test::Carry(b) => s.carry.map(|carry| &carry == b),
             Test::Bit(addr, bit_no, b) => {
                 if let Some(byte) = s.get_i8(Datum::Absolute(*addr)) {
                     let val = byte & !(1 << bit_no) != 0;
