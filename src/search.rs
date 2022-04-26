@@ -323,8 +323,6 @@ pub fn stochastic_search(convergence: &dyn Fn(&BasicBlock) -> f64, mach: Machine
             println!("dce.");
             return dead_code_elimination(convergence, &quick_dce(convergence, &b.1));
         }
-        println!("best {}", b.0);
-        disassemble(b.1.clone());
 
         let mut next_generation: Vec<(f64, BasicBlock)> = vec![];
 
