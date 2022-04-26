@@ -128,8 +128,6 @@ pub fn instr_pic(mach: Machine) -> Instruction {
         3 => Instruction::new(mach, store_pic, dasm),
         _ => Instruction::new(mach, inc_dec_pic, dasm),
     }
-    // TODO: Add the following other instructions:
-    // bcf bsf btfsc btfss (call) (clrwdt) comf decfsz (goto) incfsz iorlw iorwf (nop) (option) (retlw) (sleep) subwf swapf (tris) xorlw xorwf
 }
 
 #[cfg(test)]
@@ -190,26 +188,20 @@ mod tests {
 
     #[test]
     fn instr_set_pic14() {
+        // TODO: bcf bsf btfsc btfss comf decfsz incfsz iorlw iorwf subwf sublw swapf xorwf xorlw
+        // I don't think we need to bother with call, clrwdt retfie, retlw, return, sleep, nop
         find_it("addwf", add_pic, PicVariant::Pic14);
         find_it("addlw", add_pic, PicVariant::Pic14);
         find_it("andwf", and_pic, PicVariant::Pic14);
         find_it("andlw", and_pic, PicVariant::Pic14);
-        // TODO: bcf bsf btfsc btfss
-        // I don't think we need to bother with call, clrwdt
         find_it("clrf", store_pic, PicVariant::Pic14);
         find_it("clrw", store_pic, PicVariant::Pic14);
-        // TODO: comf
         find_it("decf", inc_dec_pic, PicVariant::Pic14);
         find_it("incf", inc_dec_pic, PicVariant::Pic14);
-        // TODO: decfsz incfsz
-        // TODO: iorlw iorwf
-        // I don't think we'll bother with retfie, retlw, return, sleep
         find_it("movf", store_pic, PicVariant::Pic14);
         find_it("movlw", store_pic, PicVariant::Pic14);
         find_it("movwf", store_pic, PicVariant::Pic14);
-        // I don't think we need to bother with nop (well maybe)
         find_it("rlf", shifts_pic, PicVariant::Pic14);
-        // TODO: subwf sublw swapf xorwf xorlw
         find_it("rrf", shifts_pic, PicVariant::Pic14);
     }
 }
