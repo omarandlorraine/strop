@@ -112,6 +112,8 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::BitCompare(d, r) => dsyn(f, "bcp", r, d),
         Operation::Or(d, r) => dsyn(f, "or", r, d),
         Operation::Xor(d, r) => dsyn(f, "xor", r, d),
+        Operation::Negate(d) => syn(f, "neg", d),
+        Operation::Complement(d) => syn(f, "cpl", d),
         Operation::Shift(ShiftType::LeftRotateThroughCarry, d) => syn(f, "rlc", d),
         Operation::Shift(ShiftType::RightRotateThroughCarry, d) => syn(f, "rrc", d),
         Operation::Shift(ShiftType::LeftArithmetic, d) => syn(f, "sla", d),
