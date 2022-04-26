@@ -2,8 +2,7 @@
 
 PROBLEM=0
 for i in $(git ls-files | grep \\.rs$); do
-	RE=$(rustfmt --write-mode diff $i 2>/dev/null || true)
-	if [ -z "$RE" ]; then
+	if [ rustfmt --check $i 2>/dev/null ]; then
 		echo Formatting problem in $i
 		PROBLEM=1
 	fi
