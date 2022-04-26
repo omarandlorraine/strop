@@ -17,8 +17,9 @@ written in *R*ust.
 ### Supported instruction sets:
 I don't want to say they're *supported* as such yet: many instructions are still
 missing, which will result in suboptimal programs being generated for some
-functions. Notably, branching and other control flow instructions are completely
-absent from strop. But probably the best instruction sets so far are:
+functions, or programs not being found where they could be. Notably, some
+control flow instructions are completely absent from strop. But probably the
+best instruction sets so far are:
 
  - 8080, *the famous Intel chip*
  - kr580vm1, *a Ukrainian 8080 variant*
