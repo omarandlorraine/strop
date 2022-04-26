@@ -458,12 +458,15 @@ pub enum FlowControl {
 pub enum Test {
     True,
     False,
-    Carry(bool)
+    Carry(bool),
+    Bit(u16, u8, bool)
 }
 
 #[derive(Clone, Debug, Copy)]
 pub enum Operation {
     DecimalAdjustAccumulator,
+    Negate(Datum),
+    Complement(Datum),
     Decrement(Datum),
     Increment(Datum),
     Add(Datum, Datum, bool),
@@ -479,6 +482,7 @@ pub enum Operation {
     ComplementCarry,
     BitSet(Datum, u8),
     BitClear(Datum, u8),
+    BitComplement(Datum, u8),
     BitCopyCarry(Datum, u8),
     Jump(Test, FlowControl)
 }
@@ -491,6 +495,14 @@ impl Test {
             Test::Carry(b) => {
                 if let Some(carry) = s.carry {
                     Some(&carry == b)
+                } else {
+                    None
+                }
+            }
+            Test::Bit(addr, bit_no, b) => {
+                if let Some(byte) = s.get_i8(Datum::Absolute(*addr)) {
+                    let val = byte & !(1 << bit_no) != 0;
+                    Some(&val == b)
                 } else {
                     None
                 }
@@ -628,6 +640,20 @@ impl Instruction {
                 FlowControl::FallThrough
             }
 
+            Operation::Negate(register) => {
+                let c = s.get_i8(register).map(|x| !x);
+                s.set_i8(register, c);
+                s.zero = c.map(|x| x==0);
+                FlowControl::FallThrough
+            }
+
+            Operation::Complement(register) => {
+                let c = s.get_i8(register).map(|x| 0 - x);
+                s.set_i8(register, c);
+                s.zero = c.map(|x| x==0);
+                FlowControl::FallThrough
+            }
+
             Operation::Decrement(register) => {
                 let (result, _c, z, n, _o, _h) =
                     add_to_reg8(s.get_i8(register), Some(-1), Some(false));
@@ -683,6 +709,13 @@ impl Instruction {
             Operation::BitClear(d, b) => {
                 if let Some(v) = s.get_i8(d) {
                     let new = v & !(1 << b);
+                    s.set_i8(d, Some(new));
+                }
+                FlowControl::FallThrough
+            }
+            Operation::BitComplement(d, b) => {
+                if let Some(v) = s.get_i8(d) {
+                    let new = v ^ (1 << b);
                     s.set_i8(d, Some(new));
                 }
                 FlowControl::FallThrough
