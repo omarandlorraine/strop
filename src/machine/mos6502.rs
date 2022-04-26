@@ -165,7 +165,6 @@ fn transfers_6502(_mach: Machine) -> Operation {
 }
 
 fn loadstore_6502(mach: Machine) -> Operation {
-    // TODO: STZ operation for CMOS varieties
     let addr = random_absolute();
     let reg = match rand::thread_rng().gen_range(
         0,
