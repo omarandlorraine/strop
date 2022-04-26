@@ -86,7 +86,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     }
 
     fn btjt(f: &mut std::fmt::Formatter, addr: u16, bit_no: u8, v: bool, target: FlowControl) -> std::fmt::Result {
-        let op = if v { "btft" } else { "btjf" };
+        let op = if v { "btjt" } else { "btjf" };
         match target {
             FlowControl::Forward(offs) => write!(f, "\t{} {}, {}, +{}", op, addr, bit_no, offs),
             FlowControl::Backward(offs) => write!(f, "\t{} {}, {}, -{}", op, addr, bit_no, offs),
