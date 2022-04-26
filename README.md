@@ -1,4 +1,6 @@
 # strop
+[![Build Status](https://github.com/omarandlorraine/strop/workflows/Rust/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=Rust)
+
 Superoptimizer written in Rust
 
 This program stochastically generates assembly language programs that compute a
