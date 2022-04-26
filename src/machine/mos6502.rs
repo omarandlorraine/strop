@@ -235,53 +235,37 @@ mod tests {
         find_it("adc", alu_6502, mach);
         find_it("and", alu_6502, mach);
         find_it("asl", shifts_6502, mach);
-        // TODO: bcc bcs beq bit bmi bne bpl
-        // I don't think we need to bother with brk
-        // TODO: bvc bvs
+        // TODO: bcc bcs beq bit bmi bne bpl bvc bvs cld clv dec inc jmp ora pha pla sbc sed tsx txs
+        // I don't think we need to bother with brk cli jsr nop php plp rti rts sei
         find_it("clc", secl_6502, mach);
-        // TODO: cld
-        // I don't think we'll bother with cli
-        // TODO clv dec
         find_it("cmp", alu_6502, mach);
         find_it("cpx", alu_6502, mach);
         find_it("cpy", alu_6502, mach);
         find_it("dex", incdec_6502, mach);
         find_it("dey", incdec_6502, mach);
         find_it("eor", alu_6502, mach);
-        // TODO: inc
         find_it("inx", incdec_6502, mach);
         find_it("iny", incdec_6502, mach);
-        // TODO: jmp
-        // I don't think we'll bother with jsr
         find_it("lda", loadstore_6502, mach);
         find_it("ldx", loadstore_6502, mach);
         find_it("ldy", loadstore_6502, mach);
         find_it("lsr", shifts_6502, mach);
-        // I don't think we'll bother with nop
-        // TODO: ora pha pla
-        // I don't think we'll bother with php plp
         find_it("rol", shifts_6502, mach);
         find_it("ror", shifts_6502, mach);
-        // I don't think we'll bother with rti rts
-        // TODO: sbc
         find_it("sec", secl_6502, mach);
-        // TODO: sed
-        // I don't think we'll bother with sei
         find_it("sta", loadstore_6502, mach);
         find_it("stx", loadstore_6502, mach);
         find_it("sty", loadstore_6502, mach);
         find_it("tax", transfers_6502, mach);
         find_it("tay", transfers_6502, mach);
-        // TODO: tsx
         find_it("txa", transfers_6502, mach);
-        // TODO: txs
         find_it("tya", transfers_6502, mach);
     }
 
     #[test]
     fn instruction_set_65c02() {
         core_instruction_set(Mos6502Variant::Cmos);
-        // TODO: bra phx plx phy ply stz trb tsb bbr bbs rmb smb
+        // TODO: bra phx plx phy ply trb tsb bbr bbs rmb smb
         find_it("dea", incdec_6502, Mos6502Variant::Cmos);
         find_it("dea", incdec_6502, Mos6502Variant::Cmos);
         find_it("ina", incdec_6502, Mos6502Variant::Cmos);
