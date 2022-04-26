@@ -206,7 +206,7 @@ fn function(m: String, ins: Vec<Datum>, outs: Vec<Datum>) -> Vec<Test> {
                     steps: vec![
                         Step::Set(ins[0], n as i32),
                         Step::Run,
-                        Step::Diff(outs[0], if n < f { n } else { f }  as i32),
+                        Step::Diff(outs[0], if n < f { n } else { f }  as i32),  
                     ],
                 });
             }
