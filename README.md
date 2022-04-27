@@ -1,5 +1,6 @@
 # strop
 [![Build Status](https://github.com/omarandlorraine/strop/workflows/Rust/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=Rust)
+[![crates.io](https://img.shields.io/crates/v/strop)](https://crates.io/crates/strop)
 
 Superoptimizer written in Rust
 
