@@ -1,0 +1,22 @@
+name: maturin
+
+on:
+  push:
+    branches: [ pyo3 ]
+  pull_request:
+    branches: [ pyo3 ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        run: cargo build --verbose
+      - name: maturin build
+        run: ./maturin.sh && ./python_tests.py
