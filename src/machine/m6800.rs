@@ -7,7 +7,6 @@ use crate::machine::Operation;
 use crate::machine::ShiftType;
 use crate::machine::R;
 
-use crate::machine::rand::Rng;
 use rand::random;
 use strop::randomly;
 

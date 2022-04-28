@@ -1,9 +1,7 @@
-use crate::disassemble;
 use crate::machine::new_instruction;
 use crate::machine::Instruction;
 use crate::machine::Width;
 use crate::{Machine, State, Step, TestRun};
-use rand::Rng;
 use std::ops::{Index, IndexMut};
 use strop::randomly;
 use rand::{Rng, thread_rng};
