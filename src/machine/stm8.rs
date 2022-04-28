@@ -11,6 +11,7 @@ use crate::Machine;
 
 use crate::machine::rand::Rng;
 use rand::random;
+use strop::randomly;
 
 fn random_stm8_operand() -> Datum {
     if random() {
@@ -175,33 +176,33 @@ fn add_adc(_mach: Machine) -> Operation {
 
 fn bits(_mach: Machine) -> Operation {
     let addr = random_absolute();
-    let bit = rand::thread_rng().gen_range(0, 7);
+    let bit: u8 = rand::thread_rng().gen_range(0..=7);
 
     // the eight-bit diadic operations like and, xor, or, etc
-    match rand::thread_rng().gen_range(0, 4) {
-        0 => Operation::BitSet(addr, bit),
-        1 => Operation::BitClear(addr, bit),
-        2 => Operation::BitComplement(addr, bit),
-        _ => Operation::BitCopyCarry(addr, bit),
-    }
+    randomly!(
+        { Operation::BitSet(addr, bit)}
+        { Operation::BitClear(addr, bit)}
+        { Operation::BitComplement(addr, bit)}
+        { Operation::BitCopyCarry(addr, bit)}
+    )
 }
 
 fn alu8(_mach: Machine) -> Operation {
     // the eight-bit diadic operations like and, xor, or, etc
-    match rand::thread_rng().gen_range(0, 3) {
-        0 => Operation::And(random_stm8_operand(), Datum::Register(R::A)),
-        1 => Operation::Or(random_stm8_operand(), Datum::Register(R::A)),
-        _ => Operation::Xor(random_stm8_operand(), Datum::Register(R::A)),
-    }
+    randomly!(
+        { Operation::And(random_stm8_operand(), Datum::Register(R::A))}
+        { Operation::Or(random_stm8_operand(), Datum::Register(R::A))}
+        { Operation::Xor(random_stm8_operand(), Datum::Register(R::A))}
+    )
 }
 
 fn shifts(_mach: Machine) -> Operation {
-    let sht = match rand::thread_rng().gen_range(0, 4) {
-        0 => ShiftType::LeftArithmetic,
-        1 => ShiftType::RightArithmetic,
-        2 => ShiftType::RightRotateThroughCarry,
-        _ => ShiftType::LeftRotateThroughCarry,
-    };
+    let sht = randomly!(
+        { ShiftType::LeftArithmetic}
+        { ShiftType::RightArithmetic}
+        { ShiftType::RightRotateThroughCarry}
+        { ShiftType::LeftRotateThroughCarry}
+    );
 
     let operand = if random() {
         random_absolute()
@@ -213,20 +214,20 @@ fn shifts(_mach: Machine) -> Operation {
 }
 
 fn carry(_mach: Machine) -> Operation {
-    match rand::thread_rng().gen_range(0, 3) {
-        0 => Operation::Carry(false),
-        1 => Operation::Carry(true),
-        _ => Operation::ComplementCarry,
-    }
+    randomly!(
+        { Operation::Carry(false)}
+        { Operation::Carry(true)}
+        { Operation::ComplementCarry}
+    )
 }
 
 fn compare(_mach: Machine) -> Operation {
-    match rand::thread_rng().gen_range(0, 4) {
-        0 => Operation::Compare(random_stm8_operand(), Datum::Register(R::A)),
-        1 => Operation::Compare(random_stm8_operand(), Datum::RegisterPair(R::Xh, R::Xl)),
-        2 => Operation::Compare(random_stm8_operand(), Datum::RegisterPair(R::Yh, R::Yl)),
-        _ => Operation::BitCompare(random_stm8_operand(), Datum::Register(R::A)),
-    }
+    randomly!(
+        { Operation::Compare(random_stm8_operand(), Datum::Register(R::A))}
+        { Operation::Compare(random_stm8_operand(), Datum::RegisterPair(R::Xh, R::Xl))}
+        { Operation::Compare(random_stm8_operand(), Datum::RegisterPair(R::Yh, R::Yl))}
+        { Operation::BitCompare(random_stm8_operand(), Datum::Register(R::A))}
+    )
 }
 
 fn incdec(_mach: Machine) -> Operation {
@@ -245,13 +246,13 @@ fn incdec(_mach: Machine) -> Operation {
 
 fn transfers(_mach: Machine) -> Operation {
     fn rando() -> Datum {
-        match rand::thread_rng().gen_range(0, 5) {
-            0 => Datum::Register(R::A),
-            1 => Datum::Register(R::Xl),
-            2 => Datum::Register(R::Xh),
-            3 => Datum::Register(R::Yl),
-            _ => Datum::Register(R::Yh),
-        }
+        randomly!(
+            { Datum::Register(R::A)}
+            { Datum::Register(R::Xl)}
+            { Datum::Register(R::Xh)}
+            { Datum::Register(R::Yl)}
+            { Datum::Register(R::Yh)}
+        )
     }
     Operation::Move(rando(), rando())
 }
@@ -263,11 +264,11 @@ pub fn jumps(_mach: Machine) -> Operation {
     }
 
     fn cond() -> Test {
-        match rand::thread_rng().gen_range(0, 3) {
-            0 => Test::True,
-            1 => Test::Carry(random()),
-            _ => Test::Bit(random(), rand::thread_rng().gen_range(0, 7), random()),
-        }
+        randomly!(
+            { Test::True}
+            { Test::Carry(random())}
+            { Test::Bit(random(), rand::thread_rng().gen_range(0..7), random())}
+            )
     }
 
     Operation::Jump(cond(), j())
@@ -275,13 +276,13 @@ pub fn jumps(_mach: Machine) -> Operation {
 
 fn oneargs(_mach: Machine) -> Operation {
     fn arg() -> Datum {
-        match rand::thread_rng().gen_range(0, 4) {
-            // TODO: Add the rest of the possibilities here.
-            0 => Datum::Register(R::A),
-            1 => Datum::RegisterPair(R::Xh, R::Xl),
-            2 => Datum::RegisterPair(R::Yh, R::Yl),
-            _ => random_absolute(),
-        }
+        // TODO: Add the rest of the possibilities here.
+        randomly!(
+            { Datum::Register(R::A)}
+            { Datum::RegisterPair(R::Xh, R::Xl)}
+            { Datum::RegisterPair(R::Yh, R::Yl)}
+            { random_absolute()}
+            )
     }
 
     if random() {
@@ -292,19 +293,19 @@ fn oneargs(_mach: Machine) -> Operation {
 }
 
 pub fn instr_stm8(mach: Machine) -> Instruction {
-    match rand::thread_rng().gen_range(0, 11) {
-        0 => Instruction::new(mach, add_adc, dasm),
-        1 => Instruction::new(mach, clear, dasm),
-        2 => Instruction::new(mach, incdec, dasm),
-        3 => Instruction::new(mach, transfers, dasm),
-        4 => Instruction::new(mach, alu8, dasm),
-        5 => Instruction::new(mach, bits, dasm),
-        6 => Instruction::new(mach, carry, dasm),
-        7 => Instruction::new(mach, compare, dasm),
-        8 => Instruction::new(mach, jumps, dasm),
-        9 => Instruction::new(mach, oneargs, dasm),
-        _ => Instruction::new(mach, shifts, dasm),
-    }
+    randomly!(
+        { Instruction::new(mach, add_adc, dasm)}
+        { Instruction::new(mach, clear, dasm)}
+        { Instruction::new(mach, incdec, dasm)}
+        { Instruction::new(mach, transfers, dasm)}
+        { Instruction::new(mach, alu8, dasm)}
+        { Instruction::new(mach, bits, dasm)}
+        { Instruction::new(mach, carry, dasm)}
+        { Instruction::new(mach, compare, dasm)}
+        { Instruction::new(mach, jumps, dasm)}
+        { Instruction::new(mach, oneargs, dasm)}
+        { Instruction::new(mach, shifts, dasm)}
+        )
 }
 
 #[cfg(test)]
