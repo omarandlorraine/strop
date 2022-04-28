@@ -10,7 +10,7 @@ where taking random actions is common.
 # Examples
 
 ```
-use randomly::*;
+use strop::randomly;
 
 let n = randomly! {
     { println!("hello"); 0 }
