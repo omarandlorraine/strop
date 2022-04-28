@@ -1,10 +1,10 @@
-use crate::disassemble;
 use crate::machine::new_instruction;
 use crate::machine::Instruction;
 use crate::machine::Width;
 use crate::{Machine, State, Step, TestRun};
-use rand::Rng;
 use std::ops::{Index, IndexMut};
+use strop::randomly;
+use rand::{Rng, thread_rng};
 
 #[derive(Clone)]
 pub struct BasicBlock {
@@ -70,6 +70,11 @@ impl BasicBlock {
 
     fn push(&mut self, instr: Instruction) {
         self.instructions.push(instr)
+    }
+
+    fn random_offset(&self) -> usize {
+        let mut rng = thread_rng();
+        rng.gen_range(0..self.len())
     }
 }
 
@@ -179,15 +184,14 @@ fn cost(prog: &BasicBlock) -> f64 {
 fn mutate_delete(prog: &mut BasicBlock) {
     let instr_count = prog.instructions.len();
     if instr_count > 1 {
-        let offset: usize = rand::thread_rng().gen_range(0, instr_count);
-        prog.remove(offset);
+        prog.remove(prog.random_offset());
     }
 }
 
 fn mutate_insert(prog: &mut BasicBlock, mach: Machine) {
     let instr_count = prog.instructions.len();
     let offset: usize = if instr_count > 0 {
-        rand::thread_rng().gen_range(0, instr_count)
+        prog.random_offset()
     } else {
         0
     };
@@ -196,39 +200,33 @@ fn mutate_insert(prog: &mut BasicBlock, mach: Machine) {
 }
 
 fn mutate(prog: &mut BasicBlock, mach: Machine) {
-    let mutate: usize = rand::thread_rng().gen_range(0, 3);
-    let instr_count = prog.instructions.len();
-    match mutate {
-        /* randomize an instruction
-         * (this could involve changing an operand, addressing mode, etc etc.
-         */
-        0 => {
+    randomly!(
+        {
+            /* randomize an instruction
+             * (this could involve changing an operand, addressing mode, etc etc.
+             */
             if prog.len() > 1 {
-                let offset: usize = rand::thread_rng().gen_range(0, instr_count);
+                let offset = prog.random_offset();
                 prog[offset].randomize();
             }
         }
-        /* delete an instruction */
-        1 => {
+        {
+            /* delete an instruction */
             mutate_delete(prog);
         }
-        /* insert a new instruction */
-        2 => {
+        {
+            /* insert a new instruction */
             mutate_insert(prog, mach);
         }
-        /* Pick two instructions and swap them round */
-        3 => {
-            let offset_a: usize = rand::thread_rng().gen_range(0, instr_count);
-            let offset_b: usize = rand::thread_rng().gen_range(0, instr_count);
+        {
+            /* Pick two instructions and swap them round */
+            let offset_a = prog.random_offset();
+            let offset_b = prog.random_offset();
             let ins_a = prog[offset_a];
             let ins_b = prog[offset_b];
             prog[offset_a] = ins_b;
             prog[offset_b] = ins_a;
-        }
-        _ => {
-            panic!();
-        }
-    }
+        })
 }
 
 pub fn dead_code_elimination(
