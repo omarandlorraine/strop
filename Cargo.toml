@@ -10,7 +10,7 @@ license = "GPL-2.0"
 
 [dependencies]
 argh = "0.1.7"
-rand = "0.7.3"
+rand = "0.8.5"
 enum-utils = "0.1.2"
 yaml-rust = "0.4"
 rayon = "1.5"
