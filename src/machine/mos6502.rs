@@ -8,7 +8,7 @@ use crate::machine::Operation;
 use crate::machine::ShiftType;
 use crate::machine::R;
 
-use crate::machine::rand::Rng;
+use strop::randomly;
 use rand::random;
 
 fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -111,18 +111,18 @@ fn random_source_6502() -> Datum {
 }
 
 fn random_xy() -> Datum {
-    match rand::thread_rng().gen_range(0, 2) {
-        0 => Datum::Register(R::Xl),
-        _ => Datum::Register(R::Yl),
-    }
+    randomly!(
+        { Datum::Register(R::Xl)}
+        { Datum::Register(R::Yl)}
+    )
 }
 
 fn random_axy() -> Datum {
-    match rand::thread_rng().gen_range(0, 3) {
-        0 => Datum::Register(R::Xl),
-        1 => Datum::Register(R::Yl),
-        _ => Datum::Register(R::A),
-    }
+    randomly!(
+        { Datum::Register(R::Xl)}
+        { Datum::Register(R::Yl)}
+        { Datum::Register(R::A)}
+    )
 }
 
 fn incdec_6502(mach: Machine) -> Operation {
@@ -143,12 +143,12 @@ fn incdec_6502(mach: Machine) -> Operation {
 fn alu_6502(_mach: Machine) -> Operation {
     // randomly generate the instructions ora, and, eor, adc, sbc, cmp
     // these all have the same available addressing modes
-    match rand::thread_rng().gen_range(0, 4) {
-        0 => Operation::Add(random_source_6502(), Datum::Register(R::A), true),
-        1 => Operation::And(random_source_6502(), Datum::Register(R::A)),
-        2 => Operation::ExclusiveOr(random_source_6502(), Datum::Register(R::A)),
-        _ => Operation::Compare(random_source_6502(), random_axy()),
-    }
+    randomly!(
+        { Operation::Add(random_source_6502(), Datum::Register(R::A), true)}
+        { Operation::And(random_source_6502(), Datum::Register(R::A))}
+        { Operation::ExclusiveOr(random_source_6502(), Datum::Register(R::A))}
+        { Operation::Compare(random_source_6502(), random_axy())}
+    )
 }
 
 fn transfers_6502(_mach: Machine) -> Operation {
@@ -166,19 +166,13 @@ fn transfers_6502(_mach: Machine) -> Operation {
 
 fn loadstore_6502(mach: Machine) -> Operation {
     let addr = random_absolute();
-    let reg = match rand::thread_rng().gen_range(
-        0,
-        if mach == Machine::Mos6502(Mos6502Variant::Cmos) {
-            4
-        } else {
-            3
-        },
-    ) {
-        0 => Datum::Register(R::A),
-        1 => Datum::Register(R::Xl),
-        2 => Datum::Register(R::Yl),
-        _ => Datum::Zero,
+
+    let reg = if mach == Machine::Mos6502(Mos6502Variant::Cmos) {
+        randomly!( { Datum::Register(R::A)} { Datum::Register(R::Xl)} { Datum::Register(R::Yl)} { Datum::Zero})
+    } else {
+        randomly!( { Datum::Register(R::A)} { Datum::Register(R::Xl)} { Datum::Register(R::Yl)} )
     };
+
     if random() && reg != Datum::Zero {
         Operation::Move(addr, reg)
     } else {
@@ -190,12 +184,12 @@ fn secl_6502(_mach: Machine) -> Operation {
     Operation::Carry(random())
 }
 fn shifts_6502(_mach: Machine) -> Operation {
-    let sht = match rand::thread_rng().gen_range(0, 4) {
-        0 => ShiftType::LeftArithmetic,
-        1 => ShiftType::RightArithmetic,
-        2 => ShiftType::LeftRotateThroughCarry,
-        _ => ShiftType::RightRotateThroughCarry,
-    };
+    let sht = randomly!(
+        { ShiftType::LeftArithmetic}
+        { ShiftType::RightArithmetic}
+        { ShiftType::LeftRotateThroughCarry}
+        { ShiftType::RightRotateThroughCarry}
+    );
     let dat = if random() {
         Datum::Register(R::A)
     } else {
@@ -205,14 +199,14 @@ fn shifts_6502(_mach: Machine) -> Operation {
 }
 
 pub fn instr_6502(mach: Machine) -> Instruction {
-    match rand::thread_rng().gen_range(0, 6) {
-        0 => Instruction::new(mach, incdec_6502, dasm),
-        1 => Instruction::new(mach, alu_6502, dasm),
-        2 => Instruction::new(mach, transfers_6502, dasm),
-        3 => Instruction::new(mach, shifts_6502, dasm),
-        4 => Instruction::new(mach, loadstore_6502, dasm),
-        _ => Instruction::new(mach, secl_6502, dasm),
-    }
+    randomly!(
+        { Instruction::new(mach, incdec_6502, dasm)}
+        { Instruction::new(mach, alu_6502, dasm)}
+        { Instruction::new(mach, transfers_6502, dasm)}
+        { Instruction::new(mach, shifts_6502, dasm)}
+        { Instruction::new(mach, loadstore_6502, dasm)}
+        { Instruction::new(mach, secl_6502, dasm)}
+    )
 }
 
 #[cfg(test)]

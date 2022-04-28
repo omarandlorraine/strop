@@ -8,8 +8,8 @@ use crate::machine::PicVariant;
 use crate::machine::ShiftType;
 use crate::machine::R;
 
-use crate::machine::rand::Rng;
 use rand::random;
+use strop::randomly;
 
 fn dasm(op: Operation, fr: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match op {
@@ -103,31 +103,31 @@ fn shifts_pic(_mach: Machine) -> Operation {
 
 fn and_pic(_mach: Machine) -> Operation {
     let w = Datum::Register(R::A);
-    match rand::thread_rng().gen_range(0, 3) {
-        0 => Operation::And(random_immediate(), w), // andlw
-        1 => Operation::And(random_absolute(), w),  // andwf something, 0
-        _ => Operation::And(w, random_absolute()),  // andwf something, 1
-    }
+    randomly!(
+        { Operation::And(random_immediate(), w)} // andlw
+        { Operation::And(random_absolute(), w)}  // andwf something, 0
+        { Operation::And(w, random_absolute())}  // andwf something, 1
+    )
 }
 
 fn store_pic(_mach: Machine) -> Operation {
     // TODO: There also is movf f,d, which just updates the Z flag
-    match rand::thread_rng().gen_range(0, 4) {
-        0 => Operation::Move(Datum::Zero, random_accumulator_or_absolute()), // clrw and clrf f
-        1 => Operation::Move(random_absolute(), Datum::Register(R::A)),      // movf f
-        2 => Operation::Move(random_immediate(), Datum::Register(R::A)),     // movlw k
-        _ => Operation::Move(Datum::Register(R::A), random_absolute()),      // movwf f
-    }
+    randomly!(
+        { Operation::Move(Datum::Zero, random_accumulator_or_absolute())} // clrw and clrf f
+            { Operation::Move(random_absolute(), Datum::Register(R::A))}      // movf f
+                { Operation::Move(random_immediate(), Datum::Register(R::A))}     // movlw k
+                    { Operation::Move(Datum::Register(R::A), random_absolute())}      // movwf f
+    )
 }
 
 pub fn instr_pic(mach: Machine) -> Instruction {
-    match rand::thread_rng().gen_range(0, 5) {
-        0 => Instruction::new(mach, shifts_pic, dasm),
-        1 => Instruction::new(mach, and_pic, dasm),
-        2 => Instruction::new(mach, add_pic, dasm),
-        3 => Instruction::new(mach, store_pic, dasm),
-        _ => Instruction::new(mach, inc_dec_pic, dasm),
-    }
+    randomly!(
+        { Instruction::new(mach, shifts_pic, dasm)}
+        { Instruction::new(mach, and_pic, dasm)}
+        { Instruction::new(mach, add_pic, dasm)}
+        { Instruction::new(mach, store_pic, dasm)}
+        { Instruction::new(mach, inc_dec_pic, dasm)}
+    )
 }
 
 #[cfg(test)]
