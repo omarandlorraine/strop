@@ -3,16 +3,32 @@ use crate::machine::random_immediate;
 use crate::machine::Datum;
 use crate::machine::Instruction;
 use crate::machine::Machine;
+use crate::machine::MonadicOperation;
 use crate::machine::Operation;
 use crate::machine::PicVariant;
 use crate::machine::ShiftType;
+use crate::machine::Width;
 use crate::machine::R;
 
 use rand::random;
 use strop::randomly;
 
 fn dasm(op: Operation, fr: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn dest(d: Datum) -> &'static str {
+        match d {
+            Datum::Absolute(_) => "1",
+            Datum::Register(R::A) => "0",
+            _ => panic!(),
+        }
+    }
     match op {
+        Operation::Monadic(_, MonadicOperation::Decrement, Datum::Absolute(f), dst) => {
+            write!(fr, "\tdecf {}, {}", f, dest(dst))
+        }
+        Operation::Monadic(_, MonadicOperation::Increment, Datum::Absolute(f), dst) => {
+            write!(fr, "\tincf {}, {}", f, dest(dst))
+        }
+
         Operation::Add(Datum::Register(R::A), Datum::Absolute(f), false) => {
             write!(fr, "\taddwf {}, 1", f)
         }
@@ -46,12 +62,6 @@ fn dasm(op: Operation, fr: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Move(Datum::Imm8(k), Datum::Register(R::A)) => {
             write!(fr, "\tmovlw {}", k)
         }
-        Operation::Increment(Datum::Absolute(f)) => {
-            write!(fr, "\tincf {}, 1", f)
-        }
-        Operation::Decrement(Datum::Absolute(f)) => {
-            write!(fr, "\tdecf {}, 1", f)
-        }
         Operation::Shift(ShiftType::LeftRotateThroughCarry, Datum::Absolute(f)) => {
             write!(fr, "\trlf {}, 1", f)
         }
@@ -71,12 +81,14 @@ fn random_accumulator_or_absolute() -> Datum {
 }
 
 fn inc_dec_pic(_mach: Machine) -> Operation {
-    // TODO: These instructions can optionally write to W instead of the F.
-    if random() {
-        Operation::Increment(random_absolute()) // incf f
-    } else {
-        Operation::Decrement(random_absolute()) // decf f
-    }
+    let src = random_absolute();
+
+    let dst = if random() { src } else { Datum::Register(R::A) };
+
+    randomly!(
+        { Operation::Monadic(Width::Width8, MonadicOperation::Increment, src, dst) }
+        { Operation::Monadic(Width::Width8, MonadicOperation::Decrement, src, dst) }
+    )
 }
 
 fn add_pic(mach: Machine) -> Operation {
