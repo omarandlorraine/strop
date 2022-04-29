@@ -2,13 +2,16 @@ use crate::machine::random_absolute;
 use crate::machine::random_immediate;
 use crate::machine::FlowControl;
 use crate::machine::Instruction;
+use crate::machine::MonadicOperation::{Complement, Decrement, Increment, Negate};
 use crate::machine::Operation;
 use crate::machine::ShiftType;
 use crate::machine::Test;
+use crate::machine::Width;
 use crate::machine::R;
 use crate::Datum;
 use crate::Machine;
 
+use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::rand::Rng;
 use rand::random;
 use strop::randomly;
@@ -124,15 +127,15 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::BitCompare(d, r) => dsyn(f, "bcp", r, d),
         Operation::Or(d, r) => dsyn(f, "or", r, d),
         Operation::Xor(d, r) => dsyn(f, "xor", r, d),
-        Operation::Negate(d) => syn(f, "neg", d),
-        Operation::Complement(d) => syn(f, "cpl", d),
         Operation::Shift(ShiftType::LeftRotateThroughCarry, d) => syn(f, "rlc", d),
         Operation::Shift(ShiftType::RightRotateThroughCarry, d) => syn(f, "rrc", d),
         Operation::Shift(ShiftType::LeftArithmetic, d) => syn(f, "sla", d),
         Operation::Shift(ShiftType::RightArithmetic, d) => syn(f, "sra", d),
         Operation::Move(Datum::Zero, r) => syn(f, "clr", r),
-        Operation::Increment(r) => syn(f, "inc", r),
-        Operation::Decrement(r) => syn(f, "dec", r),
+        Operation::Monadic(_, Decrement, _, r) => syn(f, "dec", r),
+        Operation::Monadic(_, Increment, _, r) => syn(f, "inc", r),
+        Operation::Monadic(_, Complement, _, r) => syn(f, "cpl", r),
+        Operation::Monadic(_, Negate, _, r) => syn(f, "neg", r),
         Operation::Move(Datum::Register(from), Datum::Register(to)) => {
             write!(f, "\tld {}, {}", regname(to), regname(from))
         }
@@ -230,20 +233,6 @@ fn compare(_mach: Machine) -> Operation {
     )
 }
 
-fn incdec(_mach: Machine) -> Operation {
-    let operand = if random() {
-        random_absolute()
-    } else {
-        random_register()
-    };
-
-    if random() {
-        Operation::Increment(operand)
-    } else {
-        Operation::Decrement(operand)
-    }
-}
-
 fn transfers(_mach: Machine) -> Operation {
     fn rando() -> Datum {
         randomly!(
@@ -278,20 +267,28 @@ pub fn jumps(_mach: Machine) -> Operation {
 }
 
 fn oneargs(_mach: Machine) -> Operation {
-    fn arg() -> Datum {
-        // TODO: Add the rest of the possibilities here.
-        randomly!(
-        { Datum::Register(R::A)}
-        { Datum::RegisterPair(R::Xh, R::Xl)}
-        { Datum::RegisterPair(R::Yh, R::Yl)}
-        { random_absolute()}
-        )
+    fn op(w: Width, a: Datum) -> Operation {
+        let vs = vec![Complement, Negate, Increment, Decrement];
+        let o = vs.choose(&mut rand::thread_rng());
+        Operation::Monadic(w, *o.unwrap(), a, a)
     }
 
     if random() {
-        Operation::Complement(arg())
+        let a = if random() {
+            Datum::Register(R::A)
+        } else {
+            random_immediate()
+        };
+
+        op(Width::Width8, a)
     } else {
-        Operation::Negate(arg())
+        let a = if random() {
+            Datum::RegisterPair(R::Xh, R::Xl)
+        } else {
+            Datum::RegisterPair(R::Yh, R::Yl)
+        };
+
+        op(Width::Width16, a)
     }
 }
 
@@ -299,7 +296,6 @@ pub fn instr_stm8(mach: Machine) -> Instruction {
     randomly!(
     { Instruction::new(mach, add_adc, dasm)}
     { Instruction::new(mach, clear, dasm)}
-    { Instruction::new(mach, incdec, dasm)}
     { Instruction::new(mach, transfers, dasm)}
     { Instruction::new(mach, alu8, dasm)}
     { Instruction::new(mach, bits, dasm)}
