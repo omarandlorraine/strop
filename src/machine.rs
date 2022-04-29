@@ -457,7 +457,6 @@ pub enum FlowControl {
 #[derive(Clone, Debug, Copy)]
 pub enum Test {
     True,
-    False,
     Carry(bool),
     Bit(u16, u8, bool),
 }
@@ -491,7 +490,6 @@ impl Test {
     fn evaluate(&self, s: &State) -> Option<bool> {
         match self {
             Test::True => Some(true),
-            Test::False => Some(false),
             Test::Carry(b) => s.carry.map(|carry| &carry == b),
             Test::Bit(addr, bit_no, b) => {
                 if let Some(byte) = s.get_i8(Datum::Absolute(*addr)) {
