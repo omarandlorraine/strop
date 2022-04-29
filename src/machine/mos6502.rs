@@ -8,8 +8,8 @@ use crate::machine::Operation;
 use crate::machine::ShiftType;
 use crate::machine::R;
 
-use strop::randomly;
 use rand::random;
+use strop::randomly;
 
 fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     fn regname(r: R) -> &'static str {

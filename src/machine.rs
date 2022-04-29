@@ -205,7 +205,7 @@ pub fn bitwise_or(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>) 
     (None, None)
 }
 
-#[allow(clippy::many_single_char_names)]
+#[allow(clippy::many_single_char_names, clippy::type_complexity)]
 pub fn add_to_reg16(
     reg: Option<i16>,
     a: Option<i16>,
@@ -241,7 +241,7 @@ pub fn add_to_reg16(
     }
 }
 
-#[allow(clippy::many_single_char_names)]
+#[allow(clippy::many_single_char_names, clippy::type_complexity)]
 pub fn subtract_reg8(
     reg: Option<i8>,
     a: Option<i8>,
@@ -277,6 +277,7 @@ pub fn subtract_reg8(
     }
 }
 
+#[allow(clippy::many_single_char_names, clippy::type_complexity)]
 pub fn add_to_reg8(
     reg: Option<i8>,
     a: Option<i8>,
@@ -457,7 +458,6 @@ pub enum FlowControl {
 #[derive(Clone, Debug, Copy)]
 pub enum Test {
     True,
-    False,
     Carry(bool),
     Bit(u16, u8, bool),
 }
@@ -491,7 +491,6 @@ impl Test {
     fn evaluate(&self, s: &State) -> Option<bool> {
         match self {
             Test::True => Some(true),
-            Test::False => Some(false),
             Test::Carry(b) => s.carry.map(|carry| &carry == b),
             Test::Bit(addr, bit_no, b) => {
                 if let Some(byte) = s.get_i8(Datum::Absolute(*addr)) {

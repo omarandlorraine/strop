@@ -259,16 +259,19 @@ fn transfers(_mach: Machine) -> Operation {
 
 pub fn jumps(_mach: Machine) -> Operation {
     fn j() -> FlowControl {
-        // TODO: backward jumps.
-        FlowControl::Forward(rand::thread_rng().gen_range(1..3))
+        if random() {
+            FlowControl::Forward(rand::thread_rng().gen_range(1..3))
+        } else {
+            FlowControl::Backward(rand::thread_rng().gen_range(1..3))
+        }
     }
 
     fn cond() -> Test {
         randomly!(
-            { Test::True}
-            { Test::Carry(random())}
-            { Test::Bit(random(), rand::thread_rng().gen_range(0..7), random())}
-            )
+        { Test::True}
+        { Test::Carry(random())}
+        { Test::Bit(random(), rand::thread_rng().gen_range(0..7), random())}
+        )
     }
 
     Operation::Jump(cond(), j())
@@ -278,11 +281,11 @@ fn oneargs(_mach: Machine) -> Operation {
     fn arg() -> Datum {
         // TODO: Add the rest of the possibilities here.
         randomly!(
-            { Datum::Register(R::A)}
-            { Datum::RegisterPair(R::Xh, R::Xl)}
-            { Datum::RegisterPair(R::Yh, R::Yl)}
-            { random_absolute()}
-            )
+        { Datum::Register(R::A)}
+        { Datum::RegisterPair(R::Xh, R::Xl)}
+        { Datum::RegisterPair(R::Yh, R::Yl)}
+        { random_absolute()}
+        )
     }
 
     if random() {
@@ -294,18 +297,18 @@ fn oneargs(_mach: Machine) -> Operation {
 
 pub fn instr_stm8(mach: Machine) -> Instruction {
     randomly!(
-        { Instruction::new(mach, add_adc, dasm)}
-        { Instruction::new(mach, clear, dasm)}
-        { Instruction::new(mach, incdec, dasm)}
-        { Instruction::new(mach, transfers, dasm)}
-        { Instruction::new(mach, alu8, dasm)}
-        { Instruction::new(mach, bits, dasm)}
-        { Instruction::new(mach, carry, dasm)}
-        { Instruction::new(mach, compare, dasm)}
-        { Instruction::new(mach, jumps, dasm)}
-        { Instruction::new(mach, oneargs, dasm)}
-        { Instruction::new(mach, shifts, dasm)}
-        )
+    { Instruction::new(mach, add_adc, dasm)}
+    { Instruction::new(mach, clear, dasm)}
+    { Instruction::new(mach, incdec, dasm)}
+    { Instruction::new(mach, transfers, dasm)}
+    { Instruction::new(mach, alu8, dasm)}
+    { Instruction::new(mach, bits, dasm)}
+    { Instruction::new(mach, carry, dasm)}
+    { Instruction::new(mach, compare, dasm)}
+    { Instruction::new(mach, jumps, dasm)}
+    { Instruction::new(mach, oneargs, dasm)}
+    { Instruction::new(mach, shifts, dasm)}
+    )
 }
 
 #[cfg(test)]

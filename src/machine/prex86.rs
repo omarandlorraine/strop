@@ -1,10 +1,10 @@
+use crate::machine::random_immediate;
 use crate::machine::Datum;
 use crate::machine::Instruction;
 use crate::machine::Machine;
 use crate::machine::Operation;
 use crate::machine::ShiftType;
 use crate::machine::R;
-use crate::machine::random_immediate;
 use rand::random;
 use strop::randomly;
 

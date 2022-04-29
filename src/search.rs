@@ -2,9 +2,9 @@ use crate::machine::new_instruction;
 use crate::machine::Instruction;
 use crate::machine::Width;
 use crate::{Machine, State, Step, TestRun};
+use rand::{thread_rng, Rng};
 use std::ops::{Index, IndexMut};
 use strop::randomly;
-use rand::{Rng, thread_rng};
 
 #[derive(Clone)]
 pub struct BasicBlock {
@@ -201,32 +201,32 @@ fn mutate_insert(prog: &mut BasicBlock, mach: Machine) {
 
 fn mutate(prog: &mut BasicBlock, mach: Machine) {
     randomly!(
-        {
-            /* randomize an instruction
-             * (this could involve changing an operand, addressing mode, etc etc.
-             */
-            if prog.len() > 1 {
-                let offset = prog.random_offset();
-                prog[offset].randomize();
-            }
+    {
+        /* randomize an instruction
+         * (this could involve changing an operand, addressing mode, etc etc.
+         */
+        if prog.len() > 1 {
+            let offset = prog.random_offset();
+            prog[offset].randomize();
         }
-        {
-            /* delete an instruction */
-            mutate_delete(prog);
-        }
-        {
-            /* insert a new instruction */
-            mutate_insert(prog, mach);
-        }
-        {
-            /* Pick two instructions and swap them round */
-            let offset_a = prog.random_offset();
-            let offset_b = prog.random_offset();
-            let ins_a = prog[offset_a];
-            let ins_b = prog[offset_b];
-            prog[offset_a] = ins_b;
-            prog[offset_b] = ins_a;
-        })
+    }
+    {
+        /* delete an instruction */
+        mutate_delete(prog);
+    }
+    {
+        /* insert a new instruction */
+        mutate_insert(prog, mach);
+    }
+    {
+        /* Pick two instructions and swap them round */
+        let offset_a = prog.random_offset();
+        let offset_b = prog.random_offset();
+        let ins_a = prog[offset_a];
+        let ins_b = prog[offset_b];
+        prog[offset_a] = ins_b;
+        prog[offset_b] = ins_a;
+    })
 }
 
 pub fn dead_code_elimination(
