@@ -206,7 +206,6 @@ pub fn bitwise_or(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>) 
     (None, None)
 }
 
-#[allow(clippy::many_single_char_names, clippy::type_complexity)]
 pub fn add_to_reg16(
     reg: Option<i16>,
     a: Option<i16>,
@@ -242,7 +241,6 @@ pub fn add_to_reg16(
     }
 }
 
-#[allow(clippy::many_single_char_names, clippy::type_complexity)]
 pub fn subtract_reg8(
     reg: Option<i8>,
     a: Option<i8>,
@@ -278,7 +276,6 @@ pub fn subtract_reg8(
     }
 }
 
-#[allow(clippy::many_single_char_names, clippy::type_complexity)]
 pub fn add_to_reg8(
     reg: Option<i8>,
     a: Option<i8>,
@@ -550,7 +547,6 @@ impl Instruction {
         }
     }
 
-    #[allow(clippy::many_single_char_names)]
     pub fn operate(&self, s: &mut State) -> FlowControl {
         match self.operation {
             Operation::Add(source, destination, carry) => {
