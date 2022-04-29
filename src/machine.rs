@@ -640,49 +640,6 @@ impl Instruction {
                 FlowControl::FallThrough
             }
 
-            Operation::Increment(register) => {
-                match register.width() {
-                    Width::Width8 => {
-                        let (result, _c, z, n, _o, _h) =
-                            add_to_reg8(s.get_i8(register), Some(1), Some(false));
-                        s.set_i8(register, result);
-                        s.zero = z;
-                        s.sign = n;
-                    }
-                    Width::Width16 => {
-                        let (result, _c, z, n, _o, _h) =
-                            add_to_reg16(s.get_i16(register), Some(1), Some(false));
-                        s.set_i16(register, result);
-                        s.zero = z;
-                        s.sign = n;
-                    }
-                }
-                FlowControl::FallThrough
-            }
-
-            Operation::Negate(register) => {
-                let c = s.get_i8(register).map(|x| !x);
-                s.set_i8(register, c);
-                s.zero = c.map(|x| x == 0);
-                FlowControl::FallThrough
-            }
-
-            Operation::Complement(register) => {
-                let c = s.get_i8(register).map(|x| 0 - x);
-                s.set_i8(register, c);
-                s.zero = c.map(|x| x == 0);
-                FlowControl::FallThrough
-            }
-
-            Operation::Decrement(register) => {
-                let (result, _c, z, n, _o, _h) =
-                    add_to_reg8(s.get_i8(register), Some(-1), Some(false));
-                s.set_i8(register, result);
-                s.zero = z;
-                s.sign = n;
-                FlowControl::FallThrough
-            }
-
             Operation::Shift(shtype, datum) => match shtype {
                 ShiftType::LeftArithmetic => {
                     let (val, c) = rotate_left_thru_carry(s.get_i8(datum), Some(false));
