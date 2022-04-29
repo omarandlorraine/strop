@@ -259,8 +259,11 @@ fn transfers(_mach: Machine) -> Operation {
 
 pub fn jumps(_mach: Machine) -> Operation {
     fn j() -> FlowControl {
-        // TODO: backward jumps.
-        FlowControl::Forward(rand::thread_rng().gen_range(1..3))
+        if random() {
+            FlowControl::Forward(rand::thread_rng().gen_range(1..3))
+        } else {
+            FlowControl::Backward(rand::thread_rng().gen_range(1..3))
+        }
     }
 
     fn cond() -> Test {
