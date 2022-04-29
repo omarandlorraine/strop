@@ -1,7 +1,9 @@
 use crate::machine::mos6502::instr_length_6502;
 use crate::machine::rand::prelude::SliceRandom;
 use std::collections::HashMap;
+extern crate num;
 extern crate rand;
+use num::traits::{WrappingAdd, WrappingSub};
 
 mod m6800;
 mod mos6502;
@@ -469,6 +471,20 @@ pub enum MonadicOperation {
     // TODO: Move the shifts here.
 }
 
+impl MonadicOperation {
+    fn evaluate<T>(&self, v: Option<T>) -> Option<T>
+    where
+        T: num::PrimInt + std::iter::Sum + WrappingAdd + WrappingSub,
+    {
+        match self {
+            Self::Complement => v.map(|v| !v),
+            Self::Negate => v.map(|v| T::zero() - v),
+            Self::Increment => v.map(|v| v.wrapping_add(&T::one())),
+            Self::Decrement => v.map(|v| v.wrapping_sub(&T::one())),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Copy)]
 pub enum Operation {
     Monadic(Width, MonadicOperation, Datum, Datum),
@@ -549,6 +565,14 @@ impl Instruction {
 
     pub fn operate(&self, s: &mut State) -> FlowControl {
         match self.operation {
+            Operation::Monadic(Width::Width8, operation, src, dst) => {
+                s.set_i8(dst, operation.evaluate(s.get_i8(src)));
+                FlowControl::FallThrough
+            }
+            Operation::Monadic(Width::Width16, operation, src, dst) => {
+                s.set_i16(dst, operation.evaluate(s.get_i16(src)));
+                FlowControl::FallThrough
+            }
             Operation::Add(source, destination, carry) => {
                 if !carry {
                     s.carry = Some(false)
