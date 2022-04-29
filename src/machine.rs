@@ -61,6 +61,7 @@ pub struct Instruction {
     machine: Machine,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub enum Width {
     Width8,
     Width16,
@@ -462,13 +463,16 @@ pub enum Test {
     Bit(u16, u8, bool),
 }
 
+#[derive(Copy, Debug, Clone, PartialEq)]
+pub enum MonadicOperation {
+    Complement, Decrement, Increment, Negate, 
+    // TODO: Move the shifts here.
+}
+
 #[derive(Clone, Debug, Copy)]
 pub enum Operation {
+    Monadic(Width, MonadicOperation, Datum, Datum),
     DecimalAdjustAccumulator,
-    Negate(Datum),
-    Complement(Datum),
-    Decrement(Datum),
-    Increment(Datum),
     Add(Datum, Datum, bool),
     BitCompare(Datum, Datum),
     Compare(Datum, Datum),
