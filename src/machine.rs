@@ -465,7 +465,10 @@ pub enum Test {
 
 #[derive(Copy, Debug, Clone, PartialEq)]
 pub enum MonadicOperation {
-    Complement, Decrement, Increment, Negate, 
+    Complement,
+    Decrement,
+    Increment,
+    Negate,
     // TODO: Move the shifts here.
 }
 
