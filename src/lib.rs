@@ -1,5 +1,4 @@
 #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
-
 // This macro was shamelessly stolen from
 // https://github.com/BartMassey/randomly/
 
@@ -27,7 +26,7 @@ pub use rand;
 /// is uniform random).
 ///
 /// # Panics
-/// 
+///
 /// Panics if zero blocks were provided.
 // Lots of ideas borrowed from here:
 // https://users.rust-lang.org/t/how-to-generate-in-macro/56774/6

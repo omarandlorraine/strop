@@ -17,4 +17,4 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Check formatting on all .rs files.
-      run: ./formatting.sh
+      run: cargo fmt -- --check
