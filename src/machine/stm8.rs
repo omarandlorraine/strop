@@ -1,5 +1,6 @@
 use crate::machine::random_absolute;
 use crate::machine::random_immediate;
+use crate::machine::DyadicOperation::{Add, And, ExclusiveOr, Or};
 use crate::machine::FlowControl;
 use crate::machine::Instruction;
 use crate::machine::MonadicOperation::{Complement, Decrement, Increment, Negate};
@@ -122,11 +123,13 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match op {
         Operation::Add(d, r, true) => dsyn(f, "adc", r, d),
         Operation::Add(d, r, false) => dsyn(f, "add", r, d),
-        Operation::And(d, r) => dsyn(f, "and", r, d),
         Operation::Compare(d, r) => dsyn(f, "cp", r, d),
         Operation::BitCompare(d, r) => dsyn(f, "bcp", r, d),
-        Operation::Or(d, r) => dsyn(f, "or", r, d),
-        Operation::Xor(d, r) => dsyn(f, "xor", r, d),
+        Operation::Dyadic(_, And, d, r, _) => dsyn(f, "and", r, d),
+        Operation::Dyadic(_, Add, d, r, _) => dsyn(f, "add", r, d),
+        Operation::Dyadic(_, AddWithCarry, d, r, _) => dsyn(f, "adc", r, d),
+        Operation::Dyadic(_, Or, d, r, _) => dsyn(f, "or", r, d),
+        Operation::Dyadic(_, ExclusiveOr, d, r, _) => dsyn(f, "xor", r, d),
         Operation::Shift(ShiftType::LeftRotateThroughCarry, d) => syn(f, "rlc", d),
         Operation::Shift(ShiftType::RightRotateThroughCarry, d) => syn(f, "rrc", d),
         Operation::Shift(ShiftType::LeftArithmetic, d) => syn(f, "sla", d),
@@ -191,11 +194,14 @@ fn bits(_mach: Machine) -> Operation {
 }
 
 fn alu8(_mach: Machine) -> Operation {
-    // the eight-bit diadic operations like and, xor, or, etc
-    randomly!(
-        { Operation::And(random_stm8_operand(), Datum::Register(R::A))}
-        { Operation::Or(random_stm8_operand(), Datum::Register(R::A))}
-        { Operation::Xor(random_stm8_operand(), Datum::Register(R::A))}
+    let ops = vec![And, Or, ExclusiveOr];
+    let op = *ops.choose(&mut rand::thread_rng()).unwrap();
+    Operation::Dyadic(
+        Width::Width8,
+        op,
+        random_stm8_operand(),
+        Datum::Register(R::A),
+        Datum::Register(R::A),
     )
 }
 

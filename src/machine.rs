@@ -463,6 +463,15 @@ pub enum Test {
 }
 
 #[derive(Copy, Debug, Clone, PartialEq)]
+pub enum DyadicOperation {
+    Add,
+    AddWithCarry,
+    And,
+    Or,
+    ExclusiveOr, // TODO: Move the shifts here.
+}
+
+#[derive(Copy, Debug, Clone, PartialEq)]
 pub enum MonadicOperation {
     Complement,
     Decrement,
@@ -485,17 +494,38 @@ impl MonadicOperation {
     }
 }
 
+impl DyadicOperation {
+    fn evaluate<T>(&self, s: &State, a: Option<T>, b: Option<T>) -> Option<T>
+    where
+        T: num::PrimInt + std::iter::Sum + WrappingAdd + WrappingSub,
+    {
+        let (zero, one) = (&T::zero(), &T::one());
+        if let (Some(a), Some(b)) = (a, b) {
+            match self {
+                Self::Add => Some(a.wrapping_add(&b)),
+                Self::AddWithCarry => {
+                    if let Some(c) = s.carry {
+                        Some(a.wrapping_add(&b).wrapping_add(if c { one } else { zero }))
+                    } else {
+                        None
+                    }
+                }
+                Self::And => Some(a & b),
+            }
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(Clone, Debug, Copy)]
 pub enum Operation {
     Monadic(Width, MonadicOperation, Datum, Datum),
+    Dyadic(Width, DyadicOperation, Datum, Datum, Datum),
     DecimalAdjustAccumulator,
     Add(Datum, Datum, bool),
     BitCompare(Datum, Datum),
     Compare(Datum, Datum),
-    And(Datum, Datum),
-    Or(Datum, Datum),
-    Xor(Datum, Datum),
-    ExclusiveOr(Datum, Datum),
     Move(Datum, Datum),
     Shift(ShiftType, Datum),
     Carry(bool),
@@ -573,61 +603,12 @@ impl Instruction {
                 s.set_i16(dst, operation.evaluate(s.get_i16(src)));
                 FlowControl::FallThrough
             }
-            Operation::Add(source, destination, carry) => {
-                if !carry {
-                    s.carry = Some(false)
-                };
-                let (result, c, z, n, o, h) =
-                    add_to_reg8(s.get_i8(source), s.get_i8(destination), s.carry);
-
-                s.set_i8(destination, result);
-                s.sign = n;
-                s.carry = c;
-                s.zero = z;
-                s.overflow = o;
-                s.halfcarry = h;
+            Operation::Dyadic(Width::Width8, operation, a, b, dst) => {
+                s.set_i8(dst, operation.evaluate(s, s.get_i8(a), s.get_i8(b)));
                 FlowControl::FallThrough
             }
-            Operation::BitCompare(source, destination) => {
-                let (result, z) = bitwise_and(s.get_i8(source), s.get_i8(destination));
-                if let Some(result) = result {
-                    s.sign = Some(result < 0);
-                } else {
-                    s.sign = None
-                }
-                s.zero = z;
-                FlowControl::FallThrough
-            }
-            Operation::Compare(source, destination) => {
-                let (_result, c, z, n, _o, _h) =
-                    subtract_reg8(s.get_i8(source), s.get_i8(destination), Some(false));
-                s.sign = n;
-                s.carry = c;
-                s.zero = z;
-                FlowControl::FallThrough
-            }
-            Operation::And(source, destination) => {
-                let (result, z) = bitwise_and(s.get_i8(source), s.get_i8(destination));
-                s.set_i8(destination, result);
-                s.zero = z;
-                FlowControl::FallThrough
-            }
-            Operation::Or(source, destination) => {
-                let (result, z) = bitwise_or(s.get_i8(source), s.get_i8(destination));
-                s.set_i8(destination, result);
-                s.zero = z;
-                FlowControl::FallThrough
-            }
-            Operation::Xor(source, destination) => {
-                let (result, z) = bitwise_xor(s.get_i8(source), s.get_i8(destination));
-                s.set_i8(destination, result);
-                s.zero = z;
-                FlowControl::FallThrough
-            }
-            Operation::ExclusiveOr(source, destination) => {
-                let (result, z) = bitwise_xor(s.get_i8(source), s.get_i8(destination));
-                s.set_i8(destination, result);
-                s.zero = z;
+            Operation::Dyadic(Width::Width16, operation, a, b, dst) => {
+                s.set_i16(dst, operation.evaluate(s, s.get_i16(a), s.get_i16(b)));
                 FlowControl::FallThrough
             }
             Operation::Move(source, destination) => {
