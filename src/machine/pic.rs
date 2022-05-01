@@ -126,9 +126,9 @@ fn store_pic(_mach: Machine) -> Operation {
     // TODO: There also is movf f,d, which just updates the Z flag
     randomly!(
         { Operation::Move(Datum::Zero, random_accumulator_or_absolute())} // clrw and clrf f
-            { Operation::Move(random_absolute(), Datum::Register(R::A))}      // movf f
-                { Operation::Move(random_immediate(), Datum::Register(R::A))}     // movlw k
-                    { Operation::Move(Datum::Register(R::A), random_absolute())}      // movwf f
+        { Operation::Move(random_absolute(), Datum::Register(R::A))}      // movf f
+        { Operation::Move(random_immediate(), Datum::Register(R::A))}     // movlw k
+        { Operation::Move(Datum::Register(R::A), random_absolute())}      // movwf f
     )
 }
 
