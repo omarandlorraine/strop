@@ -351,10 +351,10 @@ mod tests {
         find_it("ccf", carry);
         find_it("clr", clear);
         find_it("clrw", clear);
-        find_it("dec", incdec);
-        find_it("decw", incdec);
-        find_it("inc", incdec);
-        find_it("incw", incdec);
+        find_it("dec", oneargs);
+        find_it("decw", oneargs);
+        find_it("inc", oneargs);
+        find_it("incw", oneargs);
         find_it("jrc", jumps);
         find_it("jrnc", jumps);
         find_it("ld a, xh", transfers);
