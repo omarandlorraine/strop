@@ -3,11 +3,11 @@ use crate::machine::random_immediate;
 use crate::machine::Datum;
 use crate::machine::Instruction;
 use crate::machine::Machine;
+use crate::machine::MonadicOperation;
 use crate::machine::Mos6502Variant;
 use crate::machine::Operation;
 use crate::machine::ShiftType;
 use crate::machine::Width;
-use crate::machine::MonadicOperation;
 use crate::machine::R;
 
 use rand::random;
@@ -62,10 +62,18 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Compare(thing, Datum::Register(R::Xl)) => syn(f, "cpx", thing),
         Operation::Compare(thing, Datum::Register(R::Yl)) => syn(f, "cpy", thing),
         Operation::ExclusiveOr(thing, Datum::Register(R::A)) => syn(f, "eor", thing),
-        Operation::Monadic(Width::Width8, MonadicOperation::Increment, Datum::Register(r), _) => write!(f, "\tin{}", regname(r)),
-        Operation::Monadic(Width::Width8, MonadicOperation::Decrement, Datum::Register(r), _) => write!(f, "\tde{}", regname(r)),
-        Operation::Monadic(Width::Width8, MonadicOperation::Increment, dat, _) => syn(f, "inc", dat),
-        Operation::Monadic(Width::Width8, MonadicOperation::Decrement, dat, _) => syn(f, "dec", dat),
+        Operation::Monadic(Width::Width8, MonadicOperation::Increment, Datum::Register(r), _) => {
+            write!(f, "\tin{}", regname(r))
+        }
+        Operation::Monadic(Width::Width8, MonadicOperation::Decrement, Datum::Register(r), _) => {
+            write!(f, "\tde{}", regname(r))
+        }
+        Operation::Monadic(Width::Width8, MonadicOperation::Increment, dat, _) => {
+            syn(f, "inc", dat)
+        }
+        Operation::Monadic(Width::Width8, MonadicOperation::Decrement, dat, _) => {
+            syn(f, "dec", dat)
+        }
         Operation::Carry(false) => write!(f, "\tclc"),
         Operation::Carry(true) => write!(f, "\tsec"),
         _ => {
