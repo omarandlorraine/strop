@@ -146,7 +146,7 @@ fn incdec_6502(mach: Machine) -> Operation {
         random_xy()
     };
     if random() {
-        Operation::Monadic(Width::Width8, MonadicOperation::Increment, reg, reg)
+        Operation::Monadic(Width::Width8, MonadicOperation::Decrement, reg, reg)
     } else {
         Operation::Monadic(Width::Width8, MonadicOperation::Increment, reg, reg)
     }
