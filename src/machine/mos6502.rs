@@ -6,6 +6,8 @@ use crate::machine::Machine;
 use crate::machine::Mos6502Variant;
 use crate::machine::Operation;
 use crate::machine::ShiftType;
+use crate::machine::Width;
+use crate::machine::MonadicOperation;
 use crate::machine::R;
 
 use rand::random;
@@ -60,8 +62,10 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Compare(thing, Datum::Register(R::Xl)) => syn(f, "cpx", thing),
         Operation::Compare(thing, Datum::Register(R::Yl)) => syn(f, "cpy", thing),
         Operation::ExclusiveOr(thing, Datum::Register(R::A)) => syn(f, "eor", thing),
-        Operation::Increment(Datum::Register(reg)) => write!(f, "\tin{}", regname(reg)),
-        Operation::Decrement(Datum::Register(reg)) => write!(f, "\tde{}", regname(reg)),
+        Operation::Monadic(Width::Width8, MonadicOperation::Increment, Datum::Register(r), _) => write!(f, "\tin{}", regname(r)),
+        Operation::Monadic(Width::Width8, MonadicOperation::Decrement, Datum::Register(r), _) => write!(f, "\tde{}", regname(r)),
+        Operation::Monadic(Width::Width8, MonadicOperation::Increment, dat, _) => syn(f, "inc", dat),
+        Operation::Monadic(Width::Width8, MonadicOperation::Decrement, dat, _) => syn(f, "dec", dat),
         Operation::Carry(false) => write!(f, "\tclc"),
         Operation::Carry(true) => write!(f, "\tsec"),
         _ => {
@@ -91,8 +95,8 @@ pub fn instr_length_6502(operation: Operation) -> usize {
         Operation::Move(Datum::Register(_), dat) => length(dat),
         Operation::Move(dat, Datum::Register(_)) => length(dat),
         Operation::Shift(_, dat) => length(dat),
-        Operation::Increment(dat) => length(dat),
-        Operation::Decrement(dat) => length(dat),
+        Operation::Monadic(Width::Width8, MonadicOperation::Increment, dat, _) => length(dat),
+        Operation::Monadic(Width::Width8, MonadicOperation::Decrement, dat, _) => length(dat),
         Operation::Add(dat, Datum::Register(R::A), true) => length(dat),
         Operation::And(dat, Datum::Register(R::A)) => length(dat),
         Operation::ExclusiveOr(dat, Datum::Register(R::A)) => length(dat),
@@ -134,9 +138,9 @@ fn incdec_6502(mach: Machine) -> Operation {
         random_xy()
     };
     if random() {
-        Operation::Increment(reg)
+        Operation::Monadic(Width::Width8, MonadicOperation::Increment, reg, reg)
     } else {
-        Operation::Decrement(reg)
+        Operation::Monadic(Width::Width8, MonadicOperation::Increment, reg, reg)
     }
 }
 
