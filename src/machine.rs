@@ -415,13 +415,8 @@ impl DyadicOperation {
         if let (Some(a), Some(b)) = (a, b) {
             match self {
                 Self::Add => Some(a.wrapping_add(&b)),
-                Self::AddWithCarry => {
-                    if let Some(c) = s.carry {
-                        Some(a.wrapping_add(&b).wrapping_add(if c { one } else { zero }))
-                    } else {
-                        None
-                    }
-                }
+                Self::AddWithCarry => 
+                    s.carry.map(|c| a.wrapping_add(&b).wrapping_add(if c { one } else { zero })),
                 Self::And => Some(a & b),
                 Self::Or => Some(a | b),
                 Self::ExclusiveOr => Some(a ^ b),
