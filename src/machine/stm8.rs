@@ -18,6 +18,12 @@ use rand::random;
 use strop::randomly;
 
 const A: Datum = Datum::Register(R::A);
+const XL: Datum = Datum::Register(R::Xl);
+const YL: Datum = Datum::Register(R::Yl);
+const XH: Datum = Datum::Register(R::Xh);
+const YH: Datum = Datum::Register(R::Yh);
+const X: Datum = Datum::RegisterPair(R::Xh, R::Xl);
+const Y: Datum = Datum::RegisterPair(R::Yh, R::Yl);
 
 fn random_stm8_operand() -> Datum {
     if random() {
@@ -28,13 +34,8 @@ fn random_stm8_operand() -> Datum {
 }
 
 fn random_register() -> Datum {
-    if random() {
-        Datum::Register(R::A)
-    } else if random() {
-        Datum::RegisterPair(R::Xh, R::Xl)
-    } else {
-        Datum::RegisterPair(R::Yh, R::Yl)
-    }
+    let regs = vec![A, X, Y];
+    *regs.choose(&mut rand::thread_rng()).unwrap()
 }
 
 fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -51,18 +52,18 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             Datum::Imm8(val) => write!(f, "\t{} #${:2}", s, val),
             Datum::Absolute(addr) if addr < 256 => write!(f, "\t{} ${:2}", s, addr),
             Datum::Absolute(addr) => write!(f, "\t{} ${:4}", s, addr),
-            Datum::Register(R::A) => write!(f, "\t{} a", s),
-            Datum::RegisterPair(R::Xh, R::Xl) => write!(f, "\t{}w x", s),
-            Datum::RegisterPair(R::Yh, R::Yl) => write!(f, "\t{}w y", s),
+            A => write!(f, "\t{} a", s),
+            X => write!(f, "\t{}w x", s),
+            Y => write!(f, "\t{}w y", s),
             _ => write!(f, "{} {:?}", s, d),
         }
     }
 
     fn dsyn(f: &mut std::fmt::Formatter, s: &'static str, r: Datum, d: Datum) -> std::fmt::Result {
         let (suffix, regname) = match r {
-            Datum::Register(R::A) => ("", "a"),
-            Datum::RegisterPair(R::Xh, R::Xl) => ("w", "x"),
-            Datum::RegisterPair(R::Yh, R::Yl) => ("w", "y"),
+            A => ("", "a"),
+            X => ("w", "x"),
+            Y => ("w", "y"),
             _ => panic!("dsyn baulks at {:?} for r", r),
         };
 
@@ -72,7 +73,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 write!(f, "\t{}{} {}, ${:2}", s, suffix, regname, addr)
             }
             Datum::Absolute(addr) => write!(f, "\t{}{} {}, ${:4}", s, suffix, regname, addr),
-            Datum::Register(R::A) => write!(f, "\t{}{} {}, a", suffix, regname, s),
+            A => write!(f, "\t{}{} {}, a", suffix, regname, s),
             _ => write!(f, "{}{} {}, {:?}", s, suffix, regname, d),
         }
     }
@@ -187,9 +188,9 @@ fn twoargs(_mach: Machine) -> Operation {
         op(Width::Width8, A)
     } else {
         let a = if random() {
-            Datum::RegisterPair(R::Xh, R::Xl)
+            X
         } else {
-            Datum::RegisterPair(R::Yh, R::Yl)
+            Y
         };
 
         op(Width::Width16, a)
@@ -216,8 +217,8 @@ fn alu8(_mach: Machine) -> Operation {
         Width::Width8,
         op,
         random_stm8_operand(),
-        Datum::Register(R::A),
-        Datum::Register(R::A),
+        A,
+        A,
     )
 }
 
@@ -248,22 +249,17 @@ fn carry(_mach: Machine) -> Operation {
 
 fn compare(_mach: Machine) -> Operation {
     randomly!(
-        { Operation::Compare(random_stm8_operand(), Datum::Register(R::A))}
-        { Operation::Compare(random_stm8_operand(), Datum::RegisterPair(R::Xh, R::Xl))}
-        { Operation::Compare(random_stm8_operand(), Datum::RegisterPair(R::Yh, R::Yl))}
-        { Operation::BitCompare(random_stm8_operand(), Datum::Register(R::A))}
+        { Operation::Compare(random_stm8_operand(), A)}
+        { Operation::Compare(random_stm8_operand(), X)}
+        { Operation::Compare(random_stm8_operand(), Y)}
+        { Operation::BitCompare(random_stm8_operand(), A)}
     )
 }
 
 fn transfers(_mach: Machine) -> Operation {
     fn rando() -> Datum {
-        randomly!(
-            { Datum::Register(R::A)}
-            { Datum::Register(R::Xl)}
-            { Datum::Register(R::Xh)}
-            { Datum::Register(R::Yl)}
-            { Datum::Register(R::Yh)}
-        )
+        let regs = vec![A, XL, XH, YL, YH];
+        *regs.choose(&mut rand::thread_rng()).unwrap()
     }
     Operation::Move(rando(), rando())
 }
@@ -297,7 +293,7 @@ fn oneargs(_mach: Machine) -> Operation {
 
     if random() {
         let a = if random() {
-            Datum::Register(R::A)
+            A
         } else {
             random_immediate()
         };
@@ -305,9 +301,9 @@ fn oneargs(_mach: Machine) -> Operation {
         op(Width::Width8, a)
     } else {
         let a = if random() {
-            Datum::RegisterPair(R::Xh, R::Xl)
+            X
         } else {
-            Datum::RegisterPair(R::Yh, R::Yl)
+            Y
         };
 
         op(Width::Width16, a)
