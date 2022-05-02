@@ -17,6 +17,8 @@ use crate::machine::rand::Rng;
 use rand::random;
 use strop::randomly;
 
+const A: Datum = Datum::Register(R::A);
+
 fn random_stm8_operand() -> Datum {
     if random() {
         random_immediate()
@@ -61,7 +63,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             Datum::Register(R::A) => ("", "a"),
             Datum::RegisterPair(R::Xh, R::Xl) => ("w", "x"),
             Datum::RegisterPair(R::Yh, R::Yl) => ("w", "y"),
-            _ => panic!(),
+            _ => panic!("dsyn baulks at {:?} for r", r),
         };
 
         match d {
@@ -123,11 +125,11 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match op {
         Operation::Compare(d, r) => dsyn(f, "cp", r, d),
         Operation::BitCompare(d, r) => dsyn(f, "bcp", r, d),
-        Operation::Dyadic(_, And, d, r, _) => dsyn(f, "and", r, d),
-        Operation::Dyadic(_, Add, d, r, _) => dsyn(f, "add", r, d),
-        Operation::Dyadic(_, AddWithCarry, d, r, _) => dsyn(f, "adc", r, d),
-        Operation::Dyadic(_, Or, d, r, _) => dsyn(f, "or", r, d),
-        Operation::Dyadic(_, ExclusiveOr, d, r, _) => dsyn(f, "xor", r, d),
+        Operation::Dyadic(_, And, _, d, r) => dsyn(f, "and", r, d),
+        Operation::Dyadic(_, Add, _, d, r) => dsyn(f, "add", r, d),
+        Operation::Dyadic(_, AddWithCarry, _, d, r) => dsyn(f, "adc", r, d),
+        Operation::Dyadic(_, Or, _, d, r) => dsyn(f, "or", r, d),
+        Operation::Dyadic(_, ExclusiveOr, _, d, r) => dsyn(f, "xor", r, d),
         Operation::Shift(ShiftType::LeftRotateThroughCarry, d) => syn(f, "rlc", d),
         Operation::Shift(ShiftType::RightRotateThroughCarry, d) => syn(f, "rrc", d),
         Operation::Shift(ShiftType::LeftArithmetic, d) => syn(f, "sla", d),
@@ -182,13 +184,7 @@ fn twoargs(_mach: Machine) -> Operation {
     }
 
     if random() {
-        let a = if random() {
-            Datum::Register(R::A)
-        } else {
-            random_immediate()
-        };
-
-        op(Width::Width8, a)
+        op(Width::Width8, A)
     } else {
         let a = if random() {
             Datum::RegisterPair(R::Xh, R::Xl)
