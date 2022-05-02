@@ -88,7 +88,7 @@ A couple of seconds later, the program outputs:
     	asla
     	aba
 
-Since the Motorola 6800 has no multiply instruction, it's generated some shifts
+Since the Motorola 6800 has no multiply instruction, strop's generated some shifts
 and adds and things that implement a multiplication by 15.
 
 You might need something other than the miscellaneous built-in functions that
