@@ -319,36 +319,6 @@ mod tests {
         disasm(Machine::Pic(PicVariant::Pic14));
         disasm(Machine::Pic(PicVariant::Pic16));
     }
-
-    #[test]
-    fn add_to_reg8_test() {
-        assert_eq!(
-            add_to_reg8(Some(3), Some(3), Some(false)),
-            (
-                Some(6),
-                Some(false),
-                Some(false),
-                Some(false),
-                Some(false),
-                Some(false)
-            )
-        );
-        assert_eq!(
-            add_to_reg8(Some(127), Some(1), Some(false)),
-            (
-                Some(-128),
-                Some(true),
-                Some(false),
-                Some(true),
-                Some(true),
-                Some(true)
-            )
-        );
-        assert_eq!(
-            add_to_reg8(None, Some(3), Some(false)),
-            (None, None, None, None, None, None)
-        );
-    }
 }
 
 #[derive(Clone, Debug, Copy)]
@@ -415,8 +385,9 @@ impl DyadicOperation {
         if let (Some(a), Some(b)) = (a, b) {
             match self {
                 Self::Add => Some(a.wrapping_add(&b)),
-                Self::AddWithCarry => 
-                    s.carry.map(|c| a.wrapping_add(&b).wrapping_add(if c { one } else { zero })),
+                Self::AddWithCarry => s
+                    .carry
+                    .map(|c| a.wrapping_add(&b).wrapping_add(if c { one } else { zero })),
                 Self::And => Some(a & b),
                 Self::Or => Some(a | b),
                 Self::ExclusiveOr => Some(a ^ b),
