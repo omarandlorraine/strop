@@ -616,7 +616,6 @@ pub struct State {
     zero: Option<bool>,
     carry: Option<bool>,
     sign: Option<bool>,
-    overflow: Option<bool>,
     halfcarry: Option<bool>,
     heap: HashMap<u16, Option<i8>>,
 }
@@ -640,7 +639,6 @@ impl State {
             zero: None,
             carry: None,
             sign: None,
-            overflow: None,
             halfcarry: None,
             heap: HashMap::new(),
         }
