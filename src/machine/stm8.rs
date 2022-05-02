@@ -124,7 +124,6 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     }
 
     match op {
-        Operation::Compare(d, r) => dsyn(f, "cp", r, d),
         Operation::BitCompare(d, r) => dsyn(f, "bcp", r, d),
         Operation::Dyadic(_, And, _, d, r) => dsyn(f, "and", r, d),
         Operation::Dyadic(_, Add, _, d, r) => dsyn(f, "add", r, d),
@@ -238,12 +237,7 @@ fn carry(_mach: Machine) -> Operation {
 }
 
 fn compare(_mach: Machine) -> Operation {
-    randomly!(
-        { Operation::Compare(random_stm8_operand(), A)}
-        { Operation::Compare(random_stm8_operand(), X)}
-        { Operation::Compare(random_stm8_operand(), Y)}
-        { Operation::BitCompare(random_stm8_operand(), A)}
-    )
+    Operation::BitCompare(random_stm8_operand(), A)
 }
 
 fn transfers(_mach: Machine) -> Operation {

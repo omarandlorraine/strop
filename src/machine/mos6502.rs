@@ -64,9 +64,6 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Dyadic(Width::Width8, And, A, thing, A) => syn(f, "and", thing),
         Operation::Dyadic(Width::Width8, ExclusiveOr, A, thing, A) => syn(f, "eor", thing),
         Operation::Dyadic(Width::Width8, Or, A, thing, A) => syn(f, "ora", thing),
-        Operation::Compare(thing, Datum::Register(R::A)) => syn(f, "cmp", thing),
-        Operation::Compare(thing, Datum::Register(R::Xl)) => syn(f, "cpx", thing),
-        Operation::Compare(thing, Datum::Register(R::Yl)) => syn(f, "cpy", thing),
         Operation::Monadic(Width::Width8, MonadicOperation::Increment, Datum::Register(r), _) => {
             write!(f, "\tin{}", regname(r))
         }
@@ -110,7 +107,6 @@ pub fn instr_length_6502(operation: Operation) -> usize {
         Operation::Shift(_, dat) => length(dat),
         Operation::Monadic(Width::Width8, MonadicOperation::Increment, dat, _) => length(dat),
         Operation::Monadic(Width::Width8, MonadicOperation::Decrement, dat, _) => length(dat),
-        Operation::Compare(dat, _) => length(dat),
         Operation::Dyadic(Width::Width8, _, _, dat, _) => length(dat),
         Operation::Carry(_) => 1,
         _ => 0,

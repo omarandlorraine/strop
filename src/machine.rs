@@ -190,41 +190,6 @@ pub fn bitwise_and(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>)
     (None, None)
 }
 
-pub fn subtract_reg8(
-    reg: Option<i8>,
-    a: Option<i8>,
-    carry: Option<bool>,
-) -> (
-    Option<i8>,
-    Option<bool>,
-    Option<bool>,
-    Option<bool>,
-    Option<bool>,
-    Option<bool>,
-) {
-    // The return values are the result of the addition, then the flags, carry, zero, sign, overflow, half-carry.
-    if let Some(operand) = a {
-        if let Some(r) = reg {
-            if let Some(c) = carry {
-                let v = operand.wrapping_sub(if c { 1 } else { 0 });
-                let result = r.wrapping_sub(v);
-                let z = result == 0;
-                let c = r.checked_sub(v).is_none();
-                let n = result < 0;
-                let o = (r < 0 && v < 0 && result >= 0) || (r > 0 && v > 0 && result <= 0);
-                let h = ((r ^ v ^ result) & 0x10) == 0x10;
-                (Some(result), Some(c), Some(z), Some(n), Some(o), Some(h))
-            } else {
-                (None, None, None, None, None, None)
-            }
-        } else {
-            (None, None, None, None, None, None)
-        }
-    } else {
-        (None, None, None, None, None, None)
-    }
-}
-
 fn decimal_adjust(
     accumulator: Option<i8>,
     carry: Option<bool>,
@@ -404,7 +369,6 @@ pub enum Operation {
     Dyadic(Width, DyadicOperation, Datum, Datum, Datum),
     DecimalAdjustAccumulator,
     BitCompare(Datum, Datum),
-    Compare(Datum, Datum),
     Move(Datum, Datum),
     Shift(ShiftType, Datum),
     Carry(bool),
@@ -506,14 +470,6 @@ impl Instruction {
                 } else {
                     s.sign = None
                 }
-                s.zero = z;
-                FlowControl::FallThrough
-            }
-            Operation::Compare(source, destination) => {
-                let (_result, c, z, n, _o, _h) =
-                    subtract_reg8(s.get_i8(source), s.get_i8(destination), Some(false));
-                s.sign = n;
-                s.carry = c;
                 s.zero = z;
                 FlowControl::FallThrough
             }
