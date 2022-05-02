@@ -190,59 +190,6 @@ pub fn bitwise_and(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>)
     (None, None)
 }
 
-pub fn bitwise_xor(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>) {
-    if let Some(operand) = a {
-        if let Some(r) = reg {
-            return (Some(r ^ operand), Some(r ^ operand == 0));
-        }
-    }
-    (None, None)
-}
-
-pub fn bitwise_or(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>) {
-    if let Some(operand) = a {
-        if let Some(r) = reg {
-            return (Some(r | operand), Some(r | operand == 0));
-        }
-    }
-    (None, None)
-}
-
-pub fn add_to_reg16(
-    reg: Option<i16>,
-    a: Option<i16>,
-    carry: Option<bool>,
-) -> (
-    Option<i16>,
-    Option<bool>,
-    Option<bool>,
-    Option<bool>,
-    Option<bool>,
-    Option<bool>,
-) {
-    // The return values are the result of the addition, then the flags, carry, zero, sign, overflow, half-carry.
-    if let Some(operand) = a {
-        if let Some(r) = reg {
-            if let Some(c) = carry {
-                let v = operand.wrapping_add(if c { 1 } else { 0 });
-                let result = r.wrapping_add(v);
-                let z = result == 0;
-                let c = r.checked_add(v).is_none();
-                let n = result < 0;
-                let o = (r < 0 && v < 0 && result >= 0) || (r > 0 && v > 0 && result <= 0);
-                let h = ((r ^ v ^ result) & 0x10) == 0x10;
-                (Some(result), Some(c), Some(z), Some(n), Some(o), Some(h))
-            } else {
-                (None, None, None, None, None, None)
-            }
-        } else {
-            (None, None, None, None, None, None)
-        }
-    } else {
-        (None, None, None, None, None, None)
-    }
-}
-
 pub fn subtract_reg8(
     reg: Option<i8>,
     a: Option<i8>,
@@ -263,41 +210,6 @@ pub fn subtract_reg8(
                 let result = r.wrapping_sub(v);
                 let z = result == 0;
                 let c = r.checked_sub(v).is_none();
-                let n = result < 0;
-                let o = (r < 0 && v < 0 && result >= 0) || (r > 0 && v > 0 && result <= 0);
-                let h = ((r ^ v ^ result) & 0x10) == 0x10;
-                (Some(result), Some(c), Some(z), Some(n), Some(o), Some(h))
-            } else {
-                (None, None, None, None, None, None)
-            }
-        } else {
-            (None, None, None, None, None, None)
-        }
-    } else {
-        (None, None, None, None, None, None)
-    }
-}
-
-pub fn add_to_reg8(
-    reg: Option<i8>,
-    a: Option<i8>,
-    carry: Option<bool>,
-) -> (
-    Option<i8>,
-    Option<bool>,
-    Option<bool>,
-    Option<bool>,
-    Option<bool>,
-    Option<bool>,
-) {
-    // The return values are the result of the addition, then the flags, carry, zero, sign, overflow, half-carry.
-    if let Some(operand) = a {
-        if let Some(r) = reg {
-            if let Some(c) = carry {
-                let v = operand.wrapping_add(if c { 1 } else { 0 });
-                let result = r.wrapping_add(v);
-                let z = result == 0;
-                let c = r.checked_add(v).is_none();
                 let n = result < 0;
                 let o = (r < 0 && v < 0 && result >= 0) || (r > 0 && v > 0 && result <= 0);
                 let h = ((r ^ v ^ result) & 0x10) == 0x10;

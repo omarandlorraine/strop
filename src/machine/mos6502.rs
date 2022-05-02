@@ -117,7 +117,7 @@ pub fn instr_length_6502(operation: Operation) -> usize {
     }
 }
 
-fn random_source_6502() -> Datum {
+fn random_source() -> Datum {
     if random() {
         random_immediate()
     } else {
@@ -160,7 +160,7 @@ fn alu_6502(_mach: Machine) -> Operation {
     // these all have the same available addressing modes
     let ops = vec![AddWithCarry, And, Or, ExclusiveOr];
     let op = *ops.choose(&mut rand::thread_rng()).unwrap();
-    Operation::Dyadic(Width::Width8, op, A, random_absolute(), A)
+    Operation::Dyadic(Width::Width8, op, A, random_source(), A)
 }
 
 fn transfers_6502(_mach: Machine) -> Operation {
