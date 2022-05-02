@@ -187,11 +187,7 @@ fn twoargs(_mach: Machine) -> Operation {
     if random() {
         op(Width::Width8, A)
     } else {
-        let a = if random() {
-            X
-        } else {
-            Y
-        };
+        let a = if random() { X } else { Y };
 
         op(Width::Width16, a)
     }
@@ -213,13 +209,7 @@ fn bits(_mach: Machine) -> Operation {
 fn alu8(_mach: Machine) -> Operation {
     let ops = vec![And, Or, ExclusiveOr];
     let op = *ops.choose(&mut rand::thread_rng()).unwrap();
-    Operation::Dyadic(
-        Width::Width8,
-        op,
-        random_stm8_operand(),
-        A,
-        A,
-    )
+    Operation::Dyadic(Width::Width8, op, random_stm8_operand(), A, A)
 }
 
 fn shifts(_mach: Machine) -> Operation {
@@ -292,19 +282,11 @@ fn oneargs(_mach: Machine) -> Operation {
     }
 
     if random() {
-        let a = if random() {
-            A
-        } else {
-            random_immediate()
-        };
+        let a = if random() { A } else { random_immediate() };
 
         op(Width::Width8, a)
     } else {
-        let a = if random() {
-            X
-        } else {
-            Y
-        };
+        let a = if random() { X } else { Y };
 
         op(Width::Width16, a)
     }
