@@ -1,7 +1,7 @@
 use crate::machine::random_absolute;
 use crate::machine::random_immediate;
 use crate::machine::Datum;
-use crate::machine::DyadicOperation::{Add, And, ExclusiveOr, Or};
+use crate::machine::DyadicOperation::{Add, And};
 use crate::machine::Instruction;
 use crate::machine::Machine;
 use crate::machine::MonadicOperation;
@@ -13,6 +13,8 @@ use crate::machine::R;
 
 use rand::random;
 use strop::randomly;
+
+const W: Datum = Datum::Register(R::A);
 
 fn dasm(op: Operation, fr: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     fn dest(d: Datum) -> &'static str {
@@ -28,13 +30,6 @@ fn dasm(op: Operation, fr: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         }
         Operation::Monadic(_, MonadicOperation::Increment, Datum::Absolute(f), dst) => {
             write!(fr, "\tincf {}, {}", f, dest(dst))
-        }
-
-        Operation::Add(Datum::Register(R::A), Datum::Absolute(f), false) => {
-            write!(fr, "\taddwf {}, 1", f)
-        }
-        Operation::Add(Datum::Absolute(f), Datum::Register(R::A), false) => {
-            write!(fr, "\taddwf {}, 0", f)
         }
         Operation::Dyadic(
             Width::Width8,
@@ -63,9 +58,9 @@ fn dasm(op: Operation, fr: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         ) => {
             write!(fr, "\tandlw {}, 0", k)
         }
-        Operation::Add(Datum::Imm8(k), Datum::Register(R::A), false) => {
-            write!(fr, "\taddlw {}, 0", k)
-        }
+        Operation::Dyadic(Width::Width8, Add, W, Datum::Imm8(k), W) => { write!(fr, "\taddlw {}, 0", k) }
+        Operation::Dyadic(Width::Width8, Add, W, Datum::Absolute(f), W) => { write!(fr, "\taddwf {}, 0", f) }
+        Operation::Dyadic(Width::Width8, Add, W, _, Datum::Absolute(f)) => { write!(fr, "\taddwf {}, 1", f) }
         Operation::Move(Datum::Absolute(f), Datum::Register(R::A)) => {
             write!(fr, "\tmovf {}, 0", f)
         }
@@ -113,12 +108,13 @@ fn inc_dec_pic(_mach: Machine) -> Operation {
 fn add_pic(mach: Machine) -> Operation {
     let dst = random_accumulator_or_absolute();
     if dst == Datum::Register(R::A) && mach != Machine::Pic(PicVariant::Pic12) && random() {
-        // This is an immediate add. Not available on PIC12.
-        Operation::Add(random_immediate(), Datum::Register(R::A), false) // addlw k
+        // This is an immediate add (addlw). Not available on PIC12.
+        Operation::Dyadic(Width::Width8, Add, W, random_immediate(), W)
     } else if random() {
-        Operation::Add(random_absolute(), Datum::Register(R::A), false) // addwf f
+        Operation::Dyadic(Width::Width8, Add, W, random_absolute(), W) // addwf f, 0
     } else {
-        Operation::Add(Datum::Register(R::A), random_absolute(), false) // addwf f,d
+        let f = random_absolute();
+        Operation::Dyadic(Width::Width8, Add, W, f, f) // addwf f, 1
     }
 }
 
