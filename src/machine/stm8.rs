@@ -359,9 +359,9 @@ mod tests {
         // I don't think we need call callf callr halt iret jrf jrih jril jrm nop ret retf rim sim trap wfe wfi
         // TODO: div divw exg exgw ld ldw mov mul pop popw push pushw rvf sbc sub subw swap tnz tnzw
         // TODO: conditional jumps, relative jump, more shifts
-        find_it("adc", add_adc);
-        find_it("add", add_adc);
-        find_it("addw", add_adc);
+        find_it("adc", twoargs);
+        find_it("add", twoargs);
+        find_it("addw", twoargs);
         find_it("and", alu8);
         find_it("bccm", bits);
         find_it("bcp", compare);

@@ -180,12 +180,8 @@ mod tests {
                 Operation::Move(Datum::Register(R::A), Datum::Register(R::A)) => {
                     panic!("{} produced a move from W to W", fname)
                 }
-                Operation::Add(Datum::Absolute(_), Datum::Absolute(_), _) => panic!(
+                Operation::Dyadic(_, _, Datum::Absolute(_), Datum::Absolute(_), _) => panic!(
                     "{} produced an Add operation with two operands in memory",
-                    fname
-                ),
-                Operation::And(Datum::Absolute(_), Datum::Absolute(_)) => panic!(
-                    "{} produced an And operation with two operands in memory",
                     fname
                 ),
                 _ => {}
