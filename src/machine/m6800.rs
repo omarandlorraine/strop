@@ -1,14 +1,21 @@
+use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::random_absolute;
 use crate::machine::random_immediate;
 use crate::machine::Datum;
+use crate::machine::DyadicOperation;
+use crate::machine::DyadicOperation::{Add, AddWithCarry};
 use crate::machine::Instruction;
 use crate::machine::Machine;
 use crate::machine::Operation;
 use crate::machine::ShiftType;
+use crate::machine::Width;
 use crate::machine::R;
 
 use rand::random;
 use strop::randomly;
+
+const A: Datum = Datum::Register(R::A);
+const B: Datum = Datum::Register(R::B);
 
 fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     fn regname(r: R) -> &'static str {
@@ -38,7 +45,17 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         }
     }
 
-    fn dyadic(f: &mut std::fmt::Formatter, s: &'static str, r: R, d: Datum) -> std::fmt::Result {
+    fn dyadic(
+        f: &mut std::fmt::Formatter,
+        s: &'static str,
+        r: Datum,
+        d: Datum,
+    ) -> std::fmt::Result {
+        let r = match r {
+            Datum::Register(r) => r,
+            _ => panic!(),
+        };
+
         match d {
             Datum::Absolute(address) => {
                 write!(f, "\t{}{} {}", s, regname(r), address)
@@ -56,15 +73,15 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Move(Datum::Register(from), Datum::Register(to)) => {
             write!(f, "\tt{}{}", regname(from), regname(to))
         }
-        Operation::Move(Datum::Register(from), to) => dyadic(f, "sta", from, to),
+        Operation::Move(Datum::Register(from), to) => dyadic(f, "sta", Datum::Register(from), to),
         Operation::DecimalAdjustAccumulator => {
             write!(f, "\tdaa")
         }
-        Operation::Add(Datum::Register(R::B), Datum::Register(R::A), false) => {
+        Operation::Dyadic(Width::Width8, Add, A, B, A) => {
             write!(f, "\taba")
         }
-        Operation::Add(d, Datum::Register(r), true) => dyadic(f, "adc", r, d),
-        Operation::Add(d, Datum::Register(r), false) => dyadic(f, "add", r, d),
+        Operation::Dyadic(Width::Width8, Add, _, d, r) => dyadic(f, "add", r, d),
+        Operation::Dyadic(Width::Width8, AddWithCarry, _, d, r) => dyadic(f, "adc", r, d),
         Operation::Shift(ShiftType::LeftArithmetic, d) => monadic(f, "asl", d),
         Operation::Shift(ShiftType::RightArithmetic, d) => monadic(f, "lsr", d),
         Operation::Shift(ShiftType::LeftRotateThroughCarry, d) => monadic(f, "rol", d),
@@ -102,11 +119,18 @@ fn rmw_datum_6800() -> Datum {
 
 fn add_6800(_mach: Machine) -> Operation {
     let dst = random_accumulator_6800();
-    if dst == Datum::Register(R::A) && random() {
-        Operation::Add(Datum::Register(R::B), dst, false) // ABA
-    } else {
-        Operation::Add(random_source_6800(), dst, random()) // ADCA, ADCB, ADDA, ADDB
+
+    fn src(op: DyadicOperation, dst: Datum) -> Datum {
+        if op == Add && dst == Datum::Register(R::A) && random() {
+            Datum::Register(R::B)
+        } else {
+            random_source_6800()
+        }
     }
+
+    let ops = vec![Add, AddWithCarry];
+    let op = *ops.choose(&mut rand::thread_rng()).unwrap();
+    Operation::Dyadic(Width::Width8, op, dst, src(op, dst), dst)
 }
 
 fn transfers_6800(_mach: Machine) -> Operation {
