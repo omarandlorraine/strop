@@ -1,6 +1,6 @@
 use crate::machine::random_absolute;
 use crate::machine::random_immediate;
-use crate::machine::DyadicOperation::{Add, And, ExclusiveOr, Or};
+use crate::machine::DyadicOperation::{Add, AddWithCarry, And, ExclusiveOr, Or};
 use crate::machine::FlowControl;
 use crate::machine::Instruction;
 use crate::machine::MonadicOperation::{Complement, Decrement, Increment, Negate};
@@ -121,8 +121,6 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     }
 
     match op {
-        Operation::Add(d, r, true) => dsyn(f, "adc", r, d),
-        Operation::Add(d, r, false) => dsyn(f, "add", r, d),
         Operation::Compare(d, r) => dsyn(f, "cp", r, d),
         Operation::BitCompare(d, r) => dsyn(f, "bcp", r, d),
         Operation::Dyadic(_, And, d, r, _) => dsyn(f, "and", r, d),
@@ -176,8 +174,30 @@ fn clear(_mach: Machine) -> Operation {
     }
 }
 
-fn add_adc(_mach: Machine) -> Operation {
-    Operation::Add(random_stm8_operand(), random_register(), random())
+fn twoargs(_mach: Machine) -> Operation {
+    fn op(w: Width, a: Datum) -> Operation {
+        let vs = vec![Add, AddWithCarry];
+        let o = vs.choose(&mut rand::thread_rng());
+        Operation::Dyadic(w, *o.unwrap(), a, random_absolute(), a)
+    }
+
+    if random() {
+        let a = if random() {
+            Datum::Register(R::A)
+        } else {
+            random_immediate()
+        };
+
+        op(Width::Width8, a)
+    } else {
+        let a = if random() {
+            Datum::RegisterPair(R::Xh, R::Xl)
+        } else {
+            Datum::RegisterPair(R::Yh, R::Yl)
+        };
+
+        op(Width::Width16, a)
+    }
 }
 
 fn bits(_mach: Machine) -> Operation {
@@ -300,7 +320,6 @@ fn oneargs(_mach: Machine) -> Operation {
 
 pub fn instr_stm8(mach: Machine) -> Instruction {
     randomly!(
-    { Instruction::new(mach, add_adc, dasm)}
     { Instruction::new(mach, clear, dasm)}
     { Instruction::new(mach, transfers, dasm)}
     { Instruction::new(mach, alu8, dasm)}
@@ -309,6 +328,7 @@ pub fn instr_stm8(mach: Machine) -> Instruction {
     { Instruction::new(mach, compare, dasm)}
     { Instruction::new(mach, jumps, dasm)}
     { Instruction::new(mach, oneargs, dasm)}
+    { Instruction::new(mach, twoargs, dasm)}
     { Instruction::new(mach, shifts, dasm)}
     )
 }
@@ -336,7 +356,7 @@ mod tests {
 
     #[test]
     fn instruction_set_stm8() {
-        // I don't think we need call callf callr halt iret jrf jrih jril jrm nop ret retf rim sim trap, wfe, wfi
+        // I don't think we need call callf callr halt iret jrf jrih jril jrm nop ret retf rim sim trap wfe wfi
         // TODO: div divw exg exgw ld ldw mov mul pop popw push pushw rvf sbc sub subw swap tnz tnzw
         // TODO: conditional jumps, relative jump, more shifts
         find_it("adc", add_adc);

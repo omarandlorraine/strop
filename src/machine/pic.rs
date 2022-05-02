@@ -1,6 +1,7 @@
 use crate::machine::random_absolute;
 use crate::machine::random_immediate;
 use crate::machine::Datum;
+use crate::machine::DyadicOperation::{Add, And, ExclusiveOr, Or};
 use crate::machine::Instruction;
 use crate::machine::Machine;
 use crate::machine::MonadicOperation;
@@ -35,17 +36,35 @@ fn dasm(op: Operation, fr: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Add(Datum::Absolute(f), Datum::Register(R::A), false) => {
             write!(fr, "\taddwf {}, 0", f)
         }
-        Operation::Add(Datum::Imm8(k), Datum::Register(R::A), false) => {
-            write!(fr, "\taddlw {}, 0", k)
+        Operation::Dyadic(
+            Width::Width8,
+            And,
+            Datum::Absolute(f),
+            Datum::Register(R::A),
+            Datum::Absolute(_),
+        ) => {
+            write!(fr, "\tandwf {}, 1", f)
         }
-        Operation::And(Datum::Imm8(k), Datum::Register(R::A)) => {
-            write!(fr, "\tandlw {}, 0", k)
-        }
-        Operation::And(Datum::Absolute(f), Datum::Register(R::A)) => {
+        Operation::Dyadic(
+            Width::Width8,
+            And,
+            Datum::Absolute(f),
+            Datum::Register(R::A),
+            Datum::Register(R::A),
+        ) => {
             write!(fr, "\tandwf {}, 0", f)
         }
-        Operation::And(Datum::Register(R::A), Datum::Absolute(f)) => {
-            write!(fr, "\tandwf {}, 1", f)
+        Operation::Dyadic(
+            Width::Width8,
+            And,
+            Datum::Imm8(k),
+            Datum::Register(R::A),
+            Datum::Register(R::A),
+        ) => {
+            write!(fr, "\tandlw {}, 0", k)
+        }
+        Operation::Add(Datum::Imm8(k), Datum::Register(R::A), false) => {
+            write!(fr, "\taddlw {}, 0", k)
         }
         Operation::Move(Datum::Absolute(f), Datum::Register(R::A)) => {
             write!(fr, "\tmovf {}, 0", f)
@@ -115,10 +134,13 @@ fn shifts_pic(_mach: Machine) -> Operation {
 
 fn and_pic(_mach: Machine) -> Operation {
     let w = Datum::Register(R::A);
+    let imm = random_immediate();
+    let abs = random_absolute();
+
     randomly!(
-        { Operation::And(random_immediate(), w)} // andlw
-        { Operation::And(random_absolute(), w)}  // andwf something, 0
-        { Operation::And(w, random_absolute())}  // andwf something, 1
+        { Operation::Dyadic(Width::Width8, And, imm, w, w)  /* andlw */ }
+        { Operation::Dyadic(Width::Width8, And, abs, w, w)  /* andwf something, 0 */ }
+        { Operation::Dyadic(Width::Width8, And, abs, w, abs)  /* andwf something, 1 */ }
     )
 }
 

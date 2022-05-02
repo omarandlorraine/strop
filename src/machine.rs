@@ -75,7 +75,7 @@ impl std::fmt::Display for Instruction {
     }
 }
 
-#[derive(Copy, Debug, Clone, PartialEq)]
+#[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum R {
     A,
     B,
@@ -92,7 +92,7 @@ pub enum R {
     Yl,
 }
 
-#[derive(Copy, Debug, Clone, PartialEq)]
+#[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum Datum {
     Register(R),
     RegisterPair(R, R),
@@ -511,6 +511,8 @@ impl DyadicOperation {
                     }
                 }
                 Self::And => Some(a & b),
+                Self::Or => Some(a | b),
+                Self::ExclusiveOr => Some(a ^ b),
             }
         } else {
             None
@@ -523,7 +525,6 @@ pub enum Operation {
     Monadic(Width, MonadicOperation, Datum, Datum),
     Dyadic(Width, DyadicOperation, Datum, Datum, Datum),
     DecimalAdjustAccumulator,
-    Add(Datum, Datum, bool),
     BitCompare(Datum, Datum),
     Compare(Datum, Datum),
     Move(Datum, Datum),
