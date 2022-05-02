@@ -58,9 +58,15 @@ fn dasm(op: Operation, fr: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         ) => {
             write!(fr, "\tandlw {}, 0", k)
         }
-        Operation::Dyadic(Width::Width8, Add, W, Datum::Imm8(k), W) => { write!(fr, "\taddlw {}, 0", k) }
-        Operation::Dyadic(Width::Width8, Add, W, Datum::Absolute(f), W) => { write!(fr, "\taddwf {}, 0", f) }
-        Operation::Dyadic(Width::Width8, Add, W, _, Datum::Absolute(f)) => { write!(fr, "\taddwf {}, 1", f) }
+        Operation::Dyadic(Width::Width8, Add, W, Datum::Imm8(k), W) => {
+            write!(fr, "\taddlw {}, 0", k)
+        }
+        Operation::Dyadic(Width::Width8, Add, W, Datum::Absolute(f), W) => {
+            write!(fr, "\taddwf {}, 0", f)
+        }
+        Operation::Dyadic(Width::Width8, Add, W, _, Datum::Absolute(f)) => {
+            write!(fr, "\taddwf {}, 1", f)
+        }
         Operation::Move(Datum::Absolute(f), Datum::Register(R::A)) => {
             write!(fr, "\tmovf {}, 0", f)
         }

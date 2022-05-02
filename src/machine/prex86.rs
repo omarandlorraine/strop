@@ -1,5 +1,7 @@
+use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::random_immediate;
 use crate::machine::Datum;
+use crate::machine::DyadicOperation::{Add, AddWithCarry};
 use crate::machine::Instruction;
 use crate::machine::Machine;
 use crate::machine::MonadicOperation;
@@ -83,10 +85,22 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     }
 
     match op {
-        Operation::Add(thing, Datum::Register(R::A), false) => {
+        Operation::Dyadic(
+            Width::Width8,
+            Add,
+            thing,
+            Datum::Register(R::A),
+            Datum::Register(R::A),
+        ) => {
             write!(f, "\tadd a, {}", name(thing))
         }
-        Operation::Add(thing, Datum::Register(R::A), true) => {
+        Operation::Dyadic(
+            Width::Width8,
+            AddWithCarry,
+            thing,
+            Datum::Register(R::A),
+            Datum::Register(R::A),
+        ) => {
             write!(f, "\tadc a, {}", name(thing))
         }
         Operation::Move(from, to) => {
@@ -113,9 +127,18 @@ fn add8_prex86(mach: Machine) -> Operation {
     // From what I can see, the KR580VM1 and similar CPUs, can do:
     //  - 8 bit adds with or without carry, destination is the Accumulator
     //  - 16 bit add without carry, destination is the HL register pair
-    randomly!(
-        { Operation::Add(random_immediate(), Datum::Register(R::A), random())}
-        { Operation::Add(random_r_prex86(mach), Datum::Register(R::A), random())}
+    let ops = vec![Add, AddWithCarry];
+    let op = *ops.choose(&mut rand::thread_rng()).unwrap();
+
+    let args = vec![random_immediate(), random_r_prex86(mach)];
+    let arg = *args.choose(&mut rand::thread_rng()).unwrap();
+
+    Operation::Dyadic(
+        Width::Width8,
+        op,
+        arg,
+        Datum::Register(R::A),
+        Datum::Register(R::A),
     )
 }
 
