@@ -61,7 +61,9 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Shift(ShiftType::RightRotateThroughCarry, thing) => syn(f, "ror", thing),
         Operation::Shift(ShiftType::LeftRotateThroughCarry, thing) => syn(f, "rol", thing),
         Operation::Dyadic(Width::Width8, AddWithCarry, A, thing, A) => syn(f, "adc", thing),
-        Operation::Dyadic(Width::Width8, And, A, thing, A) => syn(f, "adc", thing),
+        Operation::Dyadic(Width::Width8, And, A, thing, A) => syn(f, "and", thing),
+        Operation::Dyadic(Width::Width8, ExclusiveOr, A, thing, A) => syn(f, "eor", thing),
+        Operation::Dyadic(Width::Width8, Or, A, thing, A) => syn(f, "ora", thing),
         Operation::Compare(thing, Datum::Register(R::A)) => syn(f, "cmp", thing),
         Operation::Compare(thing, Datum::Register(R::Xl)) => syn(f, "cpx", thing),
         Operation::Compare(thing, Datum::Register(R::Yl)) => syn(f, "cpy", thing),
@@ -242,9 +244,7 @@ mod tests {
         // TODO: bcc bcs beq bit bmi bne bpl bvc bvs cld clv dec inc jmp ora pha pla sbc sed tsx txs
         // I don't think we need to bother with brk cli jsr nop php plp rti rts sei
         find_it("clc", secl_6502, mach);
-        find_it("cmp", alu_6502, mach);
-        find_it("cpx", alu_6502, mach);
-        find_it("cpy", alu_6502, mach);
+        // Temporarily removed cmp cpx cpy untill I figure out what I want to do with them
         find_it("dex", incdec_6502, mach);
         find_it("dey", incdec_6502, mach);
         find_it("eor", alu_6502, mach);
