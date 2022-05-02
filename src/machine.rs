@@ -621,7 +621,24 @@ impl Instruction {
                 s.accumulator = decimal_adjust(s.accumulator, s.carry, s.halfcarry);
                 FlowControl::FallThrough
             }
-
+            Operation::BitCompare(source, destination) => {
+                let (result, z) = bitwise_and(s.get_i8(source), s.get_i8(destination));
+                if let Some(result) = result {
+                    s.sign = Some(result < 0);
+                } else {
+                    s.sign = None
+                }
+                s.zero = z;
+                FlowControl::FallThrough
+            }
+            Operation::Compare(source, destination) => {
+                let (_result, c, z, n, _o, _h) =
+                    subtract_reg8(s.get_i8(source), s.get_i8(destination), Some(false));
+                s.sign = n;
+                s.carry = c;
+                s.zero = z;
+                FlowControl::FallThrough
+            }
             Operation::Shift(shtype, datum) => match shtype {
                 ShiftType::LeftArithmetic => {
                     let (val, c) = rotate_left_thru_carry(s.get_i8(datum), Some(false));
