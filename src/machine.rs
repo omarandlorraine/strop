@@ -301,8 +301,11 @@ pub enum DyadicOperation {
     Add,
     AddWithCarry,
     And,
+    ExclusiveOr,
     Or,
-    ExclusiveOr, // TODO: Move the shifts here.
+    Subtract,
+    SubtractWithBorrow,
+    // TODO: Move the shifts here.
 }
 
 #[derive(Copy, Debug, Clone, PartialEq)]
@@ -341,8 +344,12 @@ impl DyadicOperation {
                     .carry
                     .map(|c| a.wrapping_add(&b).wrapping_add(if c { one } else { zero })),
                 Self::And => Some(a & b),
-                Self::Or => Some(a | b),
                 Self::ExclusiveOr => Some(a ^ b),
+                Self::Or => Some(a | b),
+                Self::Subtract => Some(a.wrapping_sub(&b)),
+                Self::SubtractWithBorrow => s
+                    .carry
+                    .map(|c| a.wrapping_sub(&b).wrapping_sub(if c { one } else { zero })),
             }
         } else {
             None

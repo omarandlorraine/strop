@@ -1,6 +1,8 @@
 use crate::machine::random_absolute;
 use crate::machine::random_immediate;
-use crate::machine::DyadicOperation::{Add, AddWithCarry, And, ExclusiveOr, Or};
+use crate::machine::DyadicOperation::{
+    Add, AddWithCarry, And, ExclusiveOr, Or, Subtract, SubtractWithBorrow,
+};
 use crate::machine::FlowControl;
 use crate::machine::Instruction;
 use crate::machine::MonadicOperation::{Complement, Decrement, Increment, Negate};
@@ -128,8 +130,10 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Dyadic(_, And, _, d, r) => dsyn(f, "and", r, d),
         Operation::Dyadic(_, Add, _, d, r) => dsyn(f, "add", r, d),
         Operation::Dyadic(_, AddWithCarry, _, d, r) => dsyn(f, "adc", r, d),
-        Operation::Dyadic(_, Or, _, d, r) => dsyn(f, "or", r, d),
         Operation::Dyadic(_, ExclusiveOr, _, d, r) => dsyn(f, "xor", r, d),
+        Operation::Dyadic(_, Or, _, d, r) => dsyn(f, "or", r, d),
+        Operation::Dyadic(_, SubtractWithBorrow, _, d, r) => dsyn(f, "sbc", r, d),
+        Operation::Dyadic(_, Subtract, _, d, r) => dsyn(f, "sub", r, d),
         Operation::Shift(ShiftType::LeftRotateThroughCarry, d) => syn(f, "rlc", d),
         Operation::Shift(ShiftType::RightRotateThroughCarry, d) => syn(f, "rrc", d),
         Operation::Shift(ShiftType::LeftArithmetic, d) => syn(f, "sla", d),
@@ -178,18 +182,24 @@ fn clear(_mach: Machine) -> Operation {
 
 fn twoargs(_mach: Machine) -> Operation {
     fn op(w: Width, a: Datum) -> Operation {
-        let vs = vec![Add, AddWithCarry, And, Or, ExclusiveOr];
+        let vs = vec![Add, And, Or, ExclusiveOr, Subtract];
         let o = vs.choose(&mut rand::thread_rng());
         Operation::Dyadic(w, *o.unwrap(), a, random_absolute(), a)
     }
 
-    if random() {
-        op(Width::Width8, A)
-    } else {
-        let a = if random() { X } else { Y };
-
-        op(Width::Width16, a)
+    fn op8(w: Width, a: Datum) -> Operation {
+        // These operations only work with 8-bit operands
+        let vs = vec![AddWithCarry, SubtractWithBorrow];
+        let o = vs.choose(&mut rand::thread_rng());
+        Operation::Dyadic(w, *o.unwrap(), a, random_absolute(), a)
     }
+
+    randomly!(
+    { op(Width::Width8, A) }
+    { op8(Width::Width8, A) }
+    { op(Width::Width16, X) }
+    { op(Width::Width16, Y) }
+    )
 }
 
 fn bits(_mach: Machine) -> Operation {
@@ -316,13 +326,13 @@ mod tests {
     #[test]
     fn instruction_set_stm8() {
         // I don't think we need call callf callr halt iret jrf jrih jril jrm nop ret retf rim sim trap wfe wfi
-        // TODO: div divw exg exgw ld ldw mov mul pop popw push pushw rvf sbc sub subw swap tnz tnzw
+        // TODO: div divw exg exgw ld ldw mov mul pop popw push pushw rvf swap tnz tnzw
         // TODO: conditional jumps, relative jump, more shifts
         //
         // rvf could maybe be grouped up along with rcf and scf
         // pop, popw, push, pushw, need to think about how to implement a stack
         // ld, ldw, mov probably fit in Move
-        // exg, exgw, sbc, sub, subw probably fit in Dyadic
+        // exg, exgw, probably fit in Dyadic
         // swap, tnz, tnzw, more shifts will fit in Monadic
         // div, divw, mul might need their own or go in with Dyadic
         find_it("adc", twoargs);
@@ -360,6 +370,9 @@ mod tests {
         find_it("rrcw", shifts);
         find_it("sla", shifts);
         find_it("slaw", shifts);
+        find_it("sbc", twoargs);
+        find_it("sub", twoargs);
+        find_it("subw", twoargs);
         find_it("xor", twoargs);
     }
 }
