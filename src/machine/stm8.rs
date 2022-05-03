@@ -276,9 +276,7 @@ fn oneargs(_mach: Machine) -> Operation {
     }
 
     if random() {
-        let a = if random() { A } else { random_immediate() };
-
-        op(Width::Width8, a)
+        op(Width::Width8, A)
     } else {
         let a = if random() { X } else { Y };
 
