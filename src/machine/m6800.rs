@@ -159,3 +159,16 @@ pub fn instr_6800(mach: Machine) -> Instruction {
     )
     // TODO: Add clc, sec, daa, and many other instructions
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::machine::tests::disasm;
+    use crate::Machine;
+    use crate::Motorola8BitVariant;
+
+    #[test]
+    fn disassembler() {
+        disasm(Machine::Motorola6800(Motorola8BitVariant::Motorola6800));
+        disasm(Machine::Motorola6800(Motorola8BitVariant::Motorola6801));
+    }
+}

@@ -265,24 +265,11 @@ mod tests {
     }
 
     #[test]
-    fn disassembler_6800() {
-        disasm(Machine::Motorola6800(Motorola8BitVariant::Motorola6800));
-        disasm(Machine::Motorola6800(Motorola8BitVariant::Motorola6801));
-    }
-
-    #[test]
     fn disassembler_prex86() {
         disasm(Machine::PreX86(PreX86Variant::ZilogZ80));
         disasm(Machine::PreX86(PreX86Variant::I8080));
         disasm(Machine::PreX86(PreX86Variant::Sm83));
         disasm(Machine::PreX86(PreX86Variant::KR580VM1));
-    }
-
-    #[test]
-    fn disassembler_pic() {
-        disasm(Machine::Pic(PicVariant::Pic12));
-        disasm(Machine::Pic(PicVariant::Pic14));
-        disasm(Machine::Pic(PicVariant::Pic16));
     }
 }
 

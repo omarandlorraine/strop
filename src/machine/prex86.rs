@@ -162,3 +162,18 @@ pub fn instr_prex86(mach: Machine) -> Instruction {
         { Instruction::new(mach, |_| Operation::DecimalAdjustAccumulator, dasm)}
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::machine::tests::disasm;
+    use crate::Machine;
+    use crate::PreX86Variant;
+
+    #[test]
+    fn disassembler() {
+        disasm(Machine::PreX86(PreX86Variant::ZilogZ80));
+        disasm(Machine::PreX86(PreX86Variant::I8080));
+        disasm(Machine::PreX86(PreX86Variant::Sm83));
+        disasm(Machine::PreX86(PreX86Variant::KR580VM1));
+    }
+}

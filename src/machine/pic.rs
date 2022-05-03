@@ -169,6 +169,7 @@ pub fn instr_pic(mach: Machine) -> Instruction {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::machine::tests::disasm;
 
     #[test]
     fn exclude_instructions() {
@@ -235,5 +236,12 @@ mod tests {
         find_it("movwf", store_pic, PicVariant::Pic14);
         find_it("rlf", shifts_pic, PicVariant::Pic14);
         find_it("rrf", shifts_pic, PicVariant::Pic14);
+    }
+
+    #[test]
+    fn disassembler() {
+        disasm(Machine::Pic(PicVariant::Pic12));
+        disasm(Machine::Pic(PicVariant::Pic14));
+        disasm(Machine::Pic(PicVariant::Pic16));
     }
 }
