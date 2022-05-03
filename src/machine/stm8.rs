@@ -354,9 +354,9 @@ mod tests {
     #[test]
     fn instr_lengths() {
         fn checkem(rnd: fn(Machine) -> Operation) {
-            for _i in 0..5000 {
+            for _i in 0..100 {
                 let mut i = Instruction::new(Machine::Stm8, rnd, dasm);
-                for _j in 0..500 {
+                for _j in 0..50 {
                     i.randomize();
                     assert!(
                         instr_length_stm8(i.operation) > 0,
