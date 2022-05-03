@@ -443,13 +443,22 @@ impl Instruction {
     pub fn sanity_check(&self) {
         match self.operation {
             Operation::Monadic(_, _, _, Datum::Imm8(_)) => {
-                panic!("The instruction has an immediate destination");
+                panic!(
+                    "The instruction {:?} has an immediate destination",
+                    self.operation
+                );
             }
             Operation::Dyadic(_, _, _, _, Datum::Imm8(_)) => {
-                panic!("The instruction has an immediate destination");
+                panic!(
+                    "The instruction {:?} has an immediate destination",
+                    self.operation
+                );
             }
             Operation::Move(_, Datum::Imm8(_)) => {
-                panic!("The instruction has an immediate destination");
+                panic!(
+                    "The instruction {:?} has an immediate destination",
+                    self.operation
+                );
             }
             _ => {}
         }
