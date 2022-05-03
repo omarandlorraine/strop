@@ -424,6 +424,9 @@ impl Instruction {
 
     pub fn randomize(&mut self) {
         self.operation = (self.randomizer)(self.machine);
+
+        #[cfg(test)]
+        self.sanity_check()
     }
 
     pub fn len(&self) -> usize {
@@ -433,6 +436,22 @@ impl Instruction {
             Machine::Pic(_) => 1,
             // In case of unknown instruction length, assume 1 so that optimizer still works
             _ => 1,
+        }
+    }
+
+    #[cfg(test)]
+    pub fn sanity_check(&self) {
+        match self.operation {
+            Operation::Monadic(_, _, _, Datum::Imm8(_)) => {
+                panic!("The instruction has an immediate destination");
+            }
+            Operation::Dyadic(_, _, _, _, Datum::Imm8(_)) => {
+                panic!("The instruction has an immediate destination");
+            }
+            Operation::Move(_, Datum::Imm8(_)) => {
+                panic!("The instruction has an immediate destination");
+            }
+            _ => {}
         }
     }
 
