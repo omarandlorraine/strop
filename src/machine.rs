@@ -1,5 +1,6 @@
 use crate::machine::mos6502::instr_length_6502;
 use crate::machine::rand::prelude::SliceRandom;
+use crate::machine::stm8::instr_length_stm8;
 use std::collections::HashMap;
 extern crate num;
 extern crate rand;
@@ -426,6 +427,7 @@ impl Instruction {
     pub fn len(&self) -> usize {
         match self.machine {
             Machine::Mos6502(_) => instr_length_6502(self.operation),
+            Machine::Stm8 => instr_length_stm8(self.operation),
             // these architectures have fixed instruction widths
             Machine::Pic(_) => 1,
             // In case of unknown instruction length, assume 1 so that optimizer still works

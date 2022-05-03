@@ -302,6 +302,12 @@ pub fn instr_stm8(mach: Machine) -> Instruction {
     )
 }
 
+pub fn instr_length_stm8(operation: Operation) -> usize {
+    match operation {
+        _ => 0,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -321,6 +327,25 @@ mod tests {
     #[test]
     fn disassembler() {
         crate::machine::tests::disasm(Machine::Stm8);
+    }
+
+    #[test]
+    fn instr_lengths() {
+        fn checkem(rnd: fn(Machine) -> Operation) {
+            for _i in 0..5000 {
+                let mut i = Instruction::new(Machine::Stm8, rnd, dasm);
+                for _j in 0..500 {
+                    i.randomize();
+                    assert!(
+                        instr_length_stm8(i.operation) > 0,
+                        "No instruction length for {}",
+                        i
+                    );
+                }
+            }
+        }
+        checkem(twoargs);
+        checkem(oneargs);
     }
 
     #[test]
