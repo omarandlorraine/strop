@@ -178,7 +178,7 @@ fn clear(_mach: Machine) -> Operation {
 
 fn twoargs(_mach: Machine) -> Operation {
     fn op(w: Width, a: Datum) -> Operation {
-        let vs = vec![Add, AddWithCarry];
+        let vs = vec![Add, AddWithCarry, And, Or, ExclusiveOr];
         let o = vs.choose(&mut rand::thread_rng());
         Operation::Dyadic(w, *o.unwrap(), a, random_absolute(), a)
     }
@@ -203,12 +203,6 @@ fn bits(_mach: Machine) -> Operation {
         { Operation::BitComplement(addr, bit)}
         { Operation::BitCopyCarry(addr, bit)}
     )
-}
-
-fn alu8(_mach: Machine) -> Operation {
-    let ops = vec![And, Or, ExclusiveOr];
-    let op = *ops.choose(&mut rand::thread_rng()).unwrap();
-    Operation::Dyadic(Width::Width8, op, random_stm8_operand(), A, A)
 }
 
 fn shifts(_mach: Machine) -> Operation {
@@ -288,7 +282,6 @@ pub fn instr_stm8(mach: Machine) -> Instruction {
     randomly!(
     { Instruction::new(mach, clear, dasm)}
     { Instruction::new(mach, transfers, dasm)}
-    { Instruction::new(mach, alu8, dasm)}
     { Instruction::new(mach, bits, dasm)}
     { Instruction::new(mach, carry, dasm)}
     { Instruction::new(mach, compare, dasm)}
@@ -328,7 +321,7 @@ mod tests {
         find_it("adc", twoargs);
         find_it("add", twoargs);
         find_it("addw", twoargs);
-        find_it("and", alu8);
+        find_it("and", twoargs);
         find_it("bccm", bits);
         find_it("bcp", compare);
         find_it("btjf", jumps);
@@ -351,7 +344,7 @@ mod tests {
         find_it("ld yl, a", transfers);
         find_it("neg", oneargs);
         find_it("negw", oneargs);
-        find_it("or", alu8);
+        find_it("or", twoargs);
         find_it("rcf", carry);
         find_it("scf", carry);
         find_it("rlc", shifts);
@@ -360,6 +353,6 @@ mod tests {
         find_it("rrcw", shifts);
         find_it("sla", shifts);
         find_it("slaw", shifts);
-        find_it("xor", alu8);
+        find_it("xor", twoargs);
     }
 }
