@@ -367,6 +367,11 @@ mod tests {
         }
         checkem(twoargs);
         checkem(oneargs);
+        checkem(bits);
+        checkem(compare);
+        checkem(jumps);
+        checkem(transfers);
+        checkem(carry);
     }
 
     #[test]
