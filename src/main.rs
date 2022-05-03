@@ -258,7 +258,5 @@ fn main() {
     let convergence = |prog: &BasicBlock| difference(prog, &testrun);
     let prog = stochastic_search(&convergence, machine);
     println!("finished stochastic search");
-    let opt = optimize(&convergence, &prog, machine);
-    println!("finished optimization pass");
-    disassemble(opt);
+    disassemble(prog);
 }
