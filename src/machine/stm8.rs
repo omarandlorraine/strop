@@ -182,14 +182,14 @@ fn clear(_mach: Machine) -> Operation {
 
 fn twoargs(_mach: Machine) -> Operation {
     fn op(w: Width, a: Datum) -> Operation {
-        let vs = vec![Add, And, Or, ExclusiveOr, Subtract];
+        let vs = vec![Add, And, Or, Subtract];
         let o = vs.choose(&mut rand::thread_rng());
         Operation::Dyadic(w, *o.unwrap(), a, random_absolute(), a)
     }
 
     fn op8(w: Width, a: Datum) -> Operation {
         // These operations only work with 8-bit operands
-        let vs = vec![AddWithCarry, SubtractWithBorrow];
+        let vs = vec![AddWithCarry, ExclusiveOr, SubtractWithBorrow];
         let o = vs.choose(&mut rand::thread_rng());
         Operation::Dyadic(w, *o.unwrap(), a, random_absolute(), a)
     }
