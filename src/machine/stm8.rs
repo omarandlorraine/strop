@@ -318,6 +318,13 @@ mod tests {
         // I don't think we need call callf callr halt iret jrf jrih jril jrm nop ret retf rim sim trap wfe wfi
         // TODO: div divw exg exgw ld ldw mov mul pop popw push pushw rvf sbc sub subw swap tnz tnzw
         // TODO: conditional jumps, relative jump, more shifts
+        //
+        // rvf could maybe be grouped up along with rcf and scf
+        // pop, popw, push, pushw, need to think about how to implement a stack
+        // ld, ldw, mov probably fit in Move
+        // exg, exgw, sbc, sub, subw probably fit in Dyadic
+        // swap, tnz, tnzw, more shifts will fit in Monadic
+        // div, divw, mul might need their own or go in with Dyadic
         find_it("adc", twoargs);
         find_it("add", twoargs);
         find_it("addw", twoargs);
