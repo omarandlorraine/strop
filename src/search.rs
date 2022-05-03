@@ -3,6 +3,8 @@ use crate::machine::Instruction;
 use crate::machine::Width;
 use crate::{Machine, State, Step, TestRun};
 use rand::{thread_rng, Rng};
+use rayon::iter::IntoParallelRefIterator;
+use rayon::prelude::ParallelSliceMut;
 use std::ops::{Index, IndexMut};
 use strop::randomly;
 
@@ -301,43 +303,73 @@ pub fn optimize(
 }
 
 pub fn stochastic_search(convergence: &dyn Fn(&BasicBlock) -> f64, mach: Machine) -> BasicBlock {
-    // Initial population of a bajillion stupid programs
-    // which are of course unlikely to be any good
-    let mut population: Vec<(f64, BasicBlock)> = vec![];
-    for _i in 1..1000 {
-        let program = BasicBlock::initial_guess(mach, 20);
-        population.push((convergence(&program), program));
+    fn initial_population(
+        convergence: &dyn Fn(&BasicBlock) -> f64,
+        mach: Machine,
+        temperature: u32,
+    ) -> Vec<(f64, BasicBlock)> {
+        // Initial population of a bajillion stupid programs
+        // which are of course unlikely to be any good
+        let mut population: Vec<(f64, BasicBlock)> = vec![];
+        for _i in 1..temperature {
+            let program = BasicBlock::initial_guess(mach, 20);
+            let d = quick_dce(convergence, &program);
+            population.push((convergence(&d), d));
+        }
+        population
     }
 
-    loop {
-        // Get the best specimen
-        let b = population
-            .iter()
-            .min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"))
-            .unwrap();
-
-        // get rid of unnecessary instructions
-        let best = quick_dce(convergence, &b.1);
-
-        if b.0 < 0.1 {
-            println!("dce.");
-            return dead_code_elimination(convergence, &quick_dce(convergence, &b.1));
-        }
-
-        let mut next_generation: Vec<(f64, BasicBlock)> = vec![];
-
-        for s in best.spawn(mach).take(500) {
+    fn next_gen(
+        convergence: &dyn Fn(&BasicBlock) -> f64,
+        mach: Machine,
+        score: f64,
+        bb: BasicBlock,
+        temperature: usize,
+    ) -> Vec<(f64, BasicBlock)> {
+        // spawn another n offspring from the basic block
+        // Each offspring needs a score that's greater than the parent
+        let mut population: Vec<(f64, BasicBlock)> = vec![];
+        for s in bb.spawn(mach).take(temperature) {
             let fit = convergence(&s);
-            if fit < b.0 {
+            if fit < score {
                 let d = quick_dce(convergence, &s);
-                next_generation.push((fit, d));
+                population.push((fit, d));
+            }
+        }
+        population
+    }
+
+    let mut population: Vec<(f64, BasicBlock)> = initial_population(convergence, mach, 1000);
+    let mut winners: Vec<(f64, BasicBlock)> = vec![];
+    let mut best = population[0].0;
+
+    while winners.len() < 1 {
+        let current_generation = population.into_iter().take(30);
+
+        // The next_generation starts off with 5 randos. Who knows, maybe it'll strike lucky.
+        let mut next_generation: Vec<(f64, BasicBlock)> = initial_population(convergence, mach, 5);
+
+        for s in current_generation.into_iter() {
+            for b in next_gen(convergence, mach, s.0, s.1, 5000) {
+                if b.0 < 0.1 {
+                    winners.push(b.clone());
+                } else {
+                    if b.0 < best {
+                        best = b.0;
+                        println!("{}", b.0);
+                    }
+                }
+                next_generation.push(b);
             }
         }
 
-        if !next_generation.is_empty() {
-            population = next_generation;
-        }
+        // Sort the population by score.
+        next_generation.par_sort_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"));
+        population = next_generation.clone();
     }
+
+    //return dead_code_elimination(convergence, &winners[0].1);
+    winners[0].1.clone()
 }
 
 #[cfg(test)]
