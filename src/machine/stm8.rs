@@ -326,7 +326,6 @@ mod tests {
     #[test]
     fn instruction_set_stm8() {
         // I don't think we need call callf callr halt iret jrf jrih jril jrm nop ret retf rim sim trap wfe wfi
-        // TODO: div divw exg exgw ld ldw mov mul pop popw push pushw rvf swap tnz tnzw
         // TODO: conditional jumps, relative jump, more shifts
         //
         // rvf could maybe be grouped up along with rcf and scf
