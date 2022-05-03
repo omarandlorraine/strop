@@ -333,7 +333,6 @@ pub fn instr_length_stm8(operation: Operation) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::machine::tests::disasm;
 
     fn find_it(opcode: &'static str, rnd: fn(Machine) -> Operation) {
         for _i in 0..5000 {
