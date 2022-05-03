@@ -1,7 +1,9 @@
 use crate::machine::mos6502::instr_length_6502;
 use crate::machine::rand::prelude::SliceRandom;
 use std::collections::HashMap;
+extern crate num;
 extern crate rand;
+use num::traits::{WrappingAdd, WrappingSub};
 
 mod m6800;
 mod mos6502;
@@ -61,6 +63,7 @@ pub struct Instruction {
     machine: Machine,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub enum Width {
     Width8,
     Width16,
@@ -72,7 +75,7 @@ impl std::fmt::Display for Instruction {
     }
 }
 
-#[derive(Copy, Debug, Clone, PartialEq)]
+#[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum R {
     A,
     B,
@@ -89,7 +92,7 @@ pub enum R {
     Yl,
 }
 
-#[derive(Copy, Debug, Clone, PartialEq)]
+#[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum Datum {
     Register(R),
     RegisterPair(R, R),
@@ -187,132 +190,6 @@ pub fn bitwise_and(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>)
     (None, None)
 }
 
-pub fn bitwise_xor(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>) {
-    if let Some(operand) = a {
-        if let Some(r) = reg {
-            return (Some(r ^ operand), Some(r ^ operand == 0));
-        }
-    }
-    (None, None)
-}
-
-pub fn bitwise_or(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>) {
-    if let Some(operand) = a {
-        if let Some(r) = reg {
-            return (Some(r | operand), Some(r | operand == 0));
-        }
-    }
-    (None, None)
-}
-
-#[allow(clippy::many_single_char_names, clippy::type_complexity)]
-pub fn add_to_reg16(
-    reg: Option<i16>,
-    a: Option<i16>,
-    carry: Option<bool>,
-) -> (
-    Option<i16>,
-    Option<bool>,
-    Option<bool>,
-    Option<bool>,
-    Option<bool>,
-    Option<bool>,
-) {
-    // The return values are the result of the addition, then the flags, carry, zero, sign, overflow, half-carry.
-    if let Some(operand) = a {
-        if let Some(r) = reg {
-            if let Some(c) = carry {
-                let v = operand.wrapping_add(if c { 1 } else { 0 });
-                let result = r.wrapping_add(v);
-                let z = result == 0;
-                let c = r.checked_add(v).is_none();
-                let n = result < 0;
-                let o = (r < 0 && v < 0 && result >= 0) || (r > 0 && v > 0 && result <= 0);
-                let h = ((r ^ v ^ result) & 0x10) == 0x10;
-                (Some(result), Some(c), Some(z), Some(n), Some(o), Some(h))
-            } else {
-                (None, None, None, None, None, None)
-            }
-        } else {
-            (None, None, None, None, None, None)
-        }
-    } else {
-        (None, None, None, None, None, None)
-    }
-}
-
-#[allow(clippy::many_single_char_names, clippy::type_complexity)]
-pub fn subtract_reg8(
-    reg: Option<i8>,
-    a: Option<i8>,
-    carry: Option<bool>,
-) -> (
-    Option<i8>,
-    Option<bool>,
-    Option<bool>,
-    Option<bool>,
-    Option<bool>,
-    Option<bool>,
-) {
-    // The return values are the result of the addition, then the flags, carry, zero, sign, overflow, half-carry.
-    if let Some(operand) = a {
-        if let Some(r) = reg {
-            if let Some(c) = carry {
-                let v = operand.wrapping_sub(if c { 1 } else { 0 });
-                let result = r.wrapping_sub(v);
-                let z = result == 0;
-                let c = r.checked_sub(v).is_none();
-                let n = result < 0;
-                let o = (r < 0 && v < 0 && result >= 0) || (r > 0 && v > 0 && result <= 0);
-                let h = ((r ^ v ^ result) & 0x10) == 0x10;
-                (Some(result), Some(c), Some(z), Some(n), Some(o), Some(h))
-            } else {
-                (None, None, None, None, None, None)
-            }
-        } else {
-            (None, None, None, None, None, None)
-        }
-    } else {
-        (None, None, None, None, None, None)
-    }
-}
-
-#[allow(clippy::many_single_char_names, clippy::type_complexity)]
-pub fn add_to_reg8(
-    reg: Option<i8>,
-    a: Option<i8>,
-    carry: Option<bool>,
-) -> (
-    Option<i8>,
-    Option<bool>,
-    Option<bool>,
-    Option<bool>,
-    Option<bool>,
-    Option<bool>,
-) {
-    // The return values are the result of the addition, then the flags, carry, zero, sign, overflow, half-carry.
-    if let Some(operand) = a {
-        if let Some(r) = reg {
-            if let Some(c) = carry {
-                let v = operand.wrapping_add(if c { 1 } else { 0 });
-                let result = r.wrapping_add(v);
-                let z = result == 0;
-                let c = r.checked_add(v).is_none();
-                let n = result < 0;
-                let o = (r < 0 && v < 0 && result >= 0) || (r > 0 && v > 0 && result <= 0);
-                let h = ((r ^ v ^ result) & 0x10) == 0x10;
-                (Some(result), Some(c), Some(z), Some(n), Some(o), Some(h))
-            } else {
-                (None, None, None, None, None, None)
-            }
-        } else {
-            (None, None, None, None, None, None)
-        }
-    } else {
-        (None, None, None, None, None, None)
-    }
-}
-
 fn decimal_adjust(
     accumulator: Option<i8>,
     carry: Option<bool>,
@@ -388,54 +265,11 @@ mod tests {
     }
 
     #[test]
-    fn disassembler_6800() {
-        disasm(Machine::Motorola6800(Motorola8BitVariant::Motorola6800));
-        disasm(Machine::Motorola6800(Motorola8BitVariant::Motorola6801));
-    }
-
-    #[test]
     fn disassembler_prex86() {
         disasm(Machine::PreX86(PreX86Variant::ZilogZ80));
         disasm(Machine::PreX86(PreX86Variant::I8080));
         disasm(Machine::PreX86(PreX86Variant::Sm83));
         disasm(Machine::PreX86(PreX86Variant::KR580VM1));
-    }
-
-    #[test]
-    fn disassembler_pic() {
-        disasm(Machine::Pic(PicVariant::Pic12));
-        disasm(Machine::Pic(PicVariant::Pic14));
-        disasm(Machine::Pic(PicVariant::Pic16));
-    }
-
-    #[test]
-    fn add_to_reg8_test() {
-        assert_eq!(
-            add_to_reg8(Some(3), Some(3), Some(false)),
-            (
-                Some(6),
-                Some(false),
-                Some(false),
-                Some(false),
-                Some(false),
-                Some(false)
-            )
-        );
-        assert_eq!(
-            add_to_reg8(Some(127), Some(1), Some(false)),
-            (
-                Some(-128),
-                Some(true),
-                Some(false),
-                Some(true),
-                Some(true),
-                Some(true)
-            )
-        );
-        assert_eq!(
-            add_to_reg8(None, Some(3), Some(false)),
-            (None, None, None, None, None, None)
-        );
     }
 }
 
@@ -462,20 +296,66 @@ pub enum Test {
     Bit(u16, u8, bool),
 }
 
+#[derive(Copy, Debug, Clone, PartialEq)]
+pub enum DyadicOperation {
+    Add,
+    AddWithCarry,
+    And,
+    Or,
+    ExclusiveOr, // TODO: Move the shifts here.
+}
+
+#[derive(Copy, Debug, Clone, PartialEq)]
+pub enum MonadicOperation {
+    Complement,
+    Decrement,
+    Increment,
+    Negate,
+    // TODO: Move the shifts here.
+}
+
+impl MonadicOperation {
+    fn evaluate<T>(&self, v: Option<T>) -> Option<T>
+    where
+        T: num::PrimInt + std::iter::Sum + WrappingAdd + WrappingSub,
+    {
+        match self {
+            Self::Complement => v.map(|v| !v),
+            Self::Negate => v.map(|v| T::zero() - v),
+            Self::Increment => v.map(|v| v.wrapping_add(&T::one())),
+            Self::Decrement => v.map(|v| v.wrapping_sub(&T::one())),
+        }
+    }
+}
+
+impl DyadicOperation {
+    fn evaluate<T>(&self, s: &State, a: Option<T>, b: Option<T>) -> Option<T>
+    where
+        T: num::PrimInt + std::iter::Sum + WrappingAdd + WrappingSub,
+    {
+        let (zero, one) = (&T::zero(), &T::one());
+        if let (Some(a), Some(b)) = (a, b) {
+            match self {
+                Self::Add => Some(a.wrapping_add(&b)),
+                Self::AddWithCarry => s
+                    .carry
+                    .map(|c| a.wrapping_add(&b).wrapping_add(if c { one } else { zero })),
+                Self::And => Some(a & b),
+                Self::Or => Some(a | b),
+                Self::ExclusiveOr => Some(a ^ b),
+            }
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(Clone, Debug, Copy)]
 pub enum Operation {
+    Monadic(Width, MonadicOperation, Datum, Datum),
+    Dyadic(Width, DyadicOperation, Datum, Datum, Datum),
     DecimalAdjustAccumulator,
-    Negate(Datum),
-    Complement(Datum),
-    Decrement(Datum),
-    Increment(Datum),
-    Add(Datum, Datum, bool),
     BitCompare(Datum, Datum),
-    Compare(Datum, Datum),
-    And(Datum, Datum),
-    Or(Datum, Datum),
-    Xor(Datum, Datum),
-    ExclusiveOr(Datum, Datum),
     Move(Datum, Datum),
     Shift(ShiftType, Datum),
     Carry(bool),
@@ -531,6 +411,9 @@ impl Instruction {
 
     pub fn randomize(&mut self) {
         self.operation = (self.randomizer)(self.machine);
+
+        #[cfg(test)]
+        self.sanity_check()
     }
 
     pub fn len(&self) -> usize {
@@ -543,22 +426,56 @@ impl Instruction {
         }
     }
 
-    #[allow(clippy::many_single_char_names)]
+    #[cfg(test)]
+    pub fn sanity_check(&self) {
+        match self.operation {
+            Operation::Monadic(_, _, _, Datum::Imm8(_)) => {
+                panic!(
+                    "The instruction {:?} has an immediate destination",
+                    self.operation
+                );
+            }
+            Operation::Dyadic(_, _, _, _, Datum::Imm8(_)) => {
+                panic!(
+                    "The instruction {:?} has an immediate destination",
+                    self.operation
+                );
+            }
+            Operation::Move(_, Datum::Imm8(_)) => {
+                panic!(
+                    "The instruction {:?} has an immediate destination",
+                    self.operation
+                );
+            }
+            _ => {}
+        }
+    }
+
     pub fn operate(&self, s: &mut State) -> FlowControl {
         match self.operation {
-            Operation::Add(source, destination, carry) => {
-                if !carry {
-                    s.carry = Some(false)
-                };
-                let (result, c, z, n, o, h) =
-                    add_to_reg8(s.get_i8(source), s.get_i8(destination), s.carry);
+            Operation::Monadic(Width::Width8, operation, src, dst) => {
+                s.set_i8(dst, operation.evaluate(s.get_i8(src)));
+                FlowControl::FallThrough
+            }
+            Operation::Monadic(Width::Width16, operation, src, dst) => {
+                s.set_i16(dst, operation.evaluate(s.get_i16(src)));
+                FlowControl::FallThrough
+            }
+            Operation::Dyadic(Width::Width8, operation, a, b, dst) => {
+                s.set_i8(dst, operation.evaluate(s, s.get_i8(a), s.get_i8(b)));
+                FlowControl::FallThrough
+            }
+            Operation::Dyadic(Width::Width16, operation, a, b, dst) => {
+                s.set_i16(dst, operation.evaluate(s, s.get_i16(a), s.get_i16(b)));
+                FlowControl::FallThrough
+            }
+            Operation::Move(source, destination) => {
+                s.set_i8(destination, s.get_i8(source));
+                FlowControl::FallThrough
+            }
 
-                s.set_i8(destination, result);
-                s.sign = n;
-                s.carry = c;
-                s.zero = z;
-                s.overflow = o;
-                s.halfcarry = h;
+            Operation::DecimalAdjustAccumulator => {
+                s.accumulator = decimal_adjust(s.accumulator, s.carry, s.halfcarry);
                 FlowControl::FallThrough
             }
             Operation::BitCompare(source, destination) => {
@@ -571,91 +488,6 @@ impl Instruction {
                 s.zero = z;
                 FlowControl::FallThrough
             }
-            Operation::Compare(source, destination) => {
-                let (_result, c, z, n, _o, _h) =
-                    subtract_reg8(s.get_i8(source), s.get_i8(destination), Some(false));
-                s.sign = n;
-                s.carry = c;
-                s.zero = z;
-                FlowControl::FallThrough
-            }
-            Operation::And(source, destination) => {
-                let (result, z) = bitwise_and(s.get_i8(source), s.get_i8(destination));
-                s.set_i8(destination, result);
-                s.zero = z;
-                FlowControl::FallThrough
-            }
-            Operation::Or(source, destination) => {
-                let (result, z) = bitwise_or(s.get_i8(source), s.get_i8(destination));
-                s.set_i8(destination, result);
-                s.zero = z;
-                FlowControl::FallThrough
-            }
-            Operation::Xor(source, destination) => {
-                let (result, z) = bitwise_xor(s.get_i8(source), s.get_i8(destination));
-                s.set_i8(destination, result);
-                s.zero = z;
-                FlowControl::FallThrough
-            }
-            Operation::ExclusiveOr(source, destination) => {
-                let (result, z) = bitwise_xor(s.get_i8(source), s.get_i8(destination));
-                s.set_i8(destination, result);
-                s.zero = z;
-                FlowControl::FallThrough
-            }
-            Operation::Move(source, destination) => {
-                s.set_i8(destination, s.get_i8(source));
-                FlowControl::FallThrough
-            }
-
-            Operation::DecimalAdjustAccumulator => {
-                s.accumulator = decimal_adjust(s.accumulator, s.carry, s.halfcarry);
-                FlowControl::FallThrough
-            }
-
-            Operation::Increment(register) => {
-                match register.width() {
-                    Width::Width8 => {
-                        let (result, _c, z, n, _o, _h) =
-                            add_to_reg8(s.get_i8(register), Some(1), Some(false));
-                        s.set_i8(register, result);
-                        s.zero = z;
-                        s.sign = n;
-                    }
-                    Width::Width16 => {
-                        let (result, _c, z, n, _o, _h) =
-                            add_to_reg16(s.get_i16(register), Some(1), Some(false));
-                        s.set_i16(register, result);
-                        s.zero = z;
-                        s.sign = n;
-                    }
-                }
-                FlowControl::FallThrough
-            }
-
-            Operation::Negate(register) => {
-                let c = s.get_i8(register).map(|x| !x);
-                s.set_i8(register, c);
-                s.zero = c.map(|x| x == 0);
-                FlowControl::FallThrough
-            }
-
-            Operation::Complement(register) => {
-                let c = s.get_i8(register).map(|x| 0 - x);
-                s.set_i8(register, c);
-                s.zero = c.map(|x| x == 0);
-                FlowControl::FallThrough
-            }
-
-            Operation::Decrement(register) => {
-                let (result, _c, z, n, _o, _h) =
-                    add_to_reg8(s.get_i8(register), Some(-1), Some(false));
-                s.set_i8(register, result);
-                s.zero = z;
-                s.sign = n;
-                FlowControl::FallThrough
-            }
-
             Operation::Shift(shtype, datum) => match shtype {
                 ShiftType::LeftArithmetic => {
                     let (val, c) = rotate_left_thru_carry(s.get_i8(datum), Some(false));
@@ -755,7 +587,6 @@ pub struct State {
     zero: Option<bool>,
     carry: Option<bool>,
     sign: Option<bool>,
-    overflow: Option<bool>,
     halfcarry: Option<bool>,
     heap: HashMap<u16, Option<i8>>,
 }
@@ -779,7 +610,6 @@ impl State {
             zero: None,
             carry: None,
             sign: None,
-            overflow: None,
             halfcarry: None,
             heap: HashMap::new(),
         }

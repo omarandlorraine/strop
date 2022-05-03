@@ -1,17 +1,29 @@
 use crate::machine::random_absolute;
 use crate::machine::random_immediate;
+use crate::machine::DyadicOperation::{Add, AddWithCarry, And, ExclusiveOr, Or};
 use crate::machine::FlowControl;
 use crate::machine::Instruction;
+use crate::machine::MonadicOperation::{Complement, Decrement, Increment, Negate};
 use crate::machine::Operation;
 use crate::machine::ShiftType;
 use crate::machine::Test;
+use crate::machine::Width;
 use crate::machine::R;
 use crate::Datum;
 use crate::Machine;
 
+use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::rand::Rng;
 use rand::random;
 use strop::randomly;
+
+const A: Datum = Datum::Register(R::A);
+const XL: Datum = Datum::Register(R::Xl);
+const YL: Datum = Datum::Register(R::Yl);
+const XH: Datum = Datum::Register(R::Xh);
+const YH: Datum = Datum::Register(R::Yh);
+const X: Datum = Datum::RegisterPair(R::Xh, R::Xl);
+const Y: Datum = Datum::RegisterPair(R::Yh, R::Yl);
 
 fn random_stm8_operand() -> Datum {
     if random() {
@@ -22,13 +34,8 @@ fn random_stm8_operand() -> Datum {
 }
 
 fn random_register() -> Datum {
-    if random() {
-        Datum::Register(R::A)
-    } else if random() {
-        Datum::RegisterPair(R::Xh, R::Xl)
-    } else {
-        Datum::RegisterPair(R::Yh, R::Yl)
-    }
+    let regs = vec![A, X, Y];
+    *regs.choose(&mut rand::thread_rng()).unwrap()
 }
 
 fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -45,19 +52,19 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             Datum::Imm8(val) => write!(f, "\t{} #${:2}", s, val),
             Datum::Absolute(addr) if addr < 256 => write!(f, "\t{} ${:2}", s, addr),
             Datum::Absolute(addr) => write!(f, "\t{} ${:4}", s, addr),
-            Datum::Register(R::A) => write!(f, "\t{} a", s),
-            Datum::RegisterPair(R::Xh, R::Xl) => write!(f, "\t{}w x", s),
-            Datum::RegisterPair(R::Yh, R::Yl) => write!(f, "\t{}w y", s),
+            A => write!(f, "\t{} a", s),
+            X => write!(f, "\t{}w x", s),
+            Y => write!(f, "\t{}w y", s),
             _ => write!(f, "{} {:?}", s, d),
         }
     }
 
     fn dsyn(f: &mut std::fmt::Formatter, s: &'static str, r: Datum, d: Datum) -> std::fmt::Result {
         let (suffix, regname) = match r {
-            Datum::Register(R::A) => ("", "a"),
-            Datum::RegisterPair(R::Xh, R::Xl) => ("w", "x"),
-            Datum::RegisterPair(R::Yh, R::Yl) => ("w", "y"),
-            _ => panic!(),
+            A => ("", "a"),
+            X => ("w", "x"),
+            Y => ("w", "y"),
+            _ => panic!("dsyn baulks at {:?} for r", r),
         };
 
         match d {
@@ -66,7 +73,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 write!(f, "\t{}{} {}, ${:2}", s, suffix, regname, addr)
             }
             Datum::Absolute(addr) => write!(f, "\t{}{} {}, ${:4}", s, suffix, regname, addr),
-            Datum::Register(R::A) => write!(f, "\t{}{} {}, a", suffix, regname, s),
+            A => write!(f, "\t{}{} {}, a", suffix, regname, s),
             _ => write!(f, "{}{} {}, {:?}", s, suffix, regname, d),
         }
     }
@@ -117,22 +124,21 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     }
 
     match op {
-        Operation::Add(d, r, true) => dsyn(f, "adc", r, d),
-        Operation::Add(d, r, false) => dsyn(f, "add", r, d),
-        Operation::And(d, r) => dsyn(f, "and", r, d),
-        Operation::Compare(d, r) => dsyn(f, "cp", r, d),
         Operation::BitCompare(d, r) => dsyn(f, "bcp", r, d),
-        Operation::Or(d, r) => dsyn(f, "or", r, d),
-        Operation::Xor(d, r) => dsyn(f, "xor", r, d),
-        Operation::Negate(d) => syn(f, "neg", d),
-        Operation::Complement(d) => syn(f, "cpl", d),
+        Operation::Dyadic(_, And, _, d, r) => dsyn(f, "and", r, d),
+        Operation::Dyadic(_, Add, _, d, r) => dsyn(f, "add", r, d),
+        Operation::Dyadic(_, AddWithCarry, _, d, r) => dsyn(f, "adc", r, d),
+        Operation::Dyadic(_, Or, _, d, r) => dsyn(f, "or", r, d),
+        Operation::Dyadic(_, ExclusiveOr, _, d, r) => dsyn(f, "xor", r, d),
         Operation::Shift(ShiftType::LeftRotateThroughCarry, d) => syn(f, "rlc", d),
         Operation::Shift(ShiftType::RightRotateThroughCarry, d) => syn(f, "rrc", d),
         Operation::Shift(ShiftType::LeftArithmetic, d) => syn(f, "sla", d),
         Operation::Shift(ShiftType::RightArithmetic, d) => syn(f, "sra", d),
         Operation::Move(Datum::Zero, r) => syn(f, "clr", r),
-        Operation::Increment(r) => syn(f, "inc", r),
-        Operation::Decrement(r) => syn(f, "dec", r),
+        Operation::Monadic(_, Decrement, _, r) => syn(f, "dec", r),
+        Operation::Monadic(_, Increment, _, r) => syn(f, "inc", r),
+        Operation::Monadic(_, Complement, _, r) => syn(f, "cpl", r),
+        Operation::Monadic(_, Negate, _, r) => syn(f, "neg", r),
         Operation::Move(Datum::Register(from), Datum::Register(to)) => {
             write!(f, "\tld {}, {}", regname(to), regname(from))
         }
@@ -170,8 +176,20 @@ fn clear(_mach: Machine) -> Operation {
     }
 }
 
-fn add_adc(_mach: Machine) -> Operation {
-    Operation::Add(random_stm8_operand(), random_register(), random())
+fn twoargs(_mach: Machine) -> Operation {
+    fn op(w: Width, a: Datum) -> Operation {
+        let vs = vec![Add, AddWithCarry, And, Or, ExclusiveOr];
+        let o = vs.choose(&mut rand::thread_rng());
+        Operation::Dyadic(w, *o.unwrap(), a, random_absolute(), a)
+    }
+
+    if random() {
+        op(Width::Width8, A)
+    } else {
+        let a = if random() { X } else { Y };
+
+        op(Width::Width16, a)
+    }
 }
 
 fn bits(_mach: Machine) -> Operation {
@@ -184,15 +202,6 @@ fn bits(_mach: Machine) -> Operation {
         { Operation::BitClear(addr, bit)}
         { Operation::BitComplement(addr, bit)}
         { Operation::BitCopyCarry(addr, bit)}
-    )
-}
-
-fn alu8(_mach: Machine) -> Operation {
-    // the eight-bit diadic operations like and, xor, or, etc
-    randomly!(
-        { Operation::And(random_stm8_operand(), Datum::Register(R::A))}
-        { Operation::Or(random_stm8_operand(), Datum::Register(R::A))}
-        { Operation::Xor(random_stm8_operand(), Datum::Register(R::A))}
     )
 }
 
@@ -222,37 +231,13 @@ fn carry(_mach: Machine) -> Operation {
 }
 
 fn compare(_mach: Machine) -> Operation {
-    randomly!(
-        { Operation::Compare(random_stm8_operand(), Datum::Register(R::A))}
-        { Operation::Compare(random_stm8_operand(), Datum::RegisterPair(R::Xh, R::Xl))}
-        { Operation::Compare(random_stm8_operand(), Datum::RegisterPair(R::Yh, R::Yl))}
-        { Operation::BitCompare(random_stm8_operand(), Datum::Register(R::A))}
-    )
-}
-
-fn incdec(_mach: Machine) -> Operation {
-    let operand = if random() {
-        random_absolute()
-    } else {
-        random_register()
-    };
-
-    if random() {
-        Operation::Increment(operand)
-    } else {
-        Operation::Decrement(operand)
-    }
+    Operation::BitCompare(random_stm8_operand(), A)
 }
 
 fn transfers(_mach: Machine) -> Operation {
     fn rando() -> Datum {
-        randomly!(
-            { Datum::Register(R::A)}
-            { Datum::Register(R::Xl)}
-            { Datum::Register(R::Xh)}
-            { Datum::Register(R::Yl)}
-            { Datum::Register(R::Yh)}
-        )
+        let regs = vec![A, XL, XH, YL, YH];
+        *regs.choose(&mut rand::thread_rng()).unwrap()
     }
     Operation::Move(rando(), rando())
 }
@@ -278,35 +263,31 @@ pub fn jumps(_mach: Machine) -> Operation {
 }
 
 fn oneargs(_mach: Machine) -> Operation {
-    fn arg() -> Datum {
-        // TODO: Add the rest of the possibilities here.
-        randomly!(
-        { Datum::Register(R::A)}
-        { Datum::RegisterPair(R::Xh, R::Xl)}
-        { Datum::RegisterPair(R::Yh, R::Yl)}
-        { random_absolute()}
-        )
+    fn op(w: Width, a: Datum) -> Operation {
+        let vs = vec![Complement, Negate, Increment, Decrement];
+        let o = vs.choose(&mut rand::thread_rng());
+        Operation::Monadic(w, *o.unwrap(), a, a)
     }
 
     if random() {
-        Operation::Complement(arg())
+        op(Width::Width8, A)
     } else {
-        Operation::Negate(arg())
+        let a = if random() { X } else { Y };
+
+        op(Width::Width16, a)
     }
 }
 
 pub fn instr_stm8(mach: Machine) -> Instruction {
     randomly!(
-    { Instruction::new(mach, add_adc, dasm)}
     { Instruction::new(mach, clear, dasm)}
-    { Instruction::new(mach, incdec, dasm)}
     { Instruction::new(mach, transfers, dasm)}
-    { Instruction::new(mach, alu8, dasm)}
     { Instruction::new(mach, bits, dasm)}
     { Instruction::new(mach, carry, dasm)}
     { Instruction::new(mach, compare, dasm)}
     { Instruction::new(mach, jumps, dasm)}
     { Instruction::new(mach, oneargs, dasm)}
+    { Instruction::new(mach, twoargs, dasm)}
     { Instruction::new(mach, shifts, dasm)}
     )
 }
@@ -334,13 +315,20 @@ mod tests {
 
     #[test]
     fn instruction_set_stm8() {
-        // I don't think we need call callf callr halt iret jrf jrih jril jrm nop ret retf rim sim trap, wfe, wfi
+        // I don't think we need call callf callr halt iret jrf jrih jril jrm nop ret retf rim sim trap wfe wfi
         // TODO: div divw exg exgw ld ldw mov mul pop popw push pushw rvf sbc sub subw swap tnz tnzw
         // TODO: conditional jumps, relative jump, more shifts
-        find_it("adc", add_adc);
-        find_it("add", add_adc);
-        find_it("addw", add_adc);
-        find_it("and", alu8);
+        //
+        // rvf could maybe be grouped up along with rcf and scf
+        // pop, popw, push, pushw, need to think about how to implement a stack
+        // ld, ldw, mov probably fit in Move
+        // exg, exgw, sbc, sub, subw probably fit in Dyadic
+        // swap, tnz, tnzw, more shifts will fit in Monadic
+        // div, divw, mul might need their own or go in with Dyadic
+        find_it("adc", twoargs);
+        find_it("add", twoargs);
+        find_it("addw", twoargs);
+        find_it("and", twoargs);
         find_it("bccm", bits);
         find_it("bcp", compare);
         find_it("btjf", jumps);
@@ -350,22 +338,20 @@ mod tests {
         find_it("bres", bits);
         find_it("cpl", oneargs);
         find_it("cplw", oneargs);
-        find_it("cp", compare);
-        find_it("cpw", compare);
         find_it("ccf", carry);
         find_it("clr", clear);
         find_it("clrw", clear);
-        find_it("dec", incdec);
-        find_it("decw", incdec);
-        find_it("inc", incdec);
-        find_it("incw", incdec);
+        find_it("dec", oneargs);
+        find_it("decw", oneargs);
+        find_it("inc", oneargs);
+        find_it("incw", oneargs);
         find_it("jrc", jumps);
         find_it("jrnc", jumps);
         find_it("ld a, xh", transfers);
         find_it("ld yl, a", transfers);
         find_it("neg", oneargs);
         find_it("negw", oneargs);
-        find_it("or", alu8);
+        find_it("or", twoargs);
         find_it("rcf", carry);
         find_it("scf", carry);
         find_it("rlc", shifts);
@@ -374,6 +360,6 @@ mod tests {
         find_it("rrcw", shifts);
         find_it("sla", shifts);
         find_it("slaw", shifts);
-        find_it("xor", alu8);
+        find_it("xor", twoargs);
     }
 }

@@ -1,9 +1,13 @@
+use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::random_immediate;
 use crate::machine::Datum;
+use crate::machine::DyadicOperation::{Add, AddWithCarry};
 use crate::machine::Instruction;
 use crate::machine::Machine;
+use crate::machine::MonadicOperation;
 use crate::machine::Operation;
 use crate::machine::ShiftType;
+use crate::machine::Width;
 use crate::machine::R;
 use rand::random;
 use strop::randomly;
@@ -30,11 +34,15 @@ fn random_rp_prex86(_mach: Machine) -> Datum {
 }
 
 fn inc_dec_prex86(mach: Machine) -> Operation {
+    let (w, r) = if random() {
+        (Width::Width8, random_r_prex86(mach))
+    } else {
+        (Width::Width16, random_rp_prex86(mach))
+    };
+
     randomly!(
-        { Operation::Increment(random_r_prex86(mach))}
-        { Operation::Increment(random_rp_prex86(mach))}
-        { Operation::Decrement(random_r_prex86(mach))}
-        { Operation::Decrement(random_rp_prex86(mach))}
+        { Operation::Monadic(w, MonadicOperation::Increment, r, r) }
+        { Operation::Monadic(w, MonadicOperation::Decrement, r, r) }
     )
 }
 
@@ -77,10 +85,22 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     }
 
     match op {
-        Operation::Add(thing, Datum::Register(R::A), false) => {
+        Operation::Dyadic(
+            Width::Width8,
+            Add,
+            thing,
+            Datum::Register(R::A),
+            Datum::Register(R::A),
+        ) => {
             write!(f, "\tadd a, {}", name(thing))
         }
-        Operation::Add(thing, Datum::Register(R::A), true) => {
+        Operation::Dyadic(
+            Width::Width8,
+            AddWithCarry,
+            thing,
+            Datum::Register(R::A),
+            Datum::Register(R::A),
+        ) => {
             write!(f, "\tadc a, {}", name(thing))
         }
         Operation::Move(from, to) => {
@@ -95,8 +115,8 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::DecimalAdjustAccumulator => {
             write!(f, "\tdaa")
         }
-        Operation::Decrement(d) => monadic(f, "dec", d),
-        Operation::Increment(d) => monadic(f, "inc", d),
+        Operation::Monadic(_, MonadicOperation::Increment, r, _) => monadic(f, "inc", r),
+        Operation::Monadic(_, MonadicOperation::Decrement, r, _) => monadic(f, "dec", r),
         _ => {
             write!(f, "{:?}", op)
         }
@@ -107,9 +127,18 @@ fn add8_prex86(mach: Machine) -> Operation {
     // From what I can see, the KR580VM1 and similar CPUs, can do:
     //  - 8 bit adds with or without carry, destination is the Accumulator
     //  - 16 bit add without carry, destination is the HL register pair
-    randomly!(
-        { Operation::Add(random_immediate(), Datum::Register(R::A), random())}
-        { Operation::Add(random_r_prex86(mach), Datum::Register(R::A), random())}
+    let ops = vec![Add, AddWithCarry];
+    let op = *ops.choose(&mut rand::thread_rng()).unwrap();
+
+    let args = vec![random_immediate(), random_r_prex86(mach)];
+    let arg = *args.choose(&mut rand::thread_rng()).unwrap();
+
+    Operation::Dyadic(
+        Width::Width8,
+        op,
+        arg,
+        Datum::Register(R::A),
+        Datum::Register(R::A),
     )
 }
 
@@ -132,4 +161,19 @@ pub fn instr_prex86(mach: Machine) -> Instruction {
         { Instruction::new(mach, ld_prex86, dasm)}
         { Instruction::new(mach, |_| Operation::DecimalAdjustAccumulator, dasm)}
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::machine::tests::disasm;
+    use crate::Machine;
+    use crate::PreX86Variant;
+
+    #[test]
+    fn disassembler() {
+        disasm(Machine::PreX86(PreX86Variant::ZilogZ80));
+        disasm(Machine::PreX86(PreX86Variant::I8080));
+        disasm(Machine::PreX86(PreX86Variant::Sm83));
+        disasm(Machine::PreX86(PreX86Variant::KR580VM1));
+    }
 }

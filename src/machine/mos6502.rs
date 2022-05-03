@@ -1,15 +1,21 @@
+use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::random_absolute;
 use crate::machine::random_immediate;
 use crate::machine::Datum;
+use crate::machine::DyadicOperation::{AddWithCarry, And, ExclusiveOr, Or};
 use crate::machine::Instruction;
 use crate::machine::Machine;
+use crate::machine::MonadicOperation;
 use crate::machine::Mos6502Variant;
 use crate::machine::Operation;
 use crate::machine::ShiftType;
+use crate::machine::Width;
 use crate::machine::R;
 
 use rand::random;
 use strop::randomly;
+
+const A: Datum = Datum::Register(R::A);
 
 fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     fn regname(r: R) -> &'static str {
@@ -54,14 +60,22 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Shift(ShiftType::LeftArithmetic, thing) => syn(f, "asl", thing),
         Operation::Shift(ShiftType::RightRotateThroughCarry, thing) => syn(f, "ror", thing),
         Operation::Shift(ShiftType::LeftRotateThroughCarry, thing) => syn(f, "rol", thing),
-        Operation::Add(thing, Datum::Register(R::A), true) => syn(f, "adc", thing),
-        Operation::And(thing, Datum::Register(R::A)) => syn(f, "and", thing),
-        Operation::Compare(thing, Datum::Register(R::A)) => syn(f, "cmp", thing),
-        Operation::Compare(thing, Datum::Register(R::Xl)) => syn(f, "cpx", thing),
-        Operation::Compare(thing, Datum::Register(R::Yl)) => syn(f, "cpy", thing),
-        Operation::ExclusiveOr(thing, Datum::Register(R::A)) => syn(f, "eor", thing),
-        Operation::Increment(Datum::Register(reg)) => write!(f, "\tin{}", regname(reg)),
-        Operation::Decrement(Datum::Register(reg)) => write!(f, "\tde{}", regname(reg)),
+        Operation::Dyadic(Width::Width8, AddWithCarry, A, thing, A) => syn(f, "adc", thing),
+        Operation::Dyadic(Width::Width8, And, A, thing, A) => syn(f, "and", thing),
+        Operation::Dyadic(Width::Width8, ExclusiveOr, A, thing, A) => syn(f, "eor", thing),
+        Operation::Dyadic(Width::Width8, Or, A, thing, A) => syn(f, "ora", thing),
+        Operation::Monadic(Width::Width8, MonadicOperation::Increment, Datum::Register(r), _) => {
+            write!(f, "\tin{}", regname(r))
+        }
+        Operation::Monadic(Width::Width8, MonadicOperation::Decrement, Datum::Register(r), _) => {
+            write!(f, "\tde{}", regname(r))
+        }
+        Operation::Monadic(Width::Width8, MonadicOperation::Increment, dat, _) => {
+            syn(f, "inc", dat)
+        }
+        Operation::Monadic(Width::Width8, MonadicOperation::Decrement, dat, _) => {
+            syn(f, "dec", dat)
+        }
         Operation::Carry(false) => write!(f, "\tclc"),
         Operation::Carry(true) => write!(f, "\tsec"),
         _ => {
@@ -91,18 +105,15 @@ pub fn instr_length_6502(operation: Operation) -> usize {
         Operation::Move(Datum::Register(_), dat) => length(dat),
         Operation::Move(dat, Datum::Register(_)) => length(dat),
         Operation::Shift(_, dat) => length(dat),
-        Operation::Increment(dat) => length(dat),
-        Operation::Decrement(dat) => length(dat),
-        Operation::Add(dat, Datum::Register(R::A), true) => length(dat),
-        Operation::And(dat, Datum::Register(R::A)) => length(dat),
-        Operation::ExclusiveOr(dat, Datum::Register(R::A)) => length(dat),
-        Operation::Compare(dat, _) => length(dat),
+        Operation::Monadic(Width::Width8, MonadicOperation::Increment, dat, _) => length(dat),
+        Operation::Monadic(Width::Width8, MonadicOperation::Decrement, dat, _) => length(dat),
+        Operation::Dyadic(Width::Width8, _, _, dat, _) => length(dat),
         Operation::Carry(_) => 1,
         _ => 0,
     }
 }
 
-fn random_source_6502() -> Datum {
+fn random_source() -> Datum {
     if random() {
         random_immediate()
     } else {
@@ -134,21 +145,18 @@ fn incdec_6502(mach: Machine) -> Operation {
         random_xy()
     };
     if random() {
-        Operation::Increment(reg)
+        Operation::Monadic(Width::Width8, MonadicOperation::Decrement, reg, reg)
     } else {
-        Operation::Decrement(reg)
+        Operation::Monadic(Width::Width8, MonadicOperation::Increment, reg, reg)
     }
 }
 
 fn alu_6502(_mach: Machine) -> Operation {
     // randomly generate the instructions ora, and, eor, adc, sbc, cmp
     // these all have the same available addressing modes
-    randomly!(
-        { Operation::Add(random_source_6502(), Datum::Register(R::A), true)}
-        { Operation::And(random_source_6502(), Datum::Register(R::A))}
-        { Operation::ExclusiveOr(random_source_6502(), Datum::Register(R::A))}
-        { Operation::Compare(random_source_6502(), random_axy())}
-    )
+    let ops = vec![AddWithCarry, And, Or, ExclusiveOr];
+    let op = *ops.choose(&mut rand::thread_rng()).unwrap();
+    Operation::Dyadic(Width::Width8, op, A, random_source(), A)
 }
 
 fn transfers_6502(_mach: Machine) -> Operation {
@@ -232,9 +240,7 @@ mod tests {
         // TODO: bcc bcs beq bit bmi bne bpl bvc bvs cld clv dec inc jmp ora pha pla sbc sed tsx txs
         // I don't think we need to bother with brk cli jsr nop php plp rti rts sei
         find_it("clc", secl_6502, mach);
-        find_it("cmp", alu_6502, mach);
-        find_it("cpx", alu_6502, mach);
-        find_it("cpy", alu_6502, mach);
+        // Temporarily removed cmp cpx cpy untill I figure out what I want to do with them
         find_it("dex", incdec_6502, mach);
         find_it("dey", incdec_6502, mach);
         find_it("eor", alu_6502, mach);

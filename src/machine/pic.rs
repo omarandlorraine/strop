@@ -1,35 +1,71 @@
 use crate::machine::random_absolute;
 use crate::machine::random_immediate;
 use crate::machine::Datum;
+use crate::machine::DyadicOperation::{Add, And};
 use crate::machine::Instruction;
 use crate::machine::Machine;
+use crate::machine::MonadicOperation;
 use crate::machine::Operation;
 use crate::machine::PicVariant;
 use crate::machine::ShiftType;
+use crate::machine::Width;
 use crate::machine::R;
 
 use rand::random;
 use strop::randomly;
 
+const W: Datum = Datum::Register(R::A);
+
 fn dasm(op: Operation, fr: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn dest(d: Datum) -> &'static str {
+        match d {
+            Datum::Absolute(_) => "1",
+            Datum::Register(R::A) => "0",
+            _ => panic!(),
+        }
+    }
     match op {
-        Operation::Add(Datum::Register(R::A), Datum::Absolute(f), false) => {
-            write!(fr, "\taddwf {}, 1", f)
+        Operation::Monadic(_, MonadicOperation::Decrement, Datum::Absolute(f), dst) => {
+            write!(fr, "\tdecf {}, {}", f, dest(dst))
         }
-        Operation::Add(Datum::Absolute(f), Datum::Register(R::A), false) => {
-            write!(fr, "\taddwf {}, 0", f)
+        Operation::Monadic(_, MonadicOperation::Increment, Datum::Absolute(f), dst) => {
+            write!(fr, "\tincf {}, {}", f, dest(dst))
         }
-        Operation::Add(Datum::Imm8(k), Datum::Register(R::A), false) => {
-            write!(fr, "\taddlw {}, 0", k)
+        Operation::Dyadic(
+            Width::Width8,
+            And,
+            Datum::Absolute(f),
+            Datum::Register(R::A),
+            Datum::Absolute(_),
+        ) => {
+            write!(fr, "\tandwf {}, 1", f)
         }
-        Operation::And(Datum::Imm8(k), Datum::Register(R::A)) => {
-            write!(fr, "\tandlw {}, 0", k)
-        }
-        Operation::And(Datum::Absolute(f), Datum::Register(R::A)) => {
+        Operation::Dyadic(
+            Width::Width8,
+            And,
+            Datum::Absolute(f),
+            Datum::Register(R::A),
+            Datum::Register(R::A),
+        ) => {
             write!(fr, "\tandwf {}, 0", f)
         }
-        Operation::And(Datum::Register(R::A), Datum::Absolute(f)) => {
-            write!(fr, "\tandwf {}, 1", f)
+        Operation::Dyadic(
+            Width::Width8,
+            And,
+            Datum::Imm8(k),
+            Datum::Register(R::A),
+            Datum::Register(R::A),
+        ) => {
+            write!(fr, "\tandlw {}, 0", k)
+        }
+        Operation::Dyadic(Width::Width8, Add, W, Datum::Imm8(k), W) => {
+            write!(fr, "\taddlw {}, 0", k)
+        }
+        Operation::Dyadic(Width::Width8, Add, W, Datum::Absolute(f), W) => {
+            write!(fr, "\taddwf {}, 0", f)
+        }
+        Operation::Dyadic(Width::Width8, Add, W, _, Datum::Absolute(f)) => {
+            write!(fr, "\taddwf {}, 1", f)
         }
         Operation::Move(Datum::Absolute(f), Datum::Register(R::A)) => {
             write!(fr, "\tmovf {}, 0", f)
@@ -45,12 +81,6 @@ fn dasm(op: Operation, fr: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         }
         Operation::Move(Datum::Imm8(k), Datum::Register(R::A)) => {
             write!(fr, "\tmovlw {}", k)
-        }
-        Operation::Increment(Datum::Absolute(f)) => {
-            write!(fr, "\tincf {}, 1", f)
-        }
-        Operation::Decrement(Datum::Absolute(f)) => {
-            write!(fr, "\tdecf {}, 1", f)
         }
         Operation::Shift(ShiftType::LeftRotateThroughCarry, Datum::Absolute(f)) => {
             write!(fr, "\trlf {}, 1", f)
@@ -71,23 +101,26 @@ fn random_accumulator_or_absolute() -> Datum {
 }
 
 fn inc_dec_pic(_mach: Machine) -> Operation {
-    // TODO: These instructions can optionally write to W instead of the F.
-    if random() {
-        Operation::Increment(random_absolute()) // incf f
-    } else {
-        Operation::Decrement(random_absolute()) // decf f
-    }
+    let src = random_absolute();
+
+    let dst = if random() { src } else { Datum::Register(R::A) };
+
+    randomly!(
+        { Operation::Monadic(Width::Width8, MonadicOperation::Increment, src, dst) }
+        { Operation::Monadic(Width::Width8, MonadicOperation::Decrement, src, dst) }
+    )
 }
 
 fn add_pic(mach: Machine) -> Operation {
     let dst = random_accumulator_or_absolute();
     if dst == Datum::Register(R::A) && mach != Machine::Pic(PicVariant::Pic12) && random() {
-        // This is an immediate add. Not available on PIC12.
-        Operation::Add(random_immediate(), Datum::Register(R::A), false) // addlw k
+        // This is an immediate add (addlw). Not available on PIC12.
+        Operation::Dyadic(Width::Width8, Add, W, random_immediate(), W)
     } else if random() {
-        Operation::Add(random_absolute(), Datum::Register(R::A), false) // addwf f
+        Operation::Dyadic(Width::Width8, Add, W, random_absolute(), W) // addwf f, 0
     } else {
-        Operation::Add(Datum::Register(R::A), random_absolute(), false) // addwf f,d
+        let f = random_absolute();
+        Operation::Dyadic(Width::Width8, Add, W, f, f) // addwf f, 1
     }
 }
 
@@ -103,10 +136,13 @@ fn shifts_pic(_mach: Machine) -> Operation {
 
 fn and_pic(_mach: Machine) -> Operation {
     let w = Datum::Register(R::A);
+    let imm = random_immediate();
+    let abs = random_absolute();
+
     randomly!(
-        { Operation::And(random_immediate(), w)} // andlw
-        { Operation::And(random_absolute(), w)}  // andwf something, 0
-        { Operation::And(w, random_absolute())}  // andwf something, 1
+        { Operation::Dyadic(Width::Width8, And, imm, w, w)  /* andlw */ }
+        { Operation::Dyadic(Width::Width8, And, abs, w, w)  /* andwf something, 0 */ }
+        { Operation::Dyadic(Width::Width8, And, abs, w, abs)  /* andwf something, 1 */ }
     )
 }
 
@@ -114,9 +150,9 @@ fn store_pic(_mach: Machine) -> Operation {
     // TODO: There also is movf f,d, which just updates the Z flag
     randomly!(
         { Operation::Move(Datum::Zero, random_accumulator_or_absolute())} // clrw and clrf f
-            { Operation::Move(random_absolute(), Datum::Register(R::A))}      // movf f
-                { Operation::Move(random_immediate(), Datum::Register(R::A))}     // movlw k
-                    { Operation::Move(Datum::Register(R::A), random_absolute())}      // movwf f
+        { Operation::Move(random_absolute(), Datum::Register(R::A))}      // movf f
+        { Operation::Move(random_immediate(), Datum::Register(R::A))}     // movlw k
+        { Operation::Move(Datum::Register(R::A), random_absolute())}      // movwf f
     )
 }
 
@@ -133,6 +169,7 @@ pub fn instr_pic(mach: Machine) -> Instruction {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::machine::tests::disasm;
 
     #[test]
     fn exclude_instructions() {
@@ -144,12 +181,8 @@ mod tests {
                 Operation::Move(Datum::Register(R::A), Datum::Register(R::A)) => {
                     panic!("{} produced a move from W to W", fname)
                 }
-                Operation::Add(Datum::Absolute(_), Datum::Absolute(_), _) => panic!(
+                Operation::Dyadic(_, _, Datum::Absolute(_), Datum::Absolute(_), _) => panic!(
                     "{} produced an Add operation with two operands in memory",
-                    fname
-                ),
-                Operation::And(Datum::Absolute(_), Datum::Absolute(_)) => panic!(
-                    "{} produced an And operation with two operands in memory",
                     fname
                 ),
                 _ => {}
@@ -203,5 +236,12 @@ mod tests {
         find_it("movwf", store_pic, PicVariant::Pic14);
         find_it("rlf", shifts_pic, PicVariant::Pic14);
         find_it("rrf", shifts_pic, PicVariant::Pic14);
+    }
+
+    #[test]
+    fn disassembler() {
+        disasm(Machine::Pic(PicVariant::Pic12));
+        disasm(Machine::Pic(PicVariant::Pic14));
+        disasm(Machine::Pic(PicVariant::Pic16));
     }
 }
