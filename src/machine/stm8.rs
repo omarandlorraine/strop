@@ -333,6 +333,14 @@ pub fn instr_length_stm8(operation: Operation) -> usize {
         Operation::Move(Datum::Register(_), Datum::Register(r)) => {
             1 + y_prefix_penalty(Datum::Register(r))
         }
+        Operation::BitSet(_, _) => 4,
+        Operation::BitClear(_, _) => 4,
+        Operation::BitComplement(_, _) => 4,
+        Operation::BitCopyCarry(_, _) => 4,
+        Operation::Carry(_) => 1,
+        Operation::ComplementCarry => 1,
+        Operation::BitCompare(Datum::Absolute(addr), A) => 1 + addr_length(addr),
+        Operation::BitCompare(Datum::Imm8(_), A) => 2,
         _ => 0,
     }
 }
