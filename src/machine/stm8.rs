@@ -342,6 +342,7 @@ pub fn instr_length_stm8(operation: Operation) -> usize {
         Operation::BitCompare(Datum::Absolute(addr), A) => 1 + addr_length(addr),
         Operation::BitCompare(Datum::Imm8(_), A) => 2,
         Operation::Jump(Test::True, FlowControl::Forward(_)) => 2,
+        Operation::Jump(Test::True, FlowControl::Backward(_)) => 2,
         _ => 0,
     }
 }
