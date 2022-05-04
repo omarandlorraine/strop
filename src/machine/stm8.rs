@@ -300,10 +300,15 @@ pub fn instr_stm8(mach: Machine) -> Instruction {
 pub fn instr_length_stm8(operation: Operation) -> usize {
     fn y_prefix_penalty(r: Datum) -> usize {
         if r == Y {
-            1
-        } else {
-            0
+            return 1;
         }
+        if r == YH {
+            return 1;
+        }
+        if r == YL {
+            return 1;
+        }
+        0
     }
 
     fn addr_length(r: u16) -> usize {
@@ -325,6 +330,9 @@ pub fn instr_length_stm8(operation: Operation) -> usize {
         Operation::Move(Datum::Zero, X) => 1,
         Operation::Move(Datum::Zero, Y) => 2,
         Operation::Move(Datum::Zero, Datum::Absolute(addr)) => 1 + addr_length(addr),
+        Operation::Move(Datum::Register(_), Datum::Register(r)) => {
+            1 + y_prefix_penalty(Datum::Register(r))
+        }
         _ => 0,
     }
 }
