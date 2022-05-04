@@ -343,6 +343,8 @@ pub fn instr_length_stm8(operation: Operation) -> usize {
         Operation::BitCompare(Datum::Imm8(_), A) => 2,
         Operation::Jump(Test::True, FlowControl::Forward(_)) => 2,
         Operation::Jump(Test::True, FlowControl::Backward(_)) => 2,
+        Operation::Jump(Test::Carry(_), _) => 2,
+        Operation::Jump(Test::Bit(_, _, _), _) => 5,
         _ => 0,
     }
 }
