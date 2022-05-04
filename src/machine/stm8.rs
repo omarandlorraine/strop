@@ -321,6 +321,10 @@ pub fn instr_length_stm8(operation: Operation) -> usize {
         Operation::Dyadic(Width::Width16, _, _, Datum::Absolute(addr), _) => 1 + addr_length(addr),
         Operation::Monadic(Width::Width16, _, _, r) => 1 + y_prefix_penalty(r),
         Operation::Monadic(Width::Width8, _, _, A) => 1,
+        Operation::Move(Datum::Zero, A) => 1,
+        Operation::Move(Datum::Zero, X) => 1,
+        Operation::Move(Datum::Zero, Y) => 2,
+        Operation::Move(Datum::Zero, Datum::Absolute(addr)) => 1 + addr_length(addr),
         _ => 0,
     }
 }
