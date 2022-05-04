@@ -27,6 +27,10 @@ const YH: Datum = Datum::Register(R::Yh);
 const X: Datum = Datum::RegisterPair(R::Xh, R::Xl);
 const Y: Datum = Datum::RegisterPair(R::Yh, R::Yl);
 
+const RANDS: [fn(Machine) -> Operation; 9] = [
+    clear, transfers, bits, carry, compare, jumps, oneargs, twoargs, shifts,
+];
+
 fn random_stm8_operand() -> Datum {
     if random() {
         random_immediate()
@@ -289,17 +293,8 @@ fn oneargs(_mach: Machine) -> Operation {
 }
 
 pub fn instr_stm8(mach: Machine) -> Instruction {
-    randomly!(
-    { Instruction::new(mach, clear, dasm)}
-    { Instruction::new(mach, transfers, dasm)}
-    { Instruction::new(mach, bits, dasm)}
-    { Instruction::new(mach, carry, dasm)}
-    { Instruction::new(mach, compare, dasm)}
-    { Instruction::new(mach, jumps, dasm)}
-    { Instruction::new(mach, oneargs, dasm)}
-    { Instruction::new(mach, twoargs, dasm)}
-    { Instruction::new(mach, shifts, dasm)}
-    )
+    let r = RANDS.choose(&mut rand::thread_rng()).unwrap();
+    Instruction::new(mach, *r, dasm)
 }
 
 pub fn instr_length_stm8(operation: Operation) -> usize {
@@ -365,13 +360,9 @@ mod tests {
                 }
             }
         }
-        checkem(twoargs);
-        checkem(oneargs);
-        checkem(bits);
-        checkem(compare);
-        checkem(jumps);
-        checkem(transfers);
-        checkem(carry);
+        for r in RANDS {
+            checkem(r);
+        }
     }
 
     #[test]
