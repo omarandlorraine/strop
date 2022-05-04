@@ -99,7 +99,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match test {
             Test::Carry(true) => "jrc",
             Test::Carry(false) => "jrnc",
-            Test::True => "jr",
+            Test::True => "jra",
             _ => panic!(),
         }
     }
