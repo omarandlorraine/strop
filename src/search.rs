@@ -302,7 +302,11 @@ pub fn optimize(
     prog.clone()
 }
 
-pub fn stochastic_search(convergence: &dyn Fn(&BasicBlock) -> f64, mach: Machine) -> BasicBlock {
+pub fn stochastic_search(
+    convergence: &dyn Fn(&BasicBlock) -> f64,
+    mach: Machine,
+    graph: bool,
+) -> BasicBlock {
     fn initial_population(
         convergence: &dyn Fn(&BasicBlock) -> f64,
         mach: Machine,
@@ -343,7 +347,6 @@ pub fn stochastic_search(convergence: &dyn Fn(&BasicBlock) -> f64, mach: Machine
     let mut winners: Vec<(f64, BasicBlock)> = vec![];
     let mut generation: u64 = 1;
 
-    println!("initial population generated");
     while winners.is_empty() {
         // limit the population to the (small number of) best specimens
         //let current_generation = population.into_iter().take(population_size);
@@ -379,7 +382,9 @@ pub fn stochastic_search(convergence: &dyn Fn(&BasicBlock) -> f64, mach: Machine
         next_generation.par_sort_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"));
 
         population = next_generation.clone();
-        println!("{}, {}, {}", generation, best_score, population.len());
+        if graph {
+            println!("{}, {}, {}", generation, best_score, population.len());
+        }
         generation += 1;
     }
 

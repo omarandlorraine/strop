@@ -123,6 +123,10 @@ struct Opts {
     #[argh(option)]
     /// constants
     constant: Vec<i8>,
+
+    #[argh(switch, short = 'g')]
+    /// graph progress
+    graph: bool,
 }
 
 fn mach(m: String) -> Machine {
@@ -256,7 +260,7 @@ fn main() {
     };
 
     let convergence = |prog: &BasicBlock| difference(prog, &testrun);
-    let prog = stochastic_search(&convergence, machine);
+    let prog = stochastic_search(&convergence, machine, opts.graph);
     let opt = optimize(&convergence, &prog, machine);
     disassemble(opt);
 }
