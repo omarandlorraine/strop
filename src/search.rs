@@ -339,8 +339,7 @@ pub fn stochastic_search(convergence: &dyn Fn(&BasicBlock) -> f64, mach: Machine
         population
     }
 
-    let mut population: Vec<(f64, BasicBlock)> =
-        initial_population(convergence, mach, 100);
+    let mut population: Vec<(f64, BasicBlock)> = initial_population(convergence, mach, 100);
     let mut winners: Vec<(f64, BasicBlock)> = vec![];
     let mut generation: u64 = 1;
 
