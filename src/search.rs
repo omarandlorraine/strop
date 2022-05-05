@@ -306,12 +306,12 @@ pub fn stochastic_search(convergence: &dyn Fn(&BasicBlock) -> f64, mach: Machine
     fn initial_population(
         convergence: &dyn Fn(&BasicBlock) -> f64,
         mach: Machine,
-        temperature: u32,
+        size: usize,
     ) -> Vec<(f64, BasicBlock)> {
         // Initial population of a bajillion stupid programs
         // which are of course unlikely to be any good
         let mut population: Vec<(f64, BasicBlock)> = vec![];
-        for _i in 1..temperature {
+        for _i in 1..size {
             let program = BasicBlock::initial_guess(mach, 20);
             let d = quick_dce(convergence, &program);
             population.push((convergence(&d), d));
@@ -339,33 +339,51 @@ pub fn stochastic_search(convergence: &dyn Fn(&BasicBlock) -> f64, mach: Machine
         population
     }
 
-    let mut population: Vec<(f64, BasicBlock)> = initial_population(convergence, mach, 1000);
+    let mut population_size: usize = 100;
+
+    let mut population: Vec<(f64, BasicBlock)> =
+        initial_population(convergence, mach, population_size);
     let mut winners: Vec<(f64, BasicBlock)> = vec![];
-    let mut best = population[0].0;
+    let mut generation: u64 = 1;
 
+    println!("initial population generated");
     while winners.len() < 1 {
-        let current_generation = population.into_iter().take(30);
+        // limit the population to the (small number of) best specimens
+        //let current_generation = population.into_iter().take(population_size);
 
-        // The next_generation starts off with 5 randos. Who knows, maybe it'll strike lucky.
-        let mut next_generation: Vec<(f64, BasicBlock)> = initial_population(convergence, mach, 5);
+        let best_score = population[0].0;
 
-        for s in current_generation.into_iter() {
-            for b in next_gen(convergence, mach, s.0, s.1, 5000) {
+        // Spawn more specimens for next generation by mutating the current ones
+        let next_gen_size = if best_score < 20.0 { 10 } else { 50 };
+        let population_size = if best_score < 500.0 { 100 } else { 500 };
+        let mut next_generation: Vec<(f64, BasicBlock)> = vec![];
+
+        for s in population.clone().into_iter().take(population_size) {
+            for b in next_gen(convergence, mach, s.0, s.1, next_gen_size) {
                 if b.0 < 0.1 {
                     winners.push(b.clone());
-                } else {
-                    if b.0 < best {
-                        best = b.0;
-                        println!("{}", b.0);
-                    }
                 }
                 next_generation.push(b);
             }
         }
 
+        // Add (small number of) randos to the next generation. Who knows, maybe it'll strike lucky.
+        let randos_for_next = if best_score < 500.0 { 5 } else { 10 };
+        for s in initial_population(convergence, mach, randos_for_next) {
+            next_generation.push(s);
+        }
+
+        // concatenate the current generation to the next
+        for s in population.clone().into_iter().take(population_size) {
+            next_generation.push(s);
+        }
+
         // Sort the population by score.
         next_generation.par_sort_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"));
+
         population = next_generation.clone();
+        println!("{}, {}, {}", generation, best_score, population.len());
+        generation = generation + 1;
     }
 
     //return dead_code_elimination(convergence, &winners[0].1);
