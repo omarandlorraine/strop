@@ -339,15 +339,13 @@ pub fn stochastic_search(convergence: &dyn Fn(&BasicBlock) -> f64, mach: Machine
         population
     }
 
-    let mut population_size: usize = 100;
-
     let mut population: Vec<(f64, BasicBlock)> =
-        initial_population(convergence, mach, population_size);
+        initial_population(convergence, mach, 100);
     let mut winners: Vec<(f64, BasicBlock)> = vec![];
     let mut generation: u64 = 1;
 
     println!("initial population generated");
-    while winners.len() < 1 {
+    while winners.is_empty() {
         // limit the population to the (small number of) best specimens
         //let current_generation = population.into_iter().take(population_size);
 
@@ -383,7 +381,7 @@ pub fn stochastic_search(convergence: &dyn Fn(&BasicBlock) -> f64, mach: Machine
 
         population = next_generation.clone();
         println!("{}, {}, {}", generation, best_score, population.len());
-        generation = generation + 1;
+        generation += 1;
     }
 
     //return dead_code_elimination(convergence, &winners[0].1);
