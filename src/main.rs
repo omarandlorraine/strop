@@ -259,8 +259,7 @@ fn main() {
         testrun_from_args(&opts, machine)
     };
 
-    let convergence = |prog: &BasicBlock| difference(prog, &testrun);
-    let prog = stochastic_search(&convergence, machine, opts.graph);
-    let opt = optimize(&convergence, &prog, machine);
-    disassemble(opt);
+    let prog = stochastic_search(&testrun, machine, opts.graph);
+    //let opt = optimize(&testrun, &prog, machine);
+    disassemble(prog);
 }
