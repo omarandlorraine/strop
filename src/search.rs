@@ -5,6 +5,7 @@ use crate::machine::Width;
 use crate::{Machine, State, Step, TestRun};
 use rand::{thread_rng, Rng};
 use rayon::iter::IntoParallelRefIterator;
+use rayon::iter::ParallelIterator;
 use rayon::prelude::ParallelSliceMut;
 use std::ops::{Index, IndexMut};
 use strop::randomly;
@@ -236,16 +237,16 @@ fn mutate(prog: &mut BasicBlock, mach: Machine) {
 
 pub struct InitialPopulation<'a> {
     mach: Machine,
-    convergence: &'a dyn Fn(&BasicBlock) -> f64,
+    testrun: &'a TestRun,
 }
 
 impl<'a> InitialPopulation<'a> {
-    fn new(mach: Machine, convergence: &'a dyn Fn(&BasicBlock) -> f64) -> InitialPopulation {
-        InitialPopulation { convergence, mach }
+    fn new(mach: Machine, testrun: &TestRun) -> InitialPopulation {
+        InitialPopulation { testrun, mach }
     }
 }
 
-impl<'a> Iterator for InitialPopulation<'a> {
+impl Iterator for InitialPopulation<'_> {
     type Item = (f64, BasicBlock);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -253,8 +254,49 @@ impl<'a> Iterator for InitialPopulation<'a> {
         let program = BasicBlock::initial_guess(self.mach, 20);
 
         // TODO: Should this check that the dce doesn't just empty the BB?
-        let d = quick_dce(self.convergence, &program);
-        Some(((self.convergence)(&d), d))
+        let d = quick_dce(
+            &|prog: &BasicBlock| difference(prog, &self.testrun),
+            &program,
+        );
+        Some((difference(&d, &self.testrun), d))
+    }
+}
+
+pub struct NextGeneration<'a> {
+    mach: Machine,
+    testrun: &'a TestRun,
+    bb: BasicBlock,
+    count: u32,
+}
+
+impl<'a> NextGeneration<'a> {
+    fn new(mach: Machine, testrun: &'a TestRun, bb: BasicBlock) -> NextGeneration {
+        NextGeneration {
+            testrun,
+            mach,
+            bb,
+            count: 400,
+        }
+    }
+}
+
+impl<'a> Iterator for NextGeneration<'a> {
+    type Item = (f64, BasicBlock);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.count -= 1;
+        let score = difference(&self.bb, &self.testrun);
+        for _i in 0..self.count {
+            let s = self.bb.spawn(self.mach).next().unwrap();
+            let fit = difference(&s, &self.testrun);
+            if fit < score {
+                return Some((
+                    fit,
+                    quick_dce(&|prog: &BasicBlock| difference(prog, &self.testrun), &s),
+                ));
+            }
+        }
+        None
     }
 }
 
@@ -327,74 +369,56 @@ pub fn optimize(
     prog.clone()
 }
 
-pub fn stochastic_search(
-    convergence: &dyn Fn(&BasicBlock) -> f64,
-    mach: Machine,
-    graph: bool,
-) -> BasicBlock {
-    fn next_gen(
-        convergence: &dyn Fn(&BasicBlock) -> f64,
-        mach: Machine,
-        score: f64,
-        bb: BasicBlock,
-        temperature: usize,
-    ) -> Vec<(f64, BasicBlock)> {
-        // spawn another n offspring from the basic block
-        // Each offspring needs a score that's greater than the parent
-        let mut population: Vec<(f64, BasicBlock)> = vec![];
-        for s in bb.spawn(mach).take(temperature) {
-            let fit = convergence(&s);
-            if fit < score {
-                let d = quick_dce(convergence, &s);
-                population.push((fit, d));
-            }
-        }
-        population
-    }
-
+pub fn stochastic_search(convergence: &TestRun, mach: Machine, graph: bool) -> BasicBlock {
     let mut init = InitialPopulation::new(mach, convergence);
 
     let mut population: Vec<(f64, BasicBlock)> = vec![];
-    let mut winners: Vec<(f64, BasicBlock)> = vec![];
+    let mut winners: Vec<BasicBlock> = vec![];
     let mut generation: u64 = 1;
 
     population.push(init.next().unwrap());
 
     while winners.is_empty() {
-        // limit the population to the (small number of) best specimens
-        //let current_generation = population.into_iter().take(population_size);
-
         let best_score = population[0].0;
 
         // Spawn more specimens for next generation by mutating the current ones
-        let next_gen_size = if best_score < 20.0 { 10 } else { 50 };
         let population_size = if best_score < 500.0 { 100 } else { 500 };
-        let mut next_generation: Vec<(f64, BasicBlock)> = vec![];
-
-        for s in population.clone().into_iter().take(population_size) {
-            for b in next_gen(convergence, mach, s.0, s.1, next_gen_size) {
-                if b.0 < 0.1 {
-                    winners.push(b.clone());
-                }
-                next_generation.push(b);
-            }
-        }
+        let mut ng: Vec<(f64, BasicBlock)> = population
+            .par_iter()
+            .flat_map(|s| {
+                NextGeneration::new(mach, convergence.clone(), s.1.clone())
+                    .collect::<Vec<(f64, BasicBlock)>>()
+            })
+            .collect();
 
         // concatenate the current generation to the next
         for s in population.clone().into_iter().take(population_size) {
-            next_generation.push(s);
+            if s.0 < 0.1 {
+                winners.push(s.1);
+            } else {
+                ng.push(s);
+            }
         }
 
         // Sort the population by score.
-        next_generation.par_sort_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"));
+        ng.par_sort_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"));
 
-        population = next_generation.clone();
+        population = ng.into();
+        let nbest = population[0].0;
+
         if graph {
-            println!("{}, {}, {}", generation, best_score, population.len());
+            println!(
+                "{}, {}, {}, {}",
+                generation,
+                best_score,
+                population.len(),
+                nbest
+            );
         }
+        population.truncate(500);
         generation += 1;
     }
 
     //return dead_code_elimination(convergence, &winners[0].1);
-    winners[0].1.clone()
+    winners[0].clone()
 }
