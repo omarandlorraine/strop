@@ -1,3 +1,4 @@
+use crate::mach;
 use crate::machine::new_instruction;
 use crate::machine::Instruction;
 use crate::machine::Width;
@@ -233,6 +234,30 @@ fn mutate(prog: &mut BasicBlock, mach: Machine) {
     })
 }
 
+pub struct InitialPopulation<'a> {
+    mach: Machine,
+    convergence: &'a dyn Fn(&BasicBlock) -> f64,
+}
+
+impl<'a> InitialPopulation<'a> {
+    fn new(mach: Machine, convergence: &'a dyn Fn(&BasicBlock) -> f64) -> InitialPopulation {
+        InitialPopulation { convergence, mach }
+    }
+}
+
+impl<'a> Iterator for InitialPopulation<'a> {
+    type Item = (f64, BasicBlock);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // Just spawn a random BasicBlock.
+        let program = BasicBlock::initial_guess(self.mach, 20);
+
+        // TODO: Should this check that the dce doesn't just empty the BB?
+        let d = quick_dce(self.convergence, &program);
+        Some(((self.convergence)(&d), d))
+    }
+}
+
 pub fn dead_code_elimination(
     convergence: &dyn Fn(&BasicBlock) -> f64,
     prog: &BasicBlock,
@@ -307,22 +332,6 @@ pub fn stochastic_search(
     mach: Machine,
     graph: bool,
 ) -> BasicBlock {
-    fn initial_population(
-        convergence: &dyn Fn(&BasicBlock) -> f64,
-        mach: Machine,
-        size: usize,
-    ) -> Vec<(f64, BasicBlock)> {
-        // Initial population of a bajillion stupid programs
-        // which are of course unlikely to be any good
-        let mut population: Vec<(f64, BasicBlock)> = vec![];
-        for _i in 1..size {
-            let program = BasicBlock::initial_guess(mach, 20);
-            let d = quick_dce(convergence, &program);
-            population.push((convergence(&d), d));
-        }
-        population
-    }
-
     fn next_gen(
         convergence: &dyn Fn(&BasicBlock) -> f64,
         mach: Machine,
@@ -343,9 +352,13 @@ pub fn stochastic_search(
         population
     }
 
-    let mut population: Vec<(f64, BasicBlock)> = initial_population(convergence, mach, 100);
+    let mut init = InitialPopulation::new(mach, convergence);
+
+    let mut population: Vec<(f64, BasicBlock)> = vec![];
     let mut winners: Vec<(f64, BasicBlock)> = vec![];
     let mut generation: u64 = 1;
+
+    population.push(init.next().unwrap());
 
     while winners.is_empty() {
         // limit the population to the (small number of) best specimens
@@ -365,12 +378,6 @@ pub fn stochastic_search(
                 }
                 next_generation.push(b);
             }
-        }
-
-        // Add (small number of) randos to the next generation. Who knows, maybe it'll strike lucky.
-        let randos_for_next = if best_score < 500.0 { 5 } else { 10 };
-        for s in initial_population(convergence, mach, randos_for_next) {
-            next_generation.push(s);
         }
 
         // concatenate the current generation to the next
