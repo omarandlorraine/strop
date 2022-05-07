@@ -265,17 +265,17 @@ impl Iterator for InitialPopulation<'_> {
 pub struct NextGeneration<'a> {
     mach: Machine,
     testrun: &'a TestRun,
-    bb: BasicBlock,
-    count: u32,
+    bb: std::iter::Take<BasicBlockSpawn>,
+    score: f64
 }
 
 impl<'a> NextGeneration<'a> {
-    fn new(mach: Machine, testrun: &'a TestRun, bb: BasicBlock) -> NextGeneration {
+    fn new(mach: Machine, testrun: &'a TestRun, score: f64, bb: BasicBlock) -> NextGeneration {
         NextGeneration {
             testrun,
             mach,
-            bb,
-            count: 400,
+            bb: bb.spawn(mach).take(500),
+            score
         }
     }
 }
@@ -284,19 +284,14 @@ impl<'a> Iterator for NextGeneration<'a> {
     type Item = (f64, BasicBlock);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.count -= 1;
-        let score = difference(&self.bb, &self.testrun);
-        for _i in 0..self.count {
-            let s = self.bb.spawn(self.mach).next().unwrap();
+        while let Some(s) = self.bb.next() {
             let fit = difference(&s, &self.testrun);
-            if fit < score {
-                return Some((
-                    fit,
-                    quick_dce(&|prog: &BasicBlock| difference(prog, &self.testrun), &s),
-                ));
+            if fit < self.score {
+                let t = quick_dce(&|prog: &BasicBlock| difference(prog, &self.testrun), &s);
+                return Some((fit, t));
             }
         }
-        None
+        return None;
     }
 }
 
@@ -382,11 +377,11 @@ pub fn stochastic_search(convergence: &TestRun, mach: Machine, graph: bool) -> B
         let best_score = population[0].0;
 
         // Spawn more specimens for next generation by mutating the current ones
-        let population_size = if best_score < 500.0 { 100 } else { 500 };
+        let population_size = if best_score < 500.0 { 10 } else { 50 };
         let mut ng: Vec<(f64, BasicBlock)> = population
             .par_iter()
             .flat_map(|s| {
-                NextGeneration::new(mach, convergence.clone(), s.1.clone())
+                NextGeneration::new(mach, convergence.clone(), best_score, s.1.clone())
                     .collect::<Vec<(f64, BasicBlock)>>()
             })
             .collect();
@@ -415,7 +410,7 @@ pub fn stochastic_search(convergence: &TestRun, mach: Machine, graph: bool) -> B
                 nbest
             );
         }
-        population.truncate(500);
+        population.truncate(50);
         generation += 1;
     }
 
