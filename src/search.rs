@@ -74,7 +74,7 @@ impl BasicBlock {
 
     fn random_offset(&self) -> usize {
         let mut rng = thread_rng();
-        rng.gen_range(0..self.len())
+        rng.gen_range(0..self.instructions.len())
     }
 }
 
@@ -205,7 +205,7 @@ fn mutate(prog: &mut BasicBlock, mach: Machine) {
         /* randomize an instruction
          * (this could involve changing an operand, addressing mode, etc etc.
          */
-        if prog.len() > 1 {
+        if !prog.instructions.is_empty() {
             let offset = prog.random_offset();
             prog[offset].randomize();
         }
@@ -219,13 +219,15 @@ fn mutate(prog: &mut BasicBlock, mach: Machine) {
         mutate_insert(prog, mach);
     }
     {
-        /* Pick two instructions and swap them round */
-        let offset_a = prog.random_offset();
-        let offset_b = prog.random_offset();
-        let ins_a = prog[offset_a];
-        let ins_b = prog[offset_b];
-        prog[offset_a] = ins_b;
-        prog[offset_b] = ins_a;
+        if prog.instructions.len() > 2 {
+            /* Pick two instructions and swap them round */
+            let offset_a = prog.random_offset();
+            let offset_b = prog.random_offset();
+            let ins_a = prog[offset_a];
+            let ins_b = prog[offset_b];
+            prog[offset_a] = ins_b;
+            prog[offset_b] = ins_a;
+        }
     })
 }
 
