@@ -266,7 +266,7 @@ pub struct NextGeneration<'a> {
     mach: Machine,
     testrun: &'a TestRun,
     bb: std::iter::Take<BasicBlockSpawn>,
-    score: f64
+    score: f64,
 }
 
 impl<'a> NextGeneration<'a> {
@@ -275,7 +275,7 @@ impl<'a> NextGeneration<'a> {
             testrun,
             mach,
             bb: bb.spawn(mach).take(500),
-            score
+            score,
         }
     }
 }
