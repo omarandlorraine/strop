@@ -1,4 +1,3 @@
-use crate::mach;
 use crate::machine::new_instruction;
 use crate::machine::Instruction;
 use crate::machine::Width;
@@ -255,15 +254,14 @@ impl Iterator for InitialPopulation<'_> {
 
         // TODO: Should this check that the dce doesn't just empty the BB?
         let d = quick_dce(
-            &|prog: &BasicBlock| difference(prog, &self.testrun),
+            &|prog: &BasicBlock| difference(prog, self.testrun),
             &program,
         );
-        Some((difference(&d, &self.testrun), d))
+        Some((difference(&d, self.testrun), d))
     }
 }
 
 pub struct NextGeneration<'a> {
-    mach: Machine,
     testrun: &'a TestRun,
     bb: std::iter::Take<BasicBlockSpawn>,
     score: f64,
@@ -273,7 +271,6 @@ impl<'a> NextGeneration<'a> {
     fn new(mach: Machine, testrun: &'a TestRun, score: f64, bb: BasicBlock) -> NextGeneration {
         NextGeneration {
             testrun,
-            mach,
             bb: bb.spawn(mach).take(500),
             score,
         }
@@ -285,13 +282,13 @@ impl<'a> Iterator for NextGeneration<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(s) = self.bb.next() {
-            let fit = difference(&s, &self.testrun);
+            let fit = difference(&s, self.testrun);
             if fit < self.score {
-                let t = quick_dce(&|prog: &BasicBlock| difference(prog, &self.testrun), &s);
+                let t = quick_dce(&|prog: &BasicBlock| difference(prog, self.testrun), &s);
                 return Some((fit, t));
             }
         }
-        return None;
+        None
     }
 }
 
@@ -381,7 +378,7 @@ pub fn stochastic_search(convergence: &TestRun, mach: Machine, graph: bool) -> B
         let mut ng: Vec<(f64, BasicBlock)> = population
             .par_iter()
             .flat_map(|s| {
-                NextGeneration::new(mach, convergence.clone(), best_score, s.1.clone())
+                NextGeneration::new(mach, convergence, best_score, s.1.clone())
                     .collect::<Vec<(f64, BasicBlock)>>()
             })
             .collect();
@@ -398,7 +395,7 @@ pub fn stochastic_search(convergence: &TestRun, mach: Machine, graph: bool) -> B
         // Sort the population by score.
         ng.par_sort_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"));
 
-        population = ng.into();
+        population = ng;
         let nbest = population[0].0;
 
         if graph {
