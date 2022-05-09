@@ -294,7 +294,7 @@ impl<'a> Iterator for NextGeneration<'a> {
 }
 
 pub fn dead_code_elimination(
-    convergence: &dyn Fn(&BasicBlock) -> f64,
+    correctness: &dyn Fn(&BasicBlock) -> f64,
     prog: &BasicBlock,
 ) -> BasicBlock {
     let mut better = prog.clone();
@@ -303,7 +303,7 @@ pub fn dead_code_elimination(
         let mut putative = prog.clone();
         for _n in 1..10 {
             mutate_delete(&mut putative);
-            if convergence(&better) >= convergence(&putative) {
+            if correctness(&better) >= correctness(&putative) {
                 better = putative.clone();
             } else {
                 break;
@@ -313,9 +313,9 @@ pub fn dead_code_elimination(
     better
 }
 
-pub fn quick_dce(convergence: &dyn Fn(&BasicBlock) -> f64, prog: &BasicBlock) -> BasicBlock {
+pub fn quick_dce(correctness: &dyn Fn(&BasicBlock) -> f64, prog: &BasicBlock) -> BasicBlock {
     let mut better = prog.clone();
-    let score = convergence(prog);
+    let score = correctness(prog);
     let mut cur: usize = 0;
 
     loop {
@@ -324,7 +324,7 @@ pub fn quick_dce(convergence: &dyn Fn(&BasicBlock) -> f64, prog: &BasicBlock) ->
             return better;
         }
         putative.remove(cur);
-        if convergence(&putative) <= score {
+        if correctness(&putative) <= score {
             better = putative.clone();
         } else {
             cur += 1;
@@ -333,13 +333,13 @@ pub fn quick_dce(convergence: &dyn Fn(&BasicBlock) -> f64, prog: &BasicBlock) ->
 }
 
 pub fn optimize(
-    convergence: &dyn Fn(&BasicBlock) -> f64,
+    correctness: &dyn Fn(&BasicBlock) -> f64,
     prog: &BasicBlock,
     mach: Machine,
 ) -> BasicBlock {
     let mut population: Vec<(f64, BasicBlock)> = vec![];
 
-    let fitness = convergence(prog);
+    let fitness = correctness(prog);
     let ccost = cost(prog);
     population.push((cost(prog), prog.clone()));
 
@@ -349,12 +349,12 @@ pub fn optimize(
     if let Some(s) = best
         .spawn(mach)
         .take(1000)
-        .filter(|s| convergence(s) <= fitness)
+        .filter(|s| correctness(s) <= fitness)
         .map(|s| (cost(&s), s))
         .min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"))
     {
         if s.0 < ccost {
-            return optimize(convergence, &s.1, mach);
+            return optimize(correctness, &s.1, mach);
         }
     }
 
@@ -363,12 +363,12 @@ pub fn optimize(
 }
 
 pub fn stochastic_search(
-    convergence: &TestRun,
+    correctness: &TestRun,
     mach: Machine,
     graph: bool,
     debug: bool,
 ) -> BasicBlock {
-    let mut init = InitialPopulation::new(mach, convergence);
+    let mut init = InitialPopulation::new(mach, correctness);
 
     let mut population: Vec<(f64, BasicBlock)> = vec![];
     let mut winners: Vec<BasicBlock> = vec![];
@@ -384,7 +384,7 @@ pub fn stochastic_search(
         let mut ng: Vec<(f64, BasicBlock)> = population
             .par_iter()
             .flat_map(|s| {
-                NextGeneration::new(mach, convergence, best_score, s.1.clone())
+                NextGeneration::new(mach, correctness, best_score, s.1.clone())
                     .collect::<Vec<(f64, BasicBlock)>>()
             })
             .collect();
@@ -414,7 +414,6 @@ pub fn stochastic_search(
         generation += 1;
     }
 
-    //return dead_code_elimination(convergence, &winners[0].1);
     winners[0].clone()
 }
 
