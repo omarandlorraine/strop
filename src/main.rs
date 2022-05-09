@@ -127,6 +127,10 @@ struct Opts {
     #[argh(switch, short = 'g')]
     /// graph progress
     graph: bool,
+
+    #[argh(switch, short = 'd')]
+    /// disassemble the best specimen from each generation
+    debug: bool,
 }
 
 fn mach(m: String) -> Machine {
@@ -259,7 +263,7 @@ fn main() {
         testrun_from_args(&opts, machine)
     };
 
-    let prog = stochastic_search(&testrun, machine, opts.graph);
+    let prog = stochastic_search(&testrun, machine, opts.graph, opts.debug);
     //let opt = optimize(&testrun, &prog, machine);
     disassemble(prog);
 }

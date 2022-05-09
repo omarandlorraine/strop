@@ -1,3 +1,4 @@
+use crate::disassemble;
 use crate::machine::new_instruction;
 use crate::machine::Instruction;
 use crate::machine::Width;
@@ -361,7 +362,12 @@ pub fn optimize(
     prog.clone()
 }
 
-pub fn stochastic_search(convergence: &TestRun, mach: Machine, graph: bool) -> BasicBlock {
+pub fn stochastic_search(
+    convergence: &TestRun,
+    mach: Machine,
+    graph: bool,
+    debug: bool,
+) -> BasicBlock {
     let mut init = InitialPopulation::new(mach, convergence);
 
     let mut population: Vec<(f64, BasicBlock)> = vec![];
@@ -400,6 +406,9 @@ pub fn stochastic_search(convergence: &TestRun, mach: Machine, graph: bool) -> B
 
         if graph {
             println!("{}, {}, {}", generation, population.len(), nbest);
+        }
+        if debug {
+            disassemble(population[0].1.clone());
         }
         population.truncate(50);
         generation += 1;
