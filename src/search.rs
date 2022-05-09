@@ -399,13 +399,7 @@ pub fn stochastic_search(convergence: &TestRun, mach: Machine, graph: bool) -> B
         let nbest = population[0].0;
 
         if graph {
-            println!(
-                "{}, {}, {}, {}",
-                generation,
-                best_score,
-                population.len(),
-                nbest
-            );
+            println!("{}, {}, {}", generation, population.len(), nbest);
         }
         population.truncate(50);
         generation += 1;
