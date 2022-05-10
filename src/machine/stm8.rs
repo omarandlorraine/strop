@@ -5,7 +5,7 @@ use crate::machine::DyadicOperation::{
 };
 use crate::machine::FlowControl;
 use crate::machine::Instruction;
-use crate::machine::MonadicOperation::{Complement, Decrement, Increment, Negate};
+use crate::machine::MonadicOperation::{Complement, Decrement, Increment, Negate, Swap};
 use crate::machine::Operation;
 use crate::machine::ShiftType;
 use crate::machine::Test;
@@ -147,6 +147,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Monadic(_, Increment, _, r) => syn(f, "inc", r),
         Operation::Monadic(_, Complement, _, r) => syn(f, "cpl", r),
         Operation::Monadic(_, Negate, _, r) => syn(f, "neg", r),
+        Operation::Monadic(_, Swap, _, r) => syn(f, "swap", r),
         Operation::Move(Datum::Register(from), Datum::Register(to)) => {
             write!(f, "\tld {}, {}", regname(to), regname(from))
         }
@@ -278,7 +279,7 @@ pub fn jumps(_mach: Machine) -> Operation {
 
 fn oneargs(_mach: Machine) -> Operation {
     fn op(w: Width, a: Datum) -> Operation {
-        let vs = vec![Complement, Negate, Increment, Decrement];
+        let vs = vec![Complement, Negate, Increment, Decrement, Swap];
         let o = vs.choose(&mut rand::thread_rng());
         Operation::Monadic(w, *o.unwrap(), a, a)
     }
@@ -402,7 +403,7 @@ mod tests {
         // pop, popw, push, pushw, need to think about how to implement a stack
         // ld, ldw, mov probably fit in Move
         // exg, exgw, probably fit in Dyadic
-        // swap, tnz, tnzw, more shifts will fit in Monadic
+        // tnz, tnzw, more shifts will fit in Monadic
         // div, divw, mul might need their own or go in with Dyadic
         find_it("adc", twoargs);
         find_it("add", twoargs);
@@ -442,6 +443,8 @@ mod tests {
         find_it("sbc", twoargs);
         find_it("sub", twoargs);
         find_it("subw", twoargs);
+        find_it("swap", oneargs);
+        find_it("swapw", oneargs);
         find_it("xor", twoargs);
     }
 }

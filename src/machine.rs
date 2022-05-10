@@ -114,6 +114,22 @@ impl Datum {
     }
 }
 
+trait Swap {
+    fn swap(self) -> Self;
+}
+
+impl Swap for i8 {
+    fn swap(self) -> i8 {
+        self.rotate_right(4)
+    }
+}
+
+impl Swap for i16 {
+    fn swap(self) -> i16 {
+        self.swap_bytes()
+    }
+}
+
 impl Machine {
     pub fn register_by_name(self, name: &str) -> Datum {
         match self {
@@ -315,19 +331,21 @@ pub enum MonadicOperation {
     Decrement,
     Increment,
     Negate,
+    Swap,
     // TODO: Move the shifts here.
 }
 
 impl MonadicOperation {
     fn evaluate<T>(&self, v: Option<T>) -> Option<T>
     where
-        T: num::PrimInt + std::iter::Sum + WrappingAdd + WrappingSub,
+        T: num::PrimInt + std::iter::Sum + WrappingAdd + WrappingSub + Swap,
     {
         match self {
             Self::Complement => v.map(|v| !v),
             Self::Negate => v.map(|v| T::zero() - v),
             Self::Increment => v.map(|v| v.wrapping_add(&T::one())),
             Self::Decrement => v.map(|v| v.wrapping_sub(&T::one())),
+            Self::Swap => v.map(|v| v.swap()),
         }
     }
 }
