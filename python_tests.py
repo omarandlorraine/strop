@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 """
 This source file is supposed to serve as an example of how to use the `stroppy`
 module from Python 3, and also serves as basic tests in my CI/CD pipeline.
@@ -11,6 +11,7 @@ import stroppy
 
 print(sys.version)
 
+print(dir(stroppy))
+
 # Make sure these functions actually are a part of the module
-stroppy.string_sum # pylint: disable=pointless-statement
-stroppy.sum_as_string # pylint: disable=pointless-statement
+stroppy.sum_as_string

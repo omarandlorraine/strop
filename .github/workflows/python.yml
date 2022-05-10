@@ -1,4 +1,4 @@
-name: maturin
+name: Python
 
 on:
   push:
@@ -16,7 +16,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Build
+      - name: build
         run: cargo build --verbose
-      - name: maturin build
-        run: ./maturin.sh && ./python_tests.py
+      - name: setup
+        run: ./pyprocesses.sh setup
+      - name: test
+        run: ./pyprocesses.sh test
+      - name: lint
+        run: ./pyprocesses.sh lint
