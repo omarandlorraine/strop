@@ -345,6 +345,10 @@ pub fn instr_length_stm8(operation: Operation) -> usize {
         Operation::Jump(Test::True, FlowControl::Backward(_)) => 2,
         Operation::Jump(Test::Carry(_), _) => 2,
         Operation::Jump(Test::Bit(_, _, _), _) => 5,
+        Operation::Shift(_, A) => 1,
+        Operation::Shift(_, X) => 1,
+        Operation::Shift(_, Y) => 2,
+        Operation::Shift(_, Datum::Absolute(addr)) => 1 + addr_length(addr),
         _ => 0,
     }
 }
