@@ -293,26 +293,6 @@ impl<'a> Iterator for NextGeneration<'a> {
     }
 }
 
-pub fn dead_code_elimination(
-    correctness: &dyn Fn(&BasicBlock) -> f64,
-    prog: &BasicBlock,
-) -> BasicBlock {
-    let mut better = prog.clone();
-
-    for _m in 1..100 {
-        let mut putative = prog.clone();
-        for _n in 1..10 {
-            mutate_delete(&mut putative);
-            if correctness(&better) >= correctness(&putative) {
-                better = putative.clone();
-            } else {
-                break;
-            }
-        }
-    }
-    better
-}
-
 pub fn quick_dce(correctness: &dyn Fn(&BasicBlock) -> f64, prog: &BasicBlock) -> BasicBlock {
     let mut better = prog.clone();
     let score = correctness(prog);

@@ -11,9 +11,9 @@ mod test;
 use crate::machine::Datum;
 use crate::machine::State;
 use crate::machine::{Machine, Mos6502Variant, Motorola8BitVariant, PicVariant, PreX86Variant};
+use crate::search::optimize;
 use crate::search::stochastic_search;
 use crate::search::BasicBlock;
-use crate::search::{difference, optimize};
 
 use crate::test::sanity;
 use crate::test::{DeTestRun, Step, Test, TestRun};
