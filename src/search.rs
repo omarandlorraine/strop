@@ -332,14 +332,10 @@ pub fn quick_dce(correctness: &dyn Fn(&BasicBlock) -> f64, prog: &BasicBlock) ->
     }
 }
 
-pub fn optimize(
-    correctness: &dyn Fn(&BasicBlock) -> f64,
-    prog: &BasicBlock,
-    mach: Machine,
-) -> BasicBlock {
+pub fn optimize(correctness: &TestRun, prog: &BasicBlock, mach: Machine) -> BasicBlock {
     let mut population: Vec<(f64, BasicBlock)> = vec![];
 
-    let fitness = correctness(prog);
+    let fitness = difference(prog, correctness);
     let ccost = cost(prog);
     population.push((cost(prog), prog.clone()));
 
@@ -349,7 +345,7 @@ pub fn optimize(
     if let Some(s) = best
         .spawn(mach)
         .take(1000)
-        .filter(|s| correctness(s) <= fitness)
+        .filter(|s| difference(s, correctness) <= fitness)
         .map(|s| (cost(&s), s))
         .min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"))
     {

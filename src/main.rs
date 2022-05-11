@@ -264,6 +264,6 @@ fn main() {
     };
 
     let prog = stochastic_search(&testrun, machine, opts.graph, opts.debug);
-    //let opt = optimize(&testrun, &prog, machine);
-    disassemble(prog);
+    let opt = optimize(&testrun, &prog, machine);
+    disassemble(opt);
 }
