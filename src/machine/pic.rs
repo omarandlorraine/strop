@@ -3,10 +3,8 @@ use crate::machine::random_immediate;
 use crate::machine::Datum;
 use crate::machine::DyadicOperation::{Add, And};
 use crate::machine::Instruction;
-use crate::machine::Machine;
 use crate::machine::MonadicOperation;
 use crate::machine::Operation;
-use crate::machine::PicVariant;
 use crate::machine::ShiftType;
 use crate::machine::Width;
 use crate::machine::R;
@@ -100,7 +98,7 @@ fn random_accumulator_or_absolute() -> Datum {
     }
 }
 
-fn inc_dec_pic(_mach: Machine) -> Operation {
+fn inc_dec_pic() -> Operation {
     let src = random_absolute();
 
     let dst = if random() { src } else { Datum::Register(R::A) };
@@ -111,9 +109,9 @@ fn inc_dec_pic(_mach: Machine) -> Operation {
     )
 }
 
-fn add_pic(mach: Machine) -> Operation {
+fn add_pic() -> Operation {
     let dst = random_accumulator_or_absolute();
-    if dst == Datum::Register(R::A) && mach != Machine::Pic(PicVariant::Pic12) && random() {
+    if dst == Datum::Register(R::A) {
         // This is an immediate add (addlw). Not available on PIC12.
         Operation::Dyadic(Width::Width8, Add, W, random_immediate(), W)
     } else if random() {
@@ -124,7 +122,7 @@ fn add_pic(mach: Machine) -> Operation {
     }
 }
 
-fn shifts_pic(_mach: Machine) -> Operation {
+fn shifts_pic() -> Operation {
     // TODO: These instructions can optionally write to W instead of the F.
     let shtype = if random() {
         ShiftType::RightRotateThroughCarry
@@ -134,7 +132,7 @@ fn shifts_pic(_mach: Machine) -> Operation {
     Operation::Shift(shtype, random_absolute()) // rlf f,d and rrf f,d
 }
 
-fn and_pic(_mach: Machine) -> Operation {
+fn and_pic() -> Operation {
     let w = Datum::Register(R::A);
     let imm = random_immediate();
     let abs = random_absolute();
@@ -146,7 +144,7 @@ fn and_pic(_mach: Machine) -> Operation {
     )
 }
 
-fn store_pic(_mach: Machine) -> Operation {
+fn store_pic() -> Operation {
     // TODO: There also is movf f,d, which just updates the Z flag
     randomly!(
         { Operation::Move(Datum::Zero, random_accumulator_or_absolute())} // clrw and clrf f
@@ -156,13 +154,17 @@ fn store_pic(_mach: Machine) -> Operation {
     )
 }
 
-pub fn instr_pic(mach: Machine) -> Instruction {
+fn insn_len(_insn: &Instruction) -> usize {
+    1
+}
+
+pub fn instr_pic() -> Instruction {
     randomly!(
-        { Instruction::new(mach, shifts_pic, dasm)}
-        { Instruction::new(mach, and_pic, dasm)}
-        { Instruction::new(mach, add_pic, dasm)}
-        { Instruction::new(mach, store_pic, dasm)}
-        { Instruction::new(mach, inc_dec_pic, dasm)}
+        { Instruction::new(shifts_pic, dasm, insn_len)}
+        { Instruction::new(and_pic, dasm, insn_len)}
+        { Instruction::new(add_pic, dasm, insn_len)}
+        { Instruction::new(store_pic, dasm, insn_len)}
+        { Instruction::new(inc_dec_pic, dasm, insn_len)}
     )
 }
 

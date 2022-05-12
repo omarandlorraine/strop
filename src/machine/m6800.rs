@@ -117,7 +117,7 @@ fn rmw_datum_6800() -> Datum {
     }
 }
 
-fn add_6800(_mach: Machine) -> Operation {
+fn add_6800() -> Operation {
     let dst = random_accumulator_6800();
 
     fn src(op: DyadicOperation, dst: Datum) -> Datum {
@@ -133,7 +133,7 @@ fn add_6800(_mach: Machine) -> Operation {
     Operation::Dyadic(Width::Width8, op, dst, src(op, dst), dst)
 }
 
-fn transfers_6800(_mach: Machine) -> Operation {
+fn transfers_6800() -> Operation {
     if random() {
         Operation::Move(Datum::Register(R::A), Datum::Register(R::B))
     } else {
@@ -141,7 +141,7 @@ fn transfers_6800(_mach: Machine) -> Operation {
     }
 }
 
-fn rotates_6800(_mach: Machine) -> Operation {
+fn rotates_6800() -> Operation {
     randomly!(
         { Operation::Shift(ShiftType::LeftArithmetic, rmw_datum_6800())}
         { Operation::Shift(ShiftType::RightArithmetic, rmw_datum_6800())}
@@ -150,12 +150,16 @@ fn rotates_6800(_mach: Machine) -> Operation {
     )
 }
 
+fn length(insn: &Instruction) -> usize {
+    1 // TODO!
+}
+
 pub fn instr_6800(mach: Machine) -> Instruction {
     randomly!(
-        { Instruction::new(mach, add_6800, dasm)}
-        { Instruction::new(mach, transfers_6800, dasm)}
-        { Instruction::new(mach, |_| Operation::DecimalAdjustAccumulator, dasm)}
-        { Instruction::new(mach, rotates_6800, dasm)}
+        { Instruction::new(add_6800, dasm, length)}
+        { Instruction::new(transfers_6800, dasm, length)}
+        { Instruction::new(|| Operation::DecimalAdjustAccumulator, dasm, length)}
+        { Instruction::new(rotates_6800, dasm, length)}
     )
     // TODO: Add clc, sec, daa, and many other instructions
 }

@@ -1,7 +1,7 @@
-use crate::machine::new_instruction;
 use crate::machine::Instruction;
+use crate::machine::Machine;
 use crate::machine::Width;
-use crate::{Machine, State, Step, TestRun};
+use crate::{State, Step, TestRun};
 use rand::{thread_rng, Rng};
 use std::ops::{Index, IndexMut};
 use strop::randomly;
@@ -38,7 +38,7 @@ impl BasicBlock {
             instructions: vec![],
         };
         for _i in 0..max_size {
-            let i = new_instruction(mach);
+            let i = mach.new_instruction();
             bb.push(i);
         }
         bb
@@ -195,7 +195,7 @@ fn mutate_insert(prog: &mut BasicBlock, mach: Machine) {
     } else {
         0
     };
-    let instruction = new_instruction(mach);
+    let instruction = mach.new_instruction();
     prog.insert(offset, instruction);
 }
 

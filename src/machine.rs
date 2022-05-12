@@ -1,6 +1,4 @@
-use crate::machine::mos6502::instr_length_6502;
 use crate::machine::rand::prelude::SliceRandom;
-use crate::machine::stm8::instr_length_stm8;
 use std::collections::HashMap;
 extern crate num;
 extern crate rand;
@@ -12,56 +10,36 @@ mod pic;
 mod prex86;
 mod stm8;
 
-use crate::machine::m6800::instr_6800;
-use crate::machine::mos6502::instr_6502;
-use crate::machine::pic::instr_pic;
-use crate::machine::prex86::instr_prex86;
-use crate::machine::stm8::instr_stm8;
+use crate::machine::mos6502::{Mos6502, Mos65c02};
+use crate::machine::prex86::Kr580vm1;
+use crate::machine::stm8::STM8;
 
-#[derive(Clone, Copy, PartialEq)]
-pub enum Mos6502Variant {
-    Nmos,
-    Ricoh2a03,
-    Cmos,
-    IllegalInstructions,
+#[derive(Clone, Copy)]
+pub struct Machine {
+    id: u8,
+    name: &'static str,
+    description: &'static str,
+    random_insn: fn() -> Instruction,
+    reg_by_name: fn(&str) -> Datum,
 }
 
-#[derive(Clone, Copy, PartialEq)]
-pub enum Motorola8BitVariant {
-    Motorola6800,
-    Motorola6801,
-}
-
-#[derive(Clone, Copy, PartialEq)]
-pub enum PicVariant {
-    Pic12,
-    Pic14,
-    Pic16,
-}
-
-#[derive(Clone, Copy, PartialEq)]
-pub enum PreX86Variant {
-    ZilogZ80,
-    I8080,
-    KR580VM1,
-    Sm83,
-}
-
-#[derive(Clone, Copy, PartialEq)]
-pub enum Machine {
-    Mos6502(Mos6502Variant),
-    Motorola6800(Motorola8BitVariant),
-    Pic(PicVariant),
-    PreX86(PreX86Variant),
-    Stm8,
-}
+const MACHINES: [Machine; 4] = [Kr580vm1, Mos6502, Mos65c02, STM8];
 
 #[derive(Clone, Copy)]
 pub struct Instruction {
     pub operation: Operation,
-    randomizer: fn(Machine) -> Operation,
+    randomizer: fn() -> Operation,
     disassemble: fn(Operation, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
-    machine: Machine,
+    length: fn(&Instruction) -> usize,
+}
+
+pub fn get_machine_by_name(name: &str) -> Option<Machine> {
+    for m in MACHINES {
+        if m.name == name {
+            return Some(m);
+        }
+    }
+    return None;
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -131,70 +109,11 @@ impl Swap for i16 {
 }
 
 impl Machine {
+    pub fn new_instruction(self) -> Instruction {
+        (self.random_insn)()
+    }
     pub fn register_by_name(self, name: &str) -> Datum {
-        match self {
-            Machine::Mos6502(_) => match name {
-                "a" => Datum::Register(R::A),
-                "x" => Datum::Register(R::Xl),
-                "y" => Datum::Register(R::Yl),
-                _ => {
-                    panic!("No such register as {}", name);
-                }
-            },
-            Machine::Motorola6800(_) => match name {
-                "a" => Datum::Register(R::A),
-                "b" => Datum::Register(R::B),
-                "ix" => Datum::RegisterPair(R::Xh, R::Xl),
-                "iy" => Datum::RegisterPair(R::Yh, R::Yl),
-                _ => {
-                    panic!("No such register as {}", name);
-                }
-            },
-            Machine::Pic(_) => match name {
-                "w" => Datum::Register(R::A),
-                _ => {
-                    panic!("No such register as {}", name);
-                }
-            },
-            Machine::PreX86(variant) => {
-                if variant == PreX86Variant::KR580VM1 {
-                    if name == "h1" {
-                        return Datum::Register(R::H1);
-                    }
-                    if name == "l1" {
-                        return Datum::Register(R::L1);
-                    }
-                    if name == "h1l1" {
-                        return Datum::RegisterPair(R::H1, R::L1);
-                    }
-                }
-                match name {
-                    "a" => Datum::Register(R::A),
-                    "b" => Datum::Register(R::B),
-                    "c" => Datum::Register(R::C),
-                    "d" => Datum::Register(R::D),
-                    "e" => Datum::Register(R::E),
-                    "h" => Datum::Register(R::H),
-                    "l" => Datum::Register(R::L),
-                    "bc" => Datum::RegisterPair(R::B, R::C),
-                    "de" => Datum::RegisterPair(R::D, R::E),
-                    "hl" => Datum::RegisterPair(R::H, R::L),
-                    _ => {
-                        panic!("No such register as {}", name);
-                    }
-                }
-            }
-            Machine::Stm8 => match name {
-                "a" => Datum::Register(R::A),
-                "x" => Datum::RegisterPair(R::Xh, R::Xl),
-                "y" => Datum::RegisterPair(R::Yh, R::Yl),
-                "xl" => Datum::Register(R::Xl),
-                "yl" => Datum::Register(R::Yl),
-                _ => {
-                    panic!("No such register as {}", name);
-                }
-            },
-        }
+        (self.reg_by_name)(name)
     }
 }
 
@@ -423,34 +342,27 @@ impl FlowControl {
 
 impl Instruction {
     pub fn new(
-        machine: Machine,
-        randomizer: fn(Machine) -> Operation,
+        randomizer: fn() -> Operation,
         disassemble: fn(Operation, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
+        length: fn(&Instruction) -> usize,
     ) -> Instruction {
         Instruction {
-            machine,
-            operation: randomizer(machine),
+            operation: randomizer(),
             disassemble,
             randomizer,
+            length,
         }
     }
 
     pub fn randomize(&mut self) {
-        self.operation = (self.randomizer)(self.machine);
+        self.operation = (self.randomizer)();
 
         #[cfg(test)]
         self.sanity_check()
     }
 
     pub fn len(&self) -> usize {
-        match self.machine {
-            Machine::Mos6502(_) => instr_length_6502(self.operation),
-            Machine::Stm8 => instr_length_stm8(self.operation),
-            // these architectures have fixed instruction widths
-            Machine::Pic(_) => 1,
-            // In case of unknown instruction length, assume 1 so that optimizer still works
-            _ => 1,
-        }
+        (self.length)(&self)
     }
 
     #[cfg(test)]
@@ -787,14 +699,4 @@ fn random_immediate() -> Datum {
 fn random_absolute() -> Datum {
     let vs = vec![0, 1, 2, 3, 4];
     Datum::Absolute(*vs.choose(&mut rand::thread_rng()).unwrap())
-}
-
-pub fn new_instruction(mach: Machine) -> Instruction {
-    match mach {
-        Machine::Motorola6800(_) => instr_6800(mach),
-        Machine::Mos6502(_) => instr_6502(mach),
-        Machine::PreX86(_) => instr_prex86(mach),
-        Machine::Pic(_) => instr_pic(mach),
-        Machine::Stm8 => instr_stm8(mach),
-    }
 }

@@ -12,7 +12,7 @@ use crate::machine::R;
 use rand::random;
 use strop::randomly;
 
-fn random_r_prex86(_mach: Machine) -> Datum {
+fn random_r_prex86() -> Datum {
     randomly!(
         { Datum::Register(R::A)}
         { Datum::Register(R::B)}
@@ -25,7 +25,7 @@ fn random_r_prex86(_mach: Machine) -> Datum {
     )
 }
 
-fn random_rp_prex86(_mach: Machine) -> Datum {
+fn random_rp_prex86() -> Datum {
     randomly!(
         { Datum::RegisterPair(R::B, R::C)}
         { Datum::RegisterPair(R::D, R::E)}
@@ -33,11 +33,11 @@ fn random_rp_prex86(_mach: Machine) -> Datum {
     )
 }
 
-fn inc_dec_prex86(mach: Machine) -> Operation {
+fn inc_dec_prex86() -> Operation {
     let (w, r) = if random() {
-        (Width::Width8, random_r_prex86(mach))
+        (Width::Width8, random_r_prex86())
     } else {
-        (Width::Width16, random_rp_prex86(mach))
+        (Width::Width16, random_rp_prex86())
     };
 
     randomly!(
@@ -123,14 +123,14 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     }
 }
 
-fn add8_prex86(mach: Machine) -> Operation {
+fn add8_prex86() -> Operation {
     // From what I can see, the KR580VM1 and similar CPUs, can do:
     //  - 8 bit adds with or without carry, destination is the Accumulator
     //  - 16 bit add without carry, destination is the HL register pair
     let ops = vec![Add, AddWithCarry];
     let op = *ops.choose(&mut rand::thread_rng()).unwrap();
 
-    let args = vec![random_immediate(), random_r_prex86(mach)];
+    let args = vec![random_immediate(), random_r_prex86()];
     let arg = *args.choose(&mut rand::thread_rng()).unwrap();
 
     Operation::Dyadic(
@@ -142,26 +142,68 @@ fn add8_prex86(mach: Machine) -> Operation {
     )
 }
 
-fn rot_a_prex86(_mach: Machine) -> Operation {
+fn rot_a_prex86() -> Operation {
     randomly!(
         { Operation::Shift(ShiftType::LeftArithmetic, Datum::Register(R::A))}
         { Operation::Shift(ShiftType::RightArithmetic, Datum::Register(R::A))}
     )
 }
 
-fn ld_prex86(mach: Machine) -> Operation {
-    Operation::Move(random_r_prex86(mach), random_r_prex86(mach))
+fn ld_prex86() -> Operation {
+    Operation::Move(random_r_prex86(), random_r_prex86())
 }
 
-pub fn instr_prex86(mach: Machine) -> Instruction {
+fn registers_8080(name: &str) -> Datum {
+    match name {
+        "a" => Datum::Register(R::A),
+        "b" => Datum::Register(R::B),
+        "c" => Datum::Register(R::C),
+        "d" => Datum::Register(R::D),
+        "e" => Datum::Register(R::E),
+        "h" => Datum::Register(R::H),
+        "l" => Datum::Register(R::L),
+        "bc" => Datum::RegisterPair(R::B, R::C),
+        "de" => Datum::RegisterPair(R::D, R::E),
+        "hl" => Datum::RegisterPair(R::H, R::L),
+        _ => {
+            panic!("No such register as {}", name);
+        }
+    }
+}
+
+fn registers_kr580vm1(r: &str) -> Datum {
+    if r == "h1" {
+        Datum::Register(R::H1)
+    } else if r == "l1" {
+        Datum::Register(R::L1)
+    } else if r == "h1l1" {
+        Datum::RegisterPair(R::H1, R::L1)
+    } else {
+        registers_8080(r)
+    }
+}
+
+fn insn_len(insn: &Instruction) -> usize {
+    1 // TODO!
+}
+
+pub fn random_insn_kr580vm1() -> Instruction {
     randomly!(
-        { Instruction::new(mach, inc_dec_prex86, dasm)}
-        { Instruction::new(mach, add8_prex86, dasm)}
-        { Instruction::new(mach, rot_a_prex86, dasm)}
-        { Instruction::new(mach, ld_prex86, dasm)}
-        { Instruction::new(mach, |_| Operation::DecimalAdjustAccumulator, dasm)}
+        { Instruction::new(inc_dec_prex86, dasm, insn_len)}
+        { Instruction::new(add8_prex86, dasm, insn_len)}
+        { Instruction::new(rot_a_prex86, dasm, insn_len)}
+        { Instruction::new(ld_prex86, dasm, insn_len)}
+        { Instruction::new(|| Operation::DecimalAdjustAccumulator, dasm, insn_len)}
     )
 }
+
+pub const Kr580vm1: Machine = Machine {
+    id: 1,
+    name: "kr580vm1",
+    description: "A Soviet Ukrainian variant of the Intel 8080",
+    random_insn: random_insn_kr580vm1,
+    reg_by_name: registers_kr580vm1,
+};
 
 #[cfg(test)]
 mod tests {

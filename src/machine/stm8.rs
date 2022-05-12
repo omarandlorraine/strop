@@ -27,7 +27,7 @@ const YH: Datum = Datum::Register(R::Yh);
 const X: Datum = Datum::RegisterPair(R::Xh, R::Xl);
 const Y: Datum = Datum::RegisterPair(R::Yh, R::Yl);
 
-const RANDS: [fn(Machine) -> Operation; 9] = [
+const RANDS: [fn() -> Operation; 9] = [
     clear, transfers, bits, carry, compare, jumps, oneargs, twoargs, shifts,
 ];
 
@@ -177,7 +177,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     }
 }
 
-fn clear(_mach: Machine) -> Operation {
+fn clear() -> Operation {
     if random() {
         Operation::Move(Datum::Zero, random_register())
     } else {
@@ -185,7 +185,7 @@ fn clear(_mach: Machine) -> Operation {
     }
 }
 
-fn twoargs(_mach: Machine) -> Operation {
+fn twoargs() -> Operation {
     fn op(w: Width, a: Datum) -> Operation {
         let vs = vec![Add, And, Or, Subtract];
         let o = vs.choose(&mut rand::thread_rng());
@@ -207,7 +207,7 @@ fn twoargs(_mach: Machine) -> Operation {
     )
 }
 
-fn bits(_mach: Machine) -> Operation {
+fn bits() -> Operation {
     let addr = random_absolute();
     let bit: u8 = rand::thread_rng().gen_range(0..=7);
 
@@ -220,7 +220,7 @@ fn bits(_mach: Machine) -> Operation {
     )
 }
 
-fn shifts(_mach: Machine) -> Operation {
+fn shifts() -> Operation {
     let sht = randomly!(
         { ShiftType::LeftArithmetic}
         { ShiftType::RightArithmetic}
@@ -237,7 +237,7 @@ fn shifts(_mach: Machine) -> Operation {
     Operation::Shift(sht, operand)
 }
 
-fn carry(_mach: Machine) -> Operation {
+fn carry() -> Operation {
     randomly!(
         { Operation::Carry(false)}
         { Operation::Carry(true)}
@@ -245,11 +245,11 @@ fn carry(_mach: Machine) -> Operation {
     )
 }
 
-fn compare(_mach: Machine) -> Operation {
+fn compare() -> Operation {
     Operation::BitCompare(random_stm8_operand(), A)
 }
 
-fn transfers(_mach: Machine) -> Operation {
+fn transfers() -> Operation {
     fn rando() -> Datum {
         let regs = vec![A, XL, XH, YL, YH];
         *regs.choose(&mut rand::thread_rng()).unwrap()
@@ -257,7 +257,7 @@ fn transfers(_mach: Machine) -> Operation {
     Operation::Move(rando(), rando())
 }
 
-pub fn jumps(_mach: Machine) -> Operation {
+pub fn jumps() -> Operation {
     fn j() -> FlowControl {
         if random() {
             FlowControl::Forward(rand::thread_rng().gen_range(1..3))
@@ -277,7 +277,7 @@ pub fn jumps(_mach: Machine) -> Operation {
     Operation::Jump(cond(), j())
 }
 
-fn oneargs(_mach: Machine) -> Operation {
+fn oneargs() -> Operation {
     fn op(w: Width, a: Datum) -> Operation {
         let vs = vec![Complement, Negate, Increment, Decrement, Swap];
         let o = vs.choose(&mut rand::thread_rng());
@@ -293,12 +293,12 @@ fn oneargs(_mach: Machine) -> Operation {
     }
 }
 
-pub fn instr_stm8(mach: Machine) -> Instruction {
+pub fn instr_stm8() -> Instruction {
     let r = RANDS.choose(&mut rand::thread_rng()).unwrap();
-    Instruction::new(mach, *r, dasm)
+    Instruction::new(*r, dasm, instr_length_stm8)
 }
 
-pub fn instr_length_stm8(operation: Operation) -> usize {
+pub fn instr_length_stm8(insn: &Instruction) -> usize {
     fn y_prefix_penalty(r: Datum) -> usize {
         if r == Y {
             return 1;
@@ -320,7 +320,7 @@ pub fn instr_length_stm8(operation: Operation) -> usize {
         }
     }
 
-    match operation {
+    match insn.operation {
         Operation::Dyadic(Width::Width8, _, _, Datum::Imm8(_), _) => 2,
         Operation::Dyadic(Width::Width8, _, _, Datum::Absolute(addr), _) => 1 + addr_length(addr),
         Operation::Dyadic(Width::Width16, _, _, Datum::Imm8(_), r) => 3 + y_prefix_penalty(r),
@@ -353,6 +353,27 @@ pub fn instr_length_stm8(operation: Operation) -> usize {
         _ => 0,
     }
 }
+
+pub fn reg_by_name(name: &str) -> Datum {
+    match name {
+        "a" => A,
+        "x" => X,
+        "y" => Y,
+        "xl" => XL,
+        "yl" => YL,
+        "xh" => XH,
+        "yh" => YH,
+        _ => todo!(),
+    }
+}
+
+pub const STM8: Machine = Machine {
+    id: 0,
+    name: "stm8",
+    description: "STM8",
+    random_insn: instr_stm8,
+    reg_by_name,
+};
 
 #[cfg(test)]
 mod tests {

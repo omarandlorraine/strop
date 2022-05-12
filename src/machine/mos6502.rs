@@ -6,7 +6,6 @@ use crate::machine::DyadicOperation::{AddWithCarry, And, ExclusiveOr, Or};
 use crate::machine::Instruction;
 use crate::machine::Machine;
 use crate::machine::MonadicOperation;
-use crate::machine::Mos6502Variant;
 use crate::machine::Operation;
 use crate::machine::ShiftType;
 use crate::machine::Width;
@@ -84,7 +83,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     }
 }
 
-pub fn instr_length_6502(operation: Operation) -> usize {
+pub fn instr_length_6502(insn: &Instruction) -> usize {
     fn length(dat: Datum) -> usize {
         match dat {
             Datum::Register(_) => 1,
@@ -100,7 +99,7 @@ pub fn instr_length_6502(operation: Operation) -> usize {
         }
     }
 
-    match operation {
+    match insn.operation {
         Operation::Move(Datum::Register(_), Datum::Register(_)) => 1,
         Operation::Move(Datum::Register(_), dat) => length(dat),
         Operation::Move(dat, Datum::Register(_)) => length(dat),
@@ -136,14 +135,9 @@ fn random_axy() -> Datum {
     )
 }
 
-fn incdec_6502(mach: Machine) -> Operation {
+fn incdec_axy() -> Operation {
     // the CMOS varieties have inc and dec for accumulator
-    // but earlier 6502s can increment and decrement X and Y only.
-    let reg = if mach == Machine::Mos6502(Mos6502Variant::Cmos) {
-        random_axy()
-    } else {
-        random_xy()
-    };
+    let reg = random_axy();
     if random() {
         Operation::Monadic(Width::Width8, MonadicOperation::Decrement, reg, reg)
     } else {
@@ -151,7 +145,17 @@ fn incdec_6502(mach: Machine) -> Operation {
     }
 }
 
-fn alu_6502(_mach: Machine) -> Operation {
+fn incdec_xy() -> Operation {
+    // earlier 6502s can increment and decrement X and Y only.
+    let reg = random_xy();
+    if random() {
+        Operation::Monadic(Width::Width8, MonadicOperation::Decrement, reg, reg)
+    } else {
+        Operation::Monadic(Width::Width8, MonadicOperation::Increment, reg, reg)
+    }
+}
+
+fn alu_6502() -> Operation {
     // randomly generate the instructions ora, and, eor, adc, sbc, cmp
     // these all have the same available addressing modes
     let ops = vec![AddWithCarry, And, Or, ExclusiveOr];
@@ -159,7 +163,7 @@ fn alu_6502(_mach: Machine) -> Operation {
     Operation::Dyadic(Width::Width8, op, A, random_source(), A)
 }
 
-fn transfers_6502(_mach: Machine) -> Operation {
+fn transfers_6502() -> Operation {
     let reg = if random() {
         Datum::Register(R::Xl)
     } else {
@@ -172,14 +176,11 @@ fn transfers_6502(_mach: Machine) -> Operation {
     }
 }
 
-fn loadstore_6502(mach: Machine) -> Operation {
+fn loadstore_6502() -> Operation {
     let addr = random_absolute();
 
-    let reg = if mach == Machine::Mos6502(Mos6502Variant::Cmos) {
-        randomly!( { Datum::Register(R::A)} { Datum::Register(R::Xl)} { Datum::Register(R::Yl)} { Datum::Zero})
-    } else {
-        randomly!( { Datum::Register(R::A)} { Datum::Register(R::Xl)} { Datum::Register(R::Yl)} )
-    };
+    let reg =
+        randomly!( { Datum::Register(R::A)} { Datum::Register(R::Xl)} { Datum::Register(R::Yl)} );
 
     if random() && reg != Datum::Zero {
         Operation::Move(addr, reg)
@@ -188,10 +189,11 @@ fn loadstore_6502(mach: Machine) -> Operation {
     }
 }
 
-fn secl_6502(_mach: Machine) -> Operation {
+fn secl_6502() -> Operation {
     Operation::Carry(random())
 }
-fn shifts_6502(_mach: Machine) -> Operation {
+
+fn shifts_6502() -> Operation {
     let sht = randomly!(
         { ShiftType::LeftArithmetic}
         { ShiftType::RightArithmetic}
@@ -206,16 +208,56 @@ fn shifts_6502(_mach: Machine) -> Operation {
     Operation::Shift(sht, dat)
 }
 
-pub fn instr_6502(mach: Machine) -> Instruction {
+pub fn random_insn_65c02() -> Instruction {
     randomly!(
-        { Instruction::new(mach, incdec_6502, dasm)}
-        { Instruction::new(mach, alu_6502, dasm)}
-        { Instruction::new(mach, transfers_6502, dasm)}
-        { Instruction::new(mach, shifts_6502, dasm)}
-        { Instruction::new(mach, loadstore_6502, dasm)}
-        { Instruction::new(mach, secl_6502, dasm)}
+        { Instruction::new(incdec_axy, dasm, instr_length_6502)}
+        { Instruction::new(alu_6502, dasm, instr_length_6502)}
+        { Instruction::new(transfers_6502, dasm, instr_length_6502)}
+        { Instruction::new(shifts_6502, dasm, instr_length_6502)}
+        { Instruction::new(loadstore_6502, dasm, instr_length_6502)}
+        { Instruction::new(secl_6502, dasm, instr_length_6502)}
     )
 }
+
+fn random_insn_6502() -> Instruction {
+    randomly!(
+        { Instruction::new(incdec_xy, dasm, instr_length_6502)}
+        { Instruction::new(alu_6502, dasm, instr_length_6502)}
+        { Instruction::new(transfers_6502, dasm, instr_length_6502)}
+        { Instruction::new(shifts_6502, dasm, instr_length_6502)}
+        { Instruction::new(loadstore_6502, dasm, instr_length_6502)}
+        { Instruction::new(secl_6502, dasm, instr_length_6502)}
+    )
+}
+
+pub fn reg_by_name(name: &str) -> Datum {
+    if name == "a" {
+        return Datum::Register(R::A);
+    }
+    if name == "x" {
+        return Datum::Register(R::Xl);
+    }
+    if name == "y" {
+        return Datum::Register(R::Yl);
+    }
+    todo!();
+}
+
+pub const Mos65c02: Machine = Machine {
+    id: 0,
+    name: "65c02",
+    description: "The CMOS 6502 variant, including new instructions like phx and stz",
+    random_insn: random_insn_6502,
+    reg_by_name,
+};
+
+pub const Mos6502: Machine = Machine {
+    id: 0,
+    name: "6502",
+    description: "A generic 6502",
+    random_insn: random_insn_6502,
+    reg_by_name,
+};
 
 #[cfg(test)]
 mod tests {
