@@ -10,8 +10,8 @@ mod pic;
 mod prex86;
 mod stm8;
 
-use crate::machine::mos6502::{Mos6502, Mos65c02};
-use crate::machine::prex86::Kr580vm1;
+use crate::machine::mos6502::{MOS6502, MOS65C02};
+use crate::machine::prex86::KR580VM1;
 use crate::machine::stm8::STM8;
 
 #[derive(Clone, Copy)]
@@ -23,7 +23,7 @@ pub struct Machine {
     reg_by_name: fn(&str) -> Datum,
 }
 
-const MACHINES: [Machine; 4] = [Kr580vm1, Mos6502, Mos65c02, STM8];
+const MACHINES: [Machine; 4] = [KR580VM1, MOS6502, MOS65C02, STM8];
 
 #[derive(Clone, Copy)]
 pub struct Instruction {
@@ -31,6 +31,7 @@ pub struct Instruction {
     randomizer: fn() -> Operation,
     disassemble: fn(Operation, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
     length: fn(&Instruction) -> usize,
+    implementation: fn(&Instruction, &mut State) -> FlowControl,
 }
 
 pub fn get_machine_by_name(name: &str) -> Option<Machine> {
@@ -93,16 +94,23 @@ impl Datum {
 }
 
 trait Swap {
+    fn complement(self) -> Self;
     fn swap(self) -> Self;
 }
 
 impl Swap for i8 {
+    fn complement(self) -> i8 {
+        self ^ -1
+    }
     fn swap(self) -> i8 {
         self.rotate_right(4)
     }
 }
 
 impl Swap for i16 {
+    fn complement(self) -> i16 {
+        self ^ -1
+    }
     fn swap(self) -> i16 {
         self.swap_bytes()
     }
@@ -241,6 +249,8 @@ pub enum DyadicOperation {
     Or,
     Subtract,
     SubtractWithBorrow,
+    Divide,
+    Multiply,
     // TODO: Move the shifts here.
 }
 
@@ -260,7 +270,7 @@ impl MonadicOperation {
         T: num::PrimInt + std::iter::Sum + WrappingAdd + WrappingSub + Swap,
     {
         match self {
-            Self::Complement => v.map(|v| !v),
+            Self::Complement => v.map(|v| v.complement()),
             Self::Negate => v.map(|v| T::zero() - v),
             Self::Increment => v.map(|v| v.wrapping_add(&T::one())),
             Self::Decrement => v.map(|v| v.wrapping_sub(&T::one())),
@@ -288,6 +298,12 @@ impl DyadicOperation {
                 Self::SubtractWithBorrow => s
                     .carry
                     .map(|c| a.wrapping_sub(&b).wrapping_sub(if c { one } else { zero })),
+                Self::Divide => {
+                    unimplemented!("No standard implementation of DyadicOperation::Divide")
+                }
+                Self::Multiply => {
+                    unimplemented!("No standard implementation of DyadicOperation::Multiply")
+                }
             }
         } else {
             None
@@ -310,6 +326,7 @@ pub enum Operation {
     BitComplement(Datum, u8),
     BitCopyCarry(Datum, u8),
     Jump(Test, FlowControl),
+    Nop,
 }
 
 impl Test {
@@ -351,6 +368,22 @@ impl Instruction {
             disassemble,
             randomizer,
             length,
+            implementation: standard_implementation,
+        }
+    }
+
+    pub fn new_with_custom_implementation(
+        randomizer: fn() -> Operation,
+        disassemble: fn(Operation, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
+        length: fn(&Instruction) -> usize,
+        implementation: fn(&Instruction, &mut State) -> FlowControl,
+    ) -> Instruction {
+        Instruction {
+            operation: randomizer(),
+            disassemble,
+            randomizer,
+            length,
+            implementation: implementation,
         }
     }
 
@@ -391,120 +424,125 @@ impl Instruction {
     }
 
     pub fn operate(&self, s: &mut State) -> FlowControl {
-        match self.operation {
-            Operation::Monadic(Width::Width8, operation, src, dst) => {
-                s.set_i8(dst, operation.evaluate(s.get_i8(src)));
-                FlowControl::FallThrough
-            }
-            Operation::Monadic(Width::Width16, operation, src, dst) => {
-                s.set_i16(dst, operation.evaluate(s.get_i16(src)));
-                FlowControl::FallThrough
-            }
-            Operation::Dyadic(Width::Width8, operation, a, b, dst) => {
-                s.set_i8(dst, operation.evaluate(s, s.get_i8(a), s.get_i8(b)));
-                FlowControl::FallThrough
-            }
-            Operation::Dyadic(Width::Width16, operation, a, b, dst) => {
-                s.set_i16(dst, operation.evaluate(s, s.get_i16(a), s.get_i16(b)));
-                FlowControl::FallThrough
-            }
-            Operation::Move(source, destination) => {
-                s.set_i8(destination, s.get_i8(source));
-                FlowControl::FallThrough
-            }
+        (self.implementation)(self, s)
+    }
+}
 
-            Operation::DecimalAdjustAccumulator => {
-                s.accumulator = decimal_adjust(s.accumulator, s.carry, s.halfcarry);
+pub fn standard_implementation(insn: &Instruction, s: &mut State) -> FlowControl {
+    match insn.operation {
+        Operation::Monadic(Width::Width8, operation, src, dst) => {
+            s.set_i8(dst, operation.evaluate(s.get_i8(src)));
+            FlowControl::FallThrough
+        }
+        Operation::Monadic(Width::Width16, operation, src, dst) => {
+            s.set_i16(dst, operation.evaluate(s.get_i16(src)));
+            FlowControl::FallThrough
+        }
+        Operation::Dyadic(Width::Width8, operation, a, b, dst) => {
+            s.set_i8(dst, operation.evaluate(s, s.get_i8(a), s.get_i8(b)));
+            FlowControl::FallThrough
+        }
+        Operation::Dyadic(Width::Width16, operation, a, b, dst) => {
+            s.set_i16(dst, operation.evaluate(s, s.get_i16(a), s.get_i16(b)));
+            FlowControl::FallThrough
+        }
+        Operation::Move(source, destination) => {
+            s.set_i8(destination, s.get_i8(source));
+            FlowControl::FallThrough
+        }
+
+        Operation::DecimalAdjustAccumulator => {
+            s.accumulator = decimal_adjust(s.accumulator, s.carry, s.halfcarry);
+            FlowControl::FallThrough
+        }
+        Operation::BitCompare(source, destination) => {
+            let (result, z) = bitwise_and(s.get_i8(source), s.get_i8(destination));
+            if let Some(result) = result {
+                s.sign = Some(result < 0);
+            } else {
+                s.sign = None
+            }
+            s.zero = z;
+            FlowControl::FallThrough
+        }
+        Operation::Shift(shtype, datum) => match shtype {
+            ShiftType::LeftArithmetic => {
+                let (val, c) = rotate_left_thru_carry(s.get_i8(datum), Some(false));
+                s.set_i8(datum, val);
+                s.carry = c;
                 FlowControl::FallThrough
             }
-            Operation::BitCompare(source, destination) => {
-                let (result, z) = bitwise_and(s.get_i8(source), s.get_i8(destination));
-                if let Some(result) = result {
-                    s.sign = Some(result < 0);
+            ShiftType::RightArithmetic => {
+                let (val, c) = rotate_right_thru_carry(s.get_i8(datum), Some(false));
+                s.set_i8(datum, val);
+                s.carry = c;
+                FlowControl::FallThrough
+            }
+            ShiftType::RightRotateThroughCarry => {
+                let (val, c) = rotate_right_thru_carry(s.get_i8(datum), s.carry);
+                s.set_i8(datum, val);
+                s.carry = c;
+                FlowControl::FallThrough
+            }
+            ShiftType::LeftRotateThroughCarry => {
+                let (val, c) = rotate_left_thru_carry(s.get_i8(datum), s.carry);
+                s.set_i8(datum, val);
+                s.carry = c;
+                FlowControl::FallThrough
+            }
+        },
+        Operation::Carry(b) => {
+            s.carry = Some(b);
+            FlowControl::FallThrough
+        }
+        Operation::ComplementCarry => {
+            if let Some(b) = s.carry {
+                s.carry = Some(!b)
+            }
+            FlowControl::FallThrough
+        }
+        Operation::BitSet(d, b) => {
+            if let Some(v) = s.get_i8(d) {
+                let new = v | (1 << b);
+                s.set_i8(d, Some(new));
+            }
+            FlowControl::FallThrough
+        }
+        Operation::BitClear(d, b) => {
+            if let Some(v) = s.get_i8(d) {
+                let new = v & !(1 << b);
+                s.set_i8(d, Some(new));
+            }
+            FlowControl::FallThrough
+        }
+        Operation::BitComplement(d, b) => {
+            if let Some(v) = s.get_i8(d) {
+                let new = v ^ (1 << b);
+                s.set_i8(d, Some(new));
+            }
+            FlowControl::FallThrough
+        }
+        Operation::BitCopyCarry(d, b) => {
+            if let (Some(v), Some(c)) = (s.get_i8(d), s.carry) {
+                let new = if c { v & !(1 << b) } else { v | (1 << b) };
+                s.set_i8(d, Some(new));
+            } else {
+                s.set_i8(d, None);
+            }
+            FlowControl::FallThrough
+        }
+        Operation::Jump(test, flowcontrol) => {
+            if let Some(b) = test.evaluate(s) {
+                if b {
+                    flowcontrol
                 } else {
-                    s.sign = None
-                }
-                s.zero = z;
-                FlowControl::FallThrough
-            }
-            Operation::Shift(shtype, datum) => match shtype {
-                ShiftType::LeftArithmetic => {
-                    let (val, c) = rotate_left_thru_carry(s.get_i8(datum), Some(false));
-                    s.set_i8(datum, val);
-                    s.carry = c;
                     FlowControl::FallThrough
                 }
-                ShiftType::RightArithmetic => {
-                    let (val, c) = rotate_right_thru_carry(s.get_i8(datum), Some(false));
-                    s.set_i8(datum, val);
-                    s.carry = c;
-                    FlowControl::FallThrough
-                }
-                ShiftType::RightRotateThroughCarry => {
-                    let (val, c) = rotate_right_thru_carry(s.get_i8(datum), s.carry);
-                    s.set_i8(datum, val);
-                    s.carry = c;
-                    FlowControl::FallThrough
-                }
-                ShiftType::LeftRotateThroughCarry => {
-                    let (val, c) = rotate_left_thru_carry(s.get_i8(datum), s.carry);
-                    s.set_i8(datum, val);
-                    s.carry = c;
-                    FlowControl::FallThrough
-                }
-            },
-            Operation::Carry(b) => {
-                s.carry = Some(b);
-                FlowControl::FallThrough
-            }
-            Operation::ComplementCarry => {
-                if let Some(b) = s.carry {
-                    s.carry = Some(!b)
-                }
-                FlowControl::FallThrough
-            }
-            Operation::BitSet(d, b) => {
-                if let Some(v) = s.get_i8(d) {
-                    let new = v | (1 << b);
-                    s.set_i8(d, Some(new));
-                }
-                FlowControl::FallThrough
-            }
-            Operation::BitClear(d, b) => {
-                if let Some(v) = s.get_i8(d) {
-                    let new = v & !(1 << b);
-                    s.set_i8(d, Some(new));
-                }
-                FlowControl::FallThrough
-            }
-            Operation::BitComplement(d, b) => {
-                if let Some(v) = s.get_i8(d) {
-                    let new = v ^ (1 << b);
-                    s.set_i8(d, Some(new));
-                }
-                FlowControl::FallThrough
-            }
-            Operation::BitCopyCarry(d, b) => {
-                if let (Some(v), Some(c)) = (s.get_i8(d), s.carry) {
-                    let new = if c { v & !(1 << b) } else { v | (1 << b) };
-                    s.set_i8(d, Some(new));
-                } else {
-                    s.set_i8(d, None);
-                }
-                FlowControl::FallThrough
-            }
-            Operation::Jump(test, flowcontrol) => {
-                if let Some(b) = test.evaluate(s) {
-                    if b {
-                        flowcontrol
-                    } else {
-                        FlowControl::FallThrough
-                    }
-                } else {
-                    FlowControl::Invalid
-                }
+            } else {
+                FlowControl::Invalid
             }
         }
+        Operation::Nop => FlowControl::FallThrough,
     }
 }
 

@@ -1,7 +1,8 @@
 use crate::machine::random_absolute;
 use crate::machine::random_immediate;
+use crate::machine::standard_implementation;
 use crate::machine::DyadicOperation::{
-    Add, AddWithCarry, And, ExclusiveOr, Or, Subtract, SubtractWithBorrow,
+    Add, AddWithCarry, And, Divide, ExclusiveOr, Multiply, Or, Subtract, SubtractWithBorrow,
 };
 use crate::machine::FlowControl;
 use crate::machine::Instruction;
@@ -13,6 +14,7 @@ use crate::machine::Width;
 use crate::machine::R;
 use crate::Datum;
 use crate::Machine;
+use crate::State;
 
 use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::rand::Rng;
@@ -26,10 +28,6 @@ const XH: Datum = Datum::Register(R::Xh);
 const YH: Datum = Datum::Register(R::Yh);
 const X: Datum = Datum::RegisterPair(R::Xh, R::Xl);
 const Y: Datum = Datum::RegisterPair(R::Yh, R::Yl);
-
-const RANDS: [fn() -> Operation; 9] = [
-    clear, transfers, bits, carry, compare, jumps, oneargs, twoargs, shifts,
-];
 
 fn random_stm8_operand() -> Datum {
     if random() {
@@ -185,6 +183,98 @@ fn clear() -> Operation {
     }
 }
 
+fn dasm_muldiv(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match op {
+        Operation::Dyadic(Width::Width8, Multiply, A, X, X) => write!(f, "\tmul x, a"),
+        Operation::Dyadic(Width::Width8, Multiply, A, Y, Y) => write!(f, "\tmul y, a"),
+        Operation::Dyadic(Width::Width8, Divide, A, X, X) => write!(f, "\tdiv x, a"),
+        Operation::Dyadic(Width::Width8, Divide, A, Y, Y) => write!(f, "\tdiv y, a"),
+        Operation::Dyadic(Width::Width8, Divide, X, Y, Y) => write!(f, "\tdivw x, y"),
+        _ => write!(f, "{:?}", op),
+    }
+}
+
+fn instr_length_muldiv(insn: &Instruction) -> usize {
+    match insn.operation {
+        Operation::Dyadic(Width::Width8, Multiply, A, X, X) => 1,
+        Operation::Dyadic(Width::Width8, Multiply, A, Y, Y) => 2,
+        Operation::Dyadic(Width::Width8, Divide, A, X, X) => 1,
+        Operation::Dyadic(Width::Width8, Divide, A, Y, Y) => 2,
+        Operation::Dyadic(Width::Width8, Divide, X, Y, Y) => 1,
+        _ => 0,
+    }
+}
+
+fn impl_muldiv(insn: &Instruction, s: &mut State) -> FlowControl {
+    fn div(s: &mut State, x: Datum, a: Datum) {
+        let dividend: u16 = s.get_u16(x);
+        let divisor: u8 = s.get_u8(a);
+        if divisor != 0 {
+            let quotient: u16 = dividend / divisor;
+            let remainder: u8 = dividend % divisor;
+            a.set_u8(remainder);
+            x.set_u16(quotient);
+            s.carry = Some(false);
+            s.zero = Some(quotient == 0);
+        } else {
+            // division by zero; the quotient and remainder are not written to the registers.
+            s.carry = Some(true);
+        }
+    }
+
+    fn divw(s: &mut State) {
+        let dividend: u16 = X.get_i16() as u16;
+        let divisor: u16 = Y.get_i16() as u16;
+
+        if divisor = 0 {
+            // division by zero; the quotient and remainder are indeterminate
+            s.xh = None;
+            s.xl = None;
+            s.yh = None;
+            s.yl = None;
+            s.carry = Some(false);
+            s.zero = None;
+        } else {
+            let quotient: u16 = dividend / divisor;
+            let remainder: u8 = dividend % divisor;
+            X.set_u16(s, quotient);
+            Y.set_u16(s, remainder);
+            s.zero = Some(quotient == 0);
+            s.carry = Some(true);
+        }
+    }
+
+    fn mul(s: &mut State, a: Option<u8>, b: Option<u8>, dst: Datum) {
+        if a.is_none() || b.is_none() {
+            s.clear(dst);
+            s.carry = None;
+            return;
+        }
+        let product = (a.unwrap() as u16) * (b.unwrap() as u16);
+        dst.set_16(product);
+        s.carry = Some(false);
+    }
+
+    match insn.operation {
+        Operation::Dyadic(Width::Width8, Multiply, A, X, X) => mul(s, s.get_i8(XL), s.get_i8(A), X),
+        Operation::Dyadic(Width::Width8, Multiply, A, Y, Y) => mul(s, s.get_i8(YL), s.get_i8(A), Y),
+        Operation::Dyadic(Width::Width8, Divide, A, X, X) => div(s, X, A),
+        Operation::Dyadic(Width::Width8, Divide, A, Y, Y) => div(s, Y, A),
+        Operation::Dyadic(Width::Width8, Divide, X, Y, Y) => divw(s),
+        _ => unimplemented!(),
+    }
+    FlowControl::FallThrough
+}
+
+fn muldiv() -> Operation {
+    randomly!(
+        {Operation::Dyadic(Width::Width8, Multiply, A, X, X)}
+        {Operation::Dyadic(Width::Width8, Multiply, A, Y, Y)}
+        {Operation::Dyadic(Width::Width8, Divide, A, X, X)}
+        {Operation::Dyadic(Width::Width8, Divide, A, Y, Y)}
+        {Operation::Dyadic(Width::Width8, Divide, X, Y, Y)})
+}
+
 fn twoargs() -> Operation {
     fn op(w: Width, a: Datum) -> Operation {
         let vs = vec![Add, And, Or, Subtract];
@@ -293,9 +383,83 @@ fn oneargs() -> Operation {
     }
 }
 
+const RANDS: [Instruction; 10] = [
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: instr_length_stm8,
+        operation: Operation::Nop,
+        randomizer: clear,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: instr_length_stm8,
+        operation: Operation::Nop,
+        randomizer: transfers,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: instr_length_stm8,
+        operation: Operation::Nop,
+        randomizer: bits,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: instr_length_stm8,
+        operation: Operation::Nop,
+        randomizer: carry,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: instr_length_stm8,
+        operation: Operation::Nop,
+        randomizer: compare,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: instr_length_stm8,
+        operation: Operation::Nop,
+        randomizer: jumps,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: instr_length_stm8,
+        operation: Operation::Nop,
+        randomizer: oneargs,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: instr_length_stm8,
+        operation: Operation::Nop,
+        randomizer: twoargs,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: instr_length_stm8,
+        operation: Operation::Nop,
+        randomizer: shifts,
+    },
+    Instruction {
+        implementation: impl_muldiv,
+        disassemble: dasm_muldiv,
+        length: instr_length_muldiv,
+        operation: Operation::Nop,
+        randomizer: muldiv,
+    },
+];
+
 pub fn instr_stm8() -> Instruction {
-    let r = RANDS.choose(&mut rand::thread_rng()).unwrap();
-    Instruction::new(*r, dasm, instr_length_stm8)
+    let mut op = RANDS.choose(&mut rand::thread_rng()).unwrap().clone();
+    op.randomize();
+    op
 }
 
 pub fn instr_length_stm8(insn: &Instruction) -> usize {
