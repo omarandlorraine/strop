@@ -19,6 +19,7 @@ use crate::State;
 use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::rand::Rng;
 use rand::random;
+use std::convert::TryInto;
 use strop::randomly;
 
 const A: Datum = Datum::Register(R::A);
@@ -207,13 +208,22 @@ fn instr_length_muldiv(insn: &Instruction) -> usize {
 
 fn impl_muldiv(insn: &Instruction, s: &mut State) -> FlowControl {
     fn div(s: &mut State, x: Datum, a: Datum) {
-        let dividend: u16 = s.get_u16(x);
-        let divisor: u8 = s.get_u8(a);
-        if divisor != 0 {
-            let quotient: u16 = dividend / divisor;
-            let remainder: u8 = dividend % divisor;
-            a.set_u8(remainder);
-            x.set_u16(quotient);
+        let dividend = s.get_u16(x);
+        let divisor = s.get_u8(a);
+
+        if dividend.is_none() || divisor.is_none() {
+            s.set_i8(A, None);
+            s.set_i16(X, None);
+            s.carry = None;
+            return;
+        }
+        if divisor.unwrap() != 0 {
+            let quotient: u16 = dividend.unwrap() / (divisor.unwrap() as u16);
+            let remainder: u8 = (dividend.unwrap() % (divisor.unwrap() as u16))
+                .try_into()
+                .unwrap();
+            s.set_u8(A, Some(remainder));
+            s.set_u16(X, Some(quotient));
             s.carry = Some(false);
             s.zero = Some(quotient == 0);
         } else {
@@ -223,22 +233,26 @@ fn impl_muldiv(insn: &Instruction, s: &mut State) -> FlowControl {
     }
 
     fn divw(s: &mut State) {
-        let dividend: u16 = X.get_i16() as u16;
-        let divisor: u16 = Y.get_i16() as u16;
+        let dividend = s.get_u16(X);
+        let divisor = s.get_u16(Y);
 
-        if divisor = 0 {
+        if dividend.is_none() || divisor.is_none() {
+            s.set_u16(X, None);
+            s.set_u16(Y, None);
+            s.carry = None;
+            return;
+        }
+        if divisor.unwrap() == 0 {
             // division by zero; the quotient and remainder are indeterminate
-            s.xh = None;
-            s.xl = None;
-            s.yh = None;
-            s.yl = None;
+            s.set_u16(X, None);
+            s.set_u16(Y, None);
             s.carry = Some(false);
             s.zero = None;
         } else {
-            let quotient: u16 = dividend / divisor;
-            let remainder: u8 = dividend % divisor;
-            X.set_u16(s, quotient);
-            Y.set_u16(s, remainder);
+            let quotient: u16 = dividend.unwrap() / divisor.unwrap();
+            let remainder: u16 = dividend.unwrap() % divisor.unwrap();
+            s.set_u16(X, Some(quotient));
+            s.set_u16(Y, Some(remainder));
             s.zero = Some(quotient == 0);
             s.carry = Some(true);
         }
@@ -246,18 +260,18 @@ fn impl_muldiv(insn: &Instruction, s: &mut State) -> FlowControl {
 
     fn mul(s: &mut State, a: Option<u8>, b: Option<u8>, dst: Datum) {
         if a.is_none() || b.is_none() {
-            s.clear(dst);
+            s.set_u8(dst, None);
             s.carry = None;
             return;
         }
         let product = (a.unwrap() as u16) * (b.unwrap() as u16);
-        dst.set_16(product);
+        s.set_u16(dst, Some(product));
         s.carry = Some(false);
     }
 
     match insn.operation {
-        Operation::Dyadic(Width::Width8, Multiply, A, X, X) => mul(s, s.get_i8(XL), s.get_i8(A), X),
-        Operation::Dyadic(Width::Width8, Multiply, A, Y, Y) => mul(s, s.get_i8(YL), s.get_i8(A), Y),
+        Operation::Dyadic(Width::Width8, Multiply, A, X, X) => mul(s, s.get_u8(XL), s.get_u8(A), X),
+        Operation::Dyadic(Width::Width8, Multiply, A, Y, Y) => mul(s, s.get_u8(YL), s.get_u8(A), Y),
         Operation::Dyadic(Width::Width8, Divide, A, X, X) => div(s, X, A),
         Operation::Dyadic(Width::Width8, Divide, A, Y, Y) => div(s, Y, A),
         Operation::Dyadic(Width::Width8, Divide, X, Y, Y) => divw(s),

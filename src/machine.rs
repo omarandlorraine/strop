@@ -622,6 +622,18 @@ impl State {
         }
     }
 
+    pub fn get_u8(&self, d: Datum) -> Option<u8> {
+        self.get_i8(d).map(|v| u8::from_ne_bytes(v.to_ne_bytes()))
+    }
+
+    pub fn set_u8(&mut self, d: Datum, val: Option<u8>) {
+        self.set_i8(d, val.map(|v| i8::from_ne_bytes(v.to_ne_bytes())));
+    }
+
+    pub fn set_u16(&mut self, d: Datum, val: Option<u16>) {
+        self.set_i16(d, val.map(|v| i16::from_ne_bytes(v.to_ne_bytes())));
+    }
+
     pub fn get_i16(&self, d: Datum) -> Option<i16> {
         match d {
             Datum::Register(_) => self.get_i8(d).map(|x| x as i16),
@@ -648,6 +660,10 @@ impl State {
             }
             Datum::Zero => Some(0),
         }
+    }
+
+    pub fn get_u16(&self, d: Datum) -> Option<u16> {
+        self.get_i16(d).map(|v| u16::from_ne_bytes(v.to_ne_bytes()))
     }
 
     pub fn set_i8(&mut self, d: Datum, val: Option<i8>) {
