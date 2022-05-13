@@ -557,9 +557,10 @@ pub const STM8: Machine = Machine {
 mod tests {
     use super::*;
 
-    fn find_it(opcode: &'static str, rnd: fn(Machine) -> Operation) {
+    fn find_it(opcode: &'static str, insn: &Instruction) {
+        let mut i = insn.clone();
         for _i in 0..5000 {
-            let i = Instruction::new(Machine::Stm8, rnd, dasm);
+            i.randomize();
             let d = format!("{}", i);
             if d.contains(opcode) {
                 return;
@@ -569,27 +570,27 @@ mod tests {
     }
 
     #[test]
-    fn disassembler() {
-        crate::machine::tests::disasm(Machine::Stm8);
-    }
-
-    #[test]
-    fn instr_lengths() {
-        fn checkem(rnd: fn(Machine) -> Operation) {
-            for _i in 0..100 {
-                let mut i = Instruction::new(Machine::Stm8, rnd, dasm);
-                for _j in 0..50 {
-                    i.randomize();
-                    assert!(
-                        instr_length_stm8(i.operation) > 0,
-                        "No instruction length for {}",
-                        i
-                    );
-                }
-            }
+    fn instr_checks() {
+        fn disasm(i: &Instruction) {
+            assert!(i.len() > 0, "No instruction length for {}", i);
         }
+
+        fn len(i: &Instruction) {
+            let d = format!("{}", i);
+            assert!(
+                d[0..1] != "\t".to_owned(),
+                "Cannot disassemble {:?}",
+                i.operation
+            );
+        }
+
         for r in RANDS {
-            checkem(r);
+            let mut r = r;
+            for _i in 0..1000 {
+                r.randomize();
+                disasm(&r);
+                len(&r);
+            }
         }
     }
 
@@ -604,46 +605,46 @@ mod tests {
         // exg, exgw, probably fit in Dyadic
         // tnz, tnzw, more shifts will fit in Monadic
         // div, divw, mul might need their own or go in with Dyadic
-        find_it("adc", twoargs);
-        find_it("add", twoargs);
-        find_it("addw", twoargs);
-        find_it("and", twoargs);
-        find_it("bccm", bits);
-        find_it("bcp", compare);
-        find_it("btjf", jumps);
-        find_it("btjt", jumps);
-        find_it("bcpl", bits);
-        find_it("bset", bits);
-        find_it("bres", bits);
-        find_it("cpl", oneargs);
-        find_it("cplw", oneargs);
-        find_it("ccf", carry);
-        find_it("clr", clear);
-        find_it("clrw", clear);
-        find_it("dec", oneargs);
-        find_it("decw", oneargs);
-        find_it("inc", oneargs);
-        find_it("incw", oneargs);
-        find_it("jrc", jumps);
-        find_it("jrnc", jumps);
-        find_it("ld a, xh", transfers);
-        find_it("ld yl, a", transfers);
-        find_it("neg", oneargs);
-        find_it("negw", oneargs);
-        find_it("or", twoargs);
-        find_it("rcf", carry);
-        find_it("scf", carry);
-        find_it("rlc", shifts);
-        find_it("rlcw", shifts);
-        find_it("rrc", shifts);
-        find_it("rrcw", shifts);
-        find_it("sla", shifts);
-        find_it("slaw", shifts);
-        find_it("sbc", twoargs);
-        find_it("sub", twoargs);
-        find_it("subw", twoargs);
-        find_it("swap", oneargs);
-        find_it("swapw", oneargs);
-        find_it("xor", twoargs);
+        find_it("adc", &RANDS[7]);
+        find_it("add", &RANDS[7]);
+        find_it("addw", &RANDS[7]);
+        find_it("and", &RANDS[7]);
+        find_it("bccm", &RANDS[2]);
+        find_it("bcp", &RANDS[2]);
+        find_it("btjf", &RANDS[5]);
+        find_it("btjt", &RANDS[5]);
+        find_it("bcpl", &RANDS[2]);
+        find_it("bset", &RANDS[2]);
+        find_it("bres", &RANDS[2]);
+        find_it("cpl", &RANDS[6]);
+        find_it("cplw", &RANDS[6]);
+        find_it("ccf", &RANDS[3]);
+        find_it("clr", &RANDS[0]);
+        find_it("clrw", &RANDS[0]);
+        find_it("dec", &RANDS[6]);
+        find_it("decw", &RANDS[6]);
+        find_it("inc", &RANDS[6]);
+        find_it("incw", &RANDS[6]);
+        find_it("jrc", &RANDS[5]);
+        find_it("jrnc", &RANDS[5]);
+        find_it("ld a, xh", &RANDS[1]);
+        find_it("ld yl, a", &RANDS[1]);
+        find_it("neg", &RANDS[6]);
+        find_it("negw", &RANDS[6]);
+        find_it("or", &RANDS[7]);
+        find_it("rcf", &RANDS[3]);
+        find_it("scf", &RANDS[3]);
+        find_it("rlc", &RANDS[8]);
+        find_it("rlcw", &RANDS[8]);
+        find_it("rrc", &RANDS[8]);
+        find_it("rrcw", &RANDS[8]);
+        find_it("sla", &RANDS[8]);
+        find_it("slaw", &RANDS[8]);
+        find_it("sbc", &RANDS[7]);
+        find_it("sub", &RANDS[7]);
+        find_it("subw", &RANDS[7]);
+        find_it("swap", &RANDS[6]);
+        find_it("swapw", &RANDS[6]);
+        find_it("xor", &RANDS[7]);
     }
 }

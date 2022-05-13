@@ -190,33 +190,6 @@ fn rotate_right_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>,
     (None, None)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    pub fn disasm(mach: Machine) {
-        for _i in 0..5000 {
-            let mut instr = new_instruction(mach);
-            for _j in 0..50 {
-                instr.randomize();
-                let d = format!("{}", instr);
-                if d[0..1] != "\t".to_owned() {
-                    println!("No disassembly for instruction {}", d);
-                    panic!();
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn disassembler_prex86() {
-        disasm(Machine::PreX86(PreX86Variant::ZilogZ80));
-        disasm(Machine::PreX86(PreX86Variant::I8080));
-        disasm(Machine::PreX86(PreX86Variant::Sm83));
-        disasm(Machine::PreX86(PreX86Variant::KR580VM1));
-    }
-}
-
 #[derive(Clone, Debug, Copy)]
 pub enum ShiftType {
     LeftArithmetic,

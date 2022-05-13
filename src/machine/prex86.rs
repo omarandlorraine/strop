@@ -204,18 +204,3 @@ pub const KR580VM1: Machine = Machine {
     random_insn: random_insn_kr580vm1,
     reg_by_name: registers_kr580vm1,
 };
-
-#[cfg(test)]
-mod tests {
-    use crate::machine::tests::disasm;
-    use crate::Machine;
-    use crate::PreX86Variant;
-
-    #[test]
-    fn disassembler() {
-        disasm(Machine::PreX86(PreX86Variant::ZilogZ80));
-        disasm(Machine::PreX86(PreX86Variant::I8080));
-        disasm(Machine::PreX86(PreX86Variant::Sm83));
-        disasm(Machine::PreX86(PreX86Variant::KR580VM1));
-    }
-}
