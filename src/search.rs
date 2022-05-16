@@ -392,18 +392,3 @@ pub fn stochastic_search(
 
     winners[0].clone()
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::search::mutate_delete;
-    use crate::BasicBlock;
-    use crate::Machine;
-
-    #[test]
-    fn delete_from_an_empty_bb() {
-        let mut bb = BasicBlock::initial_guess(Machine::Stm8, 20);
-        for _i in 0..500 {
-            mutate_delete(&mut bb);
-        }
-    }
-}
