@@ -471,7 +471,7 @@ const RANDS: [Instruction; 10] = [
 ];
 
 pub fn instr_stm8() -> Instruction {
-    let mut op = RANDS.choose(&mut rand::thread_rng()).unwrap().clone();
+    let mut op = *RANDS.choose(&mut rand::thread_rng()).unwrap();
     op.randomize();
     op
 }

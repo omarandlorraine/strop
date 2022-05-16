@@ -40,7 +40,7 @@ pub fn get_machine_by_name(name: &str) -> Option<Machine> {
             return Some(m);
         }
     }
-    return None;
+    None
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -345,21 +345,6 @@ impl Instruction {
         }
     }
 
-    pub fn new_with_custom_implementation(
-        randomizer: fn() -> Operation,
-        disassemble: fn(Operation, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
-        length: fn(&Instruction) -> usize,
-        implementation: fn(&Instruction, &mut State) -> FlowControl,
-    ) -> Instruction {
-        Instruction {
-            operation: randomizer(),
-            disassemble,
-            randomizer,
-            length,
-            implementation: implementation,
-        }
-    }
-
     pub fn randomize(&mut self) {
         self.operation = (self.randomizer)();
 
@@ -368,7 +353,7 @@ impl Instruction {
     }
 
     pub fn len(&self) -> usize {
-        (self.length)(&self)
+        (self.length)(self)
     }
 
     #[cfg(test)]

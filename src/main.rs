@@ -162,7 +162,7 @@ fn testrun_from_args(opts: &Opts, mach: Machine) -> TestRun {
 
 fn main() {
     let opts: Opts = argh::from_env();
-    let machine = get_machine_by_name(&opts.arch.clone()).unwrap();
+    let machine = get_machine_by_name(&opts.arch).unwrap();
 
     let testrun = if let Some(path) = opts.file {
         let data = fs::read_to_string(path).expect("Unable to read file");
