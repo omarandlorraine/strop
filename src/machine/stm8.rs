@@ -623,6 +623,8 @@ mod tests {
         find_it("clrw", &RANDS[0]);
         find_it("dec", &RANDS[6]);
         find_it("decw", &RANDS[6]);
+        find_it("div", &RANDS[9]);
+        find_it("divw", &RANDS[9]);
         find_it("inc", &RANDS[6]);
         find_it("incw", &RANDS[6]);
         find_it("jrc", &RANDS[5]);
@@ -631,6 +633,7 @@ mod tests {
         find_it("ld yl, a", &RANDS[1]);
         find_it("neg", &RANDS[6]);
         find_it("negw", &RANDS[6]);
+        find_it("mul", &RANDS[9]);
         find_it("or", &RANDS[7]);
         find_it("rcf", &RANDS[3]);
         find_it("scf", &RANDS[3]);
