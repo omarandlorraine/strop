@@ -562,36 +562,22 @@ mod tests {
         for _i in 0..5000 {
             i.randomize();
             let d = format!("{}", i);
-            if d.contains(opcode) {
-                return;
-            }
-        }
-        panic!("Couldn't find instruction {}", opcode);
-    }
 
-    #[test]
-    fn instr_checks() {
-        fn disasm(i: &Instruction) {
+            // Does the disassembler output something starting with a tab?
+            assert!(
+                d[0..1] == "\t".to_owned(),
+                "Cannot disassemble {:?}, got {}",
+                i.operation,
+                d
+            );
+
+            // Is the opcode a substring of whatever the disassembler spat out?
+            assert(d.contains(opcode), "The disassembler for {:?} outputs \"{}\", which does not contain the substring {}.", i, d, opcode);
+
+            // Does this instruction have a length?
             assert!(i.len() > 0, "No instruction length for {}", i);
         }
-
-        fn len(i: &Instruction) {
-            let d = format!("{}", i);
-            assert!(
-                d[0..1] != "\t".to_owned(),
-                "Cannot disassemble {:?}",
-                i.operation
-            );
-        }
-
-        for r in RANDS {
-            let mut r = r;
-            for _i in 0..1000 {
-                r.randomize();
-                disasm(&r);
-                len(&r);
-            }
-        }
+        panic!("Couldn't find instruction {}", opcode);
     }
 
     #[test]
@@ -604,7 +590,6 @@ mod tests {
         // ld, ldw, mov probably fit in Move
         // exg, exgw, probably fit in Dyadic
         // tnz, tnzw, more shifts will fit in Monadic
-        // div, divw, mul might need their own or go in with Dyadic
         find_it("adc", &RANDS[7]);
         find_it("add", &RANDS[7]);
         find_it("addw", &RANDS[7]);
