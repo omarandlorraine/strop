@@ -559,6 +559,8 @@ mod tests {
 
     fn find_it(opcode: &'static str, insn: &Instruction) {
         let mut i = insn.clone();
+        let mut found_it = false;
+
         for _i in 0..5000 {
             i.randomize();
             let d = format!("{}", i);
@@ -572,12 +574,12 @@ mod tests {
             );
 
             // Is the opcode a substring of whatever the disassembler spat out?
-            assert(d.contains(opcode), "The disassembler for {:?} outputs \"{}\", which does not contain the substring {}.", i, d, opcode);
+            found_it |= d.contains(opcode);
 
             // Does this instruction have a length?
             assert!(i.len() > 0, "No instruction length for {}", i);
         }
-        panic!("Couldn't find instruction {}", opcode);
+        assert!(found_it, "Couldn't find instruction {}", opcode);
     }
 
     #[test]
