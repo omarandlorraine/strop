@@ -1,3 +1,4 @@
+use crate::disassemble;
 use crate::machine::Instruction;
 use crate::machine::Machine;
 use crate::machine::Width;

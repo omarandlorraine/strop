@@ -12,6 +12,7 @@ use crate::machine::get_machine_by_name;
 use crate::machine::Datum;
 use crate::machine::Machine;
 use crate::machine::State;
+use crate::search::optimize;
 use crate::search::stochastic_search;
 use crate::search::BasicBlock;
 
