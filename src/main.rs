@@ -14,7 +14,6 @@ use crate::machine::Machine;
 use crate::machine::State;
 use crate::search::stochastic_search;
 use crate::search::BasicBlock;
-use crate::search::{difference, optimize};
 
 use crate::test::sanity;
 use crate::test::{DeTestRun, Step, Test, TestRun};
@@ -45,6 +44,14 @@ struct Opts {
     #[argh(option)]
     /// constants
     constant: Vec<i8>,
+
+    #[argh(switch, short = 'g')]
+    /// graph progress
+    graph: bool,
+
+    #[argh(switch, short = 'd')]
+    /// disassemble the best specimen from each generation
+    debug: bool,
 }
 
 fn function(m: String, ins: Vec<Datum>, outs: Vec<Datum>) -> Vec<Test> {
@@ -164,10 +171,7 @@ fn main() {
         testrun_from_args(&opts, machine)
     };
 
-    let convergence = |prog: &BasicBlock| difference(prog, &testrun);
-    let prog = stochastic_search(&convergence, machine);
-    println!("finished stochastic search");
-    let opt = optimize(&convergence, &prog, machine);
-    println!("finished optimization pass");
+    let prog = stochastic_search(&testrun, machine, opts.graph, opts.debug);
+    let opt = optimize(&testrun, &prog, machine);
     disassemble(opt);
 }
