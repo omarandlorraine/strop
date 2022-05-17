@@ -183,7 +183,7 @@ fn registers_kr580vm1(r: &str) -> Datum {
     }
 }
 
-fn insn_len(insn: &Instruction) -> usize {
+fn insn_len(_insn: &Instruction) -> usize {
     1 // TODO!
 }
 
