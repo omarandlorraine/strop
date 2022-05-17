@@ -136,6 +136,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Dyadic(_, ExclusiveOr, _, d, r) => dsyn(f, "xor", r, d),
         Operation::Dyadic(_, Or, _, d, r) => dsyn(f, "or", r, d),
         Operation::Dyadic(_, SubtractWithBorrow, _, d, r) => dsyn(f, "sbc", r, d),
+        Operation::Dyadic(_, Subtract, r, d, Datum::Zero) => dsyn(f, "cp", r, d),
         Operation::Dyadic(_, Subtract, _, d, r) => dsyn(f, "sub", r, d),
         Operation::Shift(ShiftType::LeftRotateThroughCarry, d) => syn(f, "rlc", d),
         Operation::Shift(ShiftType::RightRotateThroughCarry, d) => syn(f, "rrc", d),
@@ -147,6 +148,12 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Monadic(_, Complement, _, r) => syn(f, "cpl", r),
         Operation::Monadic(_, Negate, _, r) => syn(f, "neg", r),
         Operation::Monadic(_, Swap, _, r) => syn(f, "swap", r),
+        Operation::Exchange(Width::Width16, X, Y) => {
+            write!(f, "\texgw x, y")
+        }
+        Operation::Exchange(Width::Width8, Datum::Register(from), Datum::Register(to)) => {
+            write!(f, "\texg {}, {}", regname(to), regname(from))
+        }
         Operation::Move(Datum::Register(from), Datum::Register(to)) => {
             write!(f, "\tld {}, {}", regname(to), regname(from))
         }
@@ -350,15 +357,28 @@ fn carry() -> Operation {
 }
 
 fn compare() -> Operation {
-    Operation::BitCompare(random_stm8_operand(), A)
+    randomly!(
+    {Operation::BitCompare(random_stm8_operand(), A)}
+    {Operation::Dyadic(Width::Width8, Subtract, A, random_stm8_operand(), Datum::Zero)}
+    {Operation::Dyadic(Width::Width16, Subtract, X, random_stm8_operand(), Datum::Zero)}
+    {Operation::Dyadic(Width::Width16, Subtract, Y, random_stm8_operand(), Datum::Zero)}
+    )
 }
 
 fn transfers() -> Operation {
-    fn rando() -> Datum {
-        let regs = vec![A, XL, XH, YL, YH];
-        *regs.choose(&mut rand::thread_rng()).unwrap()
-    }
-    Operation::Move(rando(), rando())
+    randomly!(
+    {Operation::Move(A, XL)}
+    {Operation::Move(A, XH)}
+    {Operation::Move(A, YL)}
+    {Operation::Move(A, YH)}
+    {Operation::Move(XL, A)}
+    {Operation::Move(XH, A)}
+    {Operation::Move(YL, A)}
+    {Operation::Move(YH, A)}
+    {Operation::Exchange(Width::Width8, A, XL)}
+    {Operation::Exchange(Width::Width8, A, YL)}
+    {Operation::Exchange(Width::Width16, X, Y)}
+    )
 }
 
 pub fn jumps() -> Operation {
@@ -505,6 +525,8 @@ pub fn instr_length_stm8(insn: &Instruction) -> usize {
         Operation::Dyadic(Width::Width16, _, _, Datum::Absolute(addr), _) => 1 + addr_length(addr),
         Operation::Monadic(Width::Width16, _, _, r) => 1 + y_prefix_penalty(r),
         Operation::Monadic(Width::Width8, _, _, A) => 1,
+        Operation::Exchange(_, Datum::Register(_), Datum::Register(_)) => 1,
+        Operation::Exchange(Width::Width16, X, Y) => 1,
         Operation::Move(Datum::Zero, A) => 1,
         Operation::Move(Datum::Zero, X) => 1,
         Operation::Move(Datum::Zero, Y) => 2,

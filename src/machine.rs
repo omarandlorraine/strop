@@ -288,6 +288,7 @@ impl DyadicOperation {
 #[derive(Clone, Debug, Copy)]
 pub enum Operation {
     Monadic(Width, MonadicOperation, Datum, Datum),
+    Exchange(Width, Datum, Datum),
     Dyadic(Width, DyadicOperation, Datum, Datum, Datum),
     DecimalAdjustAccumulator,
     BitCompare(Datum, Datum),
@@ -389,6 +390,18 @@ impl Instruction {
 
 pub fn standard_implementation(insn: &Instruction, s: &mut State) -> FlowControl {
     match insn.operation {
+        Operation::Exchange(Width::Width8, a, b) => {
+            let tmp = s.get_i8(a);
+            s.set_i8(a, s.get_i8(b));
+            s.set_i8(b, tmp);
+            FlowControl::FallThrough
+        }
+        Operation::Exchange(Width::Width16, a, b) => {
+            let tmp = s.get_i16(a);
+            s.set_i16(a, s.get_i16(b));
+            s.set_i16(b, tmp);
+            FlowControl::FallThrough
+        }
         Operation::Monadic(Width::Width8, operation, src, dst) => {
             s.set_i8(dst, operation.evaluate(s.get_i8(src)));
             FlowControl::FallThrough
