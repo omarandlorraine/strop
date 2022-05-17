@@ -247,7 +247,7 @@ pub const MOS65C02: Machine = Machine {
     id: 0,
     name: "65c02",
     description: "The CMOS 6502 variant, including new instructions like phx and stz",
-    random_insn: random_insn_6502,
+    random_insn: random_insn_65c02,
     reg_by_name,
 };
 
