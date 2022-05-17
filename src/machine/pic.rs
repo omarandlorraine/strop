@@ -213,7 +213,6 @@ pub fn instr_pic12() -> Instruction {
 }
 
 pub const PIC12: Machine = Machine {
-    id: 0,
     name: "pic12",
     description: "PIC12",
     random_insn: instr_pic12,

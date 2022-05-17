@@ -546,7 +546,6 @@ pub fn reg_by_name(name: &str) -> Datum {
 }
 
 pub const STM8: Machine = Machine {
-    id: 0,
     name: "stm8",
     description: "STM8",
     random_insn: instr_stm8,

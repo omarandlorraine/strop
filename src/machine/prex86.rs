@@ -198,7 +198,6 @@ pub fn random_insn_kr580vm1() -> Instruction {
 }
 
 pub const KR580VM1: Machine = Machine {
-    id: 1,
     name: "kr580vm1",
     description: "A Soviet Ukrainian variant of the Intel 8080",
     random_insn: random_insn_kr580vm1,

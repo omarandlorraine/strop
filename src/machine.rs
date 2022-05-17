@@ -18,7 +18,6 @@ use crate::machine::stm8::STM8;
 
 #[derive(Clone, Copy)]
 pub struct Machine {
-    id: u8,
     name: &'static str,
     description: &'static str,
     random_insn: fn() -> Instruction,

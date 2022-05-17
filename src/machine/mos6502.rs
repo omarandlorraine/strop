@@ -244,7 +244,6 @@ pub fn reg_by_name(name: &str) -> Datum {
 }
 
 pub const MOS65C02: Machine = Machine {
-    id: 0,
     name: "65c02",
     description: "The CMOS 6502 variant, including new instructions like phx and stz",
     random_insn: random_insn_65c02,
@@ -252,7 +251,6 @@ pub const MOS65C02: Machine = Machine {
 };
 
 pub const MOS6502: Machine = Machine {
-    id: 0,
     name: "6502",
     description: "A generic 6502",
     random_insn: random_insn_6502,
