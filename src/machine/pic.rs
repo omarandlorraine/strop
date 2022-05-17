@@ -1,5 +1,7 @@
+use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::random_absolute;
 use crate::machine::random_immediate;
+use crate::machine::standard_implementation;
 use crate::machine::Datum;
 use crate::machine::DyadicOperation::{Add, And};
 use crate::machine::Instruction;
@@ -8,6 +10,7 @@ use crate::machine::Operation;
 use crate::machine::ShiftType;
 use crate::machine::Width;
 use crate::machine::R;
+use crate::Machine;
 
 use rand::random;
 use strop::randomly;
@@ -158,12 +161,61 @@ fn insn_len(_insn: &Instruction) -> usize {
     1
 }
 
-pub fn instr_pic() -> Instruction {
-    randomly!(
-        { Instruction::new(shifts_pic, dasm, insn_len)}
-        { Instruction::new(and_pic, dasm, insn_len)}
-        { Instruction::new(add_pic, dasm, insn_len)}
-        { Instruction::new(store_pic, dasm, insn_len)}
-        { Instruction::new(inc_dec_pic, dasm, insn_len)}
-    )
+const INSTR_PIC12: [Instruction; 5] = [
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: insn_len,
+        operation: Operation::Nop,
+        randomizer: store_pic,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: insn_len,
+        operation: Operation::Nop,
+        randomizer: and_pic,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: insn_len,
+        operation: Operation::Nop,
+        randomizer: shifts_pic,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: insn_len,
+        operation: Operation::Nop,
+        randomizer: add_pic,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: insn_len,
+        operation: Operation::Nop,
+        randomizer: inc_dec_pic,
+    },
+];
+
+pub fn reg_by_name(name: &str) -> Datum {
+    match name {
+        "w" => W,
+        _ => todo!(),
+    }
 }
+
+pub fn instr_pic12() -> Instruction {
+    let mut op = *INSTR_PIC12.choose(&mut rand::thread_rng()).unwrap();
+    op.randomize();
+    op
+}
+
+pub const PIC12: Machine = Machine {
+    id: 0,
+    name: "pic12",
+    description: "PIC12",
+    random_insn: instr_pic12,
+    reg_by_name,
+};
