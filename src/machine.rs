@@ -10,6 +10,7 @@ mod pic;
 mod prex86;
 mod stm8;
 
+use crate::machine::m6800::M6800;
 use crate::machine::mos6502::{MOS6502, MOS65C02};
 use crate::machine::pic::PIC12;
 use crate::machine::prex86::KR580VM1;
@@ -24,7 +25,7 @@ pub struct Machine {
     reg_by_name: fn(&str) -> Datum,
 }
 
-const MACHINES: [Machine; 5] = [PIC12, KR580VM1, MOS6502, MOS65C02, STM8];
+const MACHINES: [Machine; 6] = [PIC12, KR580VM1, MOS6502, MOS65C02, STM8, M6800];
 
 #[derive(Clone, Copy)]
 pub struct Instruction {

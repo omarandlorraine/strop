@@ -150,11 +150,19 @@ fn rotates_6800() -> Operation {
     )
 }
 
-fn length(insn: &Instruction) -> usize {
+fn length(_insn: &Instruction) -> usize {
     1 // TODO!
 }
 
-pub fn instr_6800(mach: Machine) -> Instruction {
+pub fn reg_by_name(name: &str) -> Datum {
+    match name {
+        "a" => A,
+        "b" => B,
+        _ => todo!(),
+    }
+}
+
+pub fn instr_6800() -> Instruction {
     randomly!(
         { Instruction::new(add_6800, dasm, length)}
         { Instruction::new(transfers_6800, dasm, length)}
@@ -163,3 +171,11 @@ pub fn instr_6800(mach: Machine) -> Instruction {
     )
     // TODO: Add clc, sec, daa, and many other instructions
 }
+
+pub const M6800: Machine = Machine {
+    id: 0,
+    name: "6800",
+    description: "Motorola 6800",
+    random_insn: instr_6800,
+    reg_by_name,
+};
