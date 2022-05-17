@@ -583,57 +583,86 @@ mod tests {
 
     #[test]
     fn instruction_set_stm8() {
-        // I don't think we need call callf callr halt iret jrf jrih jril jrm nop ret retf rim sim trap wfe wfi
+        // I don't think we need break call callf callr halt iret int jpf jrf jrih jril jrm jrnm ldf nop ret retf rim sim trap wfe wfi
         // TODO: conditional jumps, relative jump, more shifts
         //
-        // rvf could maybe be grouped up along with rcf and scf
         // pop, popw, push, pushw, need to think about how to implement a stack
-        // ld, ldw, mov probably fit in Move
-        // exg, exgw, probably fit in Dyadic
-        // tnz, tnzw, more shifts will fit in Monadic
         find_it("adc", &RANDS[7]);
         find_it("add", &RANDS[7]);
         find_it("addw", &RANDS[7]);
         find_it("and", &RANDS[7]);
         find_it("bccm", &RANDS[2]);
         find_it("bcp", &RANDS[2]);
+        find_it("bcpl", &RANDS[2]);
+        find_it("bres", &RANDS[2]);
+        find_it("bset", &RANDS[2]);
         find_it("btjf", &RANDS[5]);
         find_it("btjt", &RANDS[5]);
-        find_it("bcpl", &RANDS[2]);
-        find_it("bset", &RANDS[2]);
-        find_it("bres", &RANDS[2]);
-        find_it("cpl", &RANDS[6]);
-        find_it("cplw", &RANDS[6]);
         find_it("ccf", &RANDS[3]);
         find_it("clr", &RANDS[0]);
         find_it("clrw", &RANDS[0]);
+        find_it("cp", &RANDS[4]);
+        find_it("cpw", &RANDS[4]);
+        find_it("cpl", &RANDS[6]);
+        find_it("cplw", &RANDS[6]);
         find_it("dec", &RANDS[6]);
         find_it("decw", &RANDS[6]);
         find_it("div", &RANDS[9]);
         find_it("divw", &RANDS[9]);
+        find_it("exg", &RANDS[1]);
+        find_it("exgw", &RANDS[1]);
         find_it("inc", &RANDS[6]);
         find_it("incw", &RANDS[6]);
         find_it("jrc", &RANDS[5]);
+        find_it("jreq", &RANDS[5]);
+        find_it("jrh", &RANDS[5]);
+        find_it("jrmi", &RANDS[5]);
         find_it("jrnc", &RANDS[5]);
+        find_it("jrne", &RANDS[5]);
+        find_it("jrnh", &RANDS[5]);
+        find_it("jrnv", &RANDS[5]);
+        find_it("jrpl", &RANDS[5]);
+        find_it("jrsge", &RANDS[5]);
+        find_it("jrsgt", &RANDS[5]);
+        find_it("jrsle", &RANDS[5]);
+        find_it("jrslt", &RANDS[5]);
+        find_it("jrt", &RANDS[5]);
+        find_it("jruge", &RANDS[5]);
+        find_it("jrugt", &RANDS[5]);
+        find_it("jrule", &RANDS[5]);
+        find_it("jrult", &RANDS[5]);
+        find_it("jrv", &RANDS[5]);
         find_it("ld a, xh", &RANDS[1]);
         find_it("ld yl, a", &RANDS[1]);
+        find_it("ldw", &RANDS[1]);
+        find_it("mov", &RANDS[1]);
+        find_it("mul", &RANDS[9]);
         find_it("neg", &RANDS[6]);
         find_it("negw", &RANDS[6]);
-        find_it("mul", &RANDS[9]);
+        find_it("mov", &RANDS[1]);
         find_it("or", &RANDS[7]);
         find_it("rcf", &RANDS[3]);
-        find_it("scf", &RANDS[3]);
         find_it("rlc", &RANDS[8]);
         find_it("rlcw", &RANDS[8]);
+        find_it("rlwa", &RANDS[8]);
         find_it("rrc", &RANDS[8]);
         find_it("rrcw", &RANDS[8]);
+        find_it("rrwa", &RANDS[8]);
+        find_it("rvf", &RANDS[3]);
+        find_it("sbc", &RANDS[7]);
+        find_it("scf", &RANDS[3]);
         find_it("sla", &RANDS[8]);
         find_it("slaw", &RANDS[8]);
-        find_it("sbc", &RANDS[7]);
+        find_it("sra", &RANDS[8]);
+        find_it("sraw", &RANDS[8]);
+        find_it("srl", &RANDS[8]);
+        find_it("srlw", &RANDS[8]);
         find_it("sub", &RANDS[7]);
         find_it("subw", &RANDS[7]);
         find_it("swap", &RANDS[6]);
         find_it("swapw", &RANDS[6]);
+        find_it("tnz", &RANDS[7]);
+        find_it("tnzw", &RANDS[7]);
         find_it("xor", &RANDS[7]);
     }
 }
