@@ -210,7 +210,17 @@ pub enum FlowControl {
 #[derive(Clone, Debug, Copy)]
 pub enum Test {
     True,
+    Minus(bool),
+    Zero(bool),
+    HalfCarry(bool),
+    Overflow(bool),
     Carry(bool),
+    UnsignedGreaterThan,
+    SignedGreaterThanOrEqual,
+    SignedGreaterThan,
+    UnsignedLowerThanOrEqual,
+    SignedLowerThanOrEqual,
+    SignedLowerThan,
     Bit(u16, u8, bool),
 }
 
@@ -308,7 +318,30 @@ impl Test {
     fn evaluate(&self, s: &State) -> Option<bool> {
         match self {
             Test::True => Some(true),
-            Test::Carry(b) => s.carry.map(|carry| &carry == b),
+            Test::Minus(b) => s.sign.map(|flag| &flag == b),
+            Test::Zero(b) => s.zero.map(|flag| &flag == b),
+            Test::HalfCarry(b) => s.halfcarry.map(|flag| &flag == b),
+            Test::Overflow(b) => s.overflow.map(|flag| &flag == b),
+            Test::Carry(b) => s.carry.map(|flag| &flag == b),
+            Test::SignedLowerThan => Test::SignedGreaterThanOrEqual.evaluate(s).map(|r| !r),
+            Test::UnsignedLowerThanOrEqual => Test::UnsignedGreaterThan.evaluate(s).map(|r| !r),
+            Test::SignedLowerThanOrEqual => Test::SignedGreaterThan.evaluate(s).map(|r| !r),
+            Test::UnsignedGreaterThan => s
+                .overflow
+                .map(|v| s.carry.map(|c| !(c || v)))
+                .unwrap_or(None),
+            Test::SignedGreaterThan => s.overflow.map(|v| s.carry.map(|c| c == v)).unwrap_or(None),
+            Test::SignedGreaterThanOrEqual => {
+                if let Some(z) = s.zero {
+                    if z {
+                        Some(true)
+                    } else {
+                        Test::SignedGreaterThan.evaluate(s)
+                    }
+                } else {
+                    None
+                }
+            }
             Test::Bit(addr, bit_no, b) => {
                 if let Some(byte) = s.get_i8(Datum::Absolute(*addr)) {
                     let val = byte & !(1 << bit_no) != 0;
@@ -537,6 +570,7 @@ pub struct State {
     carry: Option<bool>,
     sign: Option<bool>,
     halfcarry: Option<bool>,
+    overflow: Option<bool>,
     heap: HashMap<u16, Option<i8>>,
 }
 
@@ -559,6 +593,7 @@ impl State {
             zero: None,
             carry: None,
             sign: None,
+            overflow: None,
             halfcarry: None,
             heap: HashMap::new(),
         }

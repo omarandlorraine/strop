@@ -96,8 +96,22 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 
     fn distest(test: Test) -> &'static str {
         match test {
+            Test::Minus(true) => "jrmi",
+            Test::Minus(false) => "jrpl",
+            Test::Zero(true) => "jreq",
+            Test::Zero(false) => "jrne",
             Test::Carry(true) => "jrc",
             Test::Carry(false) => "jrnc",
+            Test::HalfCarry(true) => "jrh",
+            Test::HalfCarry(false) => "jrnh",
+            Test::Overflow(true) => "jrv",
+            Test::Overflow(false) => "jrnv",
+            Test::SignedLowerThanOrEqual => "jrsle",
+            Test::SignedLowerThan => "jrslt",
+            Test::SignedGreaterThanOrEqual => "jrsge",
+            Test::SignedGreaterThan => "jrsgt",
+            Test::UnsignedGreaterThan => "jrugt",
+            Test::UnsignedLowerThanOrEqual => "jrule",
             Test::True => "jra",
             _ => panic!(),
         }
@@ -393,7 +407,17 @@ pub fn jumps() -> Operation {
     fn cond() -> Test {
         randomly!(
         { Test::True}
+        { Test::Minus(random())}
+        { Test::Zero(random())}
+        { Test::HalfCarry(random())}
+        { Test::Overflow(random())}
         { Test::Carry(random())}
+        { Test::SignedLowerThanOrEqual }
+        { Test::SignedLowerThan }
+        { Test::SignedGreaterThanOrEqual }
+        { Test::SignedGreaterThan }
+        { Test::UnsignedGreaterThan }
+        { Test::UnsignedLowerThanOrEqual }
         { Test::Bit(random(), rand::thread_rng().gen_range(0..7), random())}
         )
     }
@@ -542,10 +566,11 @@ pub fn instr_length_stm8(insn: &Instruction) -> usize {
         Operation::ComplementCarry => 1,
         Operation::BitCompare(Datum::Absolute(addr), A) => 1 + addr_length(addr),
         Operation::BitCompare(Datum::Imm8(_), A) => 2,
+        Operation::Jump(Test::Bit(_, _, _), _) => 5,
+        Operation::Jump(Test::HalfCarry(_), _) => 3,
         Operation::Jump(Test::True, FlowControl::Forward(_)) => 2,
         Operation::Jump(Test::True, FlowControl::Backward(_)) => 2,
-        Operation::Jump(Test::Carry(_), _) => 2,
-        Operation::Jump(Test::Bit(_, _, _), _) => 5,
+        Operation::Jump(_, _) => 2,
         Operation::Shift(_, A) => 1,
         Operation::Shift(_, X) => 1,
         Operation::Shift(_, Y) => 2,
@@ -648,11 +673,11 @@ mod tests {
         find_it("jrsgt", &RANDS[5]);
         find_it("jrsle", &RANDS[5]);
         find_it("jrslt", &RANDS[5]);
-        find_it("jrt", &RANDS[5]);
-        find_it("jruge", &RANDS[5]);
+        // Not bothering with jrt because it seems like an alias of jra
+        // Not bothering with jruge because it seems like an alias of jrnc
         find_it("jrugt", &RANDS[5]);
         find_it("jrule", &RANDS[5]);
-        find_it("jrult", &RANDS[5]);
+        // Not bothering with jrult because it seems like an alias of jrc
         find_it("jrv", &RANDS[5]);
         find_it("ld a, xh", &RANDS[1]);
         find_it("ld yl, a", &RANDS[1]);
