@@ -602,6 +602,7 @@ pub const STM8: Machine = Machine {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::BasicBlock;
 
     fn find_it(opcode: &'static str, insn: &Instruction) {
         let mut i = insn.clone();
