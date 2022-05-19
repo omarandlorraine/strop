@@ -86,8 +86,24 @@ A couple of seconds later, the program outputs:
     	asla
     	aba
 
-Since the Motorola 6800 has no multiply instruction, strop's generated some shifts
-and adds and things that implement a multiplication by 15.
+Since the Motorola 6800 has no multiply instruction, strop's generated some
+shifts and adds and things that implement a multiplication by 15. What about
+another architecture; one that has a multiply instruction? The STM8 is an
+example.
+
+    strop --arch stm8 --function mult15 --in a --out a
+
+(the above command has `stm8` instead of `6800`, and instead of register B
+which the STM8 doesn't have, we specify that the input is in register A).
+Here, strop's output is:
+
+        ldw x, #15
+        mul x, a
+        exg xl, a
+
+This program loads the constant 15 into register X, multiplies A and X, leaving
+the result in X. Then A and the least significant byte of X are swapped over.
+In this way, A is effectively multiplied by 15.
 
 You might need something other than the miscellaneous built-in functions that
 I've decided to put in. You might want to define your own functions. If you can
