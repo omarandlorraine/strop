@@ -205,6 +205,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::BitCopyCarry(Datum::Absolute(addr), bitnumber) => {
             bit(f, "bccm", addr, bitnumber)
         }
+        Operation::Overflow(false) => write!(f, "\trvf"),
         Operation::Carry(false) => write!(f, "\trcf"),
         Operation::Carry(true) => write!(f, "\tscf"),
         Operation::ComplementCarry => write!(f, "\tccf"),
@@ -384,6 +385,7 @@ fn carry() -> Operation {
         { Operation::Carry(false)}
         { Operation::Carry(true)}
         { Operation::ComplementCarry}
+        { Operation::Overflow(false)}
     )
 }
 
@@ -592,6 +594,7 @@ pub fn instr_length_stm8(insn: &Instruction) -> usize {
         Operation::BitClear(_, _) => 4,
         Operation::BitComplement(_, _) => 4,
         Operation::BitCopyCarry(_, _) => 4,
+        Operation::Overflow(false) => 1,
         Operation::Carry(_) => 1,
         Operation::ComplementCarry => 1,
         Operation::BitCompare(Datum::Absolute(addr), A) => 1 + addr_length(addr),

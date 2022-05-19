@@ -308,6 +308,7 @@ pub enum Operation {
     Move(Datum, Datum),
     Shift(ShiftType, Datum),
     Carry(bool),
+    Overflow(bool),
     ComplementCarry,
     BitSet(Datum, u8),
     BitClear(Datum, u8),
@@ -499,6 +500,10 @@ pub fn standard_implementation(insn: &Instruction, s: &mut State) -> FlowControl
                 FlowControl::FallThrough
             }
         },
+        Operation::Overflow(b) => {
+            s.overflow = Some(b);
+            FlowControl::FallThrough
+        }
         Operation::Carry(b) => {
             s.carry = Some(b);
             FlowControl::FallThrough
