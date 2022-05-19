@@ -631,9 +631,6 @@ mod tests {
 
     #[test]
     fn instruction_set_stm8() {
-        // I don't think we need break call callf callr halt iret int jpf jrf jrih jril jrm jrnm ldf nop ret retf rim sim trap wfe wfi
-        // TODO: conditional jumps, relative jump, more shifts
-        //
         // pop, popw, push, pushw, need to think about how to implement a stack
         find_it("adc", &RANDS[7]);
         find_it("add", &RANDS[7]);
@@ -642,10 +639,12 @@ mod tests {
         find_it("bccm", &RANDS[2]);
         find_it("bcp", &RANDS[2]);
         find_it("bcpl", &RANDS[2]);
+        // Not bothering with break; strop will not generate software interrupts
         find_it("bres", &RANDS[2]);
         find_it("bset", &RANDS[2]);
         find_it("btjf", &RANDS[5]);
         find_it("btjt", &RANDS[5]);
+        // Not bothering with call callf callr; strop does not generate code that calls subroutines
         find_it("ccf", &RANDS[3]);
         find_it("clr", &RANDS[0]);
         find_it("clrw", &RANDS[0]);
@@ -659,15 +658,21 @@ mod tests {
         find_it("divw", &RANDS[9]);
         find_it("exg", &RANDS[1]);
         find_it("exgw", &RANDS[1]);
+        // Not bothering with halt; strop will not stop the CPU.
         find_it("inc", &RANDS[6]);
         find_it("incw", &RANDS[6]);
+        // Not bothering with int iret; strop will not handle interrupts
+        // Not bothering with jpf; strop does not support STM8's having more than 64K RAM.
         find_it("jrc", &RANDS[5]);
         find_it("jreq", &RANDS[5]);
+        // Not bothering with jrf; it's effectively a NOP
         find_it("jrh", &RANDS[5]);
+        // Not bothering with jrih jril jrm; strop will not handle interrupts
         find_it("jrmi", &RANDS[5]);
         find_it("jrnc", &RANDS[5]);
         find_it("jrne", &RANDS[5]);
         find_it("jrnh", &RANDS[5]);
+        // Not bothering with jrnm; strop will not handle interrupts
         find_it("jrnv", &RANDS[5]);
         find_it("jrpl", &RANDS[5]);
         find_it("jrsge", &RANDS[5]);
@@ -682,14 +687,16 @@ mod tests {
         find_it("jrv", &RANDS[5]);
         find_it("ld a, xh", &RANDS[1]);
         find_it("ld yl, a", &RANDS[1]);
+        // Not bothering with ldf; strop does not support STM8's having more than 64K RAM.
         find_it("ldw", &RANDS[1]);
         find_it("mov", &RANDS[1]);
         find_it("mul", &RANDS[9]);
         find_it("neg", &RANDS[6]);
         find_it("negw", &RANDS[6]);
-        find_it("mov", &RANDS[1]);
         find_it("or", &RANDS[7]);
+        // Not bothering with ret retf; strop does not generate code that calls subroutines
         find_it("rcf", &RANDS[3]);
+        // Not bothering with rim; strop will not handle interrupts
         find_it("rlc", &RANDS[8]);
         find_it("rlcw", &RANDS[8]);
         find_it("rlwa", &RANDS[8]);
@@ -699,6 +706,7 @@ mod tests {
         find_it("rvf", &RANDS[3]);
         find_it("sbc", &RANDS[7]);
         find_it("scf", &RANDS[3]);
+        // Not bothering with sim; strop will not handle interrupts
         find_it("sla", &RANDS[8]);
         find_it("slaw", &RANDS[8]);
         find_it("sra", &RANDS[8]);
@@ -711,6 +719,7 @@ mod tests {
         find_it("swapw", &RANDS[6]);
         find_it("tnz", &RANDS[7]);
         find_it("tnzw", &RANDS[7]);
+        // Not bothering with trap wfe wfi; strop will not handle interrupts
         find_it("xor", &RANDS[7]);
     }
 }
