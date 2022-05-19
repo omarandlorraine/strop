@@ -30,6 +30,11 @@ const YH: Datum = Datum::Register(R::Yh);
 const X: Datum = Datum::RegisterPair(R::Xh, R::Xl);
 const Y: Datum = Datum::RegisterPair(R::Yh, R::Yl);
 
+fn random_imm16() -> Datum {
+    let regs = vec![0, 1, 2, 3, 4, 5, 6];
+    Datum::Imm16(*regs.choose(&mut rand::thread_rng()).unwrap())
+}
+
 fn random_stm8_operand() -> Datum {
     if random() {
         random_immediate()
@@ -175,10 +180,16 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             write!(f, "\tld {}, {}", regname(to), addr)
         }
         Operation::Move(Datum::Register(to), Datum::Absolute(addr)) => {
-            write!(f, "\tld {}, {}", addr, regname(to))
+            write!(f, "\tld {}, {}", regname(to), addr)
         }
         Operation::Move(Datum::Imm8(val), Datum::Register(to)) => {
-            write!(f, "\tld #{}, {}", val, regname(to))
+            write!(f, "\tld #{}, {}", regname(to), val)
+        }
+        Operation::Move(Datum::Imm16(val), X) => {
+            write!(f, "\tldw x, #{}", val)
+        }
+        Operation::Move(Datum::Imm16(val), Y) => {
+            write!(f, "\tldw y, #{}", val)
         }
         Operation::BitClear(Datum::Absolute(addr), bitnumber) => bit(f, "bres", addr, bitnumber),
         Operation::BitSet(Datum::Absolute(addr), bitnumber) => bit(f, "bset", addr, bitnumber),
@@ -392,6 +403,8 @@ fn transfers() -> Operation {
     {Operation::Exchange(Width::Width8, A, XL)}
     {Operation::Exchange(Width::Width8, A, YL)}
     {Operation::Exchange(Width::Width16, X, Y)}
+    {Operation::Move(random_imm16(), X)}
+    {Operation::Move(random_imm16(), Y)}
     )
 }
 
@@ -558,6 +571,7 @@ pub fn instr_length_stm8(insn: &Instruction) -> usize {
         Operation::Move(Datum::Register(_), Datum::Register(r)) => {
             1 + y_prefix_penalty(Datum::Register(r))
         }
+        Operation::Move(Datum::Imm16(_), r) => 1 + y_prefix_penalty(r),
         Operation::BitSet(_, _) => 4,
         Operation::BitClear(_, _) => 4,
         Operation::BitComplement(_, _) => 4,

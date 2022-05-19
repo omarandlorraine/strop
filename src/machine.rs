@@ -3,6 +3,7 @@ use std::collections::HashMap;
 extern crate num;
 extern crate rand;
 use num::traits::{WrappingAdd, WrappingSub};
+use std::convert::TryInto;
 
 mod m6800;
 mod mos6502;
@@ -78,6 +79,7 @@ pub enum Datum {
     Register(R),
     RegisterPair(R, R),
     Imm8(i8),
+    Imm16(i16),
     Absolute(u16),
     Zero,
 }
@@ -88,6 +90,7 @@ impl Datum {
             Self::Register(_) => Width::Width8,
             Self::RegisterPair(_, _) => Width::Width16,
             Self::Imm8(_) => Width::Width8,
+            Self::Imm16(_) => Width::Width16,
             Self::Absolute(_) => Width::Width8,
             Self::Zero => Width::Width8,
         }
@@ -617,6 +620,7 @@ impl State {
                 R::Yh => self.yh,
             },
             Datum::RegisterPair(_, x) => self.get_i8(Datum::Register(x)),
+            Datum::Imm16(d) => d.try_into().ok(),
             Datum::Imm8(d) => Some(d),
             Datum::Absolute(addr) => {
                 if let Some(x) = self.heap.get(&addr) {
@@ -653,6 +657,7 @@ impl State {
                 None
             }
             Datum::Imm8(d) => Some(d as i16),
+            Datum::Imm16(d) => Some(d),
             Datum::Absolute(addr) => {
                 if let Some(l) = self.heap.get(&addr) {
                     if let Some(h) = self.heap.get(&(addr + 1)) {
@@ -720,6 +725,9 @@ impl State {
                 self.set_i8(Datum::Register(l), val);
                 self.set_i8(Datum::Register(h), Some(0));
             }
+            Datum::Imm16(_) => {
+                panic!()
+            }
             Datum::Imm8(_) => {
                 panic!()
             }
@@ -742,6 +750,9 @@ impl State {
             }
             Datum::Imm8(_x) => {
                 panic!();
+            }
+            Datum::Imm16(_) => {
+                panic!()
             }
             Datum::Absolute(addr) => {
                 self.set_i8(Datum::Absolute(addr + 1), high);
