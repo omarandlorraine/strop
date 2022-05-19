@@ -191,6 +191,12 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Move(Datum::Imm16(val), Y) => {
             write!(f, "\tldw y, #{}", val)
         }
+        Operation::Move(Datum::Imm8(val), Datum::Absolute(to)) => {
+            write!(f, "\tmov #{}, {}", val, to)
+        }
+        Operation::Move(Datum::Absolute(val), Datum::Absolute(to)) => {
+            write!(f, "\tmov {}, {}", val, to)
+        }
         Operation::BitClear(Datum::Absolute(addr), bitnumber) => bit(f, "bres", addr, bitnumber),
         Operation::BitSet(Datum::Absolute(addr), bitnumber) => bit(f, "bset", addr, bitnumber),
         Operation::BitComplement(Datum::Absolute(addr), bitnumber) => {
@@ -405,6 +411,8 @@ fn transfers() -> Operation {
     {Operation::Exchange(Width::Width16, X, Y)}
     {Operation::Move(random_imm16(), X)}
     {Operation::Move(random_imm16(), Y)}
+    {Operation::Move(random_immediate(), random_absolute())}
+    {Operation::Move(random_absolute(), random_absolute())}
     )
 }
 
@@ -572,6 +580,14 @@ pub fn instr_length_stm8(insn: &Instruction) -> usize {
             1 + y_prefix_penalty(Datum::Register(r))
         }
         Operation::Move(Datum::Imm16(_), r) => 1 + y_prefix_penalty(r),
+        Operation::Move(Datum::Imm8(_), Datum::Absolute(_)) => 3,
+        Operation::Move(Datum::Absolute(from), Datum::Absolute(to)) => {
+            if from < 256 && to < 256 {
+                3
+            } else {
+                5
+            }
+        }
         Operation::BitSet(_, _) => 4,
         Operation::BitClear(_, _) => 4,
         Operation::BitComplement(_, _) => 4,
