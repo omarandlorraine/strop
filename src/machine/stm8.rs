@@ -630,7 +630,6 @@ fn stm8_reg_by_name(name: &str) -> Result<Datum, &'static str> {
 
 pub const STM8: Machine = Machine {
     name: "stm8",
-    description: "STM8",
     random_insn: instr_stm8,
     reg_by_name: stm8_reg_by_name,
 };

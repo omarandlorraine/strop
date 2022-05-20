@@ -8,10 +8,10 @@ mod machine;
 mod search;
 mod test;
 
-use crate::machine::get_machine_by_name;
 use crate::machine::Datum;
 use crate::machine::Machine;
 use crate::machine::State;
+use crate::machine::MACHINES;
 use crate::search::optimize;
 use crate::search::stochastic_search;
 use crate::search::BasicBlock;
@@ -170,9 +170,25 @@ fn testrun_from_args(opts: &Opts, mach: Machine) -> TestRun {
     }
 }
 
+fn get_machine_by_name(name: &str) -> Machine {
+    for m in MACHINES {
+        if m.name == name {
+            return m;
+        }
+    }
+
+    println!("I don't know a machine called {}", name);
+    println!("Here are the ones I know:");
+    for m in MACHINES {
+        println!(" - {}", m.name);
+    }
+    process::exit(1);
+}
+
 fn main() {
     let opts: Opts = argh::from_env();
-    let machine = get_machine_by_name(&opts.arch).unwrap();
+
+    let machine = get_machine_by_name(&opts.arch);
 
     let testrun = if let Some(path) = opts.file {
         let data = fs::read_to_string(path).expect("Unable to read file");

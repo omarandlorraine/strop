@@ -214,7 +214,6 @@ pub fn instr_pic12() -> Instruction {
 
 pub const PIC12: Machine = Machine {
     name: "pic12",
-    description: "PIC12",
     random_insn: instr_pic12,
     reg_by_name,
 };

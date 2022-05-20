@@ -174,7 +174,6 @@ pub fn instr_6800() -> Instruction {
 
 pub const M6800: Machine = Machine {
     name: "6800",
-    description: "Motorola 6800",
     random_insn: instr_6800,
     reg_by_name,
 };

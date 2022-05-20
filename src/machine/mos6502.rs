@@ -245,14 +245,12 @@ fn reg_by_name(name: &str) -> Result<Datum, &'static str> {
 
 pub const MOS65C02: Machine = Machine {
     name: "65c02",
-    description: "The CMOS 6502 variant, including new instructions like phx and stz",
     random_insn: random_insn_65c02,
     reg_by_name,
 };
 
 pub const MOS6502: Machine = Machine {
     name: "6502",
-    description: "A generic 6502",
     random_insn: random_insn_6502,
     reg_by_name,
 };

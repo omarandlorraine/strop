@@ -19,13 +19,12 @@ use crate::machine::stm8::STM8;
 
 #[derive(Clone, Copy)]
 pub struct Machine {
-    name: &'static str,
-    description: &'static str,
+    pub name: &'static str,
     random_insn: fn() -> Instruction,
     reg_by_name: fn(&str) -> Result<Datum, &'static str>,
 }
 
-const MACHINES: [Machine; 6] = [PIC12, KR580VM1, MOS6502, MOS65C02, STM8, M6800];
+pub const MACHINES: [Machine; 6] = [PIC12, KR580VM1, MOS6502, MOS65C02, STM8, M6800];
 
 #[derive(Clone, Copy)]
 pub struct Instruction {
@@ -46,15 +45,6 @@ fn reg_by_name(name: &str) -> Result<Datum, &'static str> {
         }
     }
     Err("no such register")
-}
-
-pub fn get_machine_by_name(name: &str) -> Option<Machine> {
-    for m in MACHINES {
-        if m.name == name {
-            return Some(m);
-        }
-    }
-    None
 }
 
 #[derive(Clone, Copy, Debug)]
