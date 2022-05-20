@@ -374,20 +374,22 @@ pub fn stochastic_search(
             }
         }
 
-        // Sort the population by score.
-        ng.par_sort_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"));
+        if !ng.is_empty() {
+            // Sort the population by score.
+            ng.par_sort_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"));
 
-        population = ng;
-        let nbest = population[0].0;
+            population = ng;
+            let nbest = population[0].0;
 
-        if graph {
-            println!("{}, {}, {}", generation, population.len(), nbest);
+            if graph {
+                println!("{}, {}, {}", generation, population.len(), nbest);
+            }
+            if debug {
+                disassemble(population[0].1.clone());
+            }
+            population.truncate(50);
+            generation += 1;
         }
-        if debug {
-            disassemble(population[0].1.clone());
-        }
-        population.truncate(50);
-        generation += 1;
     }
 
     winners[0].clone()
