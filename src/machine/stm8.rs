@@ -666,6 +666,20 @@ mod tests {
     }
 
     #[test]
+    fn reg_names() {
+        assert_eq!(stm8_reg_by_name("a").unwrap(), A);
+        assert_eq!(stm8_reg_by_name("xl").unwrap(), XL);
+        assert_eq!(stm8_reg_by_name("yl").unwrap(), YL);
+        assert_eq!(stm8_reg_by_name("xh").unwrap(), XH);
+        assert_eq!(stm8_reg_by_name("yh").unwrap(), YH);
+        assert_eq!(stm8_reg_by_name("x").unwrap(), X);
+        assert_eq!(stm8_reg_by_name("y").unwrap(), Y);
+        assert_eq!(stm8_reg_by_name("m6").unwrap(), Datum::Absolute(6));
+        assert!(stm8_reg_by_name("n").is_err());
+        assert!(stm8_reg_by_name("m").is_err());
+    }
+
+    #[test]
     fn instruction_set_stm8() {
         // pop, popw, push, pushw, need to think about how to implement a stack
         find_it("adc", &RANDS[7]);
