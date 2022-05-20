@@ -154,10 +154,10 @@ fn length(_insn: &Instruction) -> usize {
     1 // TODO!
 }
 
-pub fn reg_by_name(name: &str) -> Datum {
+fn reg_by_name(name: &str) -> Result<Datum, &'static str> {
     match name {
-        "a" => A,
-        "b" => B,
+        "a" => Ok(A),
+        "b" => Ok(B),
         _ => todo!(),
     }
 }

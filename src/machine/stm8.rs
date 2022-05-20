@@ -18,6 +18,7 @@ use crate::State;
 
 use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::rand::Rng;
+use crate::machine::reg_by_name;
 use rand::random;
 use std::convert::TryInto;
 use strop::randomly;
@@ -612,16 +613,16 @@ pub fn instr_length_stm8(insn: &Instruction) -> usize {
     }
 }
 
-pub fn reg_by_name(name: &str) -> Datum {
+fn stm8_reg_by_name(name: &str) -> Result<Datum, &'static str> {
     match name {
-        "a" => A,
-        "x" => X,
-        "y" => Y,
-        "xl" => XL,
-        "yl" => YL,
-        "xh" => XH,
-        "yh" => YH,
-        _ => todo!(),
+        "a" => Ok(A),
+        "x" => Ok(X),
+        "y" => Ok(Y),
+        "xl" => Ok(XL),
+        "yl" => Ok(YL),
+        "xh" => Ok(XH),
+        "yh" => Ok(YH),
+        _ => reg_by_name(name),
     }
 }
 
@@ -629,7 +630,7 @@ pub const STM8: Machine = Machine {
     name: "stm8",
     description: "STM8",
     random_insn: instr_stm8,
-    reg_by_name,
+    reg_by_name: stm8_reg_by_name,
 };
 
 #[cfg(test)]

@@ -199,9 +199,9 @@ const INSTR_PIC12: [Instruction; 5] = [
     },
 ];
 
-pub fn reg_by_name(name: &str) -> Datum {
+pub fn reg_by_name(name: &str) -> Result<Datum, &'static str> {
     match name {
-        "w" => W,
+        "w" => Ok(W),
         _ => todo!(),
     }
 }

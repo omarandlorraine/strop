@@ -143,17 +143,27 @@ fn disassemble(prog: BasicBlock) {
 }
 
 fn testrun_from_args(opts: &Opts, mach: Machine) -> TestRun {
+    for l in opts.r#in.clone().into_iter().chain(opts.out.clone()) {
+        if let Some(error_message) = mach.register_by_name(&l).err() {
+            println!(
+                "I don't understand what you mean by the datum {}: {}.",
+                l, error_message
+            );
+            process::exit(1);
+        }
+    }
+
     let ins: Vec<Datum> = opts
         .r#in
         .clone()
         .into_iter()
-        .map(|reg| mach.register_by_name(&reg))
+        .map(|reg| mach.register_by_name(&reg).unwrap())
         .collect();
     let outs: Vec<Datum> = opts
         .out
         .clone()
         .into_iter()
-        .map(|reg| mach.register_by_name(&reg))
+        .map(|reg| mach.register_by_name(&reg).unwrap())
         .collect();
     TestRun {
         tests: function(opts.function.clone().unwrap(), ins, outs),

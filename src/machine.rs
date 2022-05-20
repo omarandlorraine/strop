@@ -22,7 +22,7 @@ pub struct Machine {
     name: &'static str,
     description: &'static str,
     random_insn: fn() -> Instruction,
-    reg_by_name: fn(&str) -> Datum,
+    reg_by_name: fn(&str) -> Result<Datum, &'static str>,
 }
 
 const MACHINES: [Machine; 6] = [PIC12, KR580VM1, MOS6502, MOS65C02, STM8, M6800];
@@ -34,6 +34,18 @@ pub struct Instruction {
     disassemble: fn(Operation, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
     length: fn(&Instruction) -> usize,
     implementation: fn(&Instruction, &mut State) -> FlowControl,
+}
+
+fn reg_by_name(name: &str) -> Result<Datum, &'static str> {
+    if name[0..1] == *"m" {
+        let arg = name[1..].to_string();
+        if let Ok(addr) = arg.parse::<u16>() {
+            return Ok(Datum::Absolute(addr));
+        } else {
+            return Err("parse error");
+        }
+    }
+    Err("no such register")
 }
 
 pub fn get_machine_by_name(name: &str) -> Option<Machine> {
@@ -124,7 +136,7 @@ impl Machine {
     pub fn new_instruction(self) -> Instruction {
         (self.random_insn)()
     }
-    pub fn register_by_name(self, name: &str) -> Datum {
+    pub fn register_by_name(self, name: &str) -> Result<Datum, &'static str> {
         (self.reg_by_name)(name)
     }
 }

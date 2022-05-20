@@ -230,15 +230,15 @@ fn random_insn_6502() -> Instruction {
     )
 }
 
-pub fn reg_by_name(name: &str) -> Datum {
+fn reg_by_name(name: &str) -> Result<Datum, &'static str> {
     if name == "a" {
-        return Datum::Register(R::A);
+        return Ok(Datum::Register(R::A));
     }
     if name == "x" {
-        return Datum::Register(R::Xl);
+        return Ok(Datum::Register(R::Xl));
     }
     if name == "y" {
-        return Datum::Register(R::Yl);
+        return Ok(Datum::Register(R::Yl));
     }
     todo!();
 }

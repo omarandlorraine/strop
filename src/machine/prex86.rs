@@ -153,31 +153,31 @@ fn ld_prex86() -> Operation {
     Operation::Move(random_r_prex86(), random_r_prex86())
 }
 
-fn registers_8080(name: &str) -> Datum {
+fn registers_8080(name: &str) -> Result<Datum, &'static str> {
     match name {
-        "a" => Datum::Register(R::A),
-        "b" => Datum::Register(R::B),
-        "c" => Datum::Register(R::C),
-        "d" => Datum::Register(R::D),
-        "e" => Datum::Register(R::E),
-        "h" => Datum::Register(R::H),
-        "l" => Datum::Register(R::L),
-        "bc" => Datum::RegisterPair(R::B, R::C),
-        "de" => Datum::RegisterPair(R::D, R::E),
-        "hl" => Datum::RegisterPair(R::H, R::L),
+        "a" => Ok(Datum::Register(R::A)),
+        "b" => Ok(Datum::Register(R::B)),
+        "c" => Ok(Datum::Register(R::C)),
+        "d" => Ok(Datum::Register(R::D)),
+        "e" => Ok(Datum::Register(R::E)),
+        "h" => Ok(Datum::Register(R::H)),
+        "l" => Ok(Datum::Register(R::L)),
+        "bc" => Ok(Datum::RegisterPair(R::B, R::C)),
+        "de" => Ok(Datum::RegisterPair(R::D, R::E)),
+        "hl" => Ok(Datum::RegisterPair(R::H, R::L)),
         _ => {
             panic!("No such register as {}", name);
         }
     }
 }
 
-fn registers_kr580vm1(r: &str) -> Datum {
+fn registers_kr580vm1(r: &str) -> Result<Datum, &'static str> {
     if r == "h1" {
-        Datum::Register(R::H1)
+        Ok(Datum::Register(R::H1))
     } else if r == "l1" {
-        Datum::Register(R::L1)
+        Ok(Datum::Register(R::L1))
     } else if r == "h1l1" {
-        Datum::RegisterPair(R::H1, R::L1)
+        Ok(Datum::RegisterPair(R::H1, R::L1))
     } else {
         registers_8080(r)
     }
