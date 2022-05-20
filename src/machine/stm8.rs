@@ -416,6 +416,7 @@ fn transfers() -> Operation {
     {Operation::Move(random_imm16(), Y)}
     {Operation::Move(random_immediate(), random_absolute())}
     {Operation::Move(random_absolute(), random_absolute())}
+    {Operation::Move(random_absolute(), A)}
     )
 }
 
@@ -578,6 +579,7 @@ pub fn instr_length_stm8(insn: &Instruction) -> usize {
         Operation::Move(Datum::Zero, A) => 1,
         Operation::Move(Datum::Zero, X) => 1,
         Operation::Move(Datum::Zero, Y) => 2,
+        Operation::Move(Datum::Absolute(addr), A) => 1 + addr_length(addr),
         Operation::Move(Datum::Zero, Datum::Absolute(addr)) => 1 + addr_length(addr),
         Operation::Move(Datum::Register(_), Datum::Register(r)) => {
             1 + y_prefix_penalty(Datum::Register(r))
