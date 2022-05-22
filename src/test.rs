@@ -50,18 +50,24 @@ pub struct TestRun {
 
 fn step(mach: Machine, s: &DeStep) -> Step {
     match (s.set, s.dontcare, s.ham, s.diff, s.check.as_ref()) {
-        (val, None, None, None, None) => Step::Set(mach.register_by_name(&s.datum), val.unwrap()),
+        (val, None, None, None, None) => {
+            Step::Set(mach.register_by_name(&s.datum).unwrap(), val.unwrap())
+        }
         (None, None, val, None, None) => {
-            Step::Ham(mach.register_by_name(&s.datum), val.unwrap(), -1)
+            Step::Ham(mach.register_by_name(&s.datum).unwrap(), val.unwrap(), -1)
         }
-        (None, dc, val, None, None) => {
-            Step::Ham(mach.register_by_name(&s.datum), val.unwrap(), dc.unwrap())
+        (None, dc, val, None, None) => Step::Ham(
+            mach.register_by_name(&s.datum).unwrap(),
+            val.unwrap(),
+            dc.unwrap(),
+        ),
+        (None, None, None, val, None) => {
+            Step::Diff(mach.register_by_name(&s.datum).unwrap(), val.unwrap())
         }
-        (None, None, None, val, None) => Step::Diff(mach.register_by_name(&s.datum), val.unwrap()),
         (None, None, None, None, Some(func)) => match func.as_str() {
-            "nonzero" => Step::NonZero(mach.register_by_name(&s.datum)),
-            "positive" => Step::Positive(mach.register_by_name(&s.datum)),
-            "negative" => Step::Negative(mach.register_by_name(&s.datum)),
+            "nonzero" => Step::NonZero(mach.register_by_name(&s.datum).unwrap()),
+            "positive" => Step::Positive(mach.register_by_name(&s.datum).unwrap()),
+            "negative" => Step::Negative(mach.register_by_name(&s.datum).unwrap()),
             _ => unimplemented!(),
         },
         _ => panic!(),

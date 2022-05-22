@@ -9,93 +9,15 @@ mod search;
 mod test;
 
 use crate::machine::Datum;
+use crate::machine::Machine;
 use crate::machine::State;
-use crate::machine::{Machine, Mos6502Variant, Motorola8BitVariant, PicVariant, PreX86Variant};
+use crate::machine::MACHINES;
 use crate::search::optimize;
 use crate::search::stochastic_search;
 use crate::search::BasicBlock;
 
 use crate::test::sanity;
 use crate::test::{DeTestRun, Step, Test, TestRun};
-
-struct MOpt {
-    name: &'static str,
-    mach: Machine,
-    help: &'static str,
-}
-
-const M_OPTS: [MOpt; 14] = [
-    MOpt {
-        name: "8080",
-        mach: Machine::PreX86(PreX86Variant::I8080),
-        help: "Intel 8080",
-    },
-    MOpt {
-        name: "kr580vm1",
-        mach: Machine::PreX86(PreX86Variant::KR580VM1),
-        help: "KR580VM1, a Soviet Ukrainian 8080 variant",
-    },
-    MOpt {
-        name: "z80",
-        mach: Machine::PreX86(PreX86Variant::ZilogZ80),
-        help: "Zilog Z80",
-    },
-    MOpt {
-        name: "sm83",
-        mach: Machine::PreX86(PreX86Variant::Sm83),
-        help: "Weirdo found in some nintendos",
-    },
-    MOpt {
-        name: "2a03",
-        mach: Machine::Mos6502(Mos6502Variant::Ricoh2a03),
-        help: "Ricoh 2A03/2A07, which is a 6502 with no decimal mode",
-    },
-    MOpt {
-        name: "6502",
-        mach: Machine::Mos6502(Mos6502Variant::Nmos),
-        help: "generic 6502",
-    },
-    MOpt {
-        name: "65i02",
-        mach: Machine::Mos6502(Mos6502Variant::IllegalInstructions),
-        help: "NMOS 6502, but with illegal instructions like lax and dca",
-    },
-    MOpt {
-        name: "65c02",
-        mach: Machine::Mos6502(Mos6502Variant::Cmos),
-        help: "CMOS 6502, including new instructions like phx and stz",
-    },
-    MOpt {
-        name: "6800",
-        mach: Machine::Motorola6800(Motorola8BitVariant::Motorola6800),
-        help: "Motorola 6800",
-    },
-    MOpt {
-        name: "6801",
-        mach: Machine::Motorola6800(Motorola8BitVariant::Motorola6801),
-        help: "Motorola 6801",
-    },
-    MOpt {
-        name: "pic12",
-        mach: Machine::Pic(PicVariant::Pic12),
-        help: "PIC12",
-    },
-    MOpt {
-        name: "pic14",
-        mach: Machine::Pic(PicVariant::Pic14),
-        help: "PIC14",
-    },
-    MOpt {
-        name: "pic16",
-        mach: Machine::Pic(PicVariant::Pic16),
-        help: "PIC16",
-    },
-    MOpt {
-        name: "stm8",
-        mach: Machine::Stm8,
-        help: "low-cost microcontroller family by STMicroelectronics",
-    },
-];
 
 #[derive(FromArgs, PartialEq, Debug)]
 /// command line arguments
@@ -131,19 +53,6 @@ struct Opts {
     #[argh(switch, short = 'd')]
     /// disassemble the best specimen from each generation
     debug: bool,
-}
-
-fn mach(m: String) -> Machine {
-    for m_opt in &M_OPTS {
-        if m_opt.name == m {
-            return m_opt.mach;
-        }
-    }
-    println!("You didn't pick a valid arch, so here's the ones I know:");
-    for m_opt in &M_OPTS {
-        println!("\t{:>8}  {}", m_opt.name, m_opt.help);
-    }
-    process::exit(1);
 }
 
 fn function(m: String, ins: Vec<Datum>, outs: Vec<Datum>) -> Vec<Test> {
@@ -234,26 +143,52 @@ fn disassemble(prog: BasicBlock) {
 }
 
 fn testrun_from_args(opts: &Opts, mach: Machine) -> TestRun {
+    for l in opts.r#in.clone().into_iter().chain(opts.out.clone()) {
+        if let Some(error_message) = mach.register_by_name(&l).err() {
+            println!(
+                "I don't understand what you mean by the datum {}: {}.",
+                l, error_message
+            );
+            process::exit(1);
+        }
+    }
+
     let ins: Vec<Datum> = opts
         .r#in
         .clone()
         .into_iter()
-        .map(|reg| mach.register_by_name(&reg))
+        .map(|reg| mach.register_by_name(&reg).unwrap())
         .collect();
     let outs: Vec<Datum> = opts
         .out
         .clone()
         .into_iter()
-        .map(|reg| mach.register_by_name(&reg))
+        .map(|reg| mach.register_by_name(&reg).unwrap())
         .collect();
     TestRun {
         tests: function(opts.function.clone().unwrap(), ins, outs),
     }
 }
 
+fn get_machine_by_name(name: &str) -> Machine {
+    for m in MACHINES {
+        if m.name == name {
+            return m;
+        }
+    }
+
+    println!("I don't know a machine called {}", name);
+    println!("Here are the ones I know:");
+    for m in MACHINES {
+        println!(" - {}", m.name);
+    }
+    process::exit(1);
+}
+
 fn main() {
     let opts: Opts = argh::from_env();
-    let machine = mach(opts.arch.clone());
+
+    let machine = get_machine_by_name(&opts.arch);
 
     let testrun = if let Some(path) = opts.file {
         let data = fs::read_to_string(path).expect("Unable to read file");

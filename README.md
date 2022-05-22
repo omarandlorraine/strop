@@ -16,30 +16,28 @@ things other than the 6502, So, strop was born, the *st*ochastic *op*timizer,
 written in *R*ust.
 
 ### Supported instruction sets:
-I don't want to say they're *supported* as such yet: many instructions are still
-missing, which will result in suboptimal programs being generated for some
-functions, or programs not being found where they could be. Notably, some
-control flow instructions are completely absent from strop. But probably the
-best instruction sets so far are:
 
- - 8080, *the famous Intel chip*
- - kr580vm1, *a Ukrainian 8080 variant*
- - z80, *the famous Z80, very popular with retrocomputing enthusiasts*
- - sm83, *weirdo found in certain nintendos*
- - 2a03, *another weirdo found in certain nintendos; this is a 6502 with no decimal mode*
- - 6502, *famous 8-bitter from the 1970s*
- - 65i02, *6502 core instruction set plus some illegal opcodes*
- - 65c02, *6502 plus CMOS extensions*
- - 6800, *Motorola 8-bitter*
- - 6801, *successor to the 6800*
- - pic12, *low-end microcontroller from Microchip*
- - pic14, *extension to PIC12*
- - pic16, *extension to PIC12*
- - stm8, *microcontroller that's similar to a beefed-up 6502*
+Strop's repetoire of instructions include mathematical operations such as
+boolean AND, OR, etc., addition & subtraction, comparisons, load/store
+instructions, conditional and unconditional jumps, etc. Certain operations are
+not included, because I anticipate that end-users will use strop mostly for
+generation of computationally intense things like inner loops and perhaps bodies
+of functions. This means that I don't intend for strop to generate things like
+push/pops, returns from interrupts, and this kind of thing.
 
-I've tried to pick ones I use or like, and then I've added the low-hanging
-fruit like their relatives and so on. I've also tried to make this extensible,
-and easy to add whatever architectures in the future.
+Strop currently supports one instruction set, namely:
+
+ - STM8
+
+There are a few other instruction sets available, but these are not supported
+ones.
+They do not have the same level of automated testing, and have only a few of the
+relevant opcodes implemented. They are:
+
+ - PIC12
+ - KR580VM1 (a little-known 8080 variant from Soviet Ukraine)
+ - MOS 6502 and 65C02
+ - Motorola 6800
 
 ### Theory of operation
 The basic idea is to generate code better than what traditional optimising
@@ -88,8 +86,24 @@ A couple of seconds later, the program outputs:
     	asla
     	aba
 
-Since the Motorola 6800 has no multiply instruction, strop's generated some shifts
-and adds and things that implement a multiplication by 15.
+Since the Motorola 6800 has no multiply instruction, strop's generated some
+shifts and adds and things that implement a multiplication by 15. What about
+another architecture; one that has a multiply instruction? The STM8 is an
+example.
+
+    strop --arch stm8 --function mult15 --in a --out a
+
+(the above command has `stm8` instead of `6800`, and instead of register B
+which the STM8 doesn't have, we specify that the input is in register A).
+Here, strop's output is:
+
+        ldw x, #15
+        mul x, a
+        exg xl, a
+
+This program loads the constant 15 into register X, multiplies A and X, leaving
+the result in X. Then A and the least significant byte of X are swapped over.
+In this way, A is effectively multiplied by 15.
 
 You might need something other than the miscellaneous built-in functions that
 I've decided to put in. You might want to define your own functions. If you can

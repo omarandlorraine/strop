@@ -1,8 +1,8 @@
 use crate::disassemble;
-use crate::machine::new_instruction;
 use crate::machine::Instruction;
+use crate::machine::Machine;
 use crate::machine::Width;
-use crate::{Machine, State, Step, TestRun};
+use crate::{State, Step, TestRun};
 use rand::{thread_rng, Rng};
 use rayon::iter::IntoParallelRefIterator;
 use rayon::iter::ParallelIterator;
@@ -42,7 +42,7 @@ impl BasicBlock {
             instructions: vec![],
         };
         for _i in 0..max_size {
-            let i = new_instruction(mach);
+            let i = mach.new_instruction();
             bb.push(i);
         }
         bb
@@ -199,7 +199,7 @@ fn mutate_insert(prog: &mut BasicBlock, mach: Machine) {
     } else {
         0
     };
-    let instruction = new_instruction(mach);
+    let instruction = mach.new_instruction();
     prog.insert(offset, instruction);
 }
 
@@ -374,20 +374,22 @@ pub fn stochastic_search(
             }
         }
 
-        // Sort the population by score.
-        ng.par_sort_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"));
+        if !ng.is_empty() {
+            // Sort the population by score.
+            ng.par_sort_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"));
 
-        population = ng;
-        let nbest = population[0].0;
+            population = ng;
+            let nbest = population[0].0;
 
-        if graph {
-            println!("{}, {}, {}", generation, population.len(), nbest);
+            if graph {
+                println!("{}, {}, {}", generation, population.len(), nbest);
+            }
+            if debug {
+                disassemble(population[0].1.clone());
+            }
+            population.truncate(50);
+            generation += 1;
         }
-        if debug {
-            disassemble(population[0].1.clone());
-        }
-        population.truncate(50);
-        generation += 1;
     }
 
     winners[0].clone()
@@ -397,13 +399,11 @@ pub fn stochastic_search(
 mod tests {
     use crate::search::mutate_delete;
     use crate::BasicBlock;
-    use crate::Machine;
-
     #[test]
-    fn delete_from_an_empty_bb() {
-        let mut bb = BasicBlock::initial_guess(Machine::Stm8, 20);
-        for _i in 0..500 {
-            mutate_delete(&mut bb);
-        }
+    fn delete_from_basic_block() {
+        let mut bb = BasicBlock {
+            instructions: vec![],
+        };
+        mutate_delete(&mut bb);
     }
 }

@@ -1,20 +1,29 @@
 use crate::machine::random_absolute;
 use crate::machine::random_immediate;
-use crate::machine::DyadicOperation::{Add, AddWithCarry, And, ExclusiveOr, Or};
+use crate::machine::standard_implementation;
+use crate::machine::DyadicOperation::{
+    Add, AddWithCarry, And, Divide, ExclusiveOr, Multiply, Or, Subtract, SubtractWithBorrow,
+};
 use crate::machine::FlowControl;
 use crate::machine::Instruction;
-use crate::machine::MonadicOperation::{Complement, Decrement, Increment, Negate};
+use crate::machine::MonadicOperation::{
+    Complement, Decrement, Increment, LeftShiftArithmetic, Negate, RightShiftArithmetic,
+    RightShiftLogical, RotateLeftThruAccumulator, RotateLeftThruCarry, RotateRightThruAccumulator,
+    RotateRightThruCarry, Swap,
+};
 use crate::machine::Operation;
-use crate::machine::ShiftType;
 use crate::machine::Test;
 use crate::machine::Width;
 use crate::machine::R;
 use crate::Datum;
 use crate::Machine;
+use crate::State;
 
 use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::rand::Rng;
+use crate::machine::reg_by_name;
 use rand::random;
+use std::convert::TryInto;
 use strop::randomly;
 
 const A: Datum = Datum::Register(R::A);
@@ -24,6 +33,11 @@ const XH: Datum = Datum::Register(R::Xh);
 const YH: Datum = Datum::Register(R::Yh);
 const X: Datum = Datum::RegisterPair(R::Xh, R::Xl);
 const Y: Datum = Datum::RegisterPair(R::Yh, R::Yl);
+
+fn random_imm16() -> Datum {
+    let regs = vec![0, 1, 2, 3, 4, 5, 6];
+    Datum::Imm16(*regs.choose(&mut rand::thread_rng()).unwrap())
+}
 
 fn random_stm8_operand() -> Datum {
     if random() {
@@ -91,9 +105,23 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 
     fn distest(test: Test) -> &'static str {
         match test {
+            Test::Minus(true) => "jrmi",
+            Test::Minus(false) => "jrpl",
+            Test::Zero(true) => "jreq",
+            Test::Zero(false) => "jrne",
             Test::Carry(true) => "jrc",
             Test::Carry(false) => "jrnc",
-            Test::True => "jr",
+            Test::HalfCarry(true) => "jrh",
+            Test::HalfCarry(false) => "jrnh",
+            Test::Overflow(true) => "jrv",
+            Test::Overflow(false) => "jrnv",
+            Test::SignedLowerThanOrEqual => "jrsle",
+            Test::SignedLowerThan => "jrslt",
+            Test::SignedGreaterThanOrEqual => "jrsge",
+            Test::SignedGreaterThan => "jrsgt",
+            Test::UnsignedGreaterThan => "jrugt",
+            Test::UnsignedLowerThanOrEqual => "jrule",
+            Test::True => "jra",
             _ => panic!(),
         }
     }
@@ -128,17 +156,33 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Dyadic(_, And, _, d, r) => dsyn(f, "and", r, d),
         Operation::Dyadic(_, Add, _, d, r) => dsyn(f, "add", r, d),
         Operation::Dyadic(_, AddWithCarry, _, d, r) => dsyn(f, "adc", r, d),
-        Operation::Dyadic(_, Or, _, d, r) => dsyn(f, "or", r, d),
         Operation::Dyadic(_, ExclusiveOr, _, d, r) => dsyn(f, "xor", r, d),
-        Operation::Shift(ShiftType::LeftRotateThroughCarry, d) => syn(f, "rlc", d),
-        Operation::Shift(ShiftType::RightRotateThroughCarry, d) => syn(f, "rrc", d),
-        Operation::Shift(ShiftType::LeftArithmetic, d) => syn(f, "sla", d),
-        Operation::Shift(ShiftType::RightArithmetic, d) => syn(f, "sra", d),
+        Operation::Dyadic(_, Or, _, d, r) => dsyn(f, "or", r, d),
+        Operation::Dyadic(_, SubtractWithBorrow, _, d, r) => dsyn(f, "sbc", r, d),
+        Operation::Dyadic(_, Subtract, r, Datum::Zero, Datum::Zero) => syn(f, "tnz", r),
+        Operation::Dyadic(_, Subtract, r, d, Datum::Zero) => dsyn(f, "cp", r, d),
+        Operation::Dyadic(_, Subtract, _, d, r) => dsyn(f, "sub", r, d),
         Operation::Move(Datum::Zero, r) => syn(f, "clr", r),
         Operation::Monadic(_, Decrement, _, r) => syn(f, "dec", r),
         Operation::Monadic(_, Increment, _, r) => syn(f, "inc", r),
         Operation::Monadic(_, Complement, _, r) => syn(f, "cpl", r),
         Operation::Monadic(_, Negate, _, r) => syn(f, "neg", r),
+        Operation::Monadic(_, Swap, _, r) => syn(f, "swap", r),
+        Operation::Monadic(_, LeftShiftArithmetic, _, r) => syn(f, "sla", r),
+        Operation::Monadic(_, RightShiftArithmetic, _, r) => syn(f, "sra", r),
+        Operation::Monadic(_, RightShiftLogical, _, r) => syn(f, "srl", r),
+        Operation::Monadic(_, RotateLeftThruCarry, _, r) => syn(f, "rlc", r),
+        Operation::Monadic(_, RotateRightThruCarry, _, r) => syn(f, "rrc", r),
+        Operation::Monadic(_, RotateLeftThruAccumulator, _, X) => write!(f, "\trlwa x"),
+        Operation::Monadic(_, RotateLeftThruAccumulator, _, Y) => write!(f, "\trlwa y"),
+        Operation::Monadic(_, RotateRightThruAccumulator, _, X) => write!(f, "\trrwa x"),
+        Operation::Monadic(_, RotateRightThruAccumulator, _, Y) => write!(f, "\trrwa y"),
+        Operation::Exchange(Width::Width16, X, Y) => {
+            write!(f, "\texgw x, y")
+        }
+        Operation::Exchange(Width::Width8, Datum::Register(from), Datum::Register(to)) => {
+            write!(f, "\texg {}, {}", regname(to), regname(from))
+        }
         Operation::Move(Datum::Register(from), Datum::Register(to)) => {
             write!(f, "\tld {}, {}", regname(to), regname(from))
         }
@@ -146,10 +190,22 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             write!(f, "\tld {}, {}", regname(to), addr)
         }
         Operation::Move(Datum::Register(to), Datum::Absolute(addr)) => {
-            write!(f, "\tld {}, {}", addr, regname(to))
+            write!(f, "\tld {}, {}", regname(to), addr)
         }
         Operation::Move(Datum::Imm8(val), Datum::Register(to)) => {
-            write!(f, "\tld #{}, {}", val, regname(to))
+            write!(f, "\tld #{}, {}", regname(to), val)
+        }
+        Operation::Move(Datum::Imm16(val), X) => {
+            write!(f, "\tldw x, #{}", val)
+        }
+        Operation::Move(Datum::Imm16(val), Y) => {
+            write!(f, "\tldw y, #{}", val)
+        }
+        Operation::Move(Datum::Imm8(val), Datum::Absolute(to)) => {
+            write!(f, "\tmov #{}, {}", val, to)
+        }
+        Operation::Move(Datum::Absolute(val), Datum::Absolute(to)) => {
+            write!(f, "\tmov {}, {}", val, to)
         }
         Operation::BitClear(Datum::Absolute(addr), bitnumber) => bit(f, "bres", addr, bitnumber),
         Operation::BitSet(Datum::Absolute(addr), bitnumber) => bit(f, "bset", addr, bitnumber),
@@ -159,6 +215,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::BitCopyCarry(Datum::Absolute(addr), bitnumber) => {
             bit(f, "bccm", addr, bitnumber)
         }
+        Operation::Overflow(false) => write!(f, "\trvf"),
         Operation::Carry(false) => write!(f, "\trcf"),
         Operation::Carry(true) => write!(f, "\tscf"),
         Operation::ComplementCarry => write!(f, "\tccf"),
@@ -168,7 +225,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     }
 }
 
-fn clear(_mach: Machine) -> Operation {
+fn clear() -> Operation {
     if random() {
         Operation::Move(Datum::Zero, random_register())
     } else {
@@ -176,23 +233,164 @@ fn clear(_mach: Machine) -> Operation {
     }
 }
 
-fn twoargs(_mach: Machine) -> Operation {
+fn dasm_muldiv(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match op {
+        Operation::Dyadic(Width::Width8, Multiply, A, X, X) => write!(f, "\tmul x, a"),
+        Operation::Dyadic(Width::Width8, Multiply, A, Y, Y) => write!(f, "\tmul y, a"),
+        Operation::Dyadic(Width::Width8, Divide, A, X, X) => write!(f, "\tdiv x, a"),
+        Operation::Dyadic(Width::Width8, Divide, A, Y, Y) => write!(f, "\tdiv y, a"),
+        Operation::Dyadic(Width::Width8, Divide, X, Y, Y) => write!(f, "\tdivw x, y"),
+        _ => write!(f, "{:?}", op),
+    }
+}
+
+fn instr_length_muldiv(insn: &Instruction) -> usize {
+    match insn.operation {
+        Operation::Dyadic(Width::Width8, Multiply, A, X, X) => 1,
+        Operation::Dyadic(Width::Width8, Multiply, A, Y, Y) => 2,
+        Operation::Dyadic(Width::Width8, Divide, A, X, X) => 1,
+        Operation::Dyadic(Width::Width8, Divide, A, Y, Y) => 2,
+        Operation::Dyadic(Width::Width8, Divide, X, Y, Y) => 1,
+        _ => 0,
+    }
+}
+
+fn impl_oneargs(insn: &Instruction, s: &mut State) -> FlowControl {
+    match insn.operation {
+        Operation::Monadic(
+            Width::Width16,
+            RotateLeftThruAccumulator,
+            Datum::RegisterPair(h, l),
+            _,
+        ) => {
+            let tmp = s.get_i8(A);
+            s.set_i8(A, s.get_i8(Datum::Register(h)));
+            s.set_i8(Datum::Register(h), s.get_i8(Datum::Register(l)));
+            s.set_i8(Datum::Register(l), tmp);
+            FlowControl::FallThrough
+        }
+        Operation::Monadic(
+            Width::Width16,
+            RotateRightThruAccumulator,
+            Datum::RegisterPair(h, l),
+            _,
+        ) => {
+            let tmp = s.get_i8(A);
+            s.set_i8(A, s.get_i8(Datum::Register(l)));
+            s.set_i8(Datum::Register(l), s.get_i8(Datum::Register(h)));
+            s.set_i8(Datum::Register(h), tmp);
+            FlowControl::FallThrough
+        }
+        _ => standard_implementation(insn, s),
+    }
+}
+
+fn impl_muldiv(insn: &Instruction, s: &mut State) -> FlowControl {
+    fn div(s: &mut State, x: Datum, a: Datum) {
+        let dividend = s.get_u16(x);
+        let divisor = s.get_u8(a);
+
+        if dividend.is_none() || divisor.is_none() {
+            s.set_i8(A, None);
+            s.set_i16(X, None);
+            s.carry = None;
+            return;
+        }
+        if divisor.unwrap() != 0 {
+            let quotient: u16 = dividend.unwrap() / (divisor.unwrap() as u16);
+            let remainder: u8 = (dividend.unwrap() % (divisor.unwrap() as u16))
+                .try_into()
+                .unwrap();
+            s.set_u8(A, Some(remainder));
+            s.set_u16(X, Some(quotient));
+            s.carry = Some(false);
+            s.zero = Some(quotient == 0);
+        } else {
+            // division by zero; the quotient and remainder are not written to the registers.
+            s.carry = Some(true);
+        }
+    }
+
+    fn divw(s: &mut State) {
+        let dividend = s.get_u16(X);
+        let divisor = s.get_u16(Y);
+
+        if dividend.is_none() || divisor.is_none() {
+            s.set_u16(X, None);
+            s.set_u16(Y, None);
+            s.carry = None;
+            return;
+        }
+        if divisor.unwrap() == 0 {
+            // division by zero; the quotient and remainder are indeterminate
+            s.set_u16(X, None);
+            s.set_u16(Y, None);
+            s.carry = Some(false);
+            s.zero = None;
+        } else {
+            let quotient: u16 = dividend.unwrap() / divisor.unwrap();
+            let remainder: u16 = dividend.unwrap() % divisor.unwrap();
+            s.set_u16(X, Some(quotient));
+            s.set_u16(Y, Some(remainder));
+            s.zero = Some(quotient == 0);
+            s.carry = Some(true);
+        }
+    }
+
+    fn mul(s: &mut State, a: Option<u8>, b: Option<u8>, dst: Datum) {
+        if a.is_none() || b.is_none() {
+            s.set_u8(dst, None);
+            s.carry = None;
+            return;
+        }
+        let product = (a.unwrap() as u16) * (b.unwrap() as u16);
+        s.set_u16(dst, Some(product));
+        s.carry = Some(false);
+    }
+
+    match insn.operation {
+        Operation::Dyadic(Width::Width8, Multiply, A, X, X) => mul(s, s.get_u8(XL), s.get_u8(A), X),
+        Operation::Dyadic(Width::Width8, Multiply, A, Y, Y) => mul(s, s.get_u8(YL), s.get_u8(A), Y),
+        Operation::Dyadic(Width::Width8, Divide, A, X, X) => div(s, X, A),
+        Operation::Dyadic(Width::Width8, Divide, A, Y, Y) => div(s, Y, A),
+        Operation::Dyadic(Width::Width8, Divide, X, Y, Y) => divw(s),
+        _ => unimplemented!(),
+    }
+    FlowControl::FallThrough
+}
+
+fn muldiv() -> Operation {
+    randomly!(
+        {Operation::Dyadic(Width::Width8, Multiply, A, X, X)}
+        {Operation::Dyadic(Width::Width8, Multiply, A, Y, Y)}
+        {Operation::Dyadic(Width::Width8, Divide, A, X, X)}
+        {Operation::Dyadic(Width::Width8, Divide, A, Y, Y)}
+        {Operation::Dyadic(Width::Width8, Divide, X, Y, Y)})
+}
+
+fn twoargs() -> Operation {
     fn op(w: Width, a: Datum) -> Operation {
-        let vs = vec![Add, AddWithCarry, And, Or, ExclusiveOr];
+        let vs = vec![Add, And, Or, Subtract];
         let o = vs.choose(&mut rand::thread_rng());
         Operation::Dyadic(w, *o.unwrap(), a, random_absolute(), a)
     }
 
-    if random() {
-        op(Width::Width8, A)
-    } else {
-        let a = if random() { X } else { Y };
-
-        op(Width::Width16, a)
+    fn op8(w: Width, a: Datum) -> Operation {
+        // These operations only work with 8-bit operands
+        let vs = vec![AddWithCarry, ExclusiveOr, SubtractWithBorrow];
+        let o = vs.choose(&mut rand::thread_rng());
+        Operation::Dyadic(w, *o.unwrap(), a, random_absolute(), a)
     }
+
+    randomly!(
+    { op(Width::Width8, A) }
+    { op8(Width::Width8, A) }
+    { op(Width::Width16, X) }
+    { op(Width::Width16, Y) }
+    )
 }
 
-fn bits(_mach: Machine) -> Operation {
+fn bits() -> Operation {
     let addr = random_absolute();
     let bit: u8 = rand::thread_rng().gen_range(0..=7);
 
@@ -205,44 +403,49 @@ fn bits(_mach: Machine) -> Operation {
     )
 }
 
-fn shifts(_mach: Machine) -> Operation {
-    let sht = randomly!(
-        { ShiftType::LeftArithmetic}
-        { ShiftType::RightArithmetic}
-        { ShiftType::RightRotateThroughCarry}
-        { ShiftType::LeftRotateThroughCarry}
-    );
-
-    let operand = if random() {
-        random_absolute()
-    } else {
-        random_register()
-    };
-
-    Operation::Shift(sht, operand)
-}
-
-fn carry(_mach: Machine) -> Operation {
+fn carry() -> Operation {
     randomly!(
         { Operation::Carry(false)}
         { Operation::Carry(true)}
         { Operation::ComplementCarry}
+        { Operation::Overflow(false)}
     )
 }
 
-fn compare(_mach: Machine) -> Operation {
-    Operation::BitCompare(random_stm8_operand(), A)
+fn compare() -> Operation {
+    randomly!(
+    {Operation::BitCompare(random_stm8_operand(), A)}
+    {Operation::Dyadic(Width::Width8, Subtract, A, Datum::Zero, Datum::Zero)}
+    {Operation::Dyadic(Width::Width8, Subtract, A, random_stm8_operand(), Datum::Zero)}
+    {Operation::Dyadic(Width::Width16, Subtract, X, Datum::Zero, Datum::Zero)}
+    {Operation::Dyadic(Width::Width16, Subtract, Y, Datum::Zero, Datum::Zero)}
+    {Operation::Dyadic(Width::Width16, Subtract, X, random_stm8_operand(), Datum::Zero)}
+    {Operation::Dyadic(Width::Width16, Subtract, Y, random_stm8_operand(), Datum::Zero)}
+    )
 }
 
-fn transfers(_mach: Machine) -> Operation {
-    fn rando() -> Datum {
-        let regs = vec![A, XL, XH, YL, YH];
-        *regs.choose(&mut rand::thread_rng()).unwrap()
-    }
-    Operation::Move(rando(), rando())
+fn transfers() -> Operation {
+    randomly!(
+    {Operation::Move(A, XL)}
+    {Operation::Move(A, XH)}
+    {Operation::Move(A, YL)}
+    {Operation::Move(A, YH)}
+    {Operation::Move(XL, A)}
+    {Operation::Move(XH, A)}
+    {Operation::Move(YL, A)}
+    {Operation::Move(YH, A)}
+    {Operation::Exchange(Width::Width8, A, XL)}
+    {Operation::Exchange(Width::Width8, A, YL)}
+    {Operation::Exchange(Width::Width16, X, Y)}
+    {Operation::Move(random_imm16(), X)}
+    {Operation::Move(random_imm16(), Y)}
+    {Operation::Move(random_immediate(), random_absolute())}
+    {Operation::Move(random_absolute(), random_absolute())}
+    {Operation::Move(random_absolute(), A)}
+    )
 }
 
-pub fn jumps(_mach: Machine) -> Operation {
+pub fn jumps() -> Operation {
     fn j() -> FlowControl {
         if random() {
             FlowControl::Forward(rand::thread_rng().gen_range(1..3))
@@ -254,7 +457,17 @@ pub fn jumps(_mach: Machine) -> Operation {
     fn cond() -> Test {
         randomly!(
         { Test::True}
+        { Test::Minus(random())}
+        { Test::Zero(random())}
+        { Test::HalfCarry(random())}
+        { Test::Overflow(random())}
         { Test::Carry(random())}
+        { Test::SignedLowerThanOrEqual }
+        { Test::SignedLowerThan }
+        { Test::SignedGreaterThanOrEqual }
+        { Test::SignedGreaterThan }
+        { Test::UnsignedGreaterThan }
+        { Test::UnsignedLowerThanOrEqual }
         { Test::Bit(random(), rand::thread_rng().gen_range(0..7), random())}
         )
     }
@@ -262,104 +475,357 @@ pub fn jumps(_mach: Machine) -> Operation {
     Operation::Jump(cond(), j())
 }
 
-fn oneargs(_mach: Machine) -> Operation {
+fn oneargs() -> Operation {
     fn op(w: Width, a: Datum) -> Operation {
-        let vs = vec![Complement, Negate, Increment, Decrement];
+        let vs = vec![
+            Complement,
+            Negate,
+            Increment,
+            Decrement,
+            Swap,
+            LeftShiftArithmetic,
+            RightShiftArithmetic,
+            RightShiftLogical,
+            RotateLeftThruCarry,
+            RotateRightThruCarry,
+        ];
         let o = vs.choose(&mut rand::thread_rng());
         Operation::Monadic(w, *o.unwrap(), a, a)
+    }
+
+    fn op16(a: Datum) -> Operation {
+        if random::<u8>() < 200 {
+            // with high probability pick one of these operations
+            op(Width::Width16, a)
+        } else {
+            // with low probability, pick one of these, which only can take X or Y
+            if random() {
+                Operation::Monadic(Width::Width16, RotateLeftThruAccumulator, a, a)
+            } else {
+                Operation::Monadic(Width::Width16, RotateRightThruAccumulator, a, a)
+            }
+        }
     }
 
     if random() {
         op(Width::Width8, A)
     } else {
         let a = if random() { X } else { Y };
-
-        op(Width::Width16, a)
+        op16(a)
     }
 }
 
-pub fn instr_stm8(mach: Machine) -> Instruction {
-    randomly!(
-    { Instruction::new(mach, clear, dasm)}
-    { Instruction::new(mach, transfers, dasm)}
-    { Instruction::new(mach, bits, dasm)}
-    { Instruction::new(mach, carry, dasm)}
-    { Instruction::new(mach, compare, dasm)}
-    { Instruction::new(mach, jumps, dasm)}
-    { Instruction::new(mach, oneargs, dasm)}
-    { Instruction::new(mach, twoargs, dasm)}
-    { Instruction::new(mach, shifts, dasm)}
-    )
+const RANDS: [Instruction; 9] = [
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: instr_length_stm8,
+        operation: Operation::Nop,
+        randomizer: clear,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: instr_length_stm8,
+        operation: Operation::Nop,
+        randomizer: transfers,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: instr_length_stm8,
+        operation: Operation::Nop,
+        randomizer: bits,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: instr_length_stm8,
+        operation: Operation::Nop,
+        randomizer: carry,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: instr_length_stm8,
+        operation: Operation::Nop,
+        randomizer: compare,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: instr_length_stm8,
+        operation: Operation::Nop,
+        randomizer: jumps,
+    },
+    Instruction {
+        implementation: impl_oneargs,
+        disassemble: dasm,
+        length: instr_length_stm8,
+        operation: Operation::Nop,
+        randomizer: oneargs,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: instr_length_stm8,
+        operation: Operation::Nop,
+        randomizer: twoargs,
+    },
+    Instruction {
+        implementation: impl_muldiv,
+        disassemble: dasm_muldiv,
+        length: instr_length_muldiv,
+        operation: Operation::Nop,
+        randomizer: muldiv,
+    },
+];
+
+pub fn instr_stm8() -> Instruction {
+    let mut op = *RANDS.choose(&mut rand::thread_rng()).unwrap();
+    op.randomize();
+    op
 }
+
+pub fn instr_length_stm8(insn: &Instruction) -> usize {
+    fn y_prefix_penalty(r: Datum) -> usize {
+        if r == Y {
+            return 1;
+        }
+        if r == YH {
+            return 1;
+        }
+        if r == YL {
+            return 1;
+        }
+        0
+    }
+
+    fn addr_length(r: u16) -> usize {
+        if r < 256 {
+            1
+        } else {
+            2
+        }
+    }
+
+    match insn.operation {
+        Operation::Dyadic(Width::Width8, _, _, Datum::Imm8(_), _) => 2,
+        Operation::Dyadic(Width::Width8, _, _, Datum::Absolute(addr), _) => 1 + addr_length(addr),
+        Operation::Dyadic(Width::Width16, _, _, Datum::Imm8(_), r) => 3 + y_prefix_penalty(r),
+        Operation::Dyadic(Width::Width16, _, _, Datum::Absolute(addr), _) => 1 + addr_length(addr),
+        Operation::Dyadic(Width::Width8, Subtract, A, Datum::Zero, Datum::Zero) => 1,
+        Operation::Dyadic(Width::Width16, Subtract, X, Datum::Zero, Datum::Zero) => 1,
+        Operation::Dyadic(Width::Width16, Subtract, Y, Datum::Zero, Datum::Zero) => 2,
+        Operation::Dyadic(
+            Width::Width8,
+            Subtract,
+            Datum::Absolute(addr),
+            Datum::Zero,
+            Datum::Zero,
+        ) => {
+            if addr < 256 {
+                2
+            } else {
+                5
+            }
+        }
+        Operation::Monadic(Width::Width16, _, _, r) => 1 + y_prefix_penalty(r),
+        Operation::Monadic(Width::Width8, _, _, A) => 1,
+        Operation::Exchange(_, Datum::Register(_), Datum::Register(_)) => 1,
+        Operation::Exchange(Width::Width16, X, Y) => 1,
+        Operation::Move(Datum::Zero, A) => 1,
+        Operation::Move(Datum::Zero, X) => 1,
+        Operation::Move(Datum::Zero, Y) => 2,
+        Operation::Move(Datum::Absolute(addr), A) => 1 + addr_length(addr),
+        Operation::Move(Datum::Zero, Datum::Absolute(addr)) => 1 + addr_length(addr),
+        Operation::Move(Datum::Register(_), Datum::Register(r)) => {
+            1 + y_prefix_penalty(Datum::Register(r))
+        }
+        Operation::Move(Datum::Imm16(_), r) => 1 + y_prefix_penalty(r),
+        Operation::Move(Datum::Imm8(_), Datum::Absolute(_)) => 3,
+        Operation::Move(Datum::Absolute(from), Datum::Absolute(to)) => {
+            if from < 256 && to < 256 {
+                3
+            } else {
+                5
+            }
+        }
+        Operation::BitSet(_, _) => 4,
+        Operation::BitClear(_, _) => 4,
+        Operation::BitComplement(_, _) => 4,
+        Operation::BitCopyCarry(_, _) => 4,
+        Operation::Overflow(false) => 1,
+        Operation::Carry(_) => 1,
+        Operation::ComplementCarry => 1,
+        Operation::BitCompare(Datum::Absolute(addr), A) => 1 + addr_length(addr),
+        Operation::BitCompare(Datum::Imm8(_), A) => 2,
+        Operation::Jump(Test::Bit(_, _, _), _) => 5,
+        Operation::Jump(Test::HalfCarry(_), _) => 3,
+        Operation::Jump(Test::True, FlowControl::Forward(_)) => 2,
+        Operation::Jump(Test::True, FlowControl::Backward(_)) => 2,
+        Operation::Jump(_, _) => 2,
+        Operation::Shift(_, A) => 1,
+        Operation::Shift(_, X) => 1,
+        Operation::Shift(_, Y) => 2,
+        Operation::Shift(_, Datum::Absolute(addr)) => 1 + addr_length(addr),
+        _ => 0,
+    }
+}
+
+fn stm8_reg_by_name(name: &str) -> Result<Datum, &'static str> {
+    match name {
+        "a" => Ok(A),
+        "x" => Ok(X),
+        "y" => Ok(Y),
+        "xl" => Ok(XL),
+        "yl" => Ok(YL),
+        "xh" => Ok(XH),
+        "yh" => Ok(YH),
+        _ => reg_by_name(name),
+    }
+}
+
+pub const STM8: Machine = Machine {
+    name: "stm8",
+    random_insn: instr_stm8,
+    reg_by_name: stm8_reg_by_name,
+};
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::machine::tests::disasm;
 
-    fn find_it(opcode: &'static str, rnd: fn(Machine) -> Operation) {
+    fn find_it(opcode: &'static str, insn: &Instruction) {
+        let mut i = insn.clone();
+        let mut found_it = false;
+
         for _i in 0..5000 {
-            let i = Instruction::new(Machine::Stm8, rnd, dasm);
+            i.randomize();
             let d = format!("{}", i);
-            if d.contains(opcode) {
-                return;
-            }
+
+            // Does the disassembler output something starting with a tab?
+            assert!(
+                d[0..1] == "\t".to_owned(),
+                "Cannot disassemble {:?}, got {}",
+                i.operation,
+                d
+            );
+
+            // Is the opcode a substring of whatever the disassembler spat out?
+            found_it |= d.contains(opcode);
+
+            // Does this instruction have a length?
+            assert!(i.len() > 0, "No instruction length for {}", i);
         }
-        panic!("Couldn't find instruction {}", opcode);
+        assert!(found_it, "Couldn't find instruction {}", opcode);
     }
 
     #[test]
-    fn disassembler() {
-        crate::machine::tests::disasm(Machine::Stm8);
+    fn reg_names() {
+        assert_eq!(stm8_reg_by_name("a").unwrap(), A);
+        assert_eq!(stm8_reg_by_name("xl").unwrap(), XL);
+        assert_eq!(stm8_reg_by_name("yl").unwrap(), YL);
+        assert_eq!(stm8_reg_by_name("xh").unwrap(), XH);
+        assert_eq!(stm8_reg_by_name("yh").unwrap(), YH);
+        assert_eq!(stm8_reg_by_name("x").unwrap(), X);
+        assert_eq!(stm8_reg_by_name("y").unwrap(), Y);
+        assert_eq!(stm8_reg_by_name("m6").unwrap(), Datum::Absolute(6));
+        assert!(stm8_reg_by_name("n").is_err());
+        assert!(stm8_reg_by_name("m").is_err());
     }
 
     #[test]
     fn instruction_set_stm8() {
-        // I don't think we need call callf callr halt iret jrf jrih jril jrm nop ret retf rim sim trap wfe wfi
-        // TODO: div divw exg exgw ld ldw mov mul pop popw push pushw rvf sbc sub subw swap tnz tnzw
-        // TODO: conditional jumps, relative jump, more shifts
-        //
-        // rvf could maybe be grouped up along with rcf and scf
         // pop, popw, push, pushw, need to think about how to implement a stack
-        // ld, ldw, mov probably fit in Move
-        // exg, exgw, sbc, sub, subw probably fit in Dyadic
-        // swap, tnz, tnzw, more shifts will fit in Monadic
-        // div, divw, mul might need their own or go in with Dyadic
-        find_it("adc", twoargs);
-        find_it("add", twoargs);
-        find_it("addw", twoargs);
-        find_it("and", twoargs);
-        find_it("bccm", bits);
-        find_it("bcp", compare);
-        find_it("btjf", jumps);
-        find_it("btjt", jumps);
-        find_it("bcpl", bits);
-        find_it("bset", bits);
-        find_it("bres", bits);
-        find_it("cpl", oneargs);
-        find_it("cplw", oneargs);
-        find_it("ccf", carry);
-        find_it("clr", clear);
-        find_it("clrw", clear);
-        find_it("dec", oneargs);
-        find_it("decw", oneargs);
-        find_it("inc", oneargs);
-        find_it("incw", oneargs);
-        find_it("jrc", jumps);
-        find_it("jrnc", jumps);
-        find_it("ld a, xh", transfers);
-        find_it("ld yl, a", transfers);
-        find_it("neg", oneargs);
-        find_it("negw", oneargs);
-        find_it("or", twoargs);
-        find_it("rcf", carry);
-        find_it("scf", carry);
-        find_it("rlc", shifts);
-        find_it("rlcw", shifts);
-        find_it("rrc", shifts);
-        find_it("rrcw", shifts);
-        find_it("sla", shifts);
-        find_it("slaw", shifts);
-        find_it("xor", twoargs);
+        find_it("adc", &RANDS[7]);
+        find_it("add", &RANDS[7]);
+        find_it("addw", &RANDS[7]);
+        find_it("and", &RANDS[7]);
+        find_it("bccm", &RANDS[2]);
+        find_it("bcp", &RANDS[2]);
+        find_it("bcpl", &RANDS[2]);
+        // Not bothering with break; strop will not generate software interrupts
+        find_it("bres", &RANDS[2]);
+        find_it("bset", &RANDS[2]);
+        find_it("btjf", &RANDS[5]);
+        find_it("btjt", &RANDS[5]);
+        // Not bothering with call callf callr; strop does not generate code that calls subroutines
+        find_it("ccf", &RANDS[3]);
+        find_it("clr", &RANDS[0]);
+        find_it("clrw", &RANDS[0]);
+        find_it("cp", &RANDS[4]);
+        find_it("cpw", &RANDS[4]);
+        find_it("cpl", &RANDS[6]);
+        find_it("cplw", &RANDS[6]);
+        find_it("dec", &RANDS[6]);
+        find_it("decw", &RANDS[6]);
+        find_it("div", &RANDS[8]);
+        find_it("divw", &RANDS[8]);
+        find_it("exg", &RANDS[1]);
+        find_it("exgw", &RANDS[1]);
+        // Not bothering with halt; strop will not stop the CPU.
+        find_it("inc", &RANDS[6]);
+        find_it("incw", &RANDS[6]);
+        // Not bothering with int iret; strop will not handle interrupts
+        // Not bothering with jpf; strop does not support STM8's having more than 64K RAM.
+        find_it("jrc", &RANDS[5]);
+        find_it("jreq", &RANDS[5]);
+        // Not bothering with jrf; it's effectively a NOP
+        find_it("jrh", &RANDS[5]);
+        // Not bothering with jrih jril jrm; strop will not handle interrupts
+        find_it("jrmi", &RANDS[5]);
+        find_it("jrnc", &RANDS[5]);
+        find_it("jrne", &RANDS[5]);
+        find_it("jrnh", &RANDS[5]);
+        // Not bothering with jrnm; strop will not handle interrupts
+        find_it("jrnv", &RANDS[5]);
+        find_it("jrpl", &RANDS[5]);
+        find_it("jrsge", &RANDS[5]);
+        find_it("jrsgt", &RANDS[5]);
+        find_it("jrsle", &RANDS[5]);
+        find_it("jrslt", &RANDS[5]);
+        // Not bothering with jrt because it seems like an alias of jra
+        // Not bothering with jruge because it seems like an alias of jrnc
+        find_it("jrugt", &RANDS[5]);
+        find_it("jrule", &RANDS[5]);
+        // Not bothering with jrult because it seems like an alias of jrc
+        find_it("jrv", &RANDS[5]);
+        find_it("ld a, xh", &RANDS[1]);
+        find_it("ld yl, a", &RANDS[1]);
+        // Not bothering with ldf; strop does not support STM8's having more than 64K RAM.
+        find_it("ldw", &RANDS[1]);
+        find_it("mov", &RANDS[1]);
+        find_it("mul", &RANDS[8]);
+        find_it("neg", &RANDS[6]);
+        find_it("negw", &RANDS[6]);
+        find_it("or", &RANDS[7]);
+        // Not bothering with ret retf; strop does not generate code that calls subroutines
+        find_it("rcf", &RANDS[3]);
+        // Not bothering with rim; strop will not handle interrupts
+        find_it("rlc", &RANDS[6]);
+        find_it("rlcw", &RANDS[6]);
+        find_it("rlwa", &RANDS[6]);
+        find_it("rrc", &RANDS[6]);
+        find_it("rrcw", &RANDS[6]);
+        find_it("rrwa", &RANDS[6]);
+        find_it("rvf", &RANDS[3]);
+        find_it("sbc", &RANDS[7]);
+        find_it("scf", &RANDS[3]);
+        // Not bothering with sim; strop will not handle interrupts
+        find_it("sla", &RANDS[6]);
+        find_it("slaw", &RANDS[6]);
+        find_it("sra", &RANDS[6]);
+        find_it("sraw", &RANDS[6]);
+        find_it("srl", &RANDS[6]);
+        find_it("srlw", &RANDS[6]);
+        find_it("sub", &RANDS[7]);
+        find_it("subw", &RANDS[7]);
+        find_it("swap", &RANDS[6]);
+        find_it("swapw", &RANDS[6]);
+        find_it("tnz", &RANDS[4]);
+        find_it("tnzw", &RANDS[4]);
+        // Not bothering with trap wfe wfi; strop will not handle interrupts
+        find_it("xor", &RANDS[7]);
     }
 }
