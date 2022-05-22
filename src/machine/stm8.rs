@@ -8,7 +8,7 @@ use crate::machine::FlowControl;
 use crate::machine::Instruction;
 use crate::machine::MonadicOperation::{
     Complement, Decrement, Increment, LeftShiftArithmetic, Negate, RightShiftArithmetic,
-    RotateLeftThruAccumulator, RotateLeftThruCarry, RotateRightThruAccumulator,
+    RightShiftLogical, RotateLeftThruAccumulator, RotateLeftThruCarry, RotateRightThruAccumulator,
     RotateRightThruCarry, Swap,
 };
 use crate::machine::Operation;
@@ -159,6 +159,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Dyadic(_, ExclusiveOr, _, d, r) => dsyn(f, "xor", r, d),
         Operation::Dyadic(_, Or, _, d, r) => dsyn(f, "or", r, d),
         Operation::Dyadic(_, SubtractWithBorrow, _, d, r) => dsyn(f, "sbc", r, d),
+        Operation::Dyadic(_, Subtract, r, Datum::Zero, Datum::Zero) => syn(f, "tnz", r),
         Operation::Dyadic(_, Subtract, r, d, Datum::Zero) => dsyn(f, "cp", r, d),
         Operation::Dyadic(_, Subtract, _, d, r) => dsyn(f, "sub", r, d),
         Operation::Move(Datum::Zero, r) => syn(f, "clr", r),
@@ -169,6 +170,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Monadic(_, Swap, _, r) => syn(f, "swap", r),
         Operation::Monadic(_, LeftShiftArithmetic, _, r) => syn(f, "sla", r),
         Operation::Monadic(_, RightShiftArithmetic, _, r) => syn(f, "sra", r),
+        Operation::Monadic(_, RightShiftLogical, _, r) => syn(f, "srl", r),
         Operation::Monadic(_, RotateLeftThruCarry, _, r) => syn(f, "rlc", r),
         Operation::Monadic(_, RotateRightThruCarry, _, r) => syn(f, "rrc", r),
         Operation::Monadic(_, RotateLeftThruAccumulator, _, X) => write!(f, "\trlwa x"),
@@ -383,7 +385,10 @@ fn carry() -> Operation {
 fn compare() -> Operation {
     randomly!(
     {Operation::BitCompare(random_stm8_operand(), A)}
+    {Operation::Dyadic(Width::Width8, Subtract, A, Datum::Zero, Datum::Zero)}
     {Operation::Dyadic(Width::Width8, Subtract, A, random_stm8_operand(), Datum::Zero)}
+    {Operation::Dyadic(Width::Width16, Subtract, X, Datum::Zero, Datum::Zero)}
+    {Operation::Dyadic(Width::Width16, Subtract, Y, Datum::Zero, Datum::Zero)}
     {Operation::Dyadic(Width::Width16, Subtract, X, random_stm8_operand(), Datum::Zero)}
     {Operation::Dyadic(Width::Width16, Subtract, Y, random_stm8_operand(), Datum::Zero)}
     )
@@ -450,6 +455,7 @@ fn oneargs() -> Operation {
             Swap,
             LeftShiftArithmetic,
             RightShiftArithmetic,
+            RightShiftLogical,
             RotateLeftThruCarry,
             RotateRightThruCarry,
         ];
@@ -578,6 +584,22 @@ pub fn instr_length_stm8(insn: &Instruction) -> usize {
         Operation::Dyadic(Width::Width8, _, _, Datum::Absolute(addr), _) => 1 + addr_length(addr),
         Operation::Dyadic(Width::Width16, _, _, Datum::Imm8(_), r) => 3 + y_prefix_penalty(r),
         Operation::Dyadic(Width::Width16, _, _, Datum::Absolute(addr), _) => 1 + addr_length(addr),
+        Operation::Dyadic(Width::Width8, Subtract, A, Datum::Zero, Datum::Zero) => 1,
+        Operation::Dyadic(Width::Width16, Subtract, X, Datum::Zero, Datum::Zero) => 1,
+        Operation::Dyadic(Width::Width16, Subtract, Y, Datum::Zero, Datum::Zero) => 2,
+        Operation::Dyadic(
+            Width::Width8,
+            Subtract,
+            Datum::Absolute(addr),
+            Datum::Zero,
+            Datum::Zero,
+        ) => {
+            if addr < 256 {
+                2
+            } else {
+                5
+            }
+        }
         Operation::Monadic(Width::Width16, _, _, r) => 1 + y_prefix_penalty(r),
         Operation::Monadic(Width::Width8, _, _, A) => 1,
         Operation::Exchange(_, Datum::Register(_), Datum::Register(_)) => 1,
@@ -771,8 +793,8 @@ mod tests {
         find_it("subw", &RANDS[7]);
         find_it("swap", &RANDS[6]);
         find_it("swapw", &RANDS[6]);
-        find_it("tnz", &RANDS[7]);
-        find_it("tnzw", &RANDS[7]);
+        find_it("tnz", &RANDS[4]);
+        find_it("tnzw", &RANDS[4]);
         // Not bothering with trap wfe wfi; strop will not handle interrupts
         find_it("xor", &RANDS[7]);
     }

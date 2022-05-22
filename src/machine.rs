@@ -279,6 +279,7 @@ pub enum MonadicOperation {
     Swap,
     LeftShiftArithmetic,
     RightShiftArithmetic,
+    RightShiftLogical,
     RotateLeftThruCarry,
     RotateRightThruCarry,
     RotateLeftThruAccumulator,
@@ -293,7 +294,8 @@ impl MonadicOperation {
     {
         match self {
             Self::LeftShiftArithmetic => v.map(|v| v.shift_left(false).1),
-            Self::RightShiftArithmetic => v.map(|v| v.shift_right(false).1),
+            Self::RightShiftArithmetic => v.map(|v| v.shift_right(v < T::zero()).1),
+            Self::RightShiftLogical => v.map(|v| v.shift_right(false).1),
             Self::RotateLeftThruCarry => v
                 .map(|v| s.carry.map(|c| v.shift_left(c).1))
                 .unwrap_or(None),
