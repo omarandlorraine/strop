@@ -255,6 +255,36 @@ fn instr_length_muldiv(insn: &Instruction) -> usize {
     }
 }
 
+fn impl_oneargs(insn: &Instruction, s: &mut State) -> FlowControl {
+    match insn.operation {
+        Operation::Monadic(
+            Width::Width16,
+            RotateLeftThruAccumulator,
+            Datum::RegisterPair(h, l),
+            _,
+        ) => {
+            let tmp = s.get_i8(A);
+            s.set_i8(A, s.get_i8(Datum::Register(h)));
+            s.set_i8(Datum::Register(h), s.get_i8(Datum::Register(l)));
+            s.set_i8(Datum::Register(l), tmp);
+            FlowControl::FallThrough
+        }
+        Operation::Monadic(
+            Width::Width16,
+            RotateRightThruAccumulator,
+            Datum::RegisterPair(h, l),
+            _,
+        ) => {
+            let tmp = s.get_i8(A);
+            s.set_i8(A, s.get_i8(Datum::Register(l)));
+            s.set_i8(Datum::Register(l), s.get_i8(Datum::Register(h)));
+            s.set_i8(Datum::Register(h), tmp);
+            FlowControl::FallThrough
+        }
+        _ => standard_implementation(insn, s),
+    }
+}
+
 fn impl_muldiv(insn: &Instruction, s: &mut State) -> FlowControl {
     fn div(s: &mut State, x: Datum, a: Datum) {
         let dividend = s.get_u16(x);
@@ -529,7 +559,7 @@ const RANDS: [Instruction; 9] = [
         randomizer: jumps,
     },
     Instruction {
-        implementation: standard_implementation,
+        implementation: impl_oneargs,
         disassemble: dasm,
         length: instr_length_stm8,
         operation: Operation::Nop,
