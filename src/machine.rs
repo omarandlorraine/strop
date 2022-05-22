@@ -309,7 +309,7 @@ impl MonadicOperation {
                 panic!("no standard implementation of RotateRightThruAccumulator")
             }
             Self::Complement => v.map(|v| v.complement()),
-            Self::Negate => v.map(|v| T::zero() - v),
+            Self::Negate => v.map(|v| T::zero().wrapping_sub(&v)),
             Self::Increment => v.map(|v| v.wrapping_add(&T::one())),
             Self::Decrement => v.map(|v| v.wrapping_sub(&T::one())),
             Self::Swap => v.map(|v| v.swap()),
