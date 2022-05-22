@@ -6,9 +6,11 @@ use crate::machine::DyadicOperation::{
 };
 use crate::machine::FlowControl;
 use crate::machine::Instruction;
-use crate::machine::MonadicOperation::{Complement, Decrement, Increment, Negate, Swap};
+use crate::machine::MonadicOperation::{
+    Complement, Decrement, Increment, LeftShiftArithmetic, Negate, RightShiftArithmetic,
+    RotateLeftThruCarry, RotateRightThruCarry, Swap,
+};
 use crate::machine::Operation;
-use crate::machine::ShiftType;
 use crate::machine::Test;
 use crate::machine::Width;
 use crate::machine::R;
@@ -158,16 +160,16 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Dyadic(_, SubtractWithBorrow, _, d, r) => dsyn(f, "sbc", r, d),
         Operation::Dyadic(_, Subtract, r, d, Datum::Zero) => dsyn(f, "cp", r, d),
         Operation::Dyadic(_, Subtract, _, d, r) => dsyn(f, "sub", r, d),
-        Operation::Shift(ShiftType::LeftRotateThroughCarry, d) => syn(f, "rlc", d),
-        Operation::Shift(ShiftType::RightRotateThroughCarry, d) => syn(f, "rrc", d),
-        Operation::Shift(ShiftType::LeftArithmetic, d) => syn(f, "sla", d),
-        Operation::Shift(ShiftType::RightArithmetic, d) => syn(f, "sra", d),
         Operation::Move(Datum::Zero, r) => syn(f, "clr", r),
         Operation::Monadic(_, Decrement, _, r) => syn(f, "dec", r),
         Operation::Monadic(_, Increment, _, r) => syn(f, "inc", r),
         Operation::Monadic(_, Complement, _, r) => syn(f, "cpl", r),
         Operation::Monadic(_, Negate, _, r) => syn(f, "neg", r),
         Operation::Monadic(_, Swap, _, r) => syn(f, "swap", r),
+        Operation::Monadic(_, LeftShiftArithmetic, _, r) => syn(f, "sla", r),
+        Operation::Monadic(_, RightShiftArithmetic, _, r) => syn(f, "sra", r),
+        Operation::Monadic(_, RotateLeftThruCarry, _, r) => syn(f, "rlc", r),
+        Operation::Monadic(_, RotateRightThruCarry, _, r) => syn(f, "rrc", r),
         Operation::Exchange(Width::Width16, X, Y) => {
             write!(f, "\texgw x, y")
         }
@@ -364,23 +366,6 @@ fn bits() -> Operation {
     )
 }
 
-fn shifts() -> Operation {
-    let sht = randomly!(
-        { ShiftType::LeftArithmetic}
-        { ShiftType::RightArithmetic}
-        { ShiftType::RightRotateThroughCarry}
-        { ShiftType::LeftRotateThroughCarry}
-    );
-
-    let operand = if random() {
-        random_absolute()
-    } else {
-        random_register()
-    };
-
-    Operation::Shift(sht, operand)
-}
-
 fn carry() -> Operation {
     randomly!(
         { Operation::Carry(false)}
@@ -452,7 +437,17 @@ pub fn jumps() -> Operation {
 
 fn oneargs() -> Operation {
     fn op(w: Width, a: Datum) -> Operation {
-        let vs = vec![Complement, Negate, Increment, Decrement, Swap];
+        let vs = vec![
+            Complement,
+            Negate,
+            Increment,
+            Decrement,
+            Swap,
+            LeftShiftArithmetic,
+            RightShiftArithmetic,
+            RotateLeftThruCarry,
+            RotateRightThruCarry,
+        ];
         let o = vs.choose(&mut rand::thread_rng());
         Operation::Monadic(w, *o.unwrap(), a, a)
     }
@@ -461,12 +456,11 @@ fn oneargs() -> Operation {
         op(Width::Width8, A)
     } else {
         let a = if random() { X } else { Y };
-
         op(Width::Width16, a)
     }
 }
 
-const RANDS: [Instruction; 10] = [
+const RANDS: [Instruction; 9] = [
     Instruction {
         implementation: standard_implementation,
         disassemble: dasm,
@@ -522,13 +516,6 @@ const RANDS: [Instruction; 10] = [
         length: instr_length_stm8,
         operation: Operation::Nop,
         randomizer: twoargs,
-    },
-    Instruction {
-        implementation: standard_implementation,
-        disassemble: dasm,
-        length: instr_length_stm8,
-        operation: Operation::Nop,
-        randomizer: shifts,
     },
     Instruction {
         implementation: impl_muldiv,
@@ -703,8 +690,8 @@ mod tests {
         find_it("cplw", &RANDS[6]);
         find_it("dec", &RANDS[6]);
         find_it("decw", &RANDS[6]);
-        find_it("div", &RANDS[9]);
-        find_it("divw", &RANDS[9]);
+        find_it("div", &RANDS[8]);
+        find_it("divw", &RANDS[8]);
         find_it("exg", &RANDS[1]);
         find_it("exgw", &RANDS[1]);
         // Not bothering with halt; strop will not stop the CPU.
@@ -739,19 +726,19 @@ mod tests {
         // Not bothering with ldf; strop does not support STM8's having more than 64K RAM.
         find_it("ldw", &RANDS[1]);
         find_it("mov", &RANDS[1]);
-        find_it("mul", &RANDS[9]);
+        find_it("mul", &RANDS[8]);
         find_it("neg", &RANDS[6]);
         find_it("negw", &RANDS[6]);
         find_it("or", &RANDS[7]);
         // Not bothering with ret retf; strop does not generate code that calls subroutines
         find_it("rcf", &RANDS[3]);
         // Not bothering with rim; strop will not handle interrupts
-        find_it("rlc", &RANDS[8]);
-        find_it("rlcw", &RANDS[8]);
-        find_it("rlwa", &RANDS[8]);
-        find_it("rrc", &RANDS[8]);
-        find_it("rrcw", &RANDS[8]);
-        find_it("rrwa", &RANDS[8]);
+        find_it("rlc", &RANDS[6]);
+        find_it("rlcw", &RANDS[6]);
+        find_it("rlwa", &RANDS[6]);
+        find_it("rrc", &RANDS[6]);
+        find_it("rrcw", &RANDS[6]);
+        find_it("rrwa", &RANDS[6]);
         find_it("rvf", &RANDS[3]);
         find_it("sbc", &RANDS[7]);
         find_it("scf", &RANDS[3]);

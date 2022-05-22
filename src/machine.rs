@@ -102,6 +102,8 @@ impl Datum {
 trait Swap {
     fn complement(self) -> Self;
     fn swap(self) -> Self;
+    fn shift_left(self, bit_in: bool) -> (bool, Self);
+    fn shift_right(self, bit_in: bool) -> (bool, Self);
 }
 
 impl Swap for i8 {
@@ -111,6 +113,16 @@ impl Swap for i8 {
     fn swap(self) -> i8 {
         self.rotate_right(4)
     }
+    fn shift_left(self, bit_in: bool) -> (bool, Self) {
+        let high_bit_set = self & -128 != 0;
+        let shifted = (self & 0x7f).rotate_left(1);
+        return (high_bit_set, if bit_in { shifted + 1 } else { shifted });
+    }
+    fn shift_right(self, bit_in: bool) -> (bool, Self) {
+        let low_bit_set = self & 1 != 0;
+        let shifted = (self & -2).rotate_right(1);
+        return (low_bit_set, if bit_in { shifted | -128i8 } else { shifted });
+    }
 }
 
 impl Swap for i16 {
@@ -119,6 +131,21 @@ impl Swap for i16 {
     }
     fn swap(self) -> i16 {
         self.swap_bytes()
+    }
+    fn shift_left(self, bit_in: bool) -> (bool, Self) {
+        let high_bit_set = self & -32768i16 != 0;
+        // the -2 is to mask out the lowest bit so it doesn't wrap to the top
+        let shifted = (self & 0x7fff).rotate_left(1);
+        return (high_bit_set, if bit_in { shifted + 1 } else { shifted });
+    }
+    fn shift_right(self, bit_in: bool) -> (bool, Self) {
+        let low_bit_set = self & 1 != 0;
+        // the -2 is to mask out the lowest bit so it doesn't wrap to the top
+        let shifted = (self & -2).rotate_right(1);
+        return (
+            low_bit_set,
+            if bit_in { shifted | -32768i16 } else { shifted },
+        );
     }
 }
 
@@ -250,15 +277,35 @@ pub enum MonadicOperation {
     Increment,
     Negate,
     Swap,
+    LeftShiftArithmetic,
+    RightShiftArithmetic,
+    RotateLeftThruCarry,
+    RotateRightThruCarry,
+    RotateLeftThruAccumulator,
+    RotateRightThruAccumulator,
     // TODO: Move the shifts here.
 }
 
 impl MonadicOperation {
-    fn evaluate<T>(&self, v: Option<T>) -> Option<T>
+    fn evaluate<T>(&self, s: &mut State, v: Option<T>) -> Option<T>
     where
         T: num::PrimInt + std::iter::Sum + WrappingAdd + WrappingSub + Swap,
     {
         match self {
+            Self::LeftShiftArithmetic => v.map(|v| v.shift_left(false).1),
+            Self::RightShiftArithmetic => v.map(|v| v.shift_right(false).1),
+            Self::RotateLeftThruCarry => v
+                .map(|v| s.carry.map(|c| v.shift_left(c).1))
+                .unwrap_or(None),
+            Self::RotateRightThruCarry => v
+                .map(|v| s.carry.map(|c| v.shift_left(c).1))
+                .unwrap_or(None),
+            Self::RotateLeftThruAccumulator => {
+                panic!("no standard implementation of RotateLeftThruAccumulator")
+            }
+            Self::RotateRightThruAccumulator => {
+                panic!("no standard implementation of RotateRightThruAccumulator")
+            }
             Self::Complement => v.map(|v| v.complement()),
             Self::Negate => v.map(|v| T::zero() - v),
             Self::Increment => v.map(|v| v.wrapping_add(&T::one())),
@@ -442,11 +489,13 @@ pub fn standard_implementation(insn: &Instruction, s: &mut State) -> FlowControl
             FlowControl::FallThrough
         }
         Operation::Monadic(Width::Width8, operation, src, dst) => {
-            s.set_i8(dst, operation.evaluate(s.get_i8(src)));
+            let r = operation.evaluate(s, s.get_i8(src));
+            s.set_i8(dst, r);
             FlowControl::FallThrough
         }
         Operation::Monadic(Width::Width16, operation, src, dst) => {
-            s.set_i16(dst, operation.evaluate(s.get_i16(src)));
+            let r = operation.evaluate(s, s.get_i16(src));
+            s.set_i16(dst, r);
             FlowControl::FallThrough
         }
         Operation::Dyadic(Width::Width8, operation, a, b, dst) => {
