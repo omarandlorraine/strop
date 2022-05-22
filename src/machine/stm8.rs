@@ -8,7 +8,8 @@ use crate::machine::FlowControl;
 use crate::machine::Instruction;
 use crate::machine::MonadicOperation::{
     Complement, Decrement, Increment, LeftShiftArithmetic, Negate, RightShiftArithmetic,
-    RotateLeftThruCarry, RotateRightThruCarry, Swap,
+    RotateLeftThruAccumulator, RotateLeftThruCarry, RotateRightThruAccumulator,
+    RotateRightThruCarry, Swap,
 };
 use crate::machine::Operation;
 use crate::machine::Test;
@@ -170,6 +171,10 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Monadic(_, RightShiftArithmetic, _, r) => syn(f, "sra", r),
         Operation::Monadic(_, RotateLeftThruCarry, _, r) => syn(f, "rlc", r),
         Operation::Monadic(_, RotateRightThruCarry, _, r) => syn(f, "rrc", r),
+        Operation::Monadic(_, RotateLeftThruAccumulator, _, X) => write!(f, "\trlwa x"),
+        Operation::Monadic(_, RotateLeftThruAccumulator, _, Y) => write!(f, "\trlwa y"),
+        Operation::Monadic(_, RotateRightThruAccumulator, _, X) => write!(f, "\trrwa x"),
+        Operation::Monadic(_, RotateRightThruAccumulator, _, Y) => write!(f, "\trrwa y"),
         Operation::Exchange(Width::Width16, X, Y) => {
             write!(f, "\texgw x, y")
         }
@@ -452,11 +457,25 @@ fn oneargs() -> Operation {
         Operation::Monadic(w, *o.unwrap(), a, a)
     }
 
+    fn op16(a: Datum) -> Operation {
+        if random::<u8>() < 200 {
+            // with high probability pick one of these operations
+            op(Width::Width16, a)
+        } else {
+            // with low probability, pick one of these, which only can take X or Y
+            if random() {
+                Operation::Monadic(Width::Width16, RotateLeftThruAccumulator, a, a)
+            } else {
+                Operation::Monadic(Width::Width16, RotateRightThruAccumulator, a, a)
+            }
+        }
+    }
+
     if random() {
         op(Width::Width8, A)
     } else {
         let a = if random() { X } else { Y };
-        op(Width::Width16, a)
+        op16(a)
     }
 }
 
@@ -624,7 +643,6 @@ pub const STM8: Machine = Machine {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::BasicBlock;
 
     fn find_it(opcode: &'static str, insn: &Instruction) {
         let mut i = insn.clone();
@@ -743,12 +761,12 @@ mod tests {
         find_it("sbc", &RANDS[7]);
         find_it("scf", &RANDS[3]);
         // Not bothering with sim; strop will not handle interrupts
-        find_it("sla", &RANDS[8]);
-        find_it("slaw", &RANDS[8]);
-        find_it("sra", &RANDS[8]);
-        find_it("sraw", &RANDS[8]);
-        find_it("srl", &RANDS[8]);
-        find_it("srlw", &RANDS[8]);
+        find_it("sla", &RANDS[6]);
+        find_it("slaw", &RANDS[6]);
+        find_it("sra", &RANDS[6]);
+        find_it("sraw", &RANDS[6]);
+        find_it("srl", &RANDS[6]);
+        find_it("srlw", &RANDS[6]);
         find_it("sub", &RANDS[7]);
         find_it("subw", &RANDS[7]);
         find_it("swap", &RANDS[6]);
