@@ -116,12 +116,12 @@ impl Swap for i8 {
     fn shift_left(self, bit_in: bool) -> (bool, Self) {
         let high_bit_set = self & -128 != 0;
         let shifted = (self & 0x7f).rotate_left(1);
-        return (high_bit_set, if bit_in { shifted + 1 } else { shifted });
+        (high_bit_set, if bit_in { shifted + 1 } else { shifted })
     }
     fn shift_right(self, bit_in: bool) -> (bool, Self) {
         let low_bit_set = self & 1 != 0;
         let shifted = (self & -2).rotate_right(1);
-        return (low_bit_set, if bit_in { shifted | -128i8 } else { shifted });
+        (low_bit_set, if bit_in { shifted | -128i8 } else { shifted })
     }
 }
 
@@ -136,16 +136,16 @@ impl Swap for i16 {
         let high_bit_set = self & -32768i16 != 0;
         // the -2 is to mask out the lowest bit so it doesn't wrap to the top
         let shifted = (self & 0x7fff).rotate_left(1);
-        return (high_bit_set, if bit_in { shifted + 1 } else { shifted });
+        (high_bit_set, if bit_in { shifted + 1 } else { shifted })
     }
     fn shift_right(self, bit_in: bool) -> (bool, Self) {
         let low_bit_set = self & 1 != 0;
         // the -2 is to mask out the lowest bit so it doesn't wrap to the top
         let shifted = (self & -2).rotate_right(1);
-        return (
+        (
             low_bit_set,
             if bit_in { shifted | -32768i16 } else { shifted },
-        );
+        )
     }
 }
 
