@@ -27,7 +27,7 @@ push/pops, returns from interrupts, and this kind of thing.
 
 Strop currently supports one instruction set, namely:
 
- - STM8
+ * [![Build Status](https://github.com/omarandlorraine/strop/workflows/stm8/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=stm8) stm8
 
 There are a few other instruction sets available, but these are not supported
 ones.
