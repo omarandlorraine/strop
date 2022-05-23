@@ -8,14 +8,14 @@ use std::convert::TryInto;
 mod m6800;
 mod mos6502;
 mod pic;
-mod prex86;
 mod stm8;
+mod x80;
 
 use crate::machine::m6800::M6800;
 use crate::machine::mos6502::{MOS6502, MOS65C02};
 use crate::machine::pic::PIC12;
-use crate::machine::prex86::KR580VM1;
 use crate::machine::stm8::STM8;
+use crate::machine::x80::KR580VM1;
 
 #[derive(Clone, Copy)]
 pub struct Machine {

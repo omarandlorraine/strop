@@ -177,3 +177,14 @@ pub const M6800: Machine = Machine {
     random_insn: instr_6800,
     reg_by_name,
 };
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn p() {
+        // This "unit test" is here to demonstrate that the 6800 is unsupported.
+        panic!();
+    }
+}

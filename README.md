@@ -25,19 +25,14 @@ generation of computationally intense things like inner loops and perhaps bodies
 of functions. This means that I don't intend for strop to generate things like
 push/pops, returns from interrupts, and this kind of thing.
 
-Strop currently supports one instruction set, namely:
+Strop currently supports these instruction sets, as indicated by the status of
+the badges:
 
  * [![Build Status](https://github.com/omarandlorraine/strop/workflows/stm8/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=stm8) stm8
-
-There are a few other instruction sets available, but these are not supported
-ones.
-They do not have the same level of automated testing, and have only a few of the
-relevant opcodes implemented. They are:
-
- - PIC12
- - KR580VM1 (a little-known 8080 variant from Soviet Ukraine)
- - MOS 6502 and 65C02
- - Motorola 6800
+ * [![Build Status](https://github.com/omarandlorraine/strop/workflows/mos6502/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=mos6502) 6502 65n02 65c02
+ * [![Build Status](https://github.com/omarandlorraine/strop/workflows/6800/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=6800) 6800 6801
+ * [![Build Status](https://github.com/omarandlorraine/strop/workflows/pic/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=pic) pic12 pic14 pic16
+ * [![Build Status](https://github.com/omarandlorraine/strop/workflows/x80/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=x80) kr580vm1
 
 ### Theory of operation
 The basic idea is to generate code better than what traditional optimising

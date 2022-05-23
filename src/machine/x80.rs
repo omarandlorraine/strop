@@ -202,3 +202,14 @@ pub const KR580VM1: Machine = Machine {
     random_insn: random_insn_kr580vm1,
     reg_by_name: registers_kr580vm1,
 };
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn p() {
+        // This "unit test" is here to demonstrate that the x80 machines are unsupported.
+        panic!();
+    }
+}
