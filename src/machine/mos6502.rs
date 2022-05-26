@@ -8,6 +8,10 @@ use crate::machine::DyadicOperation::{AddWithCarry, And, ExclusiveOr, Or};
 use crate::machine::Instruction;
 use crate::machine::Machine;
 use crate::machine::MonadicOperation;
+use crate::machine::MonadicOperation::{
+    Decrement, Increment, LeftShiftArithmetic, RightShiftLogical, RotateLeftThruCarry,
+    RotateRightThruCarry,
+};
 use crate::machine::Operation;
 use crate::machine::ShiftType;
 use crate::machine::Width;
@@ -59,14 +63,11 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Move(thing, A) => syn(f, "lda", thing),
         Operation::Move(thing, X) => syn(f, "ldx", thing),
         Operation::Move(thing, Y) => syn(f, "ldy", thing),
-        Operation::Shift(ShiftType::RightArithmetic, thing) => syn(f, "lsr", thing),
-        Operation::Shift(ShiftType::LeftArithmetic, thing) => syn(f, "asl", thing),
-        Operation::Shift(ShiftType::RightRotateThroughCarry, thing) => syn(f, "ror", thing),
-        Operation::Shift(ShiftType::LeftRotateThroughCarry, thing) => syn(f, "rol", thing),
         Operation::Dyadic(Width::Width8, AddWithCarry, A, thing, A) => syn(f, "adc", thing),
         Operation::Dyadic(Width::Width8, And, A, thing, A) => syn(f, "and", thing),
         Operation::Dyadic(Width::Width8, ExclusiveOr, A, thing, A) => syn(f, "eor", thing),
         Operation::Dyadic(Width::Width8, Or, A, thing, A) => syn(f, "ora", thing),
+        Operation::Monadic(Width::Width8, LeftShiftArithmetic, d, _) => syn(f, "asl", d),
         Operation::Monadic(Width::Width8, MonadicOperation::Increment, Datum::Register(r), _) => {
             write!(f, "\tin{}", regname(r))
         }
@@ -108,8 +109,7 @@ pub fn instr_length_6502(insn: &Instruction) -> usize {
         Operation::Move(Datum::Register(_), dat) => length(dat),
         Operation::Move(dat, Datum::Register(_)) => length(dat),
         Operation::Shift(_, dat) => length(dat),
-        Operation::Monadic(Width::Width8, MonadicOperation::Increment, dat, _) => length(dat),
-        Operation::Monadic(Width::Width8, MonadicOperation::Decrement, dat, _) => length(dat),
+        Operation::Monadic(Width::Width8, _, dat, _) => length(dat),
         Operation::Dyadic(Width::Width8, _, _, dat, _) => length(dat),
         Operation::Carry(_) => 1,
         _ => 0,
@@ -139,23 +139,86 @@ fn random_axy() -> Datum {
     )
 }
 
-fn incdec_axy() -> Operation {
-    // the CMOS varieties have inc and dec for accumulator
-    let reg = random_axy();
-    if random() {
-        Operation::Monadic(Width::Width8, MonadicOperation::Decrement, reg, reg)
-    } else {
-        Operation::Monadic(Width::Width8, MonadicOperation::Increment, reg, reg)
+fn rmw_dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn syn(f: &mut std::fmt::Formatter, s: &'static str, d: Datum) -> std::fmt::Result {
+        match d {
+            Datum::Absolute(address) => {
+                write!(f, "\t{} {}", s, address)
+            }
+            Datum::Register(R::A) => {
+                write!(f, "\t{} a", s)
+            }
+            _ => {
+                write!(f, "\t{} {:?}", s, d)
+            }
+        }
+    }
+
+    fn opcode(oper: MonadicOperation) -> &'static str {
+        match oper {
+            Decrement => "dec",
+            Increment => "inc",
+            LeftShiftArithmetic => "asl",
+            RightShiftLogical => "lsr",
+            RotateRightThruCarry => "ror",
+            RotateLeftThruCarry => "rol",
+            _ => panic!("I don't know the opcode for {:?}", oper),
+        }
+    }
+
+    match op {
+        Operation::Monadic(Width::Width8, Decrement, X, X) => {
+            write!(f, "\tdex")
+        }
+        Operation::Monadic(Width::Width8, Decrement, Y, Y) => {
+            write!(f, "\tdey")
+        }
+        Operation::Monadic(Width::Width8, Increment, X, X) => {
+            write!(f, "\tinx")
+        }
+        Operation::Monadic(Width::Width8, Increment, Y, Y) => {
+            write!(f, "\tiny")
+        }
+        Operation::Monadic(Width::Width8, oper, d, _) => syn(f, opcode(oper), d),
+        _ => {
+            write!(f, "{:?}", op)
+        }
     }
 }
 
-fn incdec_xy() -> Operation {
-    // earlier 6502s can increment and decrement X and Y only.
-    let reg = random_xy();
+fn rmw_op(cmos: bool) -> Operation {
+    // Operations which can be performed on either memory or the accumulator
+    let ma = vec![
+        LeftShiftArithmetic,
+        RightShiftLogical,
+        RotateLeftThruCarry,
+        RotateRightThruCarry,
+    ];
+
+    // Operations which can be performed on either memory or an index register
+    let mxy = vec![Decrement, Increment];
+
+    fn xy(cmos: bool) -> Datum {
+        // Pick an index register (if CMOS this includes the accumulator)
+        if cmos {
+            *[X, Y, A].choose(&mut rand::thread_rng()).unwrap()
+        } else {
+            *[X, Y].choose(&mut rand::thread_rng()).unwrap()
+        }
+    }
+
     if random() {
-        Operation::Monadic(Width::Width8, MonadicOperation::Decrement, reg, reg)
+        let op = *ma.choose(&mut rand::thread_rng()).unwrap();
+        let d = if random() { A } else { random_absolute() };
+        Operation::Monadic(Width::Width8, op, d, d)
     } else {
-        Operation::Monadic(Width::Width8, MonadicOperation::Increment, reg, reg)
+        let op = *mxy.choose(&mut rand::thread_rng()).unwrap();
+        let d = if random() {
+            xy(cmos)
+        } else {
+            random_absolute()
+        };
+        Operation::Monadic(Width::Width8, op, d, d)
     }
 }
 
@@ -220,6 +283,22 @@ const ALU_INSTRUCTIONS: Instruction = Instruction {
     randomizer: alu_6502,
 };
 
+const RMW_NMOS: Instruction = Instruction {
+    implementation: standard_implementation,
+    disassemble: rmw_dasm,
+    length: instr_length_6502,
+    operation: Operation::Nop,
+    randomizer: || rmw_op(false),
+};
+
+const RMW_CMOS: Instruction = Instruction {
+    implementation: standard_implementation,
+    disassemble: rmw_dasm,
+    length: instr_length_6502,
+    operation: Operation::Nop,
+    randomizer: || rmw_op(true),
+};
+
 const FLAG_INSTRUCTIONS: Instruction = Instruction {
     implementation: standard_implementation,
     disassemble: dasm,
@@ -228,9 +307,8 @@ const FLAG_INSTRUCTIONS: Instruction = Instruction {
     randomizer: secl_6502,
 };
 
-const NMOS6502_INSTRUCTIONS: [Instruction; 2] = [ALU_INSTRUCTIONS, FLAG_INSTRUCTIONS];
-
-const CMOS6502_INSTRUCTIONS: [Instruction; 2] = [ALU_INSTRUCTIONS, FLAG_INSTRUCTIONS];
+const NMOS6502_INSTRUCTIONS: [Instruction; 3] = [ALU_INSTRUCTIONS, FLAG_INSTRUCTIONS, RMW_NMOS];
+const CMOS6502_INSTRUCTIONS: [Instruction; 3] = [ALU_INSTRUCTIONS, FLAG_INSTRUCTIONS, RMW_CMOS];
 
 pub fn random_insn_65c02() -> Instruction {
     let mut op = *CMOS6502_INSTRUCTIONS
@@ -316,7 +394,8 @@ mod tests {
     fn instruction_set_6502() {
         find_it("adc", &ALU_INSTRUCTIONS);
         find_it("and", &ALU_INSTRUCTIONS);
-        find_it("asl", &ALU_INSTRUCTIONS);
+        find_it("asl", &RMW_NMOS);
+        find_it("asl", &RMW_CMOS);
         find_it("bit", &ALU_INSTRUCTIONS);
         find_it("bcc", &ALU_INSTRUCTIONS);
         find_it("bcs", &ALU_INSTRUCTIONS);
