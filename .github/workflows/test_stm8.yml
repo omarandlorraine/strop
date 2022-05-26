@@ -2,8 +2,7 @@ name: stm8
 
 on:
   push:
-    branches:
-      - master
+    branches: [ master ]
 
 env:
   CARGO_TERM_COLOR: always
