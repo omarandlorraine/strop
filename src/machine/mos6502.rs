@@ -13,7 +13,6 @@ use crate::machine::MonadicOperation::{
     RotateRightThruCarry,
 };
 use crate::machine::Operation;
-use crate::machine::ShiftType;
 use crate::machine::Width;
 use crate::machine::R;
 
@@ -122,21 +121,6 @@ fn random_source() -> Datum {
     } else {
         random_absolute()
     }
-}
-
-fn random_xy() -> Datum {
-    randomly!(
-        { Datum::Register(R::Xl)}
-        { Datum::Register(R::Yl)}
-    )
-}
-
-fn random_axy() -> Datum {
-    randomly!(
-        { Datum::Register(R::Xl)}
-        { Datum::Register(R::Yl)}
-        { Datum::Register(R::A)}
-    )
 }
 
 fn rmw_dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -258,21 +242,6 @@ fn loadstore_6502() -> Operation {
 
 fn secl_6502() -> Operation {
     Operation::Carry(random())
-}
-
-fn shifts_6502() -> Operation {
-    let sht = randomly!(
-        { ShiftType::LeftArithmetic}
-        { ShiftType::RightArithmetic}
-        { ShiftType::LeftRotateThroughCarry}
-        { ShiftType::RightRotateThroughCarry}
-    );
-    let dat = if random() {
-        Datum::Register(R::A)
-    } else {
-        random_absolute()
-    };
-    Operation::Shift(sht, dat)
 }
 
 const ALU_INSTRUCTIONS: Instruction = Instruction {
