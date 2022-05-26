@@ -361,10 +361,15 @@ mod tests {
 
     #[test]
     fn instruction_set_6502() {
+        for i in [
+            "asl", "dec", "dex", "dey", "inc", "inx", "iny", "lsr", "rol", "ror",
+        ] {
+            find_it(i, &RMW_CMOS);
+            find_it(i, &RMW_NMOS);
+        }
         find_it("adc", &ALU_INSTRUCTIONS);
         find_it("and", &ALU_INSTRUCTIONS);
-        find_it("asl", &RMW_NMOS);
-        find_it("asl", &RMW_CMOS);
+        // not bothering with nop; there's NO Point
         find_it("bit", &ALU_INSTRUCTIONS);
         find_it("bcc", &ALU_INSTRUCTIONS);
         find_it("bcs", &ALU_INSTRUCTIONS);
@@ -382,22 +387,12 @@ mod tests {
         find_it("cmp", &ALU_INSTRUCTIONS);
         find_it("cpx", &ALU_INSTRUCTIONS);
         find_it("cpy", &ALU_INSTRUCTIONS);
-        find_it("dec", &ALU_INSTRUCTIONS);
-        find_it("dex", &ALU_INSTRUCTIONS);
-        find_it("dey", &ALU_INSTRUCTIONS);
         find_it("eor", &ALU_INSTRUCTIONS);
-        find_it("inc", &ALU_INSTRUCTIONS);
-        find_it("inx", &ALU_INSTRUCTIONS);
-        find_it("iny", &ALU_INSTRUCTIONS);
         find_it("jmp", &ALU_INSTRUCTIONS);
         // not bothering with jsr; strop does not call subroutines
         find_it("lda", &ALU_INSTRUCTIONS);
         find_it("ldx", &ALU_INSTRUCTIONS);
         find_it("ldy", &ALU_INSTRUCTIONS);
-        find_it("lsr", &ALU_INSTRUCTIONS);
-        // not bothering with nop; there's NO Point
-        find_it("rol", &ALU_INSTRUCTIONS);
-        find_it("ror", &ALU_INSTRUCTIONS);
         // not bothering with rti; strop does not handle interrupts
         // not bothering with rts; strop does not call subroutines
         // not bothering with sei; strop does not handle interrupts
