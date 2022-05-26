@@ -79,6 +79,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Monadic(Width::Width8, MonadicOperation::Decrement, dat, _) => {
             syn(f, "dec", dat)
         }
+        Operation::Overflow(false) => write!(f, "\tclv"),
         Operation::Carry(false) => write!(f, "\tclc"),
         Operation::Carry(true) => write!(f, "\tsec"),
         _ => {
@@ -110,6 +111,7 @@ pub fn instr_length_6502(insn: &Instruction) -> usize {
         Operation::Shift(_, dat) => length(dat),
         Operation::Monadic(Width::Width8, _, dat, _) => length(dat),
         Operation::Dyadic(Width::Width8, _, _, dat, _) => length(dat),
+        Operation::Overflow(_) => 1,
         Operation::Carry(_) => 1,
         _ => 0,
     }
@@ -241,8 +243,20 @@ fn loadstore_6502() -> Operation {
 }
 
 fn secl_6502() -> Operation {
-    Operation::Carry(random())
+    randomly!(
+        {Operation::Carry(true)}
+        {Operation::Carry(false)}
+        {Operation::Overflow(false)}
+    )
 }
+
+const TRANSFER_INSTRUCTIONS: Instruction = Instruction {
+    implementation: standard_implementation,
+    disassemble: dasm,
+    length: instr_length_6502,
+    operation: Operation::Nop,
+    randomizer: transfers_6502,
+};
 
 const ALU_INSTRUCTIONS: Instruction = Instruction {
     implementation: standard_implementation,
@@ -367,6 +381,15 @@ mod tests {
             find_it(i, &RMW_CMOS);
             find_it(i, &RMW_NMOS);
         }
+
+        for i in ["tax", "txa", "tay", "tya"] {
+            find_it(i, &TRANSFER_INSTRUCTIONS);
+        }
+
+        for i in ["clc", "sec", "clv", "sed", "cld"] {
+            find_it(i, &FLAG_INSTRUCTIONS);
+        }
+
         find_it("adc", &ALU_INSTRUCTIONS);
         find_it("and", &ALU_INSTRUCTIONS);
         // not bothering with nop; there's NO Point
@@ -380,10 +403,7 @@ mod tests {
         // not bothering with brk; it's some kind of buggy software interrupt instruction.
         find_it("bvc", &ALU_INSTRUCTIONS);
         find_it("bvs", &ALU_INSTRUCTIONS);
-        find_it("clc", &FLAG_INSTRUCTIONS);
-        find_it("cld", &FLAG_INSTRUCTIONS);
         // not bothering with cli; strop does not handle interrupts
-        find_it("clv", &FLAG_INSTRUCTIONS);
         find_it("cmp", &ALU_INSTRUCTIONS);
         find_it("cpx", &ALU_INSTRUCTIONS);
         find_it("cpy", &ALU_INSTRUCTIONS);
@@ -401,12 +421,5 @@ mod tests {
         find_it("sty", &ALU_INSTRUCTIONS);
         // as for txs tsx pha pla php plp, we need ot figure out how/if we're going to implement a stack.
         find_it("stx", &ALU_INSTRUCTIONS);
-        find_it("stx", &ALU_INSTRUCTIONS);
-        find_it("sec", &FLAG_INSTRUCTIONS);
-        find_it("sed", &FLAG_INSTRUCTIONS);
-        find_it("tax", &ALU_INSTRUCTIONS);
-        find_it("txa", &ALU_INSTRUCTIONS);
-        find_it("tay", &ALU_INSTRUCTIONS);
-        find_it("tya", &ALU_INSTRUCTIONS);
     }
 }
