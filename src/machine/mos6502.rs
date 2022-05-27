@@ -82,6 +82,8 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Overflow(false) => write!(f, "\tclv"),
         Operation::Carry(false) => write!(f, "\tclc"),
         Operation::Carry(true) => write!(f, "\tsec"),
+        Operation::Decimal(false) => write!(f, "\tcld"),
+        Operation::Decimal(true) => write!(f, "\tsed"),
         _ => {
             write!(f, "{:?}", op)
         }
@@ -113,6 +115,7 @@ pub fn instr_length_6502(insn: &Instruction) -> usize {
         Operation::Dyadic(Width::Width8, _, _, dat, _) => length(dat),
         Operation::Overflow(_) => 1,
         Operation::Carry(_) => 1,
+        Operation::Decimal(_) => 1,
         _ => 0,
     }
 }
@@ -244,8 +247,8 @@ fn loadstore_6502() -> Operation {
 
 fn secl_6502() -> Operation {
     randomly!(
-        {Operation::Carry(true)}
-        {Operation::Carry(false)}
+        {Operation::Carry(random())}
+        {Operation::Decimal(random())}
         {Operation::Overflow(false)}
     )
 }

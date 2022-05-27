@@ -360,6 +360,7 @@ pub enum Operation {
     Shift(ShiftType, Datum),
     Carry(bool),
     Overflow(bool),
+    Decimal(bool),
     ComplementCarry,
     BitSet(Datum, u8),
     BitClear(Datum, u8),
@@ -557,6 +558,10 @@ pub fn standard_implementation(insn: &Instruction, s: &mut State) -> FlowControl
             s.overflow = Some(b);
             FlowControl::FallThrough
         }
+        Operation::Decimal(b) => {
+            s.decimal = Some(b);
+            FlowControl::FallThrough
+        }
         Operation::Carry(b) => {
             s.carry = Some(b);
             FlowControl::FallThrough
@@ -632,6 +637,7 @@ pub struct State {
     sign: Option<bool>,
     halfcarry: Option<bool>,
     overflow: Option<bool>,
+    decimal: Option<bool>,
     heap: HashMap<u16, Option<i8>>,
 }
 
@@ -656,6 +662,7 @@ impl State {
             sign: None,
             overflow: None,
             halfcarry: None,
+            decimal: None,
             heap: HashMap::new(),
         }
     }
