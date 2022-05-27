@@ -220,15 +220,11 @@ fn alu_6502() -> Operation {
 }
 
 fn transfers_6502() -> Operation {
-    let reg = if random() {
-        Datum::Register(R::Xl)
-    } else {
-        Datum::Register(R::Yl)
-    };
+    let reg = if random() { X } else { Y };
     if random() {
-        Operation::Move(Datum::Register(R::A), reg)
+        Operation::Move(A, reg)
     } else {
-        Operation::Move(reg, Datum::Register(R::A))
+        Operation::Move(reg, A)
     }
 }
 
@@ -293,8 +289,19 @@ const FLAG_INSTRUCTIONS: Instruction = Instruction {
     randomizer: secl_6502,
 };
 
-const NMOS6502_INSTRUCTIONS: [Instruction; 3] = [ALU_INSTRUCTIONS, FLAG_INSTRUCTIONS, RMW_NMOS];
-const CMOS6502_INSTRUCTIONS: [Instruction; 3] = [ALU_INSTRUCTIONS, FLAG_INSTRUCTIONS, RMW_CMOS];
+const NMOS6502_INSTRUCTIONS: [Instruction; 4] = [
+    ALU_INSTRUCTIONS,
+    FLAG_INSTRUCTIONS,
+    RMW_NMOS,
+    TRANSFER_INSTRUCTIONS,
+];
+
+const CMOS6502_INSTRUCTIONS: [Instruction; 4] = [
+    ALU_INSTRUCTIONS,
+    FLAG_INSTRUCTIONS,
+    RMW_CMOS,
+    TRANSFER_INSTRUCTIONS,
+];
 
 pub fn random_insn_65c02() -> Instruction {
     let mut op = *CMOS6502_INSTRUCTIONS
