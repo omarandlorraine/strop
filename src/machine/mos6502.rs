@@ -4,7 +4,7 @@ use crate::machine::random_immediate;
 use crate::machine::reg_by_name;
 use crate::machine::standard_implementation;
 use crate::machine::Datum;
-use crate::machine::DyadicOperation::{AddWithCarry, And, ExclusiveOr, Or};
+use crate::machine::DyadicOperation::{AddWithCarry, And, ExclusiveOr, Or, SubtractWithCarry};
 use crate::machine::Instruction;
 use crate::machine::Machine;
 use crate::machine::MonadicOperation;
@@ -62,6 +62,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Move(thing, A) => syn(f, "lda", thing),
         Operation::Move(thing, X) => syn(f, "ldx", thing),
         Operation::Move(thing, Y) => syn(f, "ldy", thing),
+        Operation::Dyadic(Width::Width8, SubtractWithCarry, A, thing, A) => syn(f, "sbc", thing),
         Operation::Dyadic(Width::Width8, AddWithCarry, A, thing, A) => syn(f, "adc", thing),
         Operation::Dyadic(Width::Width8, And, A, thing, A) => syn(f, "and", thing),
         Operation::Dyadic(Width::Width8, ExclusiveOr, A, thing, A) => syn(f, "eor", thing),
@@ -214,7 +215,7 @@ fn rmw_op(cmos: bool) -> Operation {
 fn alu_6502() -> Operation {
     // randomly generate the instructions ora, and, eor, adc, sbc, cmp
     // these all have the same available addressing modes
-    let ops = vec![AddWithCarry, And, Or, ExclusiveOr];
+    let ops = vec![AddWithCarry, And, Or, ExclusiveOr, SubtractWithCarry];
     let op = *ops.choose(&mut rand::thread_rng()).unwrap();
     Operation::Dyadic(Width::Width8, op, A, random_source(), A)
 }
@@ -400,8 +401,10 @@ mod tests {
             find_it(i, &FLAG_INSTRUCTIONS);
         }
 
-        find_it("adc", &ALU_INSTRUCTIONS);
-        find_it("and", &ALU_INSTRUCTIONS);
+        for i in ["adc", "and", "eor", "ora", "sbc"] {
+            find_it(i, &ALU_INSTRUCTIONS);
+        }
+
         // not bothering with nop; there's NO Point
         find_it("bit", &ALU_INSTRUCTIONS);
         find_it("bcc", &ALU_INSTRUCTIONS);
@@ -417,7 +420,6 @@ mod tests {
         find_it("cmp", &ALU_INSTRUCTIONS);
         find_it("cpx", &ALU_INSTRUCTIONS);
         find_it("cpy", &ALU_INSTRUCTIONS);
-        find_it("eor", &ALU_INSTRUCTIONS);
         find_it("jmp", &ALU_INSTRUCTIONS);
         // not bothering with jsr; strop does not call subroutines
         find_it("lda", &ALU_INSTRUCTIONS);
@@ -426,7 +428,6 @@ mod tests {
         // not bothering with rti; strop does not handle interrupts
         // not bothering with rts; strop does not call subroutines
         // not bothering with sei; strop does not handle interrupts
-        find_it("sbc", &ALU_INSTRUCTIONS);
         find_it("sta", &ALU_INSTRUCTIONS);
         find_it("sty", &ALU_INSTRUCTIONS);
         // as for txs tsx pha pla php plp, we need ot figure out how/if we're going to implement a stack.

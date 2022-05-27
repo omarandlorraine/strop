@@ -265,6 +265,7 @@ pub enum DyadicOperation {
     Or,
     Subtract,
     SubtractWithBorrow,
+    SubtractWithCarry,
     Divide,
     Multiply,
     // TODO: Move the shifts here.
@@ -333,6 +334,9 @@ impl DyadicOperation {
                 Self::ExclusiveOr => Some(a ^ b),
                 Self::Or => Some(a | b),
                 Self::Subtract => Some(a.wrapping_sub(&b)),
+                Self::SubtractWithCarry => s
+                    .carry
+                    .map(|c| a.wrapping_sub(&b).wrapping_sub(if c { zero } else { one })),
                 Self::SubtractWithBorrow => s
                     .carry
                     .map(|c| a.wrapping_sub(&b).wrapping_sub(if c { one } else { zero })),
