@@ -242,6 +242,17 @@ fn loadstore_6502() -> Operation {
     }
 }
 
+fn loads() -> Operation {
+    let reg =
+        randomly!( { Datum::Register(R::A)} { Datum::Register(R::Xl)} { Datum::Register(R::Yl)} );
+
+    if random() {
+        Operation::Move(random_absolute(), reg)
+    } else {
+        Operation::Move(random_immediate(), reg)
+    }
+}
+
 fn secl_6502() -> Operation {
     randomly!(
         {Operation::Carry(random())}
@@ -249,6 +260,14 @@ fn secl_6502() -> Operation {
         {Operation::Overflow(false)}
     )
 }
+
+const LOAD_INSTRUCTIONS: Instruction = Instruction {
+    implementation: standard_implementation,
+    disassemble: dasm,
+    length: instr_length_6502,
+    operation: Operation::Nop,
+    randomizer: loads,
+};
 
 const TRANSFER_INSTRUCTIONS: Instruction = Instruction {
     implementation: standard_implementation,
@@ -290,18 +309,20 @@ const FLAG_INSTRUCTIONS: Instruction = Instruction {
     randomizer: secl_6502,
 };
 
-const NMOS6502_INSTRUCTIONS: [Instruction; 4] = [
+const NMOS6502_INSTRUCTIONS: [Instruction; 5] = [
     ALU_INSTRUCTIONS,
     FLAG_INSTRUCTIONS,
     RMW_NMOS,
     TRANSFER_INSTRUCTIONS,
+    LOAD_INSTRUCTIONS,
 ];
 
-const CMOS6502_INSTRUCTIONS: [Instruction; 4] = [
+const CMOS6502_INSTRUCTIONS: [Instruction; 5] = [
     ALU_INSTRUCTIONS,
     FLAG_INSTRUCTIONS,
     RMW_CMOS,
     TRANSFER_INSTRUCTIONS,
+    LOAD_INSTRUCTIONS,
 ];
 
 pub fn random_insn_65c02() -> Instruction {
@@ -405,6 +426,10 @@ mod tests {
             find_it(i, &ALU_INSTRUCTIONS);
         }
 
+        for i in ["lda", "ldx", "ldy"] {
+            find_it(i, &LOAD_INSTRUCTIONS);
+        }
+
         // not bothering with nop; there's NO Point
         find_it("bit", &ALU_INSTRUCTIONS);
         find_it("bcc", &ALU_INSTRUCTIONS);
@@ -422,9 +447,6 @@ mod tests {
         find_it("cpy", &ALU_INSTRUCTIONS);
         find_it("jmp", &ALU_INSTRUCTIONS);
         // not bothering with jsr; strop does not call subroutines
-        find_it("lda", &ALU_INSTRUCTIONS);
-        find_it("ldx", &ALU_INSTRUCTIONS);
-        find_it("ldy", &ALU_INSTRUCTIONS);
         // not bothering with rti; strop does not handle interrupts
         // not bothering with rts; strop does not call subroutines
         // not bothering with sei; strop does not handle interrupts
