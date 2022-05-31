@@ -1,4 +1,5 @@
 use crate::machine::rand::prelude::SliceRandom;
+use crate::machine::rand::Rng;
 use crate::machine::random_absolute;
 use crate::machine::random_immediate;
 use crate::machine::reg_by_name;
@@ -7,6 +8,7 @@ use crate::machine::Datum;
 use crate::machine::DyadicOperation::{
     AddWithCarry, And, ExclusiveOr, Or, Subtract, SubtractWithCarry,
 };
+use crate::machine::FlowControl;
 use crate::machine::Instruction;
 use crate::machine::Machine;
 use crate::machine::MonadicOperation;
@@ -15,6 +17,8 @@ use crate::machine::MonadicOperation::{
     RotateRightThruCarry,
 };
 use crate::machine::Operation;
+use crate::machine::Test;
+use crate::machine::Test::{Carry, Minus, Overflow, True, Zero};
 use crate::machine::Width;
 use crate::machine::R;
 
@@ -32,6 +36,20 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             R::Xl => "x",
             R::Yl => "y",
             _ => unimplemented!(),
+        }
+    }
+
+    fn branch(f: &mut std::fmt::Formatter, s: &'static str, d: FlowControl) -> std::fmt::Result {
+        match d {
+            FlowControl::Backward(o) => {
+                write!(f, "\t{} -{}", s, o)
+            }
+            FlowControl::Forward(o) => {
+                write!(f, "\t{} +{}", s, o)
+            }
+            _ => {
+                write!(f, "\t{} {:?}", s, d)
+            }
         }
     }
 
@@ -91,6 +109,15 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Carry(true) => write!(f, "\tsec"),
         Operation::Decimal(false) => write!(f, "\tcld"),
         Operation::Decimal(true) => write!(f, "\tsed"),
+        Operation::Jump(Overflow(false), offs) => branch(f, "bvc", offs),
+        Operation::Jump(Overflow(true), offs) => branch(f, "bvs", offs),
+        Operation::Jump(Zero(false), offs) => branch(f, "bne", offs),
+        Operation::Jump(Zero(true), offs) => branch(f, "beq", offs),
+        Operation::Jump(Minus(false), offs) => branch(f, "bpl", offs),
+        Operation::Jump(Minus(true), offs) => branch(f, "bmi", offs),
+        Operation::Jump(Carry(false), offs) => branch(f, "bcc", offs),
+        Operation::Jump(Carry(true), offs) => branch(f, "bcs", offs),
+        Operation::Jump(True, offs) => branch(f, "jmp", offs),
         _ => {
             write!(f, "{:?}", op)
         }
@@ -124,6 +151,8 @@ pub fn instr_length_6502(insn: &Instruction) -> usize {
         Operation::Overflow(_) => 1,
         Operation::Carry(_) => 1,
         Operation::Decimal(_) => 1,
+        Operation::Jump(True, _) => 3,
+        Operation::Jump(_, _) => 2,
         _ => 0,
     }
 }
@@ -268,6 +297,35 @@ fn secl_6502() -> Operation {
     )
 }
 
+fn branches() -> Operation {
+    fn j() -> FlowControl {
+        if random() {
+            FlowControl::Forward(rand::thread_rng().gen_range(1..3))
+        } else {
+            FlowControl::Backward(rand::thread_rng().gen_range(1..3))
+        }
+    }
+
+    fn cond() -> Test {
+        randomly!(
+           { Test::True}
+           { Test::Minus(random())}
+           { Test::Zero(random())}
+           { Test::Overflow(random())}
+           { Test::Carry(random())})
+    }
+
+    Operation::Jump(cond(), j())
+}
+
+const BRANCH_INSTRUCTIONS: Instruction = Instruction {
+    implementation: standard_implementation,
+    disassemble: dasm,
+    length: instr_length_6502,
+    operation: Operation::Nop,
+    randomizer: branches,
+};
+
 fn compares() -> Operation {
     randomly!(
     { Operation::BitCompare(random_absolute(), A)}
@@ -333,22 +391,24 @@ const FLAG_INSTRUCTIONS: Instruction = Instruction {
     randomizer: secl_6502,
 };
 
-const NMOS6502_INSTRUCTIONS: [Instruction; 6] = [
+const NMOS6502_INSTRUCTIONS: [Instruction; 7] = [
     ALU_INSTRUCTIONS,
     FLAG_INSTRUCTIONS,
     RMW_NMOS,
     TRANSFER_INSTRUCTIONS,
     LOAD_INSTRUCTIONS,
     COMPARE_INSTRUCTIONS,
+    BRANCH_INSTRUCTIONS,
 ];
 
-const CMOS6502_INSTRUCTIONS: [Instruction; 6] = [
+const CMOS6502_INSTRUCTIONS: [Instruction; 7] = [
     ALU_INSTRUCTIONS,
     FLAG_INSTRUCTIONS,
     RMW_CMOS,
     TRANSFER_INSTRUCTIONS,
     LOAD_INSTRUCTIONS,
     COMPARE_INSTRUCTIONS,
+    BRANCH_INSTRUCTIONS,
 ];
 
 pub fn random_insn_65c02() -> Instruction {
@@ -460,18 +520,14 @@ mod tests {
             find_it(i, &COMPARE_INSTRUCTIONS);
         }
 
+        for i in [
+            "bcc", "bcs", "beq", "bmi", "bne", "bpl", "bvc", "bvs", "jmp",
+        ] {
+            find_it(i, &BRANCH_INSTRUCTIONS);
+        }
         // not bothering with nop; there's NO Point
-        find_it("bcc", &ALU_INSTRUCTIONS);
-        find_it("bcs", &ALU_INSTRUCTIONS);
-        find_it("beq", &ALU_INSTRUCTIONS);
-        find_it("bmi", &ALU_INSTRUCTIONS);
-        find_it("bne", &ALU_INSTRUCTIONS);
-        find_it("bpl", &ALU_INSTRUCTIONS);
         // not bothering with brk; it's some kind of buggy software interrupt instruction.
-        find_it("bvc", &ALU_INSTRUCTIONS);
-        find_it("bvs", &ALU_INSTRUCTIONS);
         // not bothering with cli; strop does not handle interrupts
-        find_it("jmp", &ALU_INSTRUCTIONS);
         // not bothering with jsr; strop does not call subroutines
         // not bothering with rti; strop does not handle interrupts
         // not bothering with rts; strop does not call subroutines
