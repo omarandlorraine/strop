@@ -4,7 +4,9 @@ use crate::machine::random_immediate;
 use crate::machine::reg_by_name;
 use crate::machine::standard_implementation;
 use crate::machine::Datum;
-use crate::machine::DyadicOperation::{AddWithCarry, And, ExclusiveOr, Or, SubtractWithCarry};
+use crate::machine::DyadicOperation::{
+    AddWithCarry, And, ExclusiveOr, Or, Subtract, SubtractWithCarry,
+};
 use crate::machine::Instruction;
 use crate::machine::Machine;
 use crate::machine::MonadicOperation;
@@ -62,6 +64,10 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Move(thing, A) => syn(f, "lda", thing),
         Operation::Move(thing, X) => syn(f, "ldx", thing),
         Operation::Move(thing, Y) => syn(f, "ldy", thing),
+        Operation::BitCompare(thing, A) => syn(f, "bit", thing),
+        Operation::Dyadic(Width::Width8, Subtract, A, thing, Datum::Zero) => syn(f, "cmp", thing),
+        Operation::Dyadic(Width::Width8, Subtract, X, thing, Datum::Zero) => syn(f, "cpx", thing),
+        Operation::Dyadic(Width::Width8, Subtract, Y, thing, Datum::Zero) => syn(f, "cpy", thing),
         Operation::Dyadic(Width::Width8, SubtractWithCarry, A, thing, A) => syn(f, "sbc", thing),
         Operation::Dyadic(Width::Width8, AddWithCarry, A, thing, A) => syn(f, "adc", thing),
         Operation::Dyadic(Width::Width8, And, A, thing, A) => syn(f, "and", thing),
@@ -112,6 +118,7 @@ pub fn instr_length_6502(insn: &Instruction) -> usize {
         Operation::Move(Datum::Register(_), dat) => length(dat),
         Operation::Move(dat, Datum::Register(_)) => length(dat),
         Operation::Shift(_, dat) => length(dat),
+        Operation::BitCompare(dat, A) => length(dat),
         Operation::Monadic(Width::Width8, _, dat, _) => length(dat),
         Operation::Dyadic(Width::Width8, _, _, dat, _) => length(dat),
         Operation::Overflow(_) => 1,
@@ -261,6 +268,23 @@ fn secl_6502() -> Operation {
     )
 }
 
+fn compares() -> Operation {
+    randomly!(
+    { Operation::BitCompare(random_absolute(), A)}
+    { Operation::Dyadic(Width::Width8, Subtract, A, random_source(), Datum::Zero)}
+    { Operation::Dyadic(Width::Width8, Subtract, X, random_source(), Datum::Zero)}
+    { Operation::Dyadic(Width::Width8, Subtract, Y, random_source(), Datum::Zero)}
+    )
+}
+
+const COMPARE_INSTRUCTIONS: Instruction = Instruction {
+    implementation: standard_implementation,
+    disassemble: dasm,
+    length: instr_length_6502,
+    operation: Operation::Nop,
+    randomizer: compares,
+};
+
 const LOAD_INSTRUCTIONS: Instruction = Instruction {
     implementation: standard_implementation,
     disassemble: dasm,
@@ -309,20 +333,22 @@ const FLAG_INSTRUCTIONS: Instruction = Instruction {
     randomizer: secl_6502,
 };
 
-const NMOS6502_INSTRUCTIONS: [Instruction; 5] = [
+const NMOS6502_INSTRUCTIONS: [Instruction; 6] = [
     ALU_INSTRUCTIONS,
     FLAG_INSTRUCTIONS,
     RMW_NMOS,
     TRANSFER_INSTRUCTIONS,
     LOAD_INSTRUCTIONS,
+    COMPARE_INSTRUCTIONS,
 ];
 
-const CMOS6502_INSTRUCTIONS: [Instruction; 5] = [
+const CMOS6502_INSTRUCTIONS: [Instruction; 6] = [
     ALU_INSTRUCTIONS,
     FLAG_INSTRUCTIONS,
     RMW_CMOS,
     TRANSFER_INSTRUCTIONS,
     LOAD_INSTRUCTIONS,
+    COMPARE_INSTRUCTIONS,
 ];
 
 pub fn random_insn_65c02() -> Instruction {
@@ -430,8 +456,11 @@ mod tests {
             find_it(i, &LOAD_INSTRUCTIONS);
         }
 
+        for i in ["bit", "cmp", "cpx", "cpy"] {
+            find_it(i, &COMPARE_INSTRUCTIONS);
+        }
+
         // not bothering with nop; there's NO Point
-        find_it("bit", &ALU_INSTRUCTIONS);
         find_it("bcc", &ALU_INSTRUCTIONS);
         find_it("bcs", &ALU_INSTRUCTIONS);
         find_it("beq", &ALU_INSTRUCTIONS);
@@ -442,9 +471,6 @@ mod tests {
         find_it("bvc", &ALU_INSTRUCTIONS);
         find_it("bvs", &ALU_INSTRUCTIONS);
         // not bothering with cli; strop does not handle interrupts
-        find_it("cmp", &ALU_INSTRUCTIONS);
-        find_it("cpx", &ALU_INSTRUCTIONS);
-        find_it("cpy", &ALU_INSTRUCTIONS);
         find_it("jmp", &ALU_INSTRUCTIONS);
         // not bothering with jsr; strop does not call subroutines
         // not bothering with rti; strop does not handle interrupts
