@@ -994,6 +994,16 @@ pub mod tests {
         )
     }
 
+    #[test]
+    fn adc_set_carry() {
+        // check that the carry flag is set when unsigned addition carries over
+        let carry = run_strop(AddWithCarry, 0x94, 0x83, false, false).2;
+        assert!(
+            carry,
+            "adc instruction didn't set carry flag but should have"
+        );
+    }
+
     fn fuzz_dyadic(op: DyadicOperation, opcode: u8) {
         for _i in 0..5000 {
             let a: u8 = random();
