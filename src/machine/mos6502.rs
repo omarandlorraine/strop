@@ -904,15 +904,19 @@ pub mod tests {
         fuzz_dyadic(Or, 0x09);
         fuzz_dyadic(SubtractWithCarry, 0xe9);
     }
-}
 
-#[cfg(test)]
-mod mos6502 {
+    use crate::machine::mos6502::{A, X, Y};
+    use crate::machine::DyadicOperation;
+    use crate::machine::Operation;
+    use crate::Datum;
+
     extern crate mos6502;
     use mos6502::address::Address;
     use mos6502::cpu;
+    use mos6502::registers::Status;
+    use rand::random;
 
-    fn run_mos6502(opcode: u8, val1: u8, val2: u8, carry: bool, decimal: bool) -> (u8, u8) {
+    fn run_mos6502(opcode: u8, val1: u8, val2: u8, carry: bool, decimal: bool) -> (i8, Status) {
         let mut cpu = cpu::CPU::new();
 
         let program = [
@@ -934,28 +938,43 @@ mod mos6502 {
         cpu.registers.program_counter = Address(0x10);
         cpu.run();
 
-        (cpu.registers.accumulator, cpu.status as u8)
+        (cpu.registers.accumulator, cpu.registers.status)
     }
 
     fn run_strop(
         op: DyadicOperation,
         opcode: u8,
-        val1: u8,
-        val2: u8,
+        val1: i8,
+        val2: i8,
         carry: bool,
         decimal: bool,
-    ) -> (u8, u8) {
-        let c = FLAG_INSTRUCTIONS.clone();
-        c.operation = Carry(carry);
+    ) -> (i8, bool, bool, bool, bool) {
+        use crate::State;
+        let mut c = FLAG_INSTRUCTIONS.clone();
+        c.operation = Operation::Carry(carry);
 
-        let d = FLAG_INSTRUCTIONS.clone();
-        d.operation = Decimal(Decimal);
+        let mut d = FLAG_INSTRUCTIONS.clone();
+        d.operation = Operation::Decimal(decimal);
 
-        let lda1 = LOAD_INSTRUCTIONS.clone();
-        lda1.operation = Operation::Move(Datum::Immediate(val1), A);
+        let mut lda1 = LOAD_INSTRUCTIONS.clone();
+        lda1.operation = Operation::Move(Datum::Imm8(val1), A);
 
-        let lda2 = ALU_INSTRUCTIONS.clone();
-        lda2.operation = Operation::Dyadic(Width::Width8, op, A, Datum::Immediate(val2), A);
+        let mut ope = ALU_INSTRUCTIONS.clone();
+        ope.operation = Operation::Dyadic(Width::Width8, op, A, Datum::Imm8(val2), A);
+
+        let mut s = State::new();
+        c.operate(&mut s);
+        d.operate(&mut s);
+        lda1.operate(&mut s);
+        ope.operate(&mut s);
+
+        (
+            s.get_i8(A).unwrap(),
+            s.zero.unwrap_or(false),
+            s.carry.unwrap_or(false),
+            s.sign.unwrap_or(false),
+            s.overflow.unwrap_or(false),
+        )
     }
 
     fn fuzz_dyadic(op: DyadicOperation, opcode: u8) {
