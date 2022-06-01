@@ -279,14 +279,19 @@ fn loadstore_6502() -> Operation {
 }
 
 fn loads() -> Operation {
-    let reg =
-        randomly!( { Datum::Register(R::A)} { Datum::Register(R::Xl)} { Datum::Register(R::Yl)} );
+    let reg = randomly!( { A } { X } { Y } );
 
     if random() {
         Operation::Move(random_absolute(), reg)
     } else {
         Operation::Move(random_immediate(), reg)
     }
+}
+
+fn stores() -> Operation {
+    let reg = randomly!( { A } { X } { Y } );
+
+    Operation::Move(reg, random_absolute())
 }
 
 fn secl_6502() -> Operation {
@@ -341,6 +346,14 @@ const COMPARE_INSTRUCTIONS: Instruction = Instruction {
     length: instr_length_6502,
     operation: Operation::Nop,
     randomizer: compares,
+};
+
+const STORE_INSTRUCTIONS: Instruction = Instruction {
+    implementation: standard_implementation,
+    disassemble: dasm,
+    length: instr_length_6502,
+    operation: Operation::Nop,
+    randomizer: stores,
 };
 
 const LOAD_INSTRUCTIONS: Instruction = Instruction {
@@ -525,6 +538,11 @@ mod tests {
         ] {
             find_it(i, &BRANCH_INSTRUCTIONS);
         }
+
+        for i in ["sta", "stx", "sty"] {
+            find_it(i, &STORE_INSTRUCTIONS);
+        }
+
         // not bothering with nop; there's NO Point
         // not bothering with brk; it's some kind of buggy software interrupt instruction.
         // not bothering with cli; strop does not handle interrupts
@@ -532,10 +550,9 @@ mod tests {
         // not bothering with rti; strop does not handle interrupts
         // not bothering with rts; strop does not call subroutines
         // not bothering with sei; strop does not handle interrupts
-        find_it("sta", &ALU_INSTRUCTIONS);
-        find_it("sty", &ALU_INSTRUCTIONS);
         // as for txs tsx pha pla php plp, we need ot figure out how/if we're going to implement a stack.
-        find_it("stx", &ALU_INSTRUCTIONS);
+        // need to add stz for 65c02
+        // need to add lax sax for 65n02
     }
 
     use crate::machine::mos6502::{A, X, Y};
