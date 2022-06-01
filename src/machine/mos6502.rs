@@ -549,7 +549,13 @@ mod tests {
     use mos6502::registers::Status;
     use rand::random;
 
-    fn run_mos6502(opcode: u8, val1: u8, val2: u8, carry: bool, decimal: bool) -> (i8, Status) {
+    fn run_mos6502(
+        opcode: u8,
+        val1: u8,
+        val2: u8,
+        carry: bool,
+        decimal: bool,
+    ) -> (i8, bool, bool, bool, bool) {
         let mut cpu = cpu::CPU::new();
 
         let program = [
@@ -571,14 +577,19 @@ mod tests {
         cpu.registers.program_counter = Address(0x10);
         cpu.run();
 
-        (cpu.registers.accumulator, cpu.registers.status)
+        (
+            cpu.registers.accumulator,
+            cpu.registers.status.contains(Status::PS_ZERO),
+            cpu.registers.status.contains(Status::PS_CARRY),
+            cpu.registers.status.contains(Status::PS_NEGATIVE),
+            cpu.registers.status.contains(Status::PS_OVERFLOW),
+        )
     }
 
     fn run_strop(
         op: DyadicOperation,
-        opcode: u8,
-        val1: i8,
-        val2: i8,
+        val1: u8,
+        val2: u8,
         carry: bool,
         decimal: bool,
     ) -> (i8, bool, bool, bool, bool) {
@@ -590,10 +601,16 @@ mod tests {
         d.operation = Operation::Decimal(decimal);
 
         let mut lda1 = LOAD_INSTRUCTIONS.clone();
-        lda1.operation = Operation::Move(Datum::Imm8(val1), A);
+        lda1.operation = Operation::Move(Datum::Imm8(i8::from_ne_bytes(val1.to_ne_bytes())), A);
 
         let mut ope = ALU_INSTRUCTIONS.clone();
-        ope.operation = Operation::Dyadic(Width::Width8, op, A, Datum::Imm8(val2), A);
+        ope.operation = Operation::Dyadic(
+            Width::Width8,
+            op,
+            A,
+            Datum::Imm8(i8::from_ne_bytes(val2.to_ne_bytes())),
+            A,
+        );
 
         let mut s = State::new();
         c.operate(&mut s);
@@ -616,6 +633,41 @@ mod tests {
             let b: u8 = random();
             let c: bool = random();
             let d: bool = random();
+
+            let msg = format!("For {:#04x} {:?}", opcode, op);
+            let regr = format!("run_strop({:?}, {:#04x}, {:#04x}, {}, {})", op, a, b, c, d);
+            let truth = run_mos6502(opcode, a, b, c, d);
+            let strop = run_strop(op, a, b, c, d);
+
+            assert!(
+                truth.0 == strop.0,
+                "{}, run {} and check accumulator == {}",
+                msg,
+                regr,
+                truth.0
+            );
+
+            assert!(
+                truth.1 == strop.1,
+                "{}, run {} and check zero flag == {}",
+                msg,
+                regr,
+                truth.1
+            );
+
+            assert!(
+                truth.2 == strop.2,
+                "{}, run {} and check carry == {}",
+                msg,
+                regr,
+                truth.2
+            );
         }
+    }
+
+    #[test]
+    fn fuzzer_call() {
+        fuzz_dyadic(AddWithCarry, 0x69);
+        fuzz_dyadic(And, 0x29);
     }
 }
