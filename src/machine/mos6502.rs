@@ -538,3 +538,65 @@ mod tests {
         find_it("stx", &ALU_INSTRUCTIONS);
     }
 }
+
+#[cfg(test)]
+mod mos6502 {
+    extern crate mos6502;
+    use mos6502::address::Address;
+    use mos6502::cpu;
+
+    fn run_mos6502(opcode: u8, val1: u8, val2: u8, carry: bool, decimal: bool) -> (u8, u8) {
+        let mut cpu = cpu::CPU::new();
+
+        let program = [
+            // set or clear the carry flag
+            if carry { 0x38 } else { 0x18 },
+            // set or clear the decimal flag
+            if decimal { 0xf8 } else { 0xd8 },
+            // load val1 into the accumulator
+            0xa9,
+            val1,
+            // run the opcode on val2
+            opcode,
+            val2,
+            // stop the emulated CPU
+            0xff,
+        ];
+
+        cpu.memory.set_bytes(Address(0x10), &program);
+        cpu.registers.program_counter = Address(0x10);
+        cpu.run();
+
+        (cpu.registers.accumulator, cpu.status as u8)
+    }
+
+    fn run_strop(
+        op: DyadicOperation,
+        opcode: u8,
+        val1: u8,
+        val2: u8,
+        carry: bool,
+        decimal: bool,
+    ) -> (u8, u8) {
+        let c = FLAG_INSTRUCTIONS.clone();
+        c.operation = Carry(carry);
+
+        let d = FLAG_INSTRUCTIONS.clone();
+        d.operation = Decimal(Decimal);
+
+        let lda1 = LOAD_INSTRUCTIONS.clone();
+        lda1.operation = Operation::Move(Datum::Immediate(val1), A);
+
+        let lda2 = ALU_INSTRUCTIONS.clone();
+        lda2.operation = Operation::Dyadic(Width::Width8, op, A, Datum::Immediate(val2), A);
+    }
+
+    fn fuzz_dyadic(op: DyadicOperation, opcode: u8) {
+        for _i in 0..5000 {
+            let a: u8 = random();
+            let b: u8 = random();
+            let c: bool = random();
+            let d: bool = random();
+        }
+    }
+}
