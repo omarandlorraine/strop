@@ -997,9 +997,12 @@ pub mod tests {
     #[test]
     fn adc_set_carry() {
         // check that the carry flag is set when unsigned addition carries over
-        let carry = run_strop(AddWithCarry, 0x94, 0x83, false, false).2;
         assert!(
-            carry,
+            run_strop(AddWithCarry, 0x94, 0x83, false, false).2,
+            "adc instruction didn't set carry flag but should have"
+        );
+        assert!(
+            !run_strop(AddWithCarry, 0x0a, 0xff, true, false).2,
             "adc instruction didn't set carry flag but should have"
         );
     }
