@@ -319,7 +319,7 @@ impl MonadicOperation {
 }
 
 impl DyadicOperation {
-    fn evaluate<T>(&self, s: &State, a: Option<T>, b: Option<T>) -> Option<T>
+    fn evaluate<T>(&self, s: &mut State, a: Option<T>, b: Option<T>) -> Option<T>
     where
         T: num::PrimInt + std::iter::Sum + WrappingAdd + WrappingSub,
     {
@@ -327,9 +327,22 @@ impl DyadicOperation {
         if let (Some(a), Some(b)) = (a, b) {
             match self {
                 Self::Add => Some(a.wrapping_add(&b)),
-                Self::AddWithCarry => s
-                    .carry
-                    .map(|c| a.wrapping_add(&b).wrapping_add(if c { one } else { zero })),
+                Self::AddWithCarry => {
+                    if let Some(c) = s.carry {
+                        let result = a.wrapping_add(&b).wrapping_add(if c { one } else { zero });
+                        if let Some(r) = a.checked_add(&b) {
+                            s.carry = Some(r.checked_add(if c { one } else { zero }).is_none());
+                        } else {
+                            s.carry = Some(true);
+                        }
+                        s.zero = Some(result == *zero);
+                        Some(result)
+                    } else {
+                        s.carry = None;
+                        s.zero = None;
+                        None
+                    }
+                }
                 Self::And => Some(a & b),
                 Self::ExclusiveOr => Some(a ^ b),
                 Self::Or => Some(a | b),
@@ -506,11 +519,17 @@ pub fn standard_implementation(insn: &Instruction, s: &mut State) -> FlowControl
             FlowControl::FallThrough
         }
         Operation::Dyadic(Width::Width8, operation, a, b, dst) => {
-            s.set_i8(dst, operation.evaluate(s, s.get_i8(a), s.get_i8(b)));
+            let a = s.get_u8(a);
+            let b = s.get_u8(b);
+            let r = operation.evaluate(s, a, b);
+            s.set_u8(dst, r);
             FlowControl::FallThrough
         }
         Operation::Dyadic(Width::Width16, operation, a, b, dst) => {
-            s.set_i16(dst, operation.evaluate(s, s.get_i16(a), s.get_i16(b)));
+            let a = s.get_u16(a);
+            let b = s.get_u16(b);
+            let r = operation.evaluate(s, a, b);
+            s.set_u16(dst, r);
             FlowControl::FallThrough
         }
         Operation::Move(source, destination) => {
