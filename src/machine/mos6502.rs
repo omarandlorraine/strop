@@ -638,10 +638,6 @@ mod tests {
             run_strop(AddWithCarry, 0x94, 0x83, false, false).2,
             "adc instruction didn't set carry flag but should have"
         );
-        assert!(
-            !run_strop(AddWithCarry, 0x0a, 0xff, true, false).2,
-            "adc instruction didn't set carry flag but should have"
-        );
     }
 
     fn fuzz_dyadic(op: DyadicOperation, opcode: u8) {
@@ -672,13 +668,17 @@ mod tests {
                 truth.1
             );
 
-            assert!(
-                truth.2 == strop.2,
-                "{}, run {} and check carry == {}",
-                msg,
-                regr,
-                truth.2
-            );
+            if b != 0xff {
+                // There should be no if here.
+                // This is a workaround for a bug in the mos6502 crate
+                assert!(
+                    truth.2 == strop.2,
+                    "{}, run {} and check carry == {}",
+                    msg,
+                    regr,
+                    truth.2
+                );
+            }
         }
     }
 
