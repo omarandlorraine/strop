@@ -642,7 +642,7 @@ mod tests {
 
     #[test]
     fn adc_set_sign() {
-        // check that the carry flag is set when unsigned addition carries over
+        // check that the sign flag is set when unsigned addition carries over
         assert!(
             run_strop(AddWithCarry, 0x31, 0xb5, false, false).3,
             "adc instruction didn't set sign flag but should have"
