@@ -679,6 +679,22 @@ mod tests {
                     truth.2
                 );
             }
+
+            assert!(
+                truth.3 == strop.3,
+                "{}, run {} and check sign flag == {}",
+                msg,
+                regr,
+                truth.3
+            );
+
+            assert!(
+                truth.4 == strop.4,
+                "{}, run {} and check overflow flag == {}",
+                msg,
+                regr,
+                truth.4
+            );
         }
     }
 
