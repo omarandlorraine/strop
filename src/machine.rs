@@ -336,10 +336,12 @@ impl DyadicOperation {
                             s.carry = Some(true);
                         }
                         s.zero = Some(result == *zero);
+                        s.sign = Some(result.leading_zeros() == 0);
                         Some(result)
                     } else {
                         s.carry = None;
                         s.zero = None;
+                        s.sign = None;
                         None
                     }
                 }
