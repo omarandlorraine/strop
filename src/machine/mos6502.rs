@@ -265,19 +265,6 @@ fn transfers_6502() -> Operation {
     }
 }
 
-fn loadstore_6502() -> Operation {
-    let addr = random_absolute();
-
-    let reg =
-        randomly!( { Datum::Register(R::A)} { Datum::Register(R::Xl)} { Datum::Register(R::Yl)} );
-
-    if random() && reg != Datum::Zero {
-        Operation::Move(addr, reg)
-    } else {
-        Operation::Move(reg, addr)
-    }
-}
-
 fn loads() -> Operation {
     let reg = randomly!( { A } { X } { Y } );
 
