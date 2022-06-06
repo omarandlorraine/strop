@@ -663,7 +663,7 @@ mod tests {
             let a: u8 = random();
             let b: u8 = random();
             let c: bool = random();
-            let d: bool = random();
+            let d: bool = false;
 
             let msg = format!("For {:#04x} {:?}", opcode, op);
             let regr = format!("run_strop({:?}, {:#04x}, {:#04x}, {}, {})", op, a, b, c, d);
@@ -719,6 +719,7 @@ mod tests {
     #[test]
     fn fuzzer_call() {
         fuzz_dyadic(AddWithCarry, 0x69);
+        fuzz_dyadic(SubtractWithCarry, 0xe9);
         fuzz_dyadic(And, 0x29);
     }
 }
