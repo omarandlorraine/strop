@@ -649,6 +649,15 @@ mod tests {
         );
     }
 
+    #[test]
+    fn adc_set_overflow() {
+        // check that the overflow flag is set when unsigned addition carries over
+        assert!(
+            run_strop(AddWithCarry, 0x82, 0x87, true, false).4,
+            "adc instruction didn't set overflow flag but should have"
+        );
+    }
+
     fn fuzz_dyadic(op: DyadicOperation, opcode: u8) {
         for _i in 0..5000 {
             let a: u8 = random();
