@@ -180,8 +180,6 @@ pub const M6800: Machine = Machine {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn p() {
         // This "unit test" is here to demonstrate that the 6800 is unsupported.

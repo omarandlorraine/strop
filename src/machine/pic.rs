@@ -220,8 +220,6 @@ pub const PIC12: Machine = Machine {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn p() {
         // This "unit test" is here to demonstrate that the PICs are unsupported.
