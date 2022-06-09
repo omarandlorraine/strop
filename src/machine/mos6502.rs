@@ -732,6 +732,9 @@ mod tests {
     fn fuzzer_call() {
         fuzz_dyadic(AddWithCarry, 0x69);
         fuzz_dyadic(And, 0x29);
+        // Not testing BitCompare (the BIT opcode) here because there is no immediate mode
+        fuzz_dyadic(ExclusiveOr, 0x49);
+        fuzz_dyadic(Or, 0x09);
         fuzz_dyadic(SubtractWithCarry, 0xe9);
     }
 }
