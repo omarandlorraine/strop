@@ -351,7 +351,12 @@ impl DyadicOperation {
                         None
                     }
                 }
-                Self::And => Some(a & b),
+                Self::And => {
+                    let result = a & b;
+                    s.sign = Some(result.leading_zeros() == 0);
+                    s.zero = Some(result == *zero);
+                    Some(result)
+                }
                 Self::ExclusiveOr => Some(a ^ b),
                 Self::Or => Some(a | b),
                 Self::Subtract => Some(a.wrapping_sub(&b)),

@@ -658,6 +658,18 @@ mod tests {
         );
     }
 
+    #[test]
+    fn and_flags() {
+        assert!(
+            run_strop(And, 0xe8, 0x80, true, false).3,
+            "and instruction didn't set sign flag but should've"
+        );
+        assert!(
+            run_strop(And, 0x8e, 0x70, true, false).1,
+            "and instruction didn't set zero flag but should've"
+        );
+    }
+
     fn fuzz_dyadic(op: DyadicOperation, opcode: u8) {
         for _i in 0..5000 {
             let a: u8 = random();
@@ -719,7 +731,7 @@ mod tests {
     #[test]
     fn fuzzer_call() {
         fuzz_dyadic(AddWithCarry, 0x69);
-        fuzz_dyadic(SubtractWithCarry, 0xe9);
         fuzz_dyadic(And, 0x29);
+        fuzz_dyadic(SubtractWithCarry, 0xe9);
     }
 }
