@@ -698,7 +698,7 @@ mod tests {
 
             assert!(
                 truth.0 == strop.0,
-                "{}, run {} and check accumulator == {}",
+                "{}, run {} and check accumulator == {:#04x}",
                 msg,
                 regr,
                 truth.0
