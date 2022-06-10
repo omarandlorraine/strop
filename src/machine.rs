@@ -357,8 +357,18 @@ impl DyadicOperation {
                     s.zero = Some(result == *zero);
                     Some(result)
                 }
-                Self::ExclusiveOr => Some(a ^ b),
-                Self::Or => Some(a | b),
+                Self::ExclusiveOr => {
+                    let result = a ^ b;
+                    s.sign = Some(result.leading_zeros() == 0);
+                    s.zero = Some(result == *zero);
+                    Some(result)
+                }
+                Self::Or => {
+                    let result = a | b;
+                    s.sign = Some(result.leading_zeros() == 0);
+                    s.zero = Some(result == *zero);
+                    Some(result)
+                }
                 Self::Subtract => Some(a.wrapping_sub(&b)),
                 Self::SubtractWithCarry => s
                     .carry

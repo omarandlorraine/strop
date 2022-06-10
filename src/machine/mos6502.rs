@@ -659,6 +659,30 @@ mod tests {
     }
 
     #[test]
+    fn ora_flags() {
+        assert!(
+            run_strop(Or, 0x00, 0x00, true, false).1,
+            "eor instruction didn't set zero flag but should've"
+        );
+        assert!(
+            run_strop(Or, 0x04, 0xbe, true, false).3,
+            "ora instruction didn't set sign flag but should've"
+        );
+    }
+
+    #[test]
+    fn eor_flags() {
+        assert!(
+            run_strop(ExclusiveOr, 0x37, 0x37, true, false).1,
+            "eor instruction didn't set zero flag but should've"
+        );
+        assert!(
+            run_strop(ExclusiveOr, 0x29, 0x87, false, false).3,
+            "eor instruction didn't set sign flag but should've"
+        );
+    }
+
+    #[test]
     fn and_flags() {
         assert!(
             run_strop(And, 0xe8, 0x80, true, false).3,
