@@ -632,26 +632,16 @@ mod tests {
     }
 
     #[test]
-    fn adc_set_carry() {
+    fn adc_flags() {
         // check that the carry flag is set when unsigned addition carries over
         assert!(
             run_strop(AddWithCarry, 0x94, 0x83, false, false).2,
             "adc instruction didn't set carry flag but should have"
         );
-    }
-
-    #[test]
-    fn adc_set_sign() {
-        // check that the sign flag is set when unsigned addition carries over
         assert!(
             run_strop(AddWithCarry, 0x31, 0xb5, false, false).3,
             "adc instruction didn't set sign flag but should have"
         );
-    }
-
-    #[test]
-    fn adc_set_overflow() {
-        // check that the overflow flag is set when unsigned addition carries over
         assert!(
             run_strop(AddWithCarry, 0x82, 0x87, true, false).4,
             "adc instruction didn't set overflow flag but should have"
