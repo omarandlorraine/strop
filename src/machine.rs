@@ -370,9 +370,30 @@ impl DyadicOperation {
                     Some(result)
                 }
                 Self::Subtract => Some(a.wrapping_sub(&b)),
-                Self::SubtractWithCarry => s
-                    .carry
-                    .map(|c| a.wrapping_sub(&b).wrapping_sub(if c { zero } else { one })),
+                Self::SubtractWithCarry => {
+                    if let Some(c) = s.carry {
+                        let result = a.wrapping_sub(&b).wrapping_sub(if c { zero } else { one });
+                        if let Some(r) = a.checked_sub(&b) {
+                            s.carry = Some(r.checked_sub(if c { one } else { zero }).is_none());
+                        } else {
+                            s.carry = Some(true);
+                        }
+                        let a_sign = a.leading_zeros() == 0;
+                        let b_sign = b.leading_zeros() == 0;
+                        let r_sign = result.leading_zeros() == 0;
+                        s.zero = Some(result == *zero);
+                        s.sign = Some(r_sign);
+                        s.overflow =
+                            Some((a_sign && b_sign && !r_sign) || (!a_sign && !b_sign && r_sign));
+                        Some(result)
+                    } else {
+                        s.carry = None;
+                        s.zero = None;
+                        s.sign = None;
+                        s.overflow = None;
+                        None
+                    }
+                }
                 Self::SubtractWithBorrow => s
                     .carry
                     .map(|c| a.wrapping_sub(&b).wrapping_sub(if c { one } else { zero })),
