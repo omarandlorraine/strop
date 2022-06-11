@@ -289,52 +289,38 @@ pub enum MonadicOperation {
 }
 
 impl MonadicOperation {
+    fn flags_sign_zero<T>(&self, s: &mut State, v: Option<T>)
+    where
+        T: num::PrimInt + std::iter::Sum + WrappingAdd + WrappingSub + Swap,
+    {
+        s.sign = v.map(|v| v.leading_zeros() == 0);
+        s.zero = v.map(|v| v == T::zero());
+    }
+
     fn evaluate<T>(&self, s: &mut State, v: Option<T>) -> Option<T>
     where
         T: num::PrimInt + std::iter::Sum + WrappingAdd + WrappingSub + Swap,
     {
-        let (zero, one) = (&T::zero(), &T::one());
         match self {
             Self::LeftShiftArithmetic => {
                 let result = v.map(|v| v.shift_left(false).1);
-                if result.is_some() {
-                    s.carry = Some(v.unwrap().leading_zeros() == 0);
-                    s.sign = Some(result.unwrap().leading_zeros() == 0);
-                    s.zero = Some(result.unwrap() == *zero);
-                } else {
-                    s.carry = None;
-                    s.sign = None;
-                    s.zero = None;
-                }
+                self.flags_sign_zero(s, result);
+                s.carry = v.map(|v| v.leading_zeros() == 0);
                 result
             }
             Self::RightShiftArithmetic => v.map(|v| v.shift_right(v < T::zero()).1),
             Self::RightShiftLogical => {
                 let result = v.map(|v| v.shift_right(false).1);
-                if result.is_some() {
-                    s.carry = Some(v.unwrap().trailing_zeros() == 0);
-                    s.sign = Some(result.unwrap().leading_zeros() == 0);
-                    s.zero = Some(result.unwrap() == *zero);
-                } else {
-                    s.carry = None;
-                    s.sign = None;
-                    s.zero = None;
-                }
+                self.flags_sign_zero(s, result);
+                s.carry = v.map(|v| v.trailing_zeros() == 0);
                 result
             }
             Self::RotateLeftThruCarry => {
                 let result = v
                     .map(|v| s.carry.map(|c| v.shift_left(c).1))
                     .unwrap_or(None);
-                if result.is_some() {
-                    s.carry = Some(v.unwrap().leading_zeros() == 0);
-                    s.sign = Some(result.unwrap().leading_zeros() == 0);
-                    s.zero = Some(result.unwrap() == *zero);
-                } else {
-                    s.carry = None;
-                    s.sign = None;
-                    s.zero = None;
-                }
+                self.flags_sign_zero(s, result);
+                s.carry = v.map(|v| v.leading_zeros() == 0);
                 result
             }
             Self::RotateRightThruCarry => v
