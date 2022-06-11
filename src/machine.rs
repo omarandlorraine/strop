@@ -309,10 +309,34 @@ impl MonadicOperation {
                 result
             }
             Self::RightShiftArithmetic => v.map(|v| v.shift_right(v < T::zero()).1),
-            Self::RightShiftLogical => v.map(|v| v.shift_right(false).1),
-            Self::RotateLeftThruCarry => v
-                .map(|v| s.carry.map(|c| v.shift_left(c).1))
-                .unwrap_or(None),
+            Self::RightShiftLogical => {
+                let result = v.map(|v| v.shift_right(false).1);
+                if result.is_some() {
+                    s.carry = Some(v.unwrap().trailing_zeros() == 0);
+                    s.sign = Some(result.unwrap().leading_zeros() == 0);
+                    s.zero = Some(result.unwrap() == *zero);
+                } else {
+                    s.carry = None;
+                    s.sign = None;
+                    s.zero = None;
+                }
+                result
+            }
+            Self::RotateLeftThruCarry => {
+                let result = v
+                    .map(|v| s.carry.map(|c| v.shift_left(c).1))
+                    .unwrap_or(None);
+                if result.is_some() {
+                    s.carry = Some(v.unwrap().leading_zeros() == 0);
+                    s.sign = Some(result.unwrap().leading_zeros() == 0);
+                    s.zero = Some(result.unwrap() == *zero);
+                } else {
+                    s.carry = None;
+                    s.sign = None;
+                    s.zero = None;
+                }
+                result
+            }
             Self::RotateRightThruCarry => v
                 .map(|v| s.carry.map(|c| v.shift_left(c).1))
                 .unwrap_or(None),

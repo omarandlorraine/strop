@@ -723,6 +723,26 @@ mod tests {
     }
 
     #[test]
+    fn rol_flags() {
+        assert!(
+            !run_strop_monadic(RotateLeftThruCarry, 0x58, true, false).2,
+            "rol instruction set carry flag but shouldn't've"
+        );
+    }
+
+    #[test]
+    fn lsr_flags() {
+        assert!(
+            !run_strop_monadic(RightShiftLogical, 0xab, false, false).3,
+            "lsr instruction didn't set sign flag but should've"
+        );
+        assert!(
+            !run_strop_monadic(RightShiftLogical, 0xde, false, false).2,
+            "lsr instruction should've set carry flag but didn't"
+        );
+    }
+
+    #[test]
     fn and_flags() {
         assert!(
             run_strop(And, 0xe8, 0x80, true, false).3,
@@ -853,6 +873,9 @@ mod tests {
     #[test]
     fn fuzzer_call() {
         fuzz_monadic(LeftShiftArithmetic, 0x0a);
+        fuzz_monadic(RightShiftLogical, 0x4a);
+        fuzz_monadic(RotateLeftThruCarry, 0x2a);
+        fuzz_monadic(RotateRightThruCarry, 0x6a);
         fuzz_dyadic(AddWithCarry, 0x69);
         fuzz_dyadic(And, 0x29);
         // Not testing BitCompare (the BIT opcode) here because there is no immediate mode
