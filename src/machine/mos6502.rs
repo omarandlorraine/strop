@@ -683,6 +683,14 @@ mod tests {
     }
 
     #[test]
+    fn asl_flags() {
+        assert!(
+            run_strop_monadic(LeftShiftArithmetic, 0x86, false, false).2,
+            "asl instruction should've set carry flag but didn't"
+        );
+    }
+
+    #[test]
     fn ora_flags() {
         assert!(
             run_strop(Or, 0x00, 0x00, true, false).1,
