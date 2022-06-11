@@ -590,6 +590,40 @@ mod tests {
         )
     }
 
+    fn run_strop_monadic(
+        op: MonadicOperation,
+        val1: u8,
+        carry: bool,
+        decimal: bool,
+    ) -> (i8, bool, bool, bool, bool) {
+        use crate::State;
+        let mut c = FLAG_INSTRUCTIONS.clone();
+        c.operation = Operation::Carry(carry);
+
+        let mut d = FLAG_INSTRUCTIONS.clone();
+        d.operation = Operation::Decimal(decimal);
+
+        let mut lda1 = LOAD_INSTRUCTIONS.clone();
+        lda1.operation = Operation::Move(Datum::Imm8(i8::from_ne_bytes(val1.to_ne_bytes())), A);
+
+        let mut ope = RMW_NMOS.clone();
+        ope.operation = Operation::Monadic(Width::Width8, op, A, A);
+
+        let mut s = State::new();
+        c.operate(&mut s);
+        d.operate(&mut s);
+        lda1.operate(&mut s);
+        ope.operate(&mut s);
+
+        (
+            s.get_i8(A).unwrap(),
+            s.zero.unwrap_or(false),
+            s.carry.unwrap_or(false),
+            s.sign.unwrap_or(false),
+            s.overflow.unwrap_or(false),
+        )
+    }
+
     fn run_strop(
         op: DyadicOperation,
         val1: u8,
@@ -684,6 +718,64 @@ mod tests {
         );
     }
 
+    fn fuzz_monadic(op: MonadicOperation, opcode: u8) {
+        for _i in 0..5000 {
+            let a: u8 = random();
+            let b: u8 = random();
+            let c: bool = random();
+            let d: bool = false;
+
+            let msg = format!("For {:#04x} {:?}", opcode, op);
+            let regr = format!("run_strop_monadic({:?}, {:#04x}, {}, {})", op, a, c, d);
+            let truth = run_mos6502(opcode, a, 0xff, c, d);
+            let strop = run_strop_monadic(op, a, c, d);
+
+            assert!(
+                truth.0 == strop.0,
+                "{}, run {} and check accumulator == {:#04x}",
+                msg,
+                regr,
+                truth.0
+            );
+
+            assert!(
+                truth.1 == strop.1,
+                "{}, run {} and check zero flag == {}",
+                msg,
+                regr,
+                truth.1
+            );
+
+            if b != 0xff {
+                // There should be no if here.
+                // This is a workaround for a bug in the mos6502 crate
+                assert!(
+                    truth.2 == strop.2,
+                    "{}, run {} and check carry == {}",
+                    msg,
+                    regr,
+                    truth.2
+                );
+            }
+
+            assert!(
+                truth.3 == strop.3,
+                "{}, run {} and check sign flag == {}",
+                msg,
+                regr,
+                truth.3
+            );
+
+            assert!(
+                truth.4 == strop.4,
+                "{}, run {} and check overflow flag == {}",
+                msg,
+                regr,
+                truth.4
+            );
+        }
+    }
+
     fn fuzz_dyadic(op: DyadicOperation, opcode: u8) {
         for _i in 0..5000 {
             let a: u8 = random();
@@ -744,6 +836,7 @@ mod tests {
 
     #[test]
     fn fuzzer_call() {
+        fuzz_monadic(LeftShiftArithmetic, 0x0a);
         fuzz_dyadic(AddWithCarry, 0x69);
         fuzz_dyadic(And, 0x29);
         // Not testing BitCompare (the BIT opcode) here because there is no immediate mode
