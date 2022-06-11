@@ -293,13 +293,18 @@ impl MonadicOperation {
     where
         T: num::PrimInt + std::iter::Sum + WrappingAdd + WrappingSub + Swap,
     {
+        let (zero, one) = (&T::zero(), &T::one());
         match self {
             Self::LeftShiftArithmetic => {
                 let result = v.map(|v| v.shift_left(false).1);
                 if result.is_some() {
                     s.carry = Some(v.unwrap().leading_zeros() == 0);
+                    s.sign = Some(result.unwrap().leading_zeros() == 0);
+                    s.zero = Some(result.unwrap() == *zero);
                 } else {
                     s.carry = None;
+                    s.sign = None;
+                    s.zero = None;
                 }
                 result
             }

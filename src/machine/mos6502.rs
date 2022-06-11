@@ -688,6 +688,14 @@ mod tests {
             run_strop_monadic(LeftShiftArithmetic, 0x86, false, false).2,
             "asl instruction should've set carry flag but didn't"
         );
+        assert!(
+            run_strop_monadic(LeftShiftArithmetic, 0xde, false, false).3,
+            "asl instruction didn't set sign flag but should have"
+        );
+        assert!(
+            run_strop_monadic(LeftShiftArithmetic, 0x80, false, false).1,
+            "asl instruction didn't set zero flag but should have"
+        );
     }
 
     #[test]
