@@ -723,6 +723,16 @@ mod tests {
     }
 
     #[test]
+    fn ror_result() {
+        let result = run_strop_monadic(RotateRightThruCarry, 0x43, true, false).0;
+        assert!(
+            result == 0x21,
+            "0x43 rotated right should be 0x21 but was found to be {:#04x}",
+            result
+        );
+    }
+
+    #[test]
     fn rol_flags() {
         assert!(
             !run_strop_monadic(RotateLeftThruCarry, 0x58, true, false).2,
