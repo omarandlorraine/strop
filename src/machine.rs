@@ -323,9 +323,12 @@ impl MonadicOperation {
                 s.carry = v.map(|v| v.leading_zeros() == 0);
                 result
             }
-            Self::RotateRightThruCarry => v
-                .map(|v| s.carry.map(|c| v.shift_left(c).1))
-                .unwrap_or(None),
+            Self::RotateRightThruCarry => {
+                let result = v
+                    .map(|v| s.carry.map(|c| v.shift_right(c).1))
+                    .unwrap_or(None);
+                result
+            }
             Self::RotateLeftThruAccumulator => {
                 panic!("no standard implementation of RotateLeftThruAccumulator")
             }
