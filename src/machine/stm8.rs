@@ -533,13 +533,6 @@ const RANDS: [Instruction; 10] = [
         disassemble: dasm,
         length: instr_length_stm8,
         operation: Operation::Nop,
-        randomizer: loads,
-    },
-    Instruction {
-        implementation: standard_implementation,
-        disassemble: dasm,
-        length: instr_length_stm8,
-        operation: Operation::Nop,
         randomizer: transfers,
     },
     Instruction {
@@ -590,6 +583,13 @@ const RANDS: [Instruction; 10] = [
         length: instr_length_muldiv,
         operation: Operation::Nop,
         randomizer: muldiv,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: instr_length_stm8,
+        operation: Operation::Nop,
+        randomizer: loads,
     },
 ];
 
@@ -835,8 +835,8 @@ mod tests {
         find_it("ld a, xh", &RANDS[1]);
         find_it("ld yl, a", &RANDS[1]);
         // Not bothering with ldf; strop does not support STM8's having more than 64K RAM.
-        find_it("ldw", &RANDS[1]);
-        find_it("mov", &RANDS[1]);
+        find_it("ldw", &RANDS[9]);
+        find_it("mov", &RANDS[9]);
         find_it("mul", &RANDS[8]);
         find_it("neg", &RANDS[6]);
         find_it("negw", &RANDS[6]);
