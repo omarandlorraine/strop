@@ -722,6 +722,14 @@ mod tests {
     }
 
     #[test]
+    fn x_width() {
+        let val: Option<i16> = Some(150);
+        let mut s = State::new();
+        s.set_i16(X, val);
+        assert_eq!(val, s.get_i16(X));
+    }
+
+    #[test]
     fn reg_names() {
         assert_eq!(stm8_reg_by_name("a").unwrap(), A);
         assert_eq!(stm8_reg_by_name("xl").unwrap(), XL);
