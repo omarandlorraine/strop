@@ -723,10 +723,27 @@ mod tests {
 
     #[test]
     fn x_width() {
-        let val: Option<i16> = Some(150);
         let mut s = State::new();
-        s.set_i16(X, val);
-        assert_eq!(val, s.get_i16(X));
+
+        s.set_i16(X, Some(10));
+        assert_eq!(10, s.get_i16(XL).unwrap());
+        assert_eq!(0, s.get_i16(XH).unwrap());
+        assert_eq!(10, s.get_u16(XL).unwrap());
+        assert_eq!(0, s.get_u16(XH).unwrap());
+
+        s.set_u16(X, Some(10));
+        assert_eq!(10, s.get_u16(XL).unwrap());
+        assert_eq!(0, s.get_u16(XH).unwrap());
+
+        s.set_i16(X, Some(-1));
+        assert_eq!(-1, s.get_i16(XL).unwrap());
+        assert_eq!(-1, s.get_i16(XH).unwrap());
+
+        s.set_i16(X, Some(150));
+        assert_eq!(150, s.get_i16(X).unwrap());
+
+        s.set_u16(X, Some(15000));
+        assert_eq!(15000, s.get_u16(X).unwrap());
     }
 
     #[test]
