@@ -744,6 +744,10 @@ mod tests {
 
         s.set_u16(X, Some(15000));
         assert_eq!(15000, s.get_u16(X).unwrap());
+
+        s.set_i16(X, Some(0));
+        assert_eq!(0, s.get_i16(XL).unwrap());
+        assert_eq!(0, s.get_i16(XH).unwrap());
     }
 
     #[test]
