@@ -217,3 +217,12 @@ pub const PIC12: Machine = Machine {
     random_insn: instr_pic12,
     reg_by_name,
 };
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn p() {
+        // This "unit test" is here to demonstrate that the PICs are unsupported.
+        panic!();
+    }
+}

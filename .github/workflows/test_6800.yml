@@ -1,4 +1,4 @@
-name: stm8
+name: 6800
 
 on:
   push:
@@ -17,4 +17,4 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Run tests
-      run: cargo test --verbose machine::stm8
+      run: cargo test --verbose machine::m6800

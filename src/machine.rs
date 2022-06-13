@@ -8,14 +8,14 @@ use std::convert::TryInto;
 mod m6800;
 mod mos6502;
 mod pic;
-mod prex86;
 mod stm8;
+mod x80;
 
 use crate::machine::m6800::M6800;
 use crate::machine::mos6502::{MOS6502, MOS65C02};
 use crate::machine::pic::PIC12;
-use crate::machine::prex86::KR580VM1;
 use crate::machine::stm8::STM8;
+use crate::machine::x80::KR580VM1;
 
 #[derive(Clone, Copy)]
 pub struct Machine {
@@ -265,6 +265,7 @@ pub enum DyadicOperation {
     Or,
     Subtract,
     SubtractWithBorrow,
+    SubtractWithCarry,
     Divide,
     Multiply,
     // TODO: Move the shifts here.
@@ -288,20 +289,46 @@ pub enum MonadicOperation {
 }
 
 impl MonadicOperation {
+    fn flags_sign_zero<T>(&self, s: &mut State, v: Option<T>)
+    where
+        T: num::PrimInt + std::iter::Sum + WrappingAdd + WrappingSub + Swap,
+    {
+        s.sign = v.map(|v| v.leading_zeros() == 0);
+        s.zero = v.map(|v| v == T::zero());
+    }
+
     fn evaluate<T>(&self, s: &mut State, v: Option<T>) -> Option<T>
     where
         T: num::PrimInt + std::iter::Sum + WrappingAdd + WrappingSub + Swap,
     {
         match self {
-            Self::LeftShiftArithmetic => v.map(|v| v.shift_left(false).1),
+            Self::LeftShiftArithmetic => {
+                let result = v.map(|v| v.shift_left(false).1);
+                self.flags_sign_zero(s, result);
+                s.carry = v.map(|v| v.leading_zeros() == 0);
+                result
+            }
             Self::RightShiftArithmetic => v.map(|v| v.shift_right(v < T::zero()).1),
-            Self::RightShiftLogical => v.map(|v| v.shift_right(false).1),
-            Self::RotateLeftThruCarry => v
-                .map(|v| s.carry.map(|c| v.shift_left(c).1))
-                .unwrap_or(None),
-            Self::RotateRightThruCarry => v
-                .map(|v| s.carry.map(|c| v.shift_left(c).1))
-                .unwrap_or(None),
+            Self::RightShiftLogical => {
+                let result = v.map(|v| v.shift_right(false).1);
+                self.flags_sign_zero(s, result);
+                s.carry = v.map(|v| v.trailing_zeros() == 0);
+                result
+            }
+            Self::RotateLeftThruCarry => {
+                let result = v
+                    .map(|v| s.carry.map(|c| v.shift_left(c).1))
+                    .unwrap_or(None);
+                self.flags_sign_zero(s, result);
+                s.carry = v.map(|v| v.leading_zeros() == 0);
+                result
+            }
+            Self::RotateRightThruCarry => {
+                let result = v
+                    .map(|v| s.carry.map(|c| v.shift_right(c).1))
+                    .unwrap_or(None);
+                result
+            }
             Self::RotateLeftThruAccumulator => {
                 panic!("no standard implementation of RotateLeftThruAccumulator")
             }
@@ -318,7 +345,7 @@ impl MonadicOperation {
 }
 
 impl DyadicOperation {
-    fn evaluate<T>(&self, s: &State, a: Option<T>, b: Option<T>) -> Option<T>
+    fn evaluate<T>(&self, s: &mut State, a: Option<T>, b: Option<T>) -> Option<T>
     where
         T: num::PrimInt + std::iter::Sum + WrappingAdd + WrappingSub,
     {
@@ -326,13 +353,73 @@ impl DyadicOperation {
         if let (Some(a), Some(b)) = (a, b) {
             match self {
                 Self::Add => Some(a.wrapping_add(&b)),
-                Self::AddWithCarry => s
-                    .carry
-                    .map(|c| a.wrapping_add(&b).wrapping_add(if c { one } else { zero })),
-                Self::And => Some(a & b),
-                Self::ExclusiveOr => Some(a ^ b),
-                Self::Or => Some(a | b),
+                Self::AddWithCarry => {
+                    if let Some(c) = s.carry {
+                        let result = a.wrapping_add(&b).wrapping_add(if c { one } else { zero });
+                        if let Some(r) = a.checked_add(&b) {
+                            s.carry = Some(r.checked_add(if c { one } else { zero }).is_none());
+                        } else {
+                            s.carry = Some(true);
+                        }
+                        let a_sign = a.leading_zeros() == 0;
+                        let b_sign = b.leading_zeros() == 0;
+                        let r_sign = result.leading_zeros() == 0;
+                        s.zero = Some(result == *zero);
+                        s.sign = Some(r_sign);
+                        s.overflow =
+                            Some((a_sign && b_sign && !r_sign) || (!a_sign && !b_sign && r_sign));
+                        Some(result)
+                    } else {
+                        s.carry = None;
+                        s.zero = None;
+                        s.sign = None;
+                        s.overflow = None;
+                        None
+                    }
+                }
+                Self::And => {
+                    let result = a & b;
+                    s.sign = Some(result.leading_zeros() == 0);
+                    s.zero = Some(result == *zero);
+                    Some(result)
+                }
+                Self::ExclusiveOr => {
+                    let result = a ^ b;
+                    s.sign = Some(result.leading_zeros() == 0);
+                    s.zero = Some(result == *zero);
+                    Some(result)
+                }
+                Self::Or => {
+                    let result = a | b;
+                    s.sign = Some(result.leading_zeros() == 0);
+                    s.zero = Some(result == *zero);
+                    Some(result)
+                }
                 Self::Subtract => Some(a.wrapping_sub(&b)),
+                Self::SubtractWithCarry => {
+                    if let Some(c) = s.carry {
+                        let result = a.wrapping_sub(&b).wrapping_sub(if c { zero } else { one });
+                        if let Some(r) = a.checked_sub(&b) {
+                            s.carry = Some(r.checked_sub(if c { one } else { zero }).is_none());
+                        } else {
+                            s.carry = Some(true);
+                        }
+                        let a_sign = a.leading_zeros() == 0;
+                        let b_sign = b.leading_zeros() == 0;
+                        let r_sign = result.leading_zeros() == 0;
+                        s.zero = Some(result == *zero);
+                        s.sign = Some(r_sign);
+                        s.overflow =
+                            Some((a_sign && b_sign && !r_sign) || (!a_sign && !b_sign && r_sign));
+                        Some(result)
+                    } else {
+                        s.carry = None;
+                        s.zero = None;
+                        s.sign = None;
+                        s.overflow = None;
+                        None
+                    }
+                }
                 Self::SubtractWithBorrow => s
                     .carry
                     .map(|c| a.wrapping_sub(&b).wrapping_sub(if c { one } else { zero })),
@@ -360,6 +447,7 @@ pub enum Operation {
     Shift(ShiftType, Datum),
     Carry(bool),
     Overflow(bool),
+    Decimal(bool),
     ComplementCarry,
     BitSet(Datum, u8),
     BitClear(Datum, u8),
@@ -501,11 +589,17 @@ pub fn standard_implementation(insn: &Instruction, s: &mut State) -> FlowControl
             FlowControl::FallThrough
         }
         Operation::Dyadic(Width::Width8, operation, a, b, dst) => {
-            s.set_i8(dst, operation.evaluate(s, s.get_i8(a), s.get_i8(b)));
+            let a = s.get_u8(a);
+            let b = s.get_u8(b);
+            let r = operation.evaluate(s, a, b);
+            s.set_u8(dst, r);
             FlowControl::FallThrough
         }
         Operation::Dyadic(Width::Width16, operation, a, b, dst) => {
-            s.set_i16(dst, operation.evaluate(s, s.get_i16(a), s.get_i16(b)));
+            let a = s.get_u16(a);
+            let b = s.get_u16(b);
+            let r = operation.evaluate(s, a, b);
+            s.set_u16(dst, r);
             FlowControl::FallThrough
         }
         Operation::Move(source, destination) => {
@@ -555,6 +649,10 @@ pub fn standard_implementation(insn: &Instruction, s: &mut State) -> FlowControl
         },
         Operation::Overflow(b) => {
             s.overflow = Some(b);
+            FlowControl::FallThrough
+        }
+        Operation::Decimal(b) => {
+            s.decimal = Some(b);
             FlowControl::FallThrough
         }
         Operation::Carry(b) => {
@@ -632,6 +730,7 @@ pub struct State {
     sign: Option<bool>,
     halfcarry: Option<bool>,
     overflow: Option<bool>,
+    decimal: Option<bool>,
     heap: HashMap<u16, Option<i8>>,
 }
 
@@ -656,6 +755,7 @@ impl State {
             sign: None,
             overflow: None,
             halfcarry: None,
+            decimal: None,
             heap: HashMap::new(),
         }
     }
