@@ -12,6 +12,7 @@ use crate::machine::Datum;
 use crate::machine::Machine;
 use crate::machine::State;
 use crate::machine::MACHINES;
+use crate::search::dead_code_elimination;
 use crate::search::optimize;
 use crate::search::stochastic_search;
 use crate::search::BasicBlock;
@@ -199,6 +200,13 @@ fn main() {
     };
 
     let prog = stochastic_search(&testrun, machine, opts.graph, opts.debug);
-    let opt = optimize(&testrun, &prog, machine);
+    if opts.debug {
+        println!("found a correct program, beginning dead code elimination");
+    }
+    let dce = dead_code_elimination(&testrun, &prog, machine);
+    if opts.debug {
+        println!("running the final optimization pass");
+    }
+    let opt = optimize(&testrun, &dce, machine);
     disassemble(opt);
 }

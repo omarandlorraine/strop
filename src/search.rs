@@ -20,6 +20,7 @@ struct BasicBlockSpawn {
     mutant: BasicBlock,
     ncount: usize,
     mach: Machine,
+    mutate: fn(&mut BasicBlock, Machine),
 }
 
 impl Iterator for BasicBlockSpawn {
@@ -31,7 +32,7 @@ impl Iterator for BasicBlockSpawn {
             self.ncount = 100;
         }
         self.ncount -= 1;
-        mutate(&mut self.mutant, self.mach);
+        (self.mutate)(&mut self.mutant, self.mach);
         Some(self.mutant.clone())
     }
 }
@@ -48,6 +49,19 @@ impl BasicBlock {
         bb
     }
 
+    fn dce(&self, mach: Machine) -> BasicBlockSpawn {
+        let parent: BasicBlock = BasicBlock {
+            instructions: self.instructions.clone(),
+        };
+        BasicBlockSpawn {
+            parent,
+            mutant: self.clone(),
+            ncount: 0,
+            mach,
+            mutate: mutate_delete,
+        }
+    }
+
     fn spawn(&self, mach: Machine) -> BasicBlockSpawn {
         let parent: BasicBlock = BasicBlock {
             instructions: self.instructions.clone(),
@@ -57,6 +71,7 @@ impl BasicBlock {
             mutant: self.clone(),
             ncount: 0,
             mach,
+            mutate,
         }
     }
 
@@ -185,7 +200,7 @@ fn cost(prog: &BasicBlock) -> f64 {
     prog.len() as f64
 }
 
-fn mutate_delete(prog: &mut BasicBlock) {
+fn mutate_delete(prog: &mut BasicBlock, _mach: Machine) {
     let instr_count = prog.instructions.len();
     if instr_count > 1 {
         prog.remove(prog.random_offset());
@@ -216,7 +231,7 @@ fn mutate(prog: &mut BasicBlock, mach: Machine) {
     }
     {
         /* delete an instruction */
-        mutate_delete(prog);
+        mutate_delete(prog, mach);
     }
     {
         /* insert a new instruction */
@@ -310,6 +325,35 @@ pub fn quick_dce(correctness: &dyn Fn(&BasicBlock) -> f64, prog: &BasicBlock) ->
             cur += 1;
         }
     }
+}
+
+pub fn dead_code_elimination(
+    correctness: &TestRun,
+    prog: &BasicBlock,
+    mach: Machine,
+) -> BasicBlock {
+    let mut population: Vec<(f64, BasicBlock)> = vec![];
+
+    let fitness = difference(prog, correctness);
+    population.push((cost(prog), prog.clone()));
+
+    let best = prog;
+
+    println!("beginning dead code elimination pass");
+    // if we find a better version, try to optimize that as well.
+    if let Some(s) = best
+        .dce(mach)
+        .take(100000)
+        .filter(|s| difference(s, correctness) <= fitness)
+        .map(|s| (s.instructions.len(), s))
+        .min_by(|a, b| a.0.cmp(&b.0))
+    {
+        println!("dead code elimination pass");
+        return s.1;
+    }
+
+    // Otherwise just return what we got.
+    prog.clone()
 }
 
 pub fn optimize(correctness: &TestRun, prog: &BasicBlock, mach: Machine) -> BasicBlock {
