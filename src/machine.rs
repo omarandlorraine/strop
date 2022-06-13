@@ -704,12 +704,15 @@ impl State {
     }
 
     pub fn get_i16(&self, d: Datum) -> Option<i16> {
+        // TODO: refactor for DRY
         match d {
             Datum::Register(_) => self.get_i8(d).map(|x| x as i16),
             Datum::RegisterPair(x, y) => {
                 if let Some(msb) = self.get_i8(Datum::Register(x)) {
                     if let Some(lsb) = self.get_i8(Datum::Register(y)) {
-                        return Some(((msb as i16) << 8) | lsb as i16);
+                        let high = u8::from_ne_bytes(msb.to_ne_bytes());
+                        let low = u8::from_ne_bytes(lsb.to_ne_bytes());
+                        return Some(i16::from_be_bytes([high, low]));
                     }
                 }
                 None
@@ -721,7 +724,10 @@ impl State {
                     if let Some(h) = self.heap.get(&(addr + 1)) {
                         if let Some(low) = l {
                             if let Some(high) = h {
-                                return Some((*high as i16 * 256) + *low as i16);
+                                let high = u8::from_ne_bytes(high.to_ne_bytes());
+                                let low = u8::from_ne_bytes(low.to_ne_bytes());
+                                return Some(i16::from_be_bytes([high, low]));
+                                // return Some((*high as i16 * 256) + *low as i16);
                             }
                         }
                     }
@@ -796,8 +802,10 @@ impl State {
         }
     }
     pub fn set_i16(&mut self, d: Datum, val: Option<i16>) {
-        let high = val.map(|v| (v / 256) as i8);
-        let low = val.map(|v| (v % 256) as i8);
+        let bytes = val.map(|v| v.to_be_bytes());
+        let high = bytes.map(|v| i8::from_ne_bytes(v[0].to_ne_bytes()));
+        let low = bytes.map(|v| i8::from_ne_bytes(v[1].to_ne_bytes()));
+
         match d {
             Datum::Register(_) => {
                 self.set_i8(d, low);
