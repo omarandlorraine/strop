@@ -35,7 +35,7 @@ const X: Datum = Datum::RegisterPair(R::Xh, R::Xl);
 const Y: Datum = Datum::RegisterPair(R::Yh, R::Yl);
 
 fn random_imm16() -> Datum {
-    let regs = vec![0, 1, 2, 3, 4, 5, 6];
+    let regs = vec![150];
     Datum::Imm16(*regs.choose(&mut rand::thread_rng()).unwrap())
 }
 
@@ -437,6 +437,11 @@ fn transfers() -> Operation {
     {Operation::Exchange(Width::Width8, A, XL)}
     {Operation::Exchange(Width::Width8, A, YL)}
     {Operation::Exchange(Width::Width16, X, Y)}
+    )
+}
+
+fn loads() -> Operation {
+    randomly!(
     {Operation::Move(random_imm16(), X)}
     {Operation::Move(random_imm16(), Y)}
     {Operation::Move(random_immediate(), random_absolute())}
@@ -515,13 +520,20 @@ fn oneargs() -> Operation {
     }
 }
 
-const RANDS: [Instruction; 9] = [
+const RANDS: [Instruction; 10] = [
     Instruction {
         implementation: standard_implementation,
         disassemble: dasm,
         length: instr_length_stm8,
         operation: Operation::Nop,
         randomizer: clear,
+    },
+    Instruction {
+        implementation: standard_implementation,
+        disassemble: dasm,
+        length: instr_length_stm8,
+        operation: Operation::Nop,
+        randomizer: loads,
     },
     Instruction {
         implementation: standard_implementation,
