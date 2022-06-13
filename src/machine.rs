@@ -796,8 +796,10 @@ impl State {
         }
     }
     pub fn set_i16(&mut self, d: Datum, val: Option<i16>) {
-        let high = val.map(|v| (v / 256) as i8);
-        let low = val.map(|v| (v % 256) as i8);
+        let bytes = val.map(|v| v.to_be_bytes());
+        let high = bytes.map(|v| i8::from_ne_bytes(v[0].to_ne_bytes()));
+        let low = bytes.map(|v| i8::from_ne_bytes(v[1].to_ne_bytes()));
+
         match d {
             Datum::Register(_) => {
                 self.set_i8(d, low);
