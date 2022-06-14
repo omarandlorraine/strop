@@ -5,17 +5,11 @@ extern crate rand;
 use num::traits::{WrappingAdd, WrappingSub};
 use std::convert::TryInto;
 
-mod m6800;
 mod mos6502;
-mod pic;
 mod stm8;
-mod x80;
 
-use crate::machine::m6800::M6800;
 use crate::machine::mos6502::{MOS6502, MOS65C02};
-use crate::machine::pic::PIC12;
 use crate::machine::stm8::STM8;
-use crate::machine::x80::KR580VM1;
 
 #[derive(Clone, Copy)]
 pub struct Machine {
@@ -24,15 +18,14 @@ pub struct Machine {
     reg_by_name: fn(&str) -> Result<Datum, &'static str>,
 }
 
-pub const MACHINES: [Machine; 6] = [PIC12, KR580VM1, MOS6502, MOS65C02, STM8, M6800];
+pub const MACHINES: [Machine; 3] = [MOS6502, MOS65C02, STM8];
 
 #[derive(Clone, Copy)]
 pub struct Instruction {
-    pub operation: Operation,
-    randomizer: fn() -> Operation,
-    disassemble: fn(Operation, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
-    length: fn(&Instruction) -> usize,
-    implementation: fn(&Instruction, &mut State) -> FlowControl,
+    randomizer: fn(&mut Instruction) -> Operation,
+    disassemble: fn(&mut std::fmt::Formatter<'_>, &Instruction) -> std::fmt::Result,
+    length: usize,
+    implementation: fn(&Instruction, &mut State),
 }
 
 fn reg_by_name(name: &str) -> Result<Datum, &'static str> {
@@ -55,7 +48,7 @@ pub enum Width {
 
 impl std::fmt::Display for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self.disassemble)(self.operation, f)
+        (self.disassemble)(f, self)
     }
 }
 
@@ -229,14 +222,6 @@ pub enum ShiftType {
     RightArithmetic,
     LeftRotateThroughCarry,
     RightRotateThroughCarry,
-}
-
-#[derive(Clone, Debug, Copy)]
-pub enum FlowControl {
-    FallThrough,
-    Forward(u8),
-    Backward(u8),
-    Invalid,
 }
 
 #[derive(Clone, Debug, Copy)]
@@ -455,7 +440,6 @@ pub enum Operation {
     BitClear(Datum, u8),
     BitComplement(Datum, u8),
     BitCopyCarry(Datum, u8),
-    Jump(Test, FlowControl),
     Nop,
 }
 
@@ -499,41 +483,16 @@ impl Test {
     }
 }
 
-impl FlowControl {
-    pub fn newpc(self, pc: usize) -> Option<usize> {
-        match self {
-            FlowControl::FallThrough => Some(pc + 1),
-            FlowControl::Forward(offs) => pc.checked_add(offs.into()),
-            FlowControl::Backward(offs) => pc.checked_sub(offs.into()),
-            FlowControl::Invalid => None,
-        }
-    }
-}
-
 impl Instruction {
-    pub fn new(
-        randomizer: fn() -> Operation,
-        disassemble: fn(Operation, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
-        length: fn(&Instruction) -> usize,
-    ) -> Instruction {
-        Instruction {
-            operation: randomizer(),
-            disassemble,
-            randomizer,
-            length,
-            implementation: standard_implementation,
-        }
-    }
-
     pub fn randomize(&mut self) {
-        self.operation = (self.randomizer)();
+        (self.randomizer)(&mut self);
 
         #[cfg(test)]
         self.sanity_check()
     }
 
     pub fn len(&self) -> usize {
-        (self.length)(self)
+        self.length
     }
 
     #[cfg(test)]
@@ -561,12 +520,14 @@ impl Instruction {
         }
     }
 
-    pub fn operate(&self, s: &mut State) -> FlowControl {
+    pub fn operate(&self, s: &mut State) {
         (self.implementation)(self, s)
     }
 }
 
+/*
 pub fn standard_implementation(insn: &Instruction, s: &mut State) -> FlowControl {
+
     match insn.operation {
         Operation::Exchange(Width::Width8, a, b) => {
             let tmp = s.get_i8(a);
@@ -711,6 +672,8 @@ pub fn standard_implementation(insn: &Instruction, s: &mut State) -> FlowControl
         Operation::Nop => FlowControl::FallThrough,
     }
 }
+
+*/
 
 //#[derive(Copy, Clone)]
 pub struct State {

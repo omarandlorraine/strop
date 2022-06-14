@@ -1,10 +1,8 @@
 use crate::machine::random_absolute;
 use crate::machine::random_immediate;
-use crate::machine::standard_implementation;
 use crate::machine::DyadicOperation::{
     Add, AddWithCarry, And, Divide, ExclusiveOr, Multiply, Or, Subtract, SubtractWithBorrow,
 };
-use crate::machine::FlowControl;
 use crate::machine::Instruction;
 use crate::machine::MonadicOperation::{
     Complement, Decrement, Increment, LeftShiftArithmetic, Negate, RightShiftArithmetic,
@@ -52,6 +50,7 @@ fn random_register() -> Datum {
     *regs.choose(&mut rand::thread_rng()).unwrap()
 }
 
+/*
 fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     fn bit(
         f: &mut std::fmt::Formatter,
@@ -126,31 +125,6 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         }
     }
 
-    fn btjt(
-        f: &mut std::fmt::Formatter,
-        addr: u16,
-        bit_no: u8,
-        v: bool,
-        target: FlowControl,
-    ) -> std::fmt::Result {
-        let op = if v { "btjt" } else { "btjf" };
-        match target {
-            FlowControl::Forward(offs) => write!(f, "\t{} {}, {}, +{}", op, addr, bit_no, offs),
-            FlowControl::Backward(offs) => write!(f, "\t{} {}, {}, -{}", op, addr, bit_no, offs),
-            FlowControl::Invalid => panic!(),
-            FlowControl::FallThrough => panic!(),
-        }
-    }
-
-    fn jump(f: &mut std::fmt::Formatter, s: &'static str, target: FlowControl) -> std::fmt::Result {
-        match target {
-            FlowControl::Forward(offs) => write!(f, "\t{} +{}", s, offs),
-            FlowControl::Backward(offs) => write!(f, "\t{} -{}", s, offs),
-            FlowControl::Invalid => panic!(),
-            FlowControl::FallThrough => panic!(),
-        }
-    }
-
     match op {
         Operation::BitCompare(d, r) => dsyn(f, "bcp", r, d),
         Operation::Dyadic(_, And, _, d, r) => dsyn(f, "and", r, d),
@@ -219,11 +193,11 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Carry(false) => write!(f, "\trcf"),
         Operation::Carry(true) => write!(f, "\tscf"),
         Operation::ComplementCarry => write!(f, "\tccf"),
-        Operation::Jump(Test::Bit(addr, bit_no, t), target) => btjt(f, addr, bit_no, t, target),
         Operation::Jump(test, target) => jump(f, distest(test), target),
         _ => write!(f, "{:?}", op),
     }
 }
+*/
 
 fn clear() -> Operation {
     if random() {
@@ -267,7 +241,6 @@ fn impl_oneargs(insn: &Instruction, s: &mut State) -> FlowControl {
             s.set_i8(A, s.get_i8(Datum::Register(h)));
             s.set_i8(Datum::Register(h), s.get_i8(Datum::Register(l)));
             s.set_i8(Datum::Register(l), tmp);
-            FlowControl::FallThrough
         }
         Operation::Monadic(
             Width::Width16,
@@ -279,12 +252,12 @@ fn impl_oneargs(insn: &Instruction, s: &mut State) -> FlowControl {
             s.set_i8(A, s.get_i8(Datum::Register(l)));
             s.set_i8(Datum::Register(l), s.get_i8(Datum::Register(h)));
             s.set_i8(Datum::Register(h), tmp);
-            FlowControl::FallThrough
         }
         _ => standard_implementation(insn, s),
     }
 }
 
+/*
 fn impl_muldiv(insn: &Instruction, s: &mut State) -> FlowControl {
     fn div(s: &mut State, x: Datum, a: Datum) {
         let dividend = s.get_u16(x);
@@ -348,16 +321,8 @@ fn impl_muldiv(insn: &Instruction, s: &mut State) -> FlowControl {
         s.carry = Some(false);
     }
 
-    match insn.operation {
-        Operation::Dyadic(Width::Width8, Multiply, A, X, X) => mul(s, s.get_u8(XL), s.get_u8(A), X),
-        Operation::Dyadic(Width::Width8, Multiply, A, Y, Y) => mul(s, s.get_u8(YL), s.get_u8(A), Y),
-        Operation::Dyadic(Width::Width8, Divide, A, X, X) => div(s, X, A),
-        Operation::Dyadic(Width::Width8, Divide, A, Y, Y) => div(s, Y, A),
-        Operation::Dyadic(Width::Width8, Divide, X, Y, Y) => divw(s),
-        _ => unimplemented!(),
-    }
-    FlowControl::FallThrough
 }
+*/
 
 fn muldiv() -> Operation {
     randomly!(
@@ -448,36 +413,6 @@ fn loads() -> Operation {
     {Operation::Move(random_absolute(), random_absolute())}
     {Operation::Move(random_absolute(), A)}
     )
-}
-
-pub fn jumps() -> Operation {
-    fn j() -> FlowControl {
-        if random() {
-            FlowControl::Forward(rand::thread_rng().gen_range(1..3))
-        } else {
-            FlowControl::Backward(rand::thread_rng().gen_range(1..3))
-        }
-    }
-
-    fn cond() -> Test {
-        randomly!(
-        { Test::True}
-        { Test::Minus(random())}
-        { Test::Zero(random())}
-        { Test::HalfCarry(random())}
-        { Test::Overflow(random())}
-        { Test::Carry(random())}
-        { Test::SignedLowerThanOrEqual }
-        { Test::SignedLowerThan }
-        { Test::SignedGreaterThanOrEqual }
-        { Test::SignedGreaterThan }
-        { Test::UnsignedGreaterThan }
-        { Test::UnsignedLowerThanOrEqual }
-        { Test::Bit(random(), rand::thread_rng().gen_range(0..7), random())}
-        )
-    }
-
-    Operation::Jump(cond(), j())
 }
 
 fn oneargs() -> Operation {
@@ -597,92 +532,6 @@ pub fn instr_stm8() -> Instruction {
     let mut op = *RANDS.choose(&mut rand::thread_rng()).unwrap();
     op.randomize();
     op
-}
-
-pub fn instr_length_stm8(insn: &Instruction) -> usize {
-    fn y_prefix_penalty(r: Datum) -> usize {
-        if r == Y {
-            return 1;
-        }
-        if r == YH {
-            return 1;
-        }
-        if r == YL {
-            return 1;
-        }
-        0
-    }
-
-    fn addr_length(r: u16) -> usize {
-        if r < 256 {
-            1
-        } else {
-            2
-        }
-    }
-
-    match insn.operation {
-        Operation::Dyadic(Width::Width8, _, _, Datum::Imm8(_), _) => 2,
-        Operation::Dyadic(Width::Width8, _, _, Datum::Absolute(addr), _) => 1 + addr_length(addr),
-        Operation::Dyadic(Width::Width16, _, _, Datum::Imm8(_), r) => 3 + y_prefix_penalty(r),
-        Operation::Dyadic(Width::Width16, _, _, Datum::Absolute(addr), _) => 1 + addr_length(addr),
-        Operation::Dyadic(Width::Width8, Subtract, A, Datum::Zero, Datum::Zero) => 1,
-        Operation::Dyadic(Width::Width16, Subtract, X, Datum::Zero, Datum::Zero) => 1,
-        Operation::Dyadic(Width::Width16, Subtract, Y, Datum::Zero, Datum::Zero) => 2,
-        Operation::Dyadic(
-            Width::Width8,
-            Subtract,
-            Datum::Absolute(addr),
-            Datum::Zero,
-            Datum::Zero,
-        ) => {
-            if addr < 256 {
-                2
-            } else {
-                5
-            }
-        }
-        Operation::Monadic(Width::Width16, _, _, r) => 1 + y_prefix_penalty(r),
-        Operation::Monadic(Width::Width8, _, _, A) => 1,
-        Operation::Exchange(_, Datum::Register(_), Datum::Register(_)) => 1,
-        Operation::Exchange(Width::Width16, X, Y) => 1,
-        Operation::Move(Datum::Zero, A) => 1,
-        Operation::Move(Datum::Zero, X) => 1,
-        Operation::Move(Datum::Zero, Y) => 2,
-        Operation::Move(Datum::Absolute(addr), A) => 1 + addr_length(addr),
-        Operation::Move(Datum::Zero, Datum::Absolute(addr)) => 1 + addr_length(addr),
-        Operation::Move(Datum::Register(_), Datum::Register(r)) => {
-            1 + y_prefix_penalty(Datum::Register(r))
-        }
-        Operation::Move(Datum::Imm16(_), r) => 1 + y_prefix_penalty(r),
-        Operation::Move(Datum::Imm8(_), Datum::Absolute(_)) => 3,
-        Operation::Move(Datum::Absolute(from), Datum::Absolute(to)) => {
-            if from < 256 && to < 256 {
-                3
-            } else {
-                5
-            }
-        }
-        Operation::BitSet(_, _) => 4,
-        Operation::BitClear(_, _) => 4,
-        Operation::BitComplement(_, _) => 4,
-        Operation::BitCopyCarry(_, _) => 4,
-        Operation::Overflow(false) => 1,
-        Operation::Carry(_) => 1,
-        Operation::ComplementCarry => 1,
-        Operation::BitCompare(Datum::Absolute(addr), A) => 1 + addr_length(addr),
-        Operation::BitCompare(Datum::Imm8(_), A) => 2,
-        Operation::Jump(Test::Bit(_, _, _), _) => 5,
-        Operation::Jump(Test::HalfCarry(_), _) => 3,
-        Operation::Jump(Test::True, FlowControl::Forward(_)) => 2,
-        Operation::Jump(Test::True, FlowControl::Backward(_)) => 2,
-        Operation::Jump(_, _) => 2,
-        Operation::Shift(_, A) => 1,
-        Operation::Shift(_, X) => 1,
-        Operation::Shift(_, Y) => 2,
-        Operation::Shift(_, Datum::Absolute(addr)) => 1 + addr_length(addr),
-        _ => 0,
-    }
 }
 
 fn stm8_reg_by_name(name: &str) -> Result<Datum, &'static str> {

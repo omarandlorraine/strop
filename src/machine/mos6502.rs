@@ -3,12 +3,11 @@ use crate::machine::rand::Rng;
 use crate::machine::random_absolute;
 use crate::machine::random_immediate;
 use crate::machine::reg_by_name;
-use crate::machine::standard_implementation;
+use crate::machine::standard_compare;
 use crate::machine::Datum;
 use crate::machine::DyadicOperation::{
     AddWithCarry, And, ExclusiveOr, Or, Subtract, SubtractWithCarry,
 };
-use crate::machine::FlowControl;
 use crate::machine::Instruction;
 use crate::machine::Machine;
 use crate::machine::MonadicOperation;
@@ -29,6 +28,7 @@ const A: Datum = Datum::Register(R::A);
 const X: Datum = Datum::Register(R::Xl);
 const Y: Datum = Datum::Register(R::Yl);
 
+/*
 fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     fn regname(r: R) -> &'static str {
         match r {
@@ -36,20 +36,6 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             R::Xl => "x",
             R::Yl => "y",
             _ => unimplemented!(),
-        }
-    }
-
-    fn branch(f: &mut std::fmt::Formatter, s: &'static str, d: FlowControl) -> std::fmt::Result {
-        match d {
-            FlowControl::Backward(o) => {
-                write!(f, "\t{} -{}", s, o)
-            }
-            FlowControl::Forward(o) => {
-                write!(f, "\t{} +{}", s, o)
-            }
-            _ => {
-                write!(f, "\t{} {:?}", s, d)
-            }
         }
     }
 
@@ -109,20 +95,13 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Operation::Carry(true) => write!(f, "\tsec"),
         Operation::Decimal(false) => write!(f, "\tcld"),
         Operation::Decimal(true) => write!(f, "\tsed"),
-        Operation::Jump(Overflow(false), offs) => branch(f, "bvc", offs),
-        Operation::Jump(Overflow(true), offs) => branch(f, "bvs", offs),
-        Operation::Jump(Zero(false), offs) => branch(f, "bne", offs),
-        Operation::Jump(Zero(true), offs) => branch(f, "beq", offs),
-        Operation::Jump(Minus(false), offs) => branch(f, "bpl", offs),
-        Operation::Jump(Minus(true), offs) => branch(f, "bmi", offs),
-        Operation::Jump(Carry(false), offs) => branch(f, "bcc", offs),
-        Operation::Jump(Carry(true), offs) => branch(f, "bcs", offs),
         Operation::Jump(True, offs) => branch(f, "jmp", offs),
         _ => {
             write!(f, "{:?}", op)
         }
     }
 }
+*/
 
 pub fn instr_length_6502(insn: &Instruction) -> usize {
     fn length(dat: Datum) -> usize {
@@ -289,35 +268,6 @@ fn secl_6502() -> Operation {
     )
 }
 
-fn branches() -> Operation {
-    fn j() -> FlowControl {
-        if random() {
-            FlowControl::Forward(rand::thread_rng().gen_range(1..3))
-        } else {
-            FlowControl::Backward(rand::thread_rng().gen_range(1..3))
-        }
-    }
-
-    fn cond() -> Test {
-        randomly!(
-           { Test::True}
-           { Test::Minus(random())}
-           { Test::Zero(random())}
-           { Test::Overflow(random())}
-           { Test::Carry(random())})
-    }
-
-    Operation::Jump(cond(), j())
-}
-
-const BRANCH_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
-    length: instr_length_6502,
-    operation: Operation::Nop,
-    randomizer: branches,
-};
-
 fn compares() -> Operation {
     randomly!(
     { Operation::BitCompare(random_absolute(), A)}
@@ -328,7 +278,7 @@ fn compares() -> Operation {
 }
 
 const COMPARE_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
+    implementation: standard_compare,
     disassemble: dasm,
     length: instr_length_6502,
     operation: Operation::Nop,
