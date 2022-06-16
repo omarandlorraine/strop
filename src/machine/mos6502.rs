@@ -453,7 +453,7 @@ pub const MOS6502: Machine = Machine {
 };
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
 
     fn find_it(opcode: &'static str, insn: &Instruction) {
@@ -892,8 +892,7 @@ mod tests {
         }
     }
 
-    #[test]
-    fn fuzzer_call() {
+    pub fn fuzz_test() {
         fuzz_monadic(LeftShiftArithmetic, 0x0a);
         fuzz_monadic(RightShiftLogical, 0x4a);
         fuzz_monadic(RotateLeftThruCarry, 0x2a);

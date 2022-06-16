@@ -940,3 +940,13 @@ fn random_absolute() -> Datum {
     let vs = vec![0, 1, 2, 3, 4];
     Datum::Absolute(*vs.choose(&mut rand::thread_rng()).unwrap())
 }
+
+#[cfg(test)]
+mod fuzz {
+
+    #[test]
+    fn mos6502_fuzz_test() {
+        use crate::machine::mos6502::tests::fuzz_test;
+        fuzz_test();
+    }
+}
