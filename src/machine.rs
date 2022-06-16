@@ -327,6 +327,8 @@ impl MonadicOperation {
                 let result = v
                     .map(|v| s.carry.map(|c| v.shift_right(c).1))
                     .unwrap_or(None);
+                self.flags_sign_zero(s, result);
+                s.carry = v.map(|v| v.trailing_zeros() == 0);
                 result
             }
             Self::RotateLeftThruAccumulator => {

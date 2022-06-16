@@ -723,6 +723,18 @@ mod tests {
     }
 
     #[test]
+    fn ror_flags() {
+        assert!(
+            run_strop_monadic(RotateRightThruCarry, 0x5f, true, false).3,
+            "ror instruction shouldn've set the sign flag but didn't"
+        );
+        assert!(
+            run_strop_monadic(RotateRightThruCarry, 0x71, false, false).2,
+            "ror instruction shouldn've set the carry flag but didn't"
+        );
+    }
+
+    #[test]
     fn ror_result() {
         let result = run_strop_monadic(RotateRightThruCarry, 0x43, false, false).0;
         assert!(
