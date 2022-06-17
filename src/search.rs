@@ -106,19 +106,8 @@ pub fn difference(prog: &BasicBlock, test_run: &TestRun) -> f64 {
             match step {
                 Step::Run => {
                     let mut pc: usize = 0;
-                    for _i in 0..100 {
-                        if pc == prog.instructions.len() {
-                            break;
-                        }
-                        if let Some(new_pc) = prog.instructions[pc].operate(&mut s).newpc(pc) {
-                            pc = new_pc;
-                            if pc > prog.instructions.len() {
-                                ret += 1000.0;
-                                break;
-                            }
-                        } else {
-                            break;
-                        }
+                    for i in prog.instructions {
+                        i.operate(&mut s);
                     }
                 }
                 Step::Set(datum, val) => match datum.width() {
