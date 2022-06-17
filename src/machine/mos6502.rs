@@ -159,8 +159,6 @@ pub fn instr_length_6502(insn: &Instruction) -> usize {
         Operation::Overflow(_) => 1,
         Operation::Carry(_) => 1,
         Operation::Decimal(_) => 1,
-        Operation::Jump(True, _) => 3,
-        Operation::Jump(_, _) => 2,
         _ => 0,
     }
 }
@@ -307,8 +305,11 @@ fn compares() -> Operation {
 }
 
 const COMPARE_INSTRUCTIONS: Instruction = Instruction {
+    mnemonic: "cmp",
     implementation: standard_compare,
-    disassemble: dasm,
+    a: A,
+    b: Datum::Imm8(0),
+    disassemble: dasm2,
     length: instr_length_6502,
     operation: Operation::Nop,
     randomizer: compares,
