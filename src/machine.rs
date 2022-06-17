@@ -22,10 +22,14 @@ pub const MACHINES: [Machine; 3] = [MOS6502, MOS65C02, STM8];
 
 #[derive(Clone, Copy)]
 pub struct Instruction {
+    mnemonic: &'static str,
     randomizer: fn(&mut Instruction) -> Operation,
     disassemble: fn(&mut std::fmt::Formatter<'_>, &Instruction) -> std::fmt::Result,
     length: usize,
     implementation: fn(&Instruction, &mut State),
+    a: Datum,
+    b: Datum,
+    c: Datum,
 }
 
 fn reg_by_name(name: &str) -> Result<Datum, &'static str> {

@@ -25,6 +25,38 @@ const A: Datum = Datum::Register(R::A);
 const X: Datum = Datum::Register(R::Xl);
 const Y: Datum = Datum::Register(R::Yl);
 
+fn dasm_operand(
+    f: &mut std::fmt::Formatter<'_>,
+    opcode: &'static str,
+    operand: &Datum,
+) -> std::fmt::Result {
+    // This one prints out the opcode and one operand
+    // examples:
+    //     cpx #4
+    //     lda 5
+    //     stx 67
+    //     ror a
+
+    match operand {
+        Datum::Absolute(address) => {
+            write!(f, "\t{} {}", opcode, address)
+        }
+        Datum::Register(R::A) => {
+            write!(f, "\t{} a", opcode)
+        }
+        Datum::Imm8(val) => {
+            write!(f, "\t{} #{}", opcode, val)
+        }
+        _ => {
+            write!(f, "\t{} {:?}", opcode, operand)
+        }
+    }
+}
+
+fn dasm_b(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Result {
+    dasm_operand(f, insn.mnemonic, &insn.b)
+}
+
 /*
 fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     fn regname(r: R) -> &'static str {
