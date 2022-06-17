@@ -1,9 +1,7 @@
 use crate::machine::rand::prelude::SliceRandom;
-use crate::machine::rand::Rng;
 use crate::machine::random_absolute;
 use crate::machine::random_immediate;
 use crate::machine::reg_by_name;
-use crate::machine::standard_compare;
 use crate::machine::Datum;
 use crate::machine::DyadicOperation::{
     AddWithCarry, And, ExclusiveOr, Or, Subtract, SubtractWithCarry,
@@ -16,8 +14,7 @@ use crate::machine::MonadicOperation::{
     RotateRightThruCarry,
 };
 use crate::machine::Operation;
-use crate::machine::Test;
-use crate::machine::Test::{Carry, Minus, Overflow, True, Zero};
+use crate::machine::Test::True;
 use crate::machine::Width;
 use crate::machine::R;
 

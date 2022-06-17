@@ -10,7 +10,6 @@ use crate::machine::MonadicOperation::{
     RotateRightThruCarry, Swap,
 };
 use crate::machine::Operation;
-use crate::machine::Test;
 use crate::machine::Width;
 use crate::machine::R;
 use crate::Datum;
@@ -21,7 +20,6 @@ use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::rand::Rng;
 use crate::machine::reg_by_name;
 use rand::random;
-use std::convert::TryInto;
 use strop::randomly;
 
 const A: Datum = Datum::Register(R::A);
