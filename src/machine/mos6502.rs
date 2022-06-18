@@ -26,10 +26,7 @@ const A: Datum = Datum::Register(R::A);
 const X: Datum = Datum::Register(R::Xl);
 const Y: Datum = Datum::Register(R::Yl);
 
-fn dasm_no_operand(
-    f: &mut std::fmt::Formatter<'_>,
-    insn: &Instruction
-) -> std::fmt::Result {
+fn dasm_no_operand(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Result {
     write!(f, "\t{}", insn.mnemonic)
 }
 
