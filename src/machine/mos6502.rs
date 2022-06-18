@@ -62,37 +62,6 @@ fn dasm_b(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Resu
     dasm_operand(f, insn.mnemonic, &insn.b)
 }
 
-pub fn instr_length_6502(insn: &Instruction) -> usize {
-    fn length(dat: Datum) -> usize {
-        match dat {
-            Datum::Register(_) => 1,
-            Datum::Imm8(_) => 2,
-            Datum::Absolute(addr) => {
-                if addr < 256 {
-                    2
-                } else {
-                    3
-                }
-            }
-            _ => 0,
-        }
-    }
-
-    match insn.operation {
-        Operation::Move(Datum::Register(_), Datum::Register(_)) => 1,
-        Operation::Move(Datum::Register(_), dat) => length(dat),
-        Operation::Move(dat, Datum::Register(_)) => length(dat),
-        Operation::Shift(_, dat) => length(dat),
-        Operation::BitCompare(dat, A) => length(dat),
-        Operation::Monadic(Width::Width8, _, dat, _) => length(dat),
-        Operation::Dyadic(Width::Width8, _, _, dat, _) => length(dat),
-        Operation::Overflow(_) => 1,
-        Operation::Carry(_) => 1,
-        Operation::Decimal(_) => 1,
-        _ => 0,
-    }
-}
-
 fn random_source() -> Datum {
     if random() {
         random_immediate()
@@ -239,56 +208,48 @@ const COMPARE_INSTRUCTIONS: Instruction = Instruction {
     a: A,
     b: Datum::Imm8(0),
     disassemble: dasm_operand,
-    length: instr_length_6502,
     operation: Operation::Nop,
     randomizer: compares,
 };
 
 const STORE_INSTRUCTIONS: Instruction = Instruction {
     disassemble: dasm_operand,
-    length: instr_length_6502,
     operation: Operation::Nop,
     randomizer: stores,
 };
 
 const LOAD_INSTRUCTIONS: Instruction = Instruction {
     disassemble: dasm_operand,
-    length: instr_length_6502,
     operation: Operation::Nop,
     randomizer: loads,
 };
 
 const TRANSFER_INSTRUCTIONS: Instruction = Instruction {
     disassemble: dasm_operand,
-    length: instr_length_6502,
     operation: Operation::Nop,
     randomizer: transfers_6502,
 };
 
 const ALU_INSTRUCTIONS: Instruction = Instruction {
     disassemble: dasm_operand,
-    length: instr_length_6502,
     operation: Operation::Nop,
     randomizer: alu_6502,
 };
 
 const RMW_NMOS: Instruction = Instruction {
     disassemble: rmw_dasm,
-    length: instr_length_6502,
     operation: Operation::Nop,
     randomizer: || rmw_op(false),
 };
 
 const RMW_CMOS: Instruction = Instruction {
     disassemble: rmw_dasm,
-    length: instr_length_6502,
     operation: Operation::Nop,
     randomizer: || rmw_op(true),
 };
 
 const FLAG_INSTRUCTIONS: Instruction = Instruction {
     disassemble: dasm_no_operand,
-    length: instr_length_6502,
     operation: Operation::Nop,
     randomizer: secl_6502,
 };
