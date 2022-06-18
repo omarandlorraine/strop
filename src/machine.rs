@@ -490,38 +490,10 @@ impl Test {
 impl Instruction {
     pub fn randomize(&mut self) {
         (self.randomizer)(&mut self);
-
-        #[cfg(test)]
-        self.sanity_check()
     }
 
     pub fn len(&self) -> usize {
         self.length
-    }
-
-    #[cfg(test)]
-    pub fn sanity_check(&self) {
-        match self.operation {
-            Operation::Monadic(_, _, _, Datum::Imm8(_)) => {
-                panic!(
-                    "The instruction {:?} has an immediate destination",
-                    self.operation
-                );
-            }
-            Operation::Dyadic(_, _, _, _, Datum::Imm8(_)) => {
-                panic!(
-                    "The instruction {:?} has an immediate destination",
-                    self.operation
-                );
-            }
-            Operation::Move(_, Datum::Imm8(_)) => {
-                panic!(
-                    "The instruction {:?} has an immediate destination",
-                    self.operation
-                );
-            }
-            _ => {}
-        }
     }
 
     pub fn operate(&self, s: &mut State) {
