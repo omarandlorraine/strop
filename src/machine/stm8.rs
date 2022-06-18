@@ -216,111 +216,91 @@ fn dasm_muldiv(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Resu
     }
 }
 
-fn instr_length_muldiv(insn: &Instruction) -> usize {
-    match insn.operation {
-        Operation::Dyadic(Width::Width8, Multiply, A, X, X) => 1,
-        Operation::Dyadic(Width::Width8, Multiply, A, Y, Y) => 2,
-        Operation::Dyadic(Width::Width8, Divide, A, X, X) => 1,
-        Operation::Dyadic(Width::Width8, Divide, A, Y, Y) => 2,
-        Operation::Dyadic(Width::Width8, Divide, X, Y, Y) => 1,
-        _ => 0,
-    }
-}
-
-fn impl_oneargs(insn: &Instruction, s: &mut State) -> FlowControl {
-    match insn.operation {
-        Operation::Monadic(
-            Width::Width16,
-            RotateLeftThruAccumulator,
-            Datum::RegisterPair(h, l),
-            _,
-        ) => {
-            let tmp = s.get_i8(A);
+fn rotate_left_through_accumulator(s: &mut State, x: Datum) {
+    let tmp = s.get_i8(A);
+    match x {
+        Datum::RegisterPair(h, l) => {
             s.set_i8(A, s.get_i8(Datum::Register(h)));
             s.set_i8(Datum::Register(h), s.get_i8(Datum::Register(l)));
             s.set_i8(Datum::Register(l), tmp);
         }
-        Operation::Monadic(
-            Width::Width16,
-            RotateRightThruAccumulator,
-            Datum::RegisterPair(h, l),
-            _,
-        ) => {
-            let tmp = s.get_i8(A);
+        _ => panic!(),
+    }
+}
+
+fn rotate_right_through_accumulator(s: &mut State, x: Datum) {
+    let tmp = s.get_i8(A);
+    match x {
+        Datum::RegisterPair(h, l) => {
             s.set_i8(A, s.get_i8(Datum::Register(l)));
             s.set_i8(Datum::Register(l), s.get_i8(Datum::Register(h)));
             s.set_i8(Datum::Register(h), tmp);
         }
-        _ => standard_implementation(insn, s),
+        _ => panic!(),
     }
 }
 
-/*
-fn impl_muldiv(insn: &Instruction, s: &mut State) -> FlowControl {
-    fn div(s: &mut State, x: Datum, a: Datum) {
-        let dividend = s.get_u16(x);
-        let divisor = s.get_u8(a);
+fn div(s: &mut State, x: Datum, a: Datum) {
+    let dividend = s.get_u16(x);
+    let divisor = s.get_u8(a);
 
-        if dividend.is_none() || divisor.is_none() {
-            s.set_i8(A, None);
-            s.set_i16(X, None);
-            s.carry = None;
-            return;
-        }
-        if divisor.unwrap() != 0 {
-            let quotient: u16 = dividend.unwrap() / (divisor.unwrap() as u16);
-            let remainder: u8 = (dividend.unwrap() % (divisor.unwrap() as u16))
-                .try_into()
-                .unwrap();
-            s.set_u8(A, Some(remainder));
-            s.set_u16(X, Some(quotient));
-            s.carry = Some(false);
-            s.zero = Some(quotient == 0);
-        } else {
-            // division by zero; the quotient and remainder are not written to the registers.
-            s.carry = Some(true);
-        }
+    if dividend.is_none() || divisor.is_none() {
+        s.set_i8(A, None);
+        s.set_i16(X, None);
+        s.carry = None;
+        return;
     }
-
-    fn divw(s: &mut State) {
-        let dividend = s.get_u16(X);
-        let divisor = s.get_u16(Y);
-
-        if dividend.is_none() || divisor.is_none() {
-            s.set_u16(X, None);
-            s.set_u16(Y, None);
-            s.carry = None;
-            return;
-        }
-        if divisor.unwrap() == 0 {
-            // division by zero; the quotient and remainder are indeterminate
-            s.set_u16(X, None);
-            s.set_u16(Y, None);
-            s.carry = Some(false);
-            s.zero = None;
-        } else {
-            let quotient: u16 = dividend.unwrap() / divisor.unwrap();
-            let remainder: u16 = dividend.unwrap() % divisor.unwrap();
-            s.set_u16(X, Some(quotient));
-            s.set_u16(Y, Some(remainder));
-            s.zero = Some(quotient == 0);
-            s.carry = Some(true);
-        }
-    }
-
-    fn mul(s: &mut State, a: Option<u8>, b: Option<u8>, dst: Datum) {
-        if a.is_none() || b.is_none() {
-            s.set_u8(dst, None);
-            s.carry = None;
-            return;
-        }
-        let product = (a.unwrap() as u16) * (b.unwrap() as u16);
-        s.set_u16(dst, Some(product));
+    if divisor.unwrap() != 0 {
+        let quotient: u16 = dividend.unwrap() / (divisor.unwrap() as u16);
+        let remainder: u8 = (dividend.unwrap() % (divisor.unwrap() as u16))
+            .try_into()
+            .unwrap();
+        s.set_u8(A, Some(remainder));
+        s.set_u16(X, Some(quotient));
         s.carry = Some(false);
+        s.zero = Some(quotient == 0);
+    } else {
+        // division by zero; the quotient and remainder are not written to the registers.
+        s.carry = Some(true);
     }
-
 }
-*/
+
+fn divw(s: &mut State) {
+    let dividend = s.get_u16(X);
+    let divisor = s.get_u16(Y);
+
+    if dividend.is_none() || divisor.is_none() {
+        s.set_u16(X, None);
+        s.set_u16(Y, None);
+        s.carry = None;
+        return;
+    }
+    if divisor.unwrap() == 0 {
+        // division by zero; the quotient and remainder are indeterminate
+        s.set_u16(X, None);
+        s.set_u16(Y, None);
+        s.carry = Some(false);
+        s.zero = None;
+    } else {
+        let quotient: u16 = dividend.unwrap() / divisor.unwrap();
+        let remainder: u16 = dividend.unwrap() % divisor.unwrap();
+        s.set_u16(X, Some(quotient));
+        s.set_u16(Y, Some(remainder));
+        s.zero = Some(quotient == 0);
+        s.carry = Some(true);
+    }
+}
+
+fn mul(s: &mut State, a: Option<u8>, b: Option<u8>, dst: Datum) {
+    if a.is_none() || b.is_none() {
+        s.set_u8(dst, None);
+        s.carry = None;
+        return;
+    }
+    let product = (a.unwrap() as u16) * (b.unwrap() as u16);
+    s.set_u16(dst, Some(product));
+    s.carry = Some(false);
+}
 
 fn muldiv() -> Operation {
     randomly!(
