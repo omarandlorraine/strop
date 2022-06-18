@@ -22,6 +22,8 @@ use crate::machine::reg_by_name;
 use rand::random;
 use strop::randomly;
 
+use std::convert::TryInto;
+
 const A: Datum = Datum::Register(R::A);
 const XL: Datum = Datum::Register(R::Xl);
 const YL: Datum = Datum::Register(R::Yl);
