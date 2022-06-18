@@ -50,6 +50,18 @@ fn random_register() -> Datum {
     *regs.choose(&mut rand::thread_rng()).unwrap()
 }
 
+fn regname(r: Datum) -> &'static str {
+    match r {
+        A => "a",
+        Xh => "xh",
+        Xl => "xl",
+        Yh => "yh",
+        X => "x",
+        Y => "y",
+        _ => panic!(),
+    }
+}
+
 /*
 fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     fn bit(
@@ -207,15 +219,8 @@ fn clear() -> Operation {
     }
 }
 
-fn dasm_muldiv(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match op {
-        Operation::Dyadic(Width::Width8, Multiply, A, X, X) => write!(f, "\tmul x, a"),
-        Operation::Dyadic(Width::Width8, Multiply, A, Y, Y) => write!(f, "\tmul y, a"),
-        Operation::Dyadic(Width::Width8, Divide, A, X, X) => write!(f, "\tdiv x, a"),
-        Operation::Dyadic(Width::Width8, Divide, A, Y, Y) => write!(f, "\tdiv y, a"),
-        Operation::Dyadic(Width::Width8, Divide, X, Y, Y) => write!(f, "\tdivw x, y"),
-        _ => write!(f, "{:?}", op),
-    }
+fn dasm_muldiv(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Result {
+    write!(f, "\t{} {}, {}", insn.mnemonic, regname(insn.a), regname(b))
 }
 
 fn rotate_left_through_accumulator(s: &mut State, x: Datum) {
@@ -293,7 +298,8 @@ fn divw(s: &mut State) {
     }
 }
 
-fn mul(s: &mut State, a: Option<u8>, b: Option<u8>, dst: Datum) {
+fn mul_handler(insn: &Instruction, s: &mut State) {
+    let (a, b) = (s.get_i8(insn.a), s.get_i8(insn.b));
     if a.is_none() || b.is_none() {
         s.set_u8(dst, None);
         s.carry = None;
@@ -304,13 +310,17 @@ fn mul(s: &mut State, a: Option<u8>, b: Option<u8>, dst: Datum) {
     s.carry = Some(false);
 }
 
-fn muldiv() -> Operation {
+fn muldiv(insn: &mut Instruction) {
     randomly!(
-        {Operation::Dyadic(Width::Width8, Multiply, A, X, X)}
-        {Operation::Dyadic(Width::Width8, Multiply, A, Y, Y)}
-        {Operation::Dyadic(Width::Width8, Divide, A, X, X)}
-        {Operation::Dyadic(Width::Width8, Divide, A, Y, Y)}
-        {Operation::Dyadic(Width::Width8, Divide, X, Y, Y)})
+        { (insn.a, insn.length) = flip_x_and_y(insn.a, insn.length) }
+        { (insn.mnemonic, insn.implementation) = ("mul", mul_handler) }
+        { (insn.mnemonic, insn.implementation) = ("mul", mul_handler) }
+    );
+    /*
+    {Operation::Dyadic(Width::Width8, Divide, A, X, X)}
+    {Operation::Dyadic(Width::Width8, Divide, A, Y, Y)}
+    {Operation::Dyadic(Width::Width8, Divide, X, Y, Y)}
+    */
 }
 
 fn twoargs() -> Operation {
@@ -385,14 +395,33 @@ fn transfers() -> Operation {
     )
 }
 
-fn loads() -> Operation {
-    randomly!(
+fn flip_x_and_y(d: Datum, sz: usize) -> (Datum, usize) {
+    // Many STM8 instructions operate on either X or Y register. For some
+    // instructions, this is controlled by an instruction prefix, which of
+    // course needs to be accounted for in the instruction's length.
+    // So this function changes X for Y and vice versa, and computes the new
+    // length. This new length may of course be either discarded or written to
+    // the Instruction's length field.
+    match d {
+        X => (Y, sz + 1),
+        Y => (X, sz - 1),
+        Xl => (Yl, sz + 1),
+        Yl => (Xl, sz - 1),
+        Xh => (Yh, sz + 1),
+        Yh => (Xh, sz - 1),
+    }
+}
+
+fn loads(insn: &mut Instruction) {
+    randomly!({ (insn.a, insn.length) = flip_x_and_y(insn.a, insn.length) });
+
+    /*
     {Operation::Move(random_imm16(), X)}
     {Operation::Move(random_imm16(), Y)}
     {Operation::Move(random_immediate(), random_absolute())}
     {Operation::Move(random_absolute(), random_absolute())}
     {Operation::Move(random_absolute(), A)}
-    )
+    */
 }
 
 fn oneargs() -> Operation {
@@ -435,76 +464,78 @@ fn oneargs() -> Operation {
     }
 }
 
+const LOAD_INSTRUCTIONS: Instruction = Instruction {
+    implementation: standard_implementation,
+    disassemble: dasm,
+    length: instr_length_stm8,
+    randomizer: loads,
+    a: A,
+    b: Datum::Imm8(0),
+    c: Datum::Nothing,
+    mnemonic: "ld",
+};
+
+const MUL_DIV_INSTRUCTIONS: Instruction = Instruction {
+    implementation: impl_muldiv,
+    disassemble: dasm_muldiv,
+    length: instr_length_muldiv,
+    randomizer: muldiv,
+    a: A,
+    b: X,
+    c: Datum::Nothing,
+    mnemonic: "mul",
+};
+
 const RANDS: [Instruction; 10] = [
+    LOAD_INSTRUCTIONS,
+    MUL_DIV_INSTRUCTIONS,
     Instruction {
         implementation: standard_implementation,
         disassemble: dasm,
         length: instr_length_stm8,
-        operation: Operation::Nop,
         randomizer: clear,
     },
     Instruction {
         implementation: standard_implementation,
         disassemble: dasm,
         length: instr_length_stm8,
-        operation: Operation::Nop,
         randomizer: transfers,
     },
     Instruction {
         implementation: standard_implementation,
         disassemble: dasm,
         length: instr_length_stm8,
-        operation: Operation::Nop,
         randomizer: bits,
     },
     Instruction {
         implementation: standard_implementation,
         disassemble: dasm,
         length: instr_length_stm8,
-        operation: Operation::Nop,
         randomizer: carry,
     },
     Instruction {
         implementation: standard_implementation,
         disassemble: dasm,
         length: instr_length_stm8,
-        operation: Operation::Nop,
         randomizer: compare,
     },
     Instruction {
         implementation: standard_implementation,
         disassemble: dasm,
         length: instr_length_stm8,
-        operation: Operation::Nop,
         randomizer: jumps,
     },
     Instruction {
         implementation: impl_oneargs,
         disassemble: dasm,
         length: instr_length_stm8,
-        operation: Operation::Nop,
         randomizer: oneargs,
     },
     Instruction {
         implementation: standard_implementation,
         disassemble: dasm,
         length: instr_length_stm8,
-        operation: Operation::Nop,
         randomizer: twoargs,
-    },
-    Instruction {
-        implementation: impl_muldiv,
-        disassemble: dasm_muldiv,
-        length: instr_length_muldiv,
-        operation: Operation::Nop,
-        randomizer: muldiv,
-    },
-    Instruction {
-        implementation: standard_implementation,
-        disassemble: dasm,
-        length: instr_length_stm8,
-        operation: Operation::Nop,
-        randomizer: loads,
     },
 ];
 
