@@ -311,16 +311,29 @@ fn mul_handler(insn: &Instruction, s: &mut State) {
 }
 
 fn muldiv(insn: &mut Instruction) {
+    fn change_operand(insn: &mut Instruction) {
+        /* instructions mul and div uses both A and either X or Y.
+         * but the divw instruction uses both X and Y but never A.
+         * So in the latter case, we should not do anything
+         */
+        if insn.mnemonic == "mul" || insn.mnemonic == "div" {
+            (insn.b, insn.length) = flip_x_and_y(insn.b, insn.length)
+        }
+    }
+
+    fn change_instruction(insn: &mut Instruction) {
+        /* alters the instruction to be one of mul, div, divw */
+        randomly!(
+            { (insn.mnemonic, insn.implementation) = ("mul", mul_handler); }
+            { (insn.mnemonic, insn.implementation) = ("div", div_handler); }
+            { (insn.mnemonic, insn.implementation) = ("divw", divw_handler); }
+        );
+    }
+
     randomly!(
-        { (insn.a, insn.length) = flip_x_and_y(insn.a, insn.length) }
-        { (insn.mnemonic, insn.implementation) = ("mul", mul_handler) }
-        { (insn.mnemonic, insn.implementation) = ("mul", mul_handler) }
+        { change_operand(insn) }
+        { change_instruction(insn) }
     );
-    /*
-    {Operation::Dyadic(Width::Width8, Divide, A, X, X)}
-    {Operation::Dyadic(Width::Width8, Divide, A, Y, Y)}
-    {Operation::Dyadic(Width::Width8, Divide, X, Y, Y)}
-    */
 }
 
 fn twoargs() -> Operation {
