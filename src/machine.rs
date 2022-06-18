@@ -23,7 +23,7 @@ pub const MACHINES: [Machine; 3] = [MOS6502, MOS65C02, STM8];
 #[derive(Clone, Copy)]
 pub struct Instruction {
     mnemonic: &'static str,
-    randomizer: fn(&mut Instruction) -> Operation,
+    randomizer: fn(&mut Instruction),
     disassemble: fn(&mut std::fmt::Formatter<'_>, &Instruction) -> std::fmt::Result,
     length: usize,
     implementation: fn(&Instruction, &mut State),
