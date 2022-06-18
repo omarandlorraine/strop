@@ -254,7 +254,7 @@ const FLAG_INSTRUCTIONS: Instruction = Instruction {
     randomizer: secl_6502,
 };
 
-const NMOS6502_INSTRUCTIONS: [Instruction; 7] = [
+const NMOS6502_INSTRUCTIONS: [Instruction; 6] = [
     ALU_INSTRUCTIONS,
     FLAG_INSTRUCTIONS,
     RMW_NMOS,
@@ -263,7 +263,7 @@ const NMOS6502_INSTRUCTIONS: [Instruction; 7] = [
     COMPARE_INSTRUCTIONS,
 ];
 
-const CMOS6502_INSTRUCTIONS: [Instruction; 7] = [
+const CMOS6502_INSTRUCTIONS: [Instruction; 6] = [
     ALU_INSTRUCTIONS,
     FLAG_INSTRUCTIONS,
     RMW_CMOS,
