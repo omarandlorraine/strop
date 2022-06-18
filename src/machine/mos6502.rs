@@ -18,12 +18,20 @@ use crate::machine::Test::True;
 use crate::machine::Width;
 use crate::machine::R;
 
+use crate::machine::standard_compare;
 use rand::random;
 use strop::randomly;
 
 const A: Datum = Datum::Register(R::A);
 const X: Datum = Datum::Register(R::Xl);
 const Y: Datum = Datum::Register(R::Yl);
+
+fn dasm_no_operand(
+    f: &mut std::fmt::Formatter<'_>,
+    insn: &Instruction
+) -> std::fmt::Result {
+    write!(f, "\t{}", insn.mnemonic)
+}
 
 fn dasm_operand(
     f: &mut std::fmt::Formatter<'_>,
@@ -306,49 +314,43 @@ fn compares() -> Operation {
 
 const COMPARE_INSTRUCTIONS: Instruction = Instruction {
     mnemonic: "cmp",
-    implementation: standard_compare,
     a: A,
     b: Datum::Imm8(0),
-    disassemble: dasm2,
+    disassemble: dasm_operand,
     length: instr_length_6502,
     operation: Operation::Nop,
     randomizer: compares,
 };
 
 const STORE_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
+    disassemble: dasm_operand,
     length: instr_length_6502,
     operation: Operation::Nop,
     randomizer: stores,
 };
 
 const LOAD_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
+    disassemble: dasm_operand,
     length: instr_length_6502,
     operation: Operation::Nop,
     randomizer: loads,
 };
 
 const TRANSFER_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
+    disassemble: dasm_operand,
     length: instr_length_6502,
     operation: Operation::Nop,
     randomizer: transfers_6502,
 };
 
 const ALU_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
+    disassemble: dasm_operand,
     length: instr_length_6502,
     operation: Operation::Nop,
     randomizer: alu_6502,
 };
 
 const RMW_NMOS: Instruction = Instruction {
-    implementation: standard_implementation,
     disassemble: rmw_dasm,
     length: instr_length_6502,
     operation: Operation::Nop,
@@ -356,7 +358,6 @@ const RMW_NMOS: Instruction = Instruction {
 };
 
 const RMW_CMOS: Instruction = Instruction {
-    implementation: standard_implementation,
     disassemble: rmw_dasm,
     length: instr_length_6502,
     operation: Operation::Nop,
@@ -364,8 +365,7 @@ const RMW_CMOS: Instruction = Instruction {
 };
 
 const FLAG_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
+    disassemble: dasm_no_operand,
     length: instr_length_6502,
     operation: Operation::Nop,
     randomizer: secl_6502,
