@@ -543,14 +543,6 @@ mod tests {
             i.randomize();
             let d = format!("{}", i);
 
-            // Does the disassembler output something starting with a tab?
-            assert!(
-                d[0..1] == "\t".to_owned(),
-                "Cannot disassemble {:?}, got {}",
-                i.operation,
-                d
-            );
-
             // Is the opcode a substring of whatever the disassembler spat out?
             found_it |= d.contains(opcode);
 
