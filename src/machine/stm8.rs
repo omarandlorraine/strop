@@ -220,7 +220,13 @@ fn clear() -> Operation {
 }
 
 fn dasm_muldiv(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Result {
-    write!(f, "\t{} {}, {}", insn.mnemonic, regname(insn.a), regname(b))
+    write!(
+        f,
+        "\t{} {}, {}",
+        insn.mnemonic,
+        regname(insn.a),
+        regname(insn.b)
+    )
 }
 
 fn rotate_left_through_accumulator(s: &mut State, x: Datum) {
@@ -323,10 +329,10 @@ fn muldiv(insn: &mut Instruction) {
 
     fn change_instruction(insn: &mut Instruction) {
         /* alters the instruction to be one of mul, div, divw */
-        randomly!(
-            { (insn.mnemonic, insn.implementation) = ("mul", mul_handler); }
-            { (insn.mnemonic, insn.implementation) = ("div", div_handler); }
-            { (insn.mnemonic, insn.implementation) = ("divw", divw_handler); }
+        (insn.mnemonic, insn.implementation, insn.a, insn.b) = randomly!(
+            { ("mul", mul_handler, A, X); }
+            { ("div", div_handler, A, X); }
+            { ("divw", divw_handler, X, Y); }
         );
     }
 
