@@ -75,6 +75,7 @@ pub enum R {
 
 #[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum Datum {
+    Nothing,
     Register(R),
     RegisterPair(R, R),
     Imm8(i8),
