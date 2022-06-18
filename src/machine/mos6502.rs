@@ -300,7 +300,6 @@ const NMOS6502_INSTRUCTIONS: [Instruction; 7] = [
     TRANSFER_INSTRUCTIONS,
     LOAD_INSTRUCTIONS,
     COMPARE_INSTRUCTIONS,
-    BRANCH_INSTRUCTIONS,
 ];
 
 const CMOS6502_INSTRUCTIONS: [Instruction; 7] = [
@@ -310,7 +309,6 @@ const CMOS6502_INSTRUCTIONS: [Instruction; 7] = [
     TRANSFER_INSTRUCTIONS,
     LOAD_INSTRUCTIONS,
     COMPARE_INSTRUCTIONS,
-    BRANCH_INSTRUCTIONS,
 ];
 
 pub fn random_insn_65c02() -> Instruction {
@@ -420,12 +418,6 @@ pub mod tests {
 
         for i in ["bit", "cmp", "cpx", "cpy"] {
             find_it(i, &COMPARE_INSTRUCTIONS);
-        }
-
-        for i in [
-            "bcc", "bcs", "beq", "bmi", "bne", "bpl", "bvc", "bvs", "jmp",
-        ] {
-            find_it(i, &BRANCH_INSTRUCTIONS);
         }
 
         for i in ["sta", "stx", "sty"] {
