@@ -480,7 +480,7 @@ pub mod tests {
     }
 
     fn run_strop(
-        op: DyadicOperation,
+        op: &Instruction,
         val1: u8,
         val2: u8,
         carry: bool,
@@ -496,20 +496,11 @@ pub mod tests {
         let mut lda1 = LOAD_INSTRUCTIONS.clone();
         lda1.operation = Operation::Move(Datum::Imm8(i8::from_ne_bytes(val1.to_ne_bytes())), A);
 
-        let mut ope = ALU_INSTRUCTIONS.clone();
-        ope.operation = Operation::Dyadic(
-            Width::Width8,
-            op,
-            A,
-            Datum::Imm8(i8::from_ne_bytes(val2.to_ne_bytes())),
-            A,
-        );
-
         let mut s = State::new();
         c.operate(&mut s);
         d.operate(&mut s);
         lda1.operate(&mut s);
-        ope.operate(&mut s);
+        op.operate(&mut s);
 
         (
             s.get_i8(A).unwrap(),
