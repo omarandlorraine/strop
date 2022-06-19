@@ -178,12 +178,13 @@ fn stores() -> Operation {
     Operation::Move(reg, random_absolute())
 }
 
-fn secl_6502() -> Operation {
-    randomly!(
-        {Operation::Carry(random())}
-        {Operation::Decimal(random())}
-        {Operation::Overflow(false)}
-    )
+fn secl_6502(insn: &mut Instruction) {
+    (insn.mnemonic, insn.implementation) = randomly!(
+        { ("clv", |_, s| s.overflow = Some(false)) }
+        { ("clc", |_, s| s.carry = Some(false)) }
+        { ("sec", |_, s| s.carry = Some(true)) }
+        { ("cld", |_, s| s.decimal = Some(false)) }
+        { ("sed", |_, s: &mut State| s.decimal = Some(true)) });
 }
 
 fn compares() -> Operation {
