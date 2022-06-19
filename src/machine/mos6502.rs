@@ -117,40 +117,32 @@ fn rmw_dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
     }
 }
 
-fn rmw_op(cmos: bool) -> Operation {
-    // Operations which can be performed on either memory or the accumulator
-    let ma = vec![
-        LeftShiftArithmetic,
-        RightShiftLogical,
-        RotateLeftThruCarry,
-        RotateRightThruCarry,
-    ];
+fn rmw_op(insn: &mut Instruction, cmos: bool) {
+    fn is_inc_dec(insn: &Instruction) -> bool {
+        // Is this instruction current either inc or dec?
+        // This affects which operand may be in use.
+        insn.implementation == increment || insn.implementation == decrement
+    }
 
-    // Operations which can be performed on either memory or an index register
-    let mxy = vec![Decrement, Increment];
+    fn is_x_y(insn: &Instruction) -> bool {
+        insn.a == X || insn.a == Y
+    }
 
-    fn xy(cmos: bool) -> Datum {
-        // Pick an index register (if CMOS this includes the accumulator)
-        if cmos {
-            *[X, Y, A].choose(&mut rand::thread_rng()).unwrap()
-        } else {
-            *[X, Y].choose(&mut rand::thread_rng()).unwrap()
+    randomly!(
+        { if cmos || !is_inc_dec(insn)
+            // not all 6502's have instructions to increment or decrement the accumulator
+            { insn.a = A }
         }
-    }
-
-    if random() {
-        let op = *ma.choose(&mut rand::thread_rng()).unwrap();
-        let d = if random() { A } else { random_absolute() };
-        Operation::Monadic(Width::Width8, op, d, d)
-    } else {
-        let op = *mxy.choose(&mut rand::thread_rng()).unwrap();
-        let d = if random() {
-            xy(cmos)
-        } else {
-            random_absolute()
-        };
-        Operation::Monadic(Width::Width8, op, d, d)
-    }
+        { if is_inc_dec(insn) insn.a = X }
+        { if is_inc_dec(insn) insn.a = Y }
+        { insn.a = random_absolute() }
+        { insn.mnemonic = "inc"; insn.implementation = inc; }
+        { insn.mnemonic = "dec"; insn.implementation = dec; }
+        { if !is_x_y(insn) { insn.mnemonic = "asl"; insn.implementation = asl; } }
+        { if !is_x_y(insn) { insn.mnemonic = "lsr"; insn.implementation = lsr; } }
+        { if !is_x_y(insn) { insn.mnemonic = "ror"; insn.implementation = ror; } }
+        { if !is_x_y(insn) { insn.mnemonic = "rol"; insn.implementation = rol; } }
+    );
 }
 
 fn alu_6502() -> Operation {
