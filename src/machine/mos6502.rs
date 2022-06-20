@@ -133,20 +133,23 @@ fn transfers_6502() -> Operation {
     }
 }
 
-fn loads() -> Operation {
-    let reg = randomly!( { A } { X } { Y } );
-
-    if random() {
-        Operation::Move(random_absolute(), reg)
-    } else {
-        Operation::Move(random_immediate(), reg)
-    }
+fn loads(insn: &Instruction) {
+    randomly!(
+        { insn.a = A; insn.mnemonic = "lda" }
+        { insn.a = X; insn.mnemonic = "ldx" }
+        { insn.a = Y; insn.mnemonic = "ldy" }
+        { insn.b, insn.length = random_absolute(); }
+        { insn.b, insn.length = random_immediate(); }
+    );
 }
 
-fn stores() -> Operation {
-    let reg = randomly!( { A } { X } { Y } );
-
-    Operation::Move(reg, random_absolute())
+fn stores(insn: &Instruction) {
+    randomly!(
+        { insn.a = A; insn.mnemonic = "sta" }
+        { insn.a = X; insn.mnemonic = "stx" }
+        { insn.a = Y; insn.mnemonic = "sty" }
+        { insn.b, insn.length = random_absolute(); }
+    );
 }
 
 fn secl_6502(insn: &mut Instruction) {
