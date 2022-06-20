@@ -222,8 +222,13 @@ const RMW_CMOS: Instruction = Instruction {
 
 const FLAG_INSTRUCTIONS: Instruction = Instruction {
     disassemble: dasm_no_operand,
-    operation: Operation::Nop,
+    implementation: |_, s| s.carry = Some(false),
+    mnemonic: "clc",
     randomizer: secl_6502,
+    length: 1,
+    a: Datum::Nothing,
+    b: Datum::Nothing,
+    c: Datum::Nothing,
 };
 
 const NMOS6502_INSTRUCTIONS: [Instruction; 6] = [
