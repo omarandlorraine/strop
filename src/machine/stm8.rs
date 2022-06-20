@@ -494,6 +494,17 @@ const LOAD_INSTRUCTIONS: Instruction = Instruction {
     mnemonic: "ld",
 };
 
+const ALU8_INSTRUCTIONS: Instruction = Instruction {
+    implementation: |i, s| standard_add(s, s.get_i8(i.a), s.get_i8(i.b), Some(false)),
+    disassemble: dasm_alu8,
+    length: 2,
+    randomizer: muldiv,
+    a: A,
+    b: Datum::Imm8(1),
+    c: Datum::Nothing,
+    mnemonic: "add",
+};
+
 const MUL_DIV_INSTRUCTIONS: Instruction = Instruction {
     implementation: impl_muldiv,
     disassemble: dasm_muldiv,
