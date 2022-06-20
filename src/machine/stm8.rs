@@ -55,7 +55,7 @@ fn random_absolute() -> (Datum, usize) {
 
 fn random_immediate() -> (Datum, usize) {
     let d = crate::machine::random_immediate();
-    (d, 2);
+    (d, 2)
 }
 
 fn regname(r: Datum) -> &'static str {
@@ -350,7 +350,7 @@ fn muldiv(insn: &mut Instruction) {
     );
 }
 
-fn alu16() -> Operation {
+fn alu16() {
     randomly!(
     { (insn.mnemonic, insn.implementation) = ("add", add_without_carry) }
     { (insn.mnemonic, insn.implementation) = ("and", boolean_and) }
@@ -510,9 +510,20 @@ const LOAD_INSTRUCTIONS: Instruction = Instruction {
 
 const ALU8_INSTRUCTIONS: Instruction = Instruction {
     implementation: |i, s| standard_add(s, s.get_i8(i.a), s.get_i8(i.b), Some(false)),
-    disassemble: dasm_alu8,
+    disassemble: dasm_alu,
     length: 2,
-    randomizer: muldiv,
+    randomizer: alu8,
+    a: A,
+    b: Datum::Imm8(1),
+    c: Datum::Nothing,
+    mnemonic: "add",
+};
+
+const ALU16_INSTRUCTIONS: Instruction = Instruction {
+    implementation: |i, s| standard_add(s, s.get_i8(i.a), s.get_i8(i.b), Some(false)),
+    disassemble: dasm_alu,
+    length: 2,
+    randomizer: alu16,
     a: A,
     b: Datum::Imm8(1),
     c: Datum::Nothing,
@@ -530,15 +541,20 @@ const MUL_DIV_INSTRUCTIONS: Instruction = Instruction {
     mnemonic: "mul",
 };
 
-const RANDS: [Instruction; 10] = [
+const CLEAR_INSTRUCTIONS: Instruction = Instruction {
+    implementation: standard_implementation,
+    disassemble: dasm,
+    length: instr_length_stm8,
+    randomizer: clear,
+    implementation: moves,
+};
+
+const RANDS: [Instruction; 11] = [
     LOAD_INSTRUCTIONS,
     MUL_DIV_INSTRUCTIONS,
-    Instruction {
-        implementation: standard_implementation,
-        disassemble: dasm,
-        length: instr_length_stm8,
-        randomizer: clear,
-    },
+    ALU8_INSTRUCTIONS,
+    ALU16_INSTRUCTIONS,
+    CLEAR_INSTRUCTIONS,
     Instruction {
         implementation: standard_implementation,
         disassemble: dasm,
@@ -574,12 +590,6 @@ const RANDS: [Instruction; 10] = [
         disassemble: dasm,
         length: instr_length_stm8,
         randomizer: oneargs,
-    },
-    Instruction {
-        implementation: standard_implementation,
-        disassemble: dasm,
-        length: instr_length_stm8,
-        randomizer: twoargs,
     },
 ];
 
