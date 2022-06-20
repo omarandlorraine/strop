@@ -74,49 +74,17 @@ fn dasm_b(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Resu
 }
 
 fn rmw_dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    fn syn(f: &mut std::fmt::Formatter, s: &'static str, d: Datum) -> std::fmt::Result {
-        match d {
-            Datum::Absolute(address) => {
-                write!(f, "\t{} {}", s, address)
-            }
-            Datum::Register(R::A) => {
-                write!(f, "\t{} a", s)
-            }
-            _ => {
-                write!(f, "\t{} {:?}", s, d)
-            }
-        }
-    }
-
-    fn opcode(oper: MonadicOperation) -> &'static str {
-        match oper {
-            Decrement => "dec",
-            Increment => "inc",
-            LeftShiftArithmetic => "asl",
-            RightShiftLogical => "lsr",
-            RotateRightThruCarry => "ror",
-            RotateLeftThruCarry => "rol",
-            _ => panic!("I don't know the opcode for {:?}", oper),
-        }
-    }
-
-    match op {
-        Operation::Monadic(Width::Width8, Decrement, X, X) => {
-            write!(f, "\tdex")
-        }
-        Operation::Monadic(Width::Width8, Decrement, Y, Y) => {
-            write!(f, "\tdey")
-        }
-        Operation::Monadic(Width::Width8, Increment, X, X) => {
-            write!(f, "\tinx")
-        }
-        Operation::Monadic(Width::Width8, Increment, Y, Y) => {
-            write!(f, "\tiny")
-        }
-        Operation::Monadic(Width::Width8, oper, d, _) => syn(f, opcode(oper), d),
-        _ => {
-            write!(f, "{:?}", op)
-        }
+    // special cases for opcodes: dex dey inx iny
+    if insn.mnemonic == "inc" && insn.a == X {
+        write!(f, "\tinx")
+    } else if insn.mnemonic == "dec" && insn.a == X {
+        write!(f, "\tdex")
+    } else if insn.mnemonic == "inc" && insn.a == Y {
+        write!(f, "\tiny")
+    } else if insn.mnemonic == "dec" && insn.a == Y {
+        write!(f, "\tdey")
+    } else {
+        dasm_operand(f, insn.mnemonic, insn.a)
     }
 }
 
@@ -134,11 +102,11 @@ fn rmw_op(insn: &mut Instruction, cmos: bool) {
     randomly!(
         { if cmos || !is_inc_dec(insn)
             // not all 6502's have instructions to increment or decrement the accumulator
-            { insn.a = A }
+            { insn.a = A; insn.length = 1; }
         }
-        { if is_inc_dec(insn) insn.a = X }
-        { if is_inc_dec(insn) insn.a = Y }
-        { insn.a = random_absolute() }
+        { if is_inc_dec(insn) { insn.a = X; insn.length = 1; } }
+        { if is_inc_dec(insn) { insn.a = Y; insn.length = 1; } }
+        { insn.a, insn.length = random_absolute(); }
         { insn.mnemonic = "inc"; insn.implementation = inc; }
         { insn.mnemonic = "dec"; insn.implementation = dec; }
         { if !is_x_y(insn) { insn.mnemonic = "asl"; insn.implementation = asl; } }
@@ -234,14 +202,20 @@ const ALU_INSTRUCTIONS: Instruction = Instruction {
 
 const RMW_NMOS: Instruction = Instruction {
     disassemble: rmw_dasm,
-    operation: Operation::Nop,
-    randomizer: || rmw_op(false),
+    randomizer: |insn| rmw_op(insn, false),
+    length: 1,
+    a: A,
+    b: Datum::Nothing,
+    c: Datum::Nothing,
 };
 
 const RMW_CMOS: Instruction = Instruction {
     disassemble: rmw_dasm,
-    operation: Operation::Nop,
-    randomizer: || rmw_op(true),
+    randomizer: |insn| rmw_op(insn, true),
+    length: 1,
+    a: A,
+    b: Datum::Nothing,
+    c: Datum::Nothing,
 };
 
 const FLAG_INSTRUCTIONS: Instruction = Instruction {
