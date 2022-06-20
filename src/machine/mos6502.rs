@@ -73,14 +73,6 @@ fn dasm_b(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Resu
     dasm_operand(f, insn.mnemonic, &insn.b)
 }
 
-fn random_source() -> Datum {
-    if random() {
-        random_immediate()
-    } else {
-        random_absolute()
-    }
-}
-
 fn rmw_dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     fn syn(f: &mut std::fmt::Formatter, s: &'static str, d: Datum) -> std::fmt::Result {
         match d {
