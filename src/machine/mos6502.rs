@@ -73,7 +73,7 @@ fn dasm_b(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Resu
     dasm_operand(f, insn.mnemonic, &insn.b)
 }
 
-fn rmw_dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+fn rmw_dasm(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Result {
     // special cases for opcodes: dex dey inx iny
     if insn.mnemonic == "inc" && insn.a == X {
         write!(f, "\tinx")
@@ -84,7 +84,7 @@ fn rmw_dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
     } else if insn.mnemonic == "dec" && insn.a == Y {
         write!(f, "\tdey")
     } else {
-        dasm_operand(f, insn.mnemonic, insn.a)
+        dasm_operand(f, insn.mnemonic, &insn.a)
     }
 }
 
@@ -206,7 +206,9 @@ const ALU_INSTRUCTIONS: Instruction = Instruction {
 const RMW_NMOS: Instruction = Instruction {
     disassemble: rmw_dasm,
     randomizer: |insn| rmw_op(insn, false),
+    implementation: asl,
     length: 1,
+    mnemonic: "asl",
     a: A,
     b: Datum::Nothing,
     c: Datum::Nothing,
@@ -215,7 +217,9 @@ const RMW_NMOS: Instruction = Instruction {
 const RMW_CMOS: Instruction = Instruction {
     disassemble: rmw_dasm,
     randomizer: |insn| rmw_op(insn, true),
+    implementation: asl,
     length: 1,
+    mnemonic: "asl",
     a: A,
     b: Datum::Nothing,
     c: Datum::Nothing,
