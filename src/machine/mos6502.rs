@@ -161,13 +161,15 @@ fn secl_6502(insn: &mut Instruction) {
         { ("sed", |_, s: &mut State| s.decimal = Some(true)) });
 }
 
-fn compares() -> Operation {
+fn compares(insn: &mut Instruction) {
     randomly!(
-    { Operation::BitCompare(random_absolute(), A)}
-    { Operation::Dyadic(Width::Width8, Subtract, A, random_source(), Datum::Zero)}
-    { Operation::Dyadic(Width::Width8, Subtract, X, random_source(), Datum::Zero)}
-    { Operation::Dyadic(Width::Width8, Subtract, Y, random_source(), Datum::Zero)}
-    )
+        { insn.b, insn.length = random_absolute(); }
+        { insn.b, insn.length = random_immediate(); }
+        { insn.mnemonic, insn.a, insn.implementation = ("bit", A, compare) }
+        { insn.mnemonic, insn.a, insn.implementation = ("cmp", A, compare) }
+        { insn.mnemonic, insn.a, insn.implementation = ("cpx", X, compare) }
+        { insn.mnemonic, insn.a, insn.implementation = ("cpy", Y, compare) }
+    );
 }
 
 const COMPARE_INSTRUCTIONS: Instruction = Instruction {
