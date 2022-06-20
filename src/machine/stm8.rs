@@ -1,5 +1,3 @@
-use crate::machine::random_absolute;
-use crate::machine::random_immediate;
 use crate::machine::DyadicOperation::{
     Add, AddWithCarry, And, Divide, ExclusiveOr, Multiply, Or, Subtract, SubtractWithBorrow,
 };
@@ -17,7 +15,6 @@ use crate::Machine;
 use crate::State;
 
 use crate::machine::rand::prelude::SliceRandom;
-use crate::machine::rand::Rng;
 use crate::machine::reg_by_name;
 use rand::random;
 use strop::randomly;
@@ -37,17 +34,28 @@ fn random_imm16() -> Datum {
     Datum::Imm16(*regs.choose(&mut rand::thread_rng()).unwrap())
 }
 
-fn random_stm8_operand() -> Datum {
-    if random() {
-        random_immediate()
-    } else {
-        random_absolute()
-    }
-}
-
 fn random_register() -> Datum {
     let regs = vec![A, X, Y];
     *regs.choose(&mut rand::thread_rng()).unwrap()
+}
+
+fn random_absolute() -> (Datum, usize) {
+    let d = crate::machine::random_absolute();
+    match d {
+        Datum::Absolute(addr) => {
+            if addr < 256 {
+                (d, 1)
+            } else {
+                (d, 2)
+            }
+        }
+        _ => panic!(),
+    }
+}
+
+fn random_immediate() -> (Datum, usize) {
+    let d = crate::machine::random_immediate();
+    (d, 2);
 }
 
 fn regname(r: Datum) -> &'static str {
@@ -342,28 +350,33 @@ fn muldiv(insn: &mut Instruction) {
     );
 }
 
-fn twoargs() -> Operation {
-    fn op(w: Width, a: Datum) -> Operation {
-        let vs = vec![Add, And, Or, Subtract];
-        let o = vs.choose(&mut rand::thread_rng());
-        Operation::Dyadic(w, *o.unwrap(), a, random_absolute(), a)
-    }
-
-    fn op8(w: Width, a: Datum) -> Operation {
-        // These operations only work with 8-bit operands
-        let vs = vec![AddWithCarry, ExclusiveOr, SubtractWithBorrow];
-        let o = vs.choose(&mut rand::thread_rng());
-        Operation::Dyadic(w, *o.unwrap(), a, random_absolute(), a)
-    }
-
+fn alu16() -> Operation {
     randomly!(
-    { op(Width::Width8, A) }
-    { op8(Width::Width8, A) }
-    { op(Width::Width16, X) }
-    { op(Width::Width16, Y) }
-    )
+    { (insn.mnemonic, insn.implementation) = ("add", add_without_carry) }
+    { (insn.mnemonic, insn.implementation) = ("and", boolean_and) }
+    { (insn.mnemonic, insn.implementation) = ("or", boolean_or) }
+    { (insn.mnemonic, insn.implementation) = ("sub", subtract) }
+    { (insn.a, insn.length) = random_absolute() }
+    { (insn.a, insn.length) = random_immediate() }
+    { (insn.b, insn.length) = flip_x_and_y(insn.b, insn.length) }
+    );
 }
 
+fn alu8() {
+    randomly!(
+    { (insn.mnemonic, insn.implementation) = ("adc", add_with_carry) }
+    { (insn.mnemonic, insn.implementation) = ("add", add_without_carry) }
+    { (insn.mnemonic, insn.implementation) = ("and", boolean_and) }
+    { (insn.mnemonic, insn.implementation) = ("or", boolean_or) }
+    { (insn.mnemonic, insn.implementation) = ("xor", boolean_xor) }
+    { (insn.mnemonic, insn.implementation) = ("sbc", subtract_with_borrow) }
+    { (insn.mnemonic, insn.implementation) = ("sub", subtract) }
+    { (insn.a, insn.length) = random_absolute() }
+    { (insn.a, insn.length) = random_immediate() }
+    );
+}
+
+/*
 fn bits() -> Operation {
     let addr = random_absolute();
     let bit: u8 = rand::thread_rng().gen_range(0..=7);
@@ -376,6 +389,7 @@ fn bits() -> Operation {
         { Operation::BitCopyCarry(addr, bit)}
     )
 }
+*/
 
 fn carry() -> Operation {
     randomly!(
