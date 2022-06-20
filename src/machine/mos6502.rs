@@ -175,31 +175,26 @@ const COMPARE_INSTRUCTIONS: Instruction = Instruction {
     a: A,
     b: Datum::Imm8(0),
     disassemble: dasm_operand,
-    operation: Operation::Nop,
     randomizer: compares,
 };
 
 const STORE_INSTRUCTIONS: Instruction = Instruction {
     disassemble: dasm_operand,
-    operation: Operation::Nop,
     randomizer: stores,
 };
 
 const LOAD_INSTRUCTIONS: Instruction = Instruction {
     disassemble: dasm_operand,
-    operation: Operation::Nop,
     randomizer: loads,
 };
 
 const TRANSFER_INSTRUCTIONS: Instruction = Instruction {
     disassemble: dasm_operand,
-    operation: Operation::Nop,
     randomizer: transfers_6502,
 };
 
 const ALU_INSTRUCTIONS: Instruction = Instruction {
     disassemble: dasm_operand,
-    operation: Operation::Nop,
     randomizer: alu_6502,
 };
 
