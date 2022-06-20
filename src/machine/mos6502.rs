@@ -1,6 +1,4 @@
 use crate::machine::rand::prelude::SliceRandom;
-use crate::machine::random_absolute;
-use crate::machine::random_immediate;
 use crate::machine::reg_by_name;
 use crate::machine::Datum;
 use crate::machine::DyadicOperation::{
@@ -25,6 +23,19 @@ use strop::randomly;
 const A: Datum = Datum::Register(R::A);
 const X: Datum = Datum::Register(R::Xl);
 const Y: Datum = Datum::Register(R::Yl);
+
+fn random_immediate() -> (Datum, usize) {
+    let d = crate::machine::random_immediate();
+    (d, 1)
+}
+
+fn random_absolute() -> (Datum, usize) {
+    let d = crate::machine::random_absolute();
+    match d {
+        Datum::Absolute(addr) => (d, if addr < 256 { 2 } else { 3 }),
+        _ => panic!(),
+    }
+}
 
 fn dasm_no_operand(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Result {
     write!(f, "\t{}", insn.mnemonic)
