@@ -17,7 +17,7 @@ written in *R*ust.
 
 ### Supported instruction sets:
 
-Strop's repetoire of instructions include mathematical operations such as
+Strop's repertoire of instructions include mathematical operations such as
 boolean AND, OR, etc., addition & subtraction, comparisons, load/store
 instructions, conditional and unconditional jumps, etc. Certain operations are
 not included, because I anticipate that end-users will use strop mostly for
