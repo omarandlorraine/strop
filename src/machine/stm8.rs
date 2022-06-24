@@ -221,9 +221,9 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 
 fn clear() {
     randomly!(
-        { (insn.a, insn.length) = flip_x_and_y(insn.a, insn.length) }
-        { (insn.a, insn.length) = random_absolute() }
-        );
+    { (insn.a, insn.length) = flip_x_and_y(insn.a, insn.length) }
+    { (insn.a, insn.length) = random_absolute() }
+    );
 }
 
 fn dasm_muldiv(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Result {
