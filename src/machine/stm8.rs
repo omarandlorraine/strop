@@ -560,7 +560,7 @@ const RMW_INSTRUCTIONS: Instruction = Instruction {
     a: A,
     b: Datum::Zero,
     c: Datum::Nothing,
-    mnemonic: "asl"
+    mnemonic: "asl",
 };
 
 const RANDS: [Instruction; 11] = [
