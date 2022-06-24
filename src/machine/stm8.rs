@@ -563,7 +563,7 @@ const RMW_INSTRUCTIONS: Instruction = Instruction {
     mnemonic: "asl",
 };
 
-const RANDS: [Instruction; 11] = [
+const RANDS: [Instruction; 10] = [
     LOAD_INSTRUCTIONS,
     MUL_DIV_INSTRUCTIONS,
     ALU8_INSTRUCTIONS,
@@ -593,12 +593,6 @@ const RANDS: [Instruction; 11] = [
         disassemble: dasm,
         length: instr_length_stm8,
         randomizer: compare,
-    },
-    Instruction {
-        implementation: standard_implementation,
-        disassemble: dasm,
-        length: instr_length_stm8,
-        randomizer: jumps,
     },
 ];
 
