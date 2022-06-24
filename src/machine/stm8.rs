@@ -219,12 +219,11 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 }
 */
 
-fn clear() -> Operation {
-    if random() {
-        Operation::Move(Datum::Zero, random_register())
-    } else {
-        Operation::Move(Datum::Zero, random_absolute())
-    }
+fn clear() {
+    randomly!(
+        { (insn.a, insn.length) = flip_x_and_y(insn.a, insn.length) }
+        { (insn.a, insn.length) = random_absolute() }
+        );
 }
 
 fn dasm_muldiv(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Result {
@@ -547,6 +546,21 @@ const CLEAR_INSTRUCTIONS: Instruction = Instruction {
     length: instr_length_stm8,
     randomizer: clear,
     implementation: moves,
+    a: A,
+    b: Datum::Zero,
+    c: Datum::Nothing,
+    mnemonic: "clr",
+};
+
+const RMW_INSTRUCTIONS: Instruction = Instruction {
+    implementation: asl,
+    disassemble: dasm,
+    length: instr_length_stm8,
+    randomizer: oneargs,
+    a: A,
+    b: Datum::Zero,
+    c: Datum::Nothing,
+    mnemonic: "asl"
 };
 
 const RANDS: [Instruction; 11] = [
@@ -555,6 +569,7 @@ const RANDS: [Instruction; 11] = [
     ALU8_INSTRUCTIONS,
     ALU16_INSTRUCTIONS,
     CLEAR_INSTRUCTIONS,
+    RMW_INSTRUCTIONS,
     Instruction {
         implementation: standard_implementation,
         disassemble: dasm,
@@ -584,12 +599,6 @@ const RANDS: [Instruction; 11] = [
         disassemble: dasm,
         length: instr_length_stm8,
         randomizer: jumps,
-    },
-    Instruction {
-        implementation: impl_oneargs,
-        disassemble: dasm,
-        length: instr_length_stm8,
-        randomizer: oneargs,
     },
 ];
 
