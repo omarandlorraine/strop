@@ -20,6 +20,38 @@ const YH: Datum = Datum::Register(R::Yh);
 const X: Datum = Datum::RegisterPair(R::Xh, R::Xl);
 const Y: Datum = Datum::RegisterPair(R::Yh, R::Yl);
 
+fn bcpl(insn: &Instruction, state: &mut State) {
+    let datum = insn.a;
+    let shamt = insn.b;
+    s.set_u8(datum, standard_bit_complement(datum, shamt));
+}
+
+fn bccm(insn: &Instruction, state: &mut State) {
+    let datum = insn.a;
+    let shamt = insn.b;
+    if let Some(c) = s.carry {
+        if c {
+            s.set_u8(datum, standard_bit_set(datum, shamt));
+        } else {
+            s.set_u8(datum, standard_bit_clear(datum, shamt));
+        }
+    } else {
+        s.set_u8(datum, None);
+    }
+}
+
+fn bset(insn: &Instruction, state: &mut State) {
+    let datum = insn.a;
+    let shamt = insn.b;
+    s.set_u8(datum, standard_bit_set(datum, shamt));
+}
+
+fn bres(insn: &Instruction, state: &mut State) {
+    let datum = insn.a;
+    let shamt = insn.b;
+    s.set_u8(datum, standard_bit_clear(datum, shamt));
+}
+
 fn random_imm16() -> Datum {
     let regs = vec![150];
     Datum::Imm16(*regs.choose(&mut rand::thread_rng()).unwrap())
@@ -59,6 +91,19 @@ fn regname(r: Datum) -> &'static str {
         Y => "y",
         _ => panic!(),
     }
+}
+
+fn dasm_bits(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Result {
+    let shamt = match insn.b {
+        Datum::Imm8(shamt) => shamt,
+        _ => panic!(),
+    };
+
+    let absolute = match insn.a {
+        Datum::Absolute(addr) => addr,
+        _ => panic!(),
+    };
+    write!(f, "{} ${:04x}, #{}", insn.mnemonic, absolute, shamt)
 }
 
 /*
@@ -368,20 +413,13 @@ fn alu8(insn: &mut Instruction) {
     );
 }
 
-/*
-fn bits() -> Operation {
-    let addr = random_absolute();
-    let bit: u8 = rand::thread_rng().gen_range(0..=7);
-
-    // the eight-bit diadic operations like and, xor, or, etc
+fn bits(insn: &mut Instruction) {
     randomly!(
-        { Operation::BitSet(addr, bit)}
-        { Operation::BitClear(addr, bit)}
-        { Operation::BitComplement(addr, bit)}
-        { Operation::BitCopyCarry(addr, bit)}
-    )
+        { (insn.mnemonic, insn.implementation) = ( "bset", bset ) }
+        { (insn.mnemonic, insn.implementation) = ( "bres", bres ) }
+        { (insn.mnemonic, insn.implementation) = ( "bcpl", bcpl ) }
+        { insn.a = randomize_shamt(insn.a, 8) });
 }
-*/
 
 fn carry(insn: &mut Instruction) {
     fn rcf(insn: &mut Instruction, s: &mut State) {
