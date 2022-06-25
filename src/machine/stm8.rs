@@ -1,12 +1,4 @@
-use crate::machine::DyadicOperation::{
-    Add, AddWithCarry, And, Divide, ExclusiveOr, Multiply, Or, Subtract, SubtractWithBorrow,
-};
 use crate::machine::Instruction;
-use crate::machine::MonadicOperation::{
-    Complement, Decrement, Increment, LeftShiftArithmetic, Negate, RightShiftArithmetic,
-    RightShiftLogical, RotateLeftThruAccumulator, RotateLeftThruCarry, RotateRightThruAccumulator,
-    RotateRightThruCarry, Swap,
-};
 use crate::machine::Operation;
 use crate::machine::Width;
 use crate::machine::R;
@@ -16,7 +8,6 @@ use crate::State;
 
 use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::reg_by_name;
-use rand::random;
 use strop::randomly;
 
 use std::convert::TryInto;

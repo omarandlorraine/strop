@@ -1,23 +1,11 @@
 use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::reg_by_name;
 use crate::machine::Datum;
-use crate::machine::DyadicOperation::{
-    AddWithCarry, And, ExclusiveOr, Or, Subtract, SubtractWithCarry,
-};
 use crate::machine::Instruction;
 use crate::machine::Machine;
-use crate::machine::MonadicOperation;
-use crate::machine::MonadicOperation::{
-    Decrement, Increment, LeftShiftArithmetic, RightShiftLogical, RotateLeftThruCarry,
-    RotateRightThruCarry,
-};
-use crate::machine::Operation;
-use crate::machine::Test::True;
-use crate::machine::Width;
 use crate::machine::R;
 
 use crate::machine::standard_compare;
-use rand::random;
 use strop::randomly;
 
 const A: Datum = Datum::Register(R::A);
@@ -69,6 +57,10 @@ fn dasm_operand(
     }
 }
 
+fn dasm_a(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Result {
+    dasm_operand(f, insn.mnemonic, &insn.a)
+}
+
 fn dasm_b(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Result {
     dasm_operand(f, insn.mnemonic, &insn.b)
 }
@@ -116,24 +108,28 @@ fn rmw_op(insn: &mut Instruction, cmos: bool) {
     );
 }
 
-fn alu_6502() -> Operation {
-    // randomly generate the instructions ora, and, eor, adc, sbc, cmp
-    // these all have the same available addressing modes
-    let ops = vec![AddWithCarry, And, Or, ExclusiveOr, SubtractWithCarry];
-    let op = *ops.choose(&mut rand::thread_rng()).unwrap();
-    Operation::Dyadic(Width::Width8, op, A, random_source(), A)
+fn alu_6502(insn: &mut Instruction) {
+    randomly!(
+        { insn.mnemonic = "ora"; insn.implementation = ora }
+        { insn.mnemonic = "and"; insn.implementation = and }
+        { insn.mnemonic = "eor"; insn.implementation = eor }
+        { insn.mnemonic = "adc"; insn.implementation = adc }
+        { insn.mnemonic = "sbc"; insn.implementation = sbc }
+        { insn.mnemonic = "cmp"; insn.implementation = cmp }
+        { insn.a, insn.length = random_absolute(); }
+        { insn.a, insn.length = random_immediate(); }
+    );
 }
 
-fn transfers_6502() -> Operation {
-    let reg = if random() { X } else { Y };
-    if random() {
-        Operation::Move(A, reg)
-    } else {
-        Operation::Move(reg, A)
-    }
+fn transfers_6502(insn: &mut Instruction) {
+    randomly!(
+        { insn.a = A; insn.b = X }
+        { insn.a = A; insn.b = Y }
+        { insn.a = X; insn.b = A }
+        { insn.a = Y; insn.b = A });
 }
 
-fn loads(insn: &Instruction) {
+fn loads(insn: &mut Instruction) {
     randomly!(
         { insn.a = A; insn.mnemonic = "lda" }
         { insn.a = X; insn.mnemonic = "ldx" }
@@ -143,7 +139,7 @@ fn loads(insn: &Instruction) {
     );
 }
 
-fn stores(insn: &Instruction) {
+fn stores(insn: &mut Instruction) {
     randomly!(
         { insn.a = A; insn.mnemonic = "sta" }
         { insn.a = X; insn.mnemonic = "stx" }
@@ -174,30 +170,57 @@ fn compares(insn: &mut Instruction) {
 
 const COMPARE_INSTRUCTIONS: Instruction = Instruction {
     mnemonic: "cmp",
-    a: A,
-    b: Datum::Imm8(0),
-    disassemble: dasm_operand,
+    disassemble: dasm_a,
     randomizer: compares,
+    implementation: lda,
+    length: 2,
+    a: Datum::Imm8(0),
+    b: Datum::Nothing,
+    c: Datum::Nothing,
 };
 
 const STORE_INSTRUCTIONS: Instruction = Instruction {
-    disassemble: dasm_operand,
+    disassemble: dasm_a,
     randomizer: stores,
+    implementation: sta,
+    mnemonic: "sta",
+    length: 2,
+    a: Datum::Absolute(0),
+    b: Datum::Nothing,
+    c: Datum::Nothing,
 };
 
 const LOAD_INSTRUCTIONS: Instruction = Instruction {
-    disassemble: dasm_operand,
+    disassemble: dasm_a,
     randomizer: loads,
+    implementation: lda,
+    mnemonic: "lda",
+    length: 2,
+    a: Datum::Imm8(0),
+    b: Datum::Nothing,
+    c: Datum::Nothing,
 };
 
 const TRANSFER_INSTRUCTIONS: Instruction = Instruction {
-    disassemble: dasm_operand,
+    disassemble: dasm_transfer,
     randomizer: transfers_6502,
+    implementation: transfers,
+    mnemonic: "",
+    length: 1,
+    a: A,
+    b: X,
+    c: Datum::Nothing,
 };
 
 const ALU_INSTRUCTIONS: Instruction = Instruction {
-    disassemble: dasm_operand,
+    disassemble: dasm_a,
     randomizer: alu_6502,
+    implementation: adc,
+    mnemonic: "adc",
+    length: 2,
+    a: Datum::Imm8(0),
+    b: Datum::Nothing,
+    c: Datum::Nothing,
 };
 
 const RMW_NMOS: Instruction = Instruction {
