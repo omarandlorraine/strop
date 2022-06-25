@@ -219,7 +219,7 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 }
 */
 
-fn clear() {
+fn clear(insn: &mut Instruction) {
     randomly!(
     { (insn.a, insn.length) = flip_x_and_y(insn.a, insn.length) }
     { (insn.a, insn.length) = random_absolute() }
@@ -349,10 +349,11 @@ fn muldiv(insn: &mut Instruction) {
     );
 }
 
-fn alu16() {
+fn alu16(insn: &mut Instruction) {
     randomly!(
     { (insn.mnemonic, insn.implementation) = ("add", add_without_carry) }
     { (insn.mnemonic, insn.implementation) = ("and", boolean_and) }
+    { (insn.mnemonic, insn.implementation) = ("cp", cp) }
     { (insn.mnemonic, insn.implementation) = ("or", boolean_or) }
     { (insn.mnemonic, insn.implementation) = ("sub", subtract) }
     { (insn.a, insn.length) = random_absolute() }
@@ -361,11 +362,12 @@ fn alu16() {
     );
 }
 
-fn alu8() {
+fn alu8(insn: &mut Instruction) {
     randomly!(
     { (insn.mnemonic, insn.implementation) = ("adc", add_with_carry) }
     { (insn.mnemonic, insn.implementation) = ("add", add_without_carry) }
     { (insn.mnemonic, insn.implementation) = ("and", boolean_and) }
+    { (insn.mnemonic, insn.implementation) = ("cp", cp) }
     { (insn.mnemonic, insn.implementation) = ("or", boolean_or) }
     { (insn.mnemonic, insn.implementation) = ("xor", boolean_xor) }
     { (insn.mnemonic, insn.implementation) = ("sbc", subtract_with_borrow) }
@@ -390,13 +392,23 @@ fn bits() -> Operation {
 }
 */
 
-fn carry() -> Operation {
-    randomly!(
-        { Operation::Carry(false)}
-        { Operation::Carry(true)}
-        { Operation::ComplementCarry}
-        { Operation::Overflow(false)}
-    )
+fn carry(insn: &mut Instruction) {
+    fn rcf(insn: &mut Instruction, s: &mut State) {
+        s.carry = Some(false);
+    }
+
+    fn scf(insn: &mut Instruction, s: &mut State) {
+        s.carry = Some(true);
+    }
+
+    fn ccf(insn: &mut Instruction, s: &mut State) {
+        s.carry = s.carry.map(|c| !c);
+    }
+
+    (insn.mnemonic, insn.implementation) = randomly!(
+            { "rcf", rcf }
+            { "scf", scf }
+            { "ccf", ccf });
 }
 
 fn compare() -> Operation {
@@ -411,20 +423,15 @@ fn compare() -> Operation {
     )
 }
 
-fn transfers() -> Operation {
+fn transfers(insn: &mut Instruction) {
+    let reg = [XH, XL, YH, YL].choose(&mut rand::thread_rng()).unwrap();
+
     randomly!(
-    {Operation::Move(A, XL)}
-    {Operation::Move(A, XH)}
-    {Operation::Move(A, YL)}
-    {Operation::Move(A, YH)}
-    {Operation::Move(XL, A)}
-    {Operation::Move(XH, A)}
-    {Operation::Move(YL, A)}
-    {Operation::Move(YH, A)}
-    {Operation::Exchange(Width::Width8, A, XL)}
-    {Operation::Exchange(Width::Width8, A, YL)}
-    {Operation::Exchange(Width::Width16, X, Y)}
-    )
+        {insn.a, insn.length = flip_x_and_y(insn.a, insn.length)}
+        {insn.b, insn.length = flip_x_and_y(insn.a, insn.length)}
+        {let temp = insn.a; insn.a = insn.b; insn.b = temp}
+        {insn.a, insn.b = (A, reg)}
+        {insn.b, insn.a = (A, reg)});
 }
 
 fn flip_x_and_y(d: Datum, sz: usize) -> (Datum, usize) {
@@ -456,44 +463,21 @@ fn loads(insn: &mut Instruction) {
     */
 }
 
-fn oneargs() -> Operation {
-    fn op(w: Width, a: Datum) -> Operation {
-        let vs = vec![
-            Complement,
-            Negate,
-            Increment,
-            Decrement,
-            Swap,
-            LeftShiftArithmetic,
-            RightShiftArithmetic,
-            RightShiftLogical,
-            RotateLeftThruCarry,
-            RotateRightThruCarry,
-        ];
-        let o = vs.choose(&mut rand::thread_rng());
-        Operation::Monadic(w, *o.unwrap(), a, a)
-    }
-
-    fn op16(a: Datum) -> Operation {
-        if random::<u8>() < 200 {
-            // with high probability pick one of these operations
-            op(Width::Width16, a)
-        } else {
-            // with low probability, pick one of these, which only can take X or Y
-            if random() {
-                Operation::Monadic(Width::Width16, RotateLeftThruAccumulator, a, a)
-            } else {
-                Operation::Monadic(Width::Width16, RotateRightThruAccumulator, a, a)
-            }
-        }
-    }
-
-    if random() {
-        op(Width::Width8, A)
-    } else {
-        let a = if random() { X } else { Y };
-        op16(a)
-    }
+fn oneargs(insn: &mut Instruction) {
+    randomly!(
+        {insn.implementation = cpl; insn.mnemonic = "cpl"}
+        {insn.implementation = neg; insn.mnemonic = "neg"}
+        {insn.implementation = inc; insn.mnemonic = "inc"}
+        {insn.implementation = dec; insn.mnemonic = "dec"}
+        {insn.implementation = swap; insn.mnemonic = "swap"}
+        {insn.implementation = sla; insn.mnemonic = "sla"}
+        {insn.implementation = sra; insn.mnemonic = "sra"}
+        {insn.implementation = srl; insn.mnemonic = "srl"}
+        {insn.implementation = rlc; insn.mnemonic = "rlc"}
+        {insn.implementation = rrc; insn.mnemonic = "rrc"}
+        {insn.a = A}
+        {insn.length, insn.a = random_absolute}
+    );
 }
 
 const LOAD_INSTRUCTIONS: Instruction = Instruction {
@@ -541,7 +525,6 @@ const MUL_DIV_INSTRUCTIONS: Instruction = Instruction {
 };
 
 const CLEAR_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
     disassemble: dasm,
     length: instr_length_stm8,
     randomizer: clear,
@@ -563,37 +546,49 @@ const RMW_INSTRUCTIONS: Instruction = Instruction {
     mnemonic: "asl",
 };
 
-const RANDS: [Instruction; 10] = [
+const FLAG_INSTRUCTIONS: Instruction = Instruction {
+    implementation: |i, s| s.carry = Some(false),
+    disassemble: dasm,
+    length: instr_length_stm8,
+    randomizer: carry,
+    a: Datum::Nothing,
+    b: Datum::Nothing,
+    c: Datum::Nothing,
+    mnemonic: "rcf",
+};
+
+const TRANSFER_INSTRUCTIONS: Instruction = Instruction {
+    implementation: standard_move,
+    disassemble: dasm_transfer,
+    length: instr_length_stm8,
+    randomizer: transfers,
+    a: A,
+    b: XH,
+    c: Datum::Nothing,
+    mnemonic: "ld",
+};
+
+const BIT_INSTRUCTIONS: Instruction = Instruction {
+    implementation: bset,
+    disassemble: dasm_bits,
+    length: 4,
+    randomizer: bits,
+    a: Datum::Absolute(0),
+    b: Datum::Imm8(0),
+    c: Datum::Nothing,
+    mnemonic: "bset",
+};
+
+const RANDS: [Instruction; 9] = [
     LOAD_INSTRUCTIONS,
     MUL_DIV_INSTRUCTIONS,
     ALU8_INSTRUCTIONS,
     ALU16_INSTRUCTIONS,
     CLEAR_INSTRUCTIONS,
     RMW_INSTRUCTIONS,
-    Instruction {
-        implementation: standard_implementation,
-        disassemble: dasm,
-        length: instr_length_stm8,
-        randomizer: transfers,
-    },
-    Instruction {
-        implementation: standard_implementation,
-        disassemble: dasm,
-        length: instr_length_stm8,
-        randomizer: bits,
-    },
-    Instruction {
-        implementation: standard_implementation,
-        disassemble: dasm,
-        length: instr_length_stm8,
-        randomizer: carry,
-    },
-    Instruction {
-        implementation: standard_implementation,
-        disassemble: dasm,
-        length: instr_length_stm8,
-        randomizer: compare,
-    },
+    FLAG_INSTRUCTIONS,
+    TRANSFER_INSTRUCTIONS,
+    BIT_INSTRUCTIONS,
 ];
 
 pub fn instr_stm8() -> Instruction {
