@@ -62,11 +62,6 @@ fn andw(insn: &Instruction, s: &mut State) {
     s.set_i16(insn.a, n);
 }
 
-fn addw(insn: &Instruction, s: &mut State) {
-    let n = standard_add(s, s.get_i16(insn.a), s.get_i16(insn.b), Some(false));
-    s.set_i16(insn.a, n);
-}
-
 fn bccm(insn: &Instruction, s: &mut State) {
     let datum = s.get_u8(insn.a);
     let shamt: Option<usize> = s.get_u8(insn.b).map(|v| v.into());
@@ -600,33 +595,33 @@ fn bits(insn: &mut Instruction) {
 }
 
 fn carry(insn: &mut Instruction) {
-    fn rcf(insn: &mut Instruction, s: &mut State) {
+    fn rcf(insn: &Instruction, s: &mut State) {
         s.carry = Some(false);
     }
 
-    fn scf(insn: &mut Instruction, s: &mut State) {
+    fn scf(insn: &Instruction, s: &mut State) {
         s.carry = Some(true);
     }
 
-    fn ccf(insn: &mut Instruction, s: &mut State) {
+    fn ccf(insn: &Instruction, s: &mut State) {
         s.carry = s.carry.map(|c| !c);
     }
 
-    (insn.mnemonic, insn.implementation) = randomly!(
-            { "rcf", rcf }
-            { "scf", scf }
-            { "ccf", ccf });
+    randomly!(
+        { (insn.mnemonic, insn.implementation) = ("rcf", rcf) }
+        { (insn.mnemonic, insn.implementation) = ("scf", scf) }
+        { (insn.mnemonic, insn.implementation) = ("ccf", ccf) });
 }
 
 fn transfers(insn: &mut Instruction) {
     let reg = [XH, XL, YH, YL].choose(&mut rand::thread_rng()).unwrap();
 
     randomly!(
-        {insn.a, insn.length = flip_x_and_y(insn.a, insn.length)}
-        {insn.b, insn.length = flip_x_and_y(insn.a, insn.length)}
+        {(insn.a, insn.length) = flip_x_and_y(insn.a, insn.length)}
+        {(insn.b, insn.length) = flip_x_and_y(insn.a, insn.length)}
         {let temp = insn.a; insn.a = insn.b; insn.b = temp}
-        {insn.a, insn.b = (A, reg)}
-        {insn.b, insn.a = (A, reg)});
+        {(insn.a, insn.b) = (A, *reg)}
+        {(insn.b, insn.a) = (A, *reg)});
 }
 
 fn flip_x_and_y(d: Datum, sz: usize) -> (Datum, usize) {
@@ -671,7 +666,7 @@ fn oneargs(insn: &mut Instruction) {
         {insn.implementation = rlc; insn.mnemonic = "rlc"}
         {insn.implementation = rrc; insn.mnemonic = "rrc"}
         {insn.a = A}
-        {insn.length, insn.a = random_absolute}
+        {(insn.a, insn.length) = random_absolute()}
     );
 }
 

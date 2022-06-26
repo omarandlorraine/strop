@@ -738,6 +738,16 @@ fn rotate_right<T: num::PrimInt + Bits>(s: &mut State, a: Option<T>) -> Option<T
     result
 }
 
+fn rotate_left<T: num::PrimInt + Bits>(s: &mut State, a: Option<T>) -> Option<T> {
+    let r = a.map(|a| a.unsigned_shl(1));
+    let result = r
+        .zip(s.carry)
+        .map(|(v, c)| if c { v | T::one() } else { v });
+    s.carry = a.map(|a| a.trailing_zeros() == 0);
+    flags_nz(s, result);
+    result
+}
+
 fn arithmetic_shift_left<T: num::PrimInt + Bits>(s: &mut State, a: Option<T>) -> Option<T> {
     let result = a.map(|a| a.signed_shl(1));
     flags_nz(s, result);
@@ -796,7 +806,7 @@ fn standard_add<T: WrappingAdd + num::PrimInt>(
     r
 }
 
-fn standard_sub<T: WrappingSub + num::PrimInt>(
+fn standard_subtract<T: WrappingSub + num::PrimInt>(
     s: &mut State,
     a: Option<T>,
     b: Option<T>,
@@ -810,6 +820,11 @@ fn standard_sub<T: WrappingSub + num::PrimInt>(
     r
 }
 
+fn standard_and<T: num::PrimInt>(s: &mut State, a: Option<T>, b: Option<T>) -> Option<T> {
+    let r = a.zip(b).map(|(a, b)| a & b);
+    flags_nz(s, r);
+    r
+}
 fn standard_or<T: num::PrimInt>(s: &mut State, a: Option<T>, b: Option<T>) -> Option<T> {
     let r = a.zip(b).map(|(a, b)| a | b);
     flags_nz(s, r);
