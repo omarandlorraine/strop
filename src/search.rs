@@ -105,8 +105,7 @@ pub fn difference(prog: &BasicBlock, test_run: &TestRun) -> f64 {
         for step in &tc.steps {
             match step {
                 Step::Run => {
-                    let mut pc: usize = 0;
-                    for i in prog.instructions {
+                    for i in &prog.instructions {
                         i.operate(&mut s);
                     }
                 }

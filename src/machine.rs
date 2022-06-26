@@ -94,6 +94,7 @@ impl Datum {
             Self::Imm16(_) => Width::Width16,
             Self::Absolute(_) => Width::Width8,
             Self::Zero => Width::Width8,
+            Self::Nothing => panic!(),
         }
     }
 }
@@ -314,7 +315,7 @@ impl Test {
 
 impl Instruction {
     pub fn randomize(&mut self) {
-        (self.randomizer)(&mut self);
+        (self.randomizer)(self);
     }
 
     pub fn len(&self) -> usize {
@@ -325,156 +326,6 @@ impl Instruction {
         (self.implementation)(self, s)
     }
 }
-
-/*
-pub fn standard_implementation(insn: &Instruction, s: &mut State) -> FlowControl {
-
-    match insn.operation {
-        Operation::Exchange(Width::Width8, a, b) => {
-            let tmp = s.get_i8(a);
-            s.set_i8(a, s.get_i8(b));
-            s.set_i8(b, tmp);
-            FlowControl::FallThrough
-        }
-        Operation::Exchange(Width::Width16, a, b) => {
-            let tmp = s.get_i16(a);
-            s.set_i16(a, s.get_i16(b));
-            s.set_i16(b, tmp);
-            FlowControl::FallThrough
-        }
-        Operation::Monadic(Width::Width8, operation, src, dst) => {
-            let r = operation.evaluate(s, s.get_i8(src));
-            s.set_i8(dst, r);
-            FlowControl::FallThrough
-        }
-        Operation::Monadic(Width::Width16, operation, src, dst) => {
-            let r = operation.evaluate(s, s.get_i16(src));
-            s.set_i16(dst, r);
-            FlowControl::FallThrough
-        }
-        Operation::Dyadic(Width::Width8, operation, a, b, dst) => {
-            let a = s.get_u8(a);
-            let b = s.get_u8(b);
-            let r = operation.evaluate(s, a, b);
-            s.set_u8(dst, r);
-            FlowControl::FallThrough
-        }
-        Operation::Dyadic(Width::Width16, operation, a, b, dst) => {
-            let a = s.get_u16(a);
-            let b = s.get_u16(b);
-            let r = operation.evaluate(s, a, b);
-            s.set_u16(dst, r);
-            FlowControl::FallThrough
-        }
-        Operation::Move(source, destination) => {
-            s.set_i8(destination, s.get_i8(source));
-            FlowControl::FallThrough
-        }
-
-        Operation::DecimalAdjustAccumulator => {
-            s.accumulator = decimal_adjust(s.accumulator, s.carry, s.halfcarry);
-            FlowControl::FallThrough
-        }
-        Operation::BitCompare(source, destination) => {
-            let (result, z) = bitwise_and(s.get_i8(source), s.get_i8(destination));
-            if let Some(result) = result {
-                s.sign = Some(result < 0);
-            } else {
-                s.sign = None
-            }
-            s.zero = z;
-            FlowControl::FallThrough
-        }
-        Operation::Shift(shtype, datum) => match shtype {
-            ShiftType::LeftArithmetic => {
-                let (val, c) = rotate_left_thru_carry(s.get_i8(datum), Some(false));
-                s.set_i8(datum, val);
-                s.carry = c;
-                FlowControl::FallThrough
-            }
-            ShiftType::RightArithmetic => {
-                let (val, c) = rotate_right_thru_carry(s.get_i8(datum), Some(false));
-                s.set_i8(datum, val);
-                s.carry = c;
-                FlowControl::FallThrough
-            }
-            ShiftType::RightRotateThroughCarry => {
-                let (val, c) = rotate_right_thru_carry(s.get_i8(datum), s.carry);
-                s.set_i8(datum, val);
-                s.carry = c;
-                FlowControl::FallThrough
-            }
-            ShiftType::LeftRotateThroughCarry => {
-                let (val, c) = rotate_left_thru_carry(s.get_i8(datum), s.carry);
-                s.set_i8(datum, val);
-                s.carry = c;
-                FlowControl::FallThrough
-            }
-        },
-        Operation::Overflow(b) => {
-            s.overflow = Some(b);
-            FlowControl::FallThrough
-        }
-        Operation::Decimal(b) => {
-            s.decimal = Some(b);
-            FlowControl::FallThrough
-        }
-        Operation::Carry(b) => {
-            s.carry = Some(b);
-            FlowControl::FallThrough
-        }
-        Operation::ComplementCarry => {
-            if let Some(b) = s.carry {
-                s.carry = Some(!b)
-            }
-            FlowControl::FallThrough
-        }
-        Operation::BitSet(d, b) => {
-            if let Some(v) = s.get_i8(d) {
-                let new = v | (1 << b);
-                s.set_i8(d, Some(new));
-            }
-            FlowControl::FallThrough
-        }
-        Operation::BitClear(d, b) => {
-            if let Some(v) = s.get_i8(d) {
-                let new = v & !(1 << b);
-                s.set_i8(d, Some(new));
-            }
-            FlowControl::FallThrough
-        }
-        Operation::BitComplement(d, b) => {
-            if let Some(v) = s.get_i8(d) {
-                let new = v ^ (1 << b);
-                s.set_i8(d, Some(new));
-            }
-            FlowControl::FallThrough
-        }
-        Operation::BitCopyCarry(d, b) => {
-            if let (Some(v), Some(c)) = (s.get_i8(d), s.carry) {
-                let new = if c { v & !(1 << b) } else { v | (1 << b) };
-                s.set_i8(d, Some(new));
-            } else {
-                s.set_i8(d, None);
-            }
-            FlowControl::FallThrough
-        }
-        Operation::Jump(test, flowcontrol) => {
-            if let Some(b) = test.evaluate(s) {
-                if b {
-                    flowcontrol
-                } else {
-                    FlowControl::FallThrough
-                }
-            } else {
-                FlowControl::Invalid
-            }
-        }
-        Operation::Nop => FlowControl::FallThrough,
-    }
-}
-
-*/
 
 //#[derive(Copy, Clone)]
 pub struct State {
@@ -554,6 +405,7 @@ impl State {
                 }
             }
             Datum::Zero => Some(0),
+            Datum::Nothing => panic!(),
         }
     }
 
@@ -601,6 +453,7 @@ impl State {
                 None
             }
             Datum::Zero => Some(0),
+            Datum::Nothing => panic!(),
         }
     }
 
@@ -658,6 +511,9 @@ impl State {
             Datum::Imm16(_) => {
                 panic!()
             }
+            Datum::Nothing => {
+                panic!()
+            }
             Datum::Imm8(_) => {
                 panic!()
             }
@@ -691,6 +547,7 @@ impl State {
                 self.set_i8(Datum::Absolute(addr), low);
             }
             Datum::Zero => {}
+            Datum::Nothing => panic!(),
         }
     }
 }
@@ -798,12 +655,31 @@ fn standard_add<T: WrappingAdd + num::PrimInt>(
     b: Option<T>,
     carry: Option<bool>,
 ) -> Option<T> {
-    let r = a.zip(b).zip(carry).map(|((a, b), c)| {
-        a.wrapping_add(&b)
-            .wrapping_add(if c { &T::one() } else { &T::zero() })
-    });
-    flags_nz(s, r);
-    r
+    let one = T::one();
+    let zero = T::zero();
+    if let Some(((a, b), c)) = a.zip(b).zip(s.carry) {
+        let result = a
+            .wrapping_add(&b)
+            .wrapping_add(if c { &one } else { &zero });
+        if let Some(r) = a.checked_add(&b) {
+            s.carry = Some(r.checked_add(if c { &one } else { &zero }).is_none());
+        } else {
+            s.carry = Some(true);
+        }
+        let a_sign = a.leading_zeros() == 0;
+        let b_sign = b.leading_zeros() == 0;
+        let r_sign = result.leading_zeros() == 0;
+        s.zero = Some(result == zero);
+        s.sign = Some(r_sign);
+        s.overflow = Some((a_sign && b_sign && !r_sign) || (!a_sign && !b_sign && r_sign));
+        Some(result)
+    } else {
+        s.carry = None;
+        s.zero = None;
+        s.sign = None;
+        s.overflow = None;
+        None
+    }
 }
 
 fn standard_subtract<T: WrappingSub + num::PrimInt>(
@@ -812,12 +688,31 @@ fn standard_subtract<T: WrappingSub + num::PrimInt>(
     b: Option<T>,
     carry: Option<bool>,
 ) -> Option<T> {
-    let r = a.zip(b).zip(carry).map(|((a, b), c)| {
-        a.wrapping_sub(&b)
-            .wrapping_sub(if c { &T::one() } else { &T::zero() })
-    });
-    flags_nz(s, r);
-    r
+    let one = T::one();
+    let zero = T::zero();
+    if let Some(((a, b), c)) = a.zip(b).zip(s.carry) {
+        let result = a
+            .wrapping_sub(&b)
+            .wrapping_sub(if c { &zero } else { &one });
+        if let Some(r) = a.checked_sub(&b) {
+            s.carry = Some(r.checked_sub(if c { &one } else { &zero }).is_none());
+        } else {
+            s.carry = Some(true);
+        }
+        let a_sign = a.leading_zeros() == 0;
+        let b_sign = b.leading_zeros() == 0;
+        let r_sign = result.leading_zeros() == 0;
+        s.zero = Some(result == zero);
+        s.sign = Some(r_sign);
+        s.overflow = Some((a_sign && b_sign && !r_sign) || (!a_sign && !b_sign && r_sign));
+        return Some(result);
+    } else {
+        s.carry = None;
+        s.zero = None;
+        s.sign = None;
+        s.overflow = None;
+        return None;
+    }
 }
 
 fn standard_and<T: num::PrimInt>(s: &mut State, a: Option<T>, b: Option<T>) -> Option<T> {
@@ -825,6 +720,7 @@ fn standard_and<T: num::PrimInt>(s: &mut State, a: Option<T>, b: Option<T>) -> O
     flags_nz(s, r);
     r
 }
+
 fn standard_or<T: num::PrimInt>(s: &mut State, a: Option<T>, b: Option<T>) -> Option<T> {
     let r = a.zip(b).map(|(a, b)| a | b);
     flags_nz(s, r);
@@ -837,29 +733,17 @@ fn standard_xor<T: num::PrimInt>(s: &mut State, a: Option<T>, b: Option<T>) -> O
     r
 }
 
-fn standard_bit_clear<T: num::PrimInt>(
-    s: &mut State,
-    a: Option<T>,
-    shamt: Option<usize>,
-) -> Option<T> {
+fn standard_bit_clear<T: num::PrimInt>(a: Option<T>, shamt: Option<usize>) -> Option<T> {
     let mask = shamt.map(|shamt| !(T::one().shr(shamt)));
     a.zip(mask).map(|(a, mask)| a & mask)
 }
 
-fn standard_bit_complement<T: num::PrimInt>(
-    s: &mut State,
-    a: Option<T>,
-    shamt: Option<usize>,
-) -> Option<T> {
+fn standard_bit_complement<T: num::PrimInt>(a: Option<T>, shamt: Option<usize>) -> Option<T> {
     let mask = shamt.map(|shamt| T::one().shr(shamt));
     a.zip(mask).map(|(a, mask)| a ^ mask)
 }
 
-fn standard_bit_set<T: num::PrimInt>(
-    s: &mut State,
-    a: Option<T>,
-    shamt: Option<usize>,
-) -> Option<T> {
+fn standard_bit_set<T: num::PrimInt>(a: Option<T>, shamt: Option<usize>) -> Option<T> {
     let mask = shamt.map(|shamt| T::one().shr(shamt));
     a.zip(mask).map(|(a, mask)| a | mask)
 }

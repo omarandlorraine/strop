@@ -67,9 +67,9 @@ fn bccm(insn: &Instruction, s: &mut State) {
     let shamt: Option<usize> = s.get_u8(insn.b).map(|v| v.into());
     if let Some(c) = s.carry {
         if c {
-            s.set_u8(insn.a, standard_bit_clear(s, datum, shamt));
+            s.set_u8(insn.a, standard_bit_clear(datum, shamt));
         } else {
-            s.set_u8(insn.a, standard_bit_set(s, datum, shamt));
+            s.set_u8(insn.a, standard_bit_set(datum, shamt));
         }
     } else {
         s.set_u8(insn.a, None);
@@ -79,19 +79,19 @@ fn bccm(insn: &Instruction, s: &mut State) {
 fn bcpl(insn: &Instruction, s: &mut State) {
     let datum = s.get_u8(insn.a);
     let shamt: Option<usize> = s.get_u8(insn.b).map(|v| v.into());
-    s.set_u8(insn.a, standard_bit_complement(s, datum, shamt));
+    s.set_u8(insn.a, standard_bit_complement(datum, shamt));
 }
 
 fn bres(insn: &Instruction, s: &mut State) {
     let datum = s.get_u8(insn.a);
     let shamt: Option<usize> = s.get_u8(insn.b).map(|v| v.into());
-    s.set_u8(insn.a, standard_bit_clear(s, datum, shamt));
+    s.set_u8(insn.a, standard_bit_clear(datum, shamt));
 }
 
 fn bset(insn: &Instruction, s: &mut State) {
     let datum = s.get_u8(insn.a);
     let shamt: Option<usize> = s.get_u8(insn.b).map(|v| v.into());
-    s.set_u8(insn.a, standard_bit_set(s, datum, shamt));
+    s.set_u8(insn.a, standard_bit_set(datum, shamt));
 }
 
 fn cp(insn: &Instruction, s: &mut State) {
@@ -638,6 +638,7 @@ fn flip_x_and_y(d: Datum, sz: usize) -> (Datum, usize) {
         YL => (XL, sz - 1),
         XH => (YH, sz + 1),
         YH => (XH, sz - 1),
+        x => (x, sz),
     }
 }
 
