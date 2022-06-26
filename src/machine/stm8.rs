@@ -1,13 +1,24 @@
 use crate::machine::Instruction;
-use crate::machine::Operation;
-use crate::machine::Width;
 use crate::machine::R;
 use crate::Datum;
 use crate::Machine;
 use crate::State;
 
+use crate::machine::arithmetic_shift_left;
+use crate::machine::arithmetic_shift_right;
+use crate::machine::logical_shift_right;
 use crate::machine::rand::prelude::SliceRandom;
+use crate::machine::random_shamt;
+use crate::machine::randomize_shamt;
 use crate::machine::reg_by_name;
+use crate::machine::rotate_left;
+use crate::machine::rotate_right;
+use crate::machine::standard_decrement;
+use crate::machine::standard_increment;
+use crate::machine::standard_negate;
+use crate::machine::standard_or;
+use crate::machine::standard_subtract;
+use crate::machine::standard_xor;
 use strop::randomly;
 
 use std::convert::TryInto;
@@ -20,13 +31,37 @@ const YH: Datum = Datum::Register(R::Yh);
 const X: Datum = Datum::RegisterPair(R::Xh, R::Xl);
 const Y: Datum = Datum::RegisterPair(R::Yh, R::Yl);
 
-fn bcpl(insn: &Instruction, state: &mut State) {
-    let datum = insn.a;
-    let shamt = insn.b;
-    s.set_u8(datum, standard_bit_complement(datum, shamt));
+fn adc(insn: &Instruction, s: &mut State) {
+    let n = standard_add(s, s.get_i8(insn.a), s.get_i8(insn.b), s.carry);
+    s.set_i8(insn.a, n);
 }
 
-fn bccm(insn: &Instruction, state: &mut State) {
+fn add(insn: &Instruction, s: &mut State) {
+    let n = standard_add(s, s.get_i8(insn.a), s.get_i8(insn.b), Some(false));
+    s.set_i8(insn.a, n);
+}
+
+fn addw(insn: &Instruction, s: &mut State) {
+    let n = standard_add(s, s.get_i16(insn.a), s.get_i16(insn.b), Some(false));
+    s.set_i16(insn.a, n);
+}
+
+fn and(insn: &Instruction, s: &mut State) {
+    let n = standard_and(s, s.get_i8(insn.a), s.get_i8(insn.b));
+    s.set_i8(insn.a, n);
+}
+
+fn andw(insn: &Instruction, s: &mut State) {
+    let n = standard_and(s, s.get_i16(insn.a), s.get_i16(insn.b));
+    s.set_i16(insn.a, n);
+}
+
+fn addw(insn: &Instruction, s: &mut State) {
+    let n = standard_add(s, s.get_i16(insn.a), s.get_i16(insn.b), Some(false));
+    s.set_i16(insn.a, n);
+}
+
+fn bccm(insn: &Instruction, s: &mut State) {
     let datum = insn.a;
     let shamt = insn.b;
     if let Some(c) = s.carry {
@@ -40,16 +75,114 @@ fn bccm(insn: &Instruction, state: &mut State) {
     }
 }
 
-fn bset(insn: &Instruction, state: &mut State) {
+fn bcpl(insn: &Instruction, s: &mut State) {
+    let datum = insn.a;
+    let shamt = insn.b;
+    s.set_u8(datum, standard_bit_complement(datum, shamt));
+}
+
+fn bres(insn: &Instruction, s: &mut State) {
+    let datum = insn.a;
+    let shamt = insn.b;
+    s.set_u8(datum, standard_bit_clear(datum, shamt));
+}
+
+fn bset(insn: &Instruction, s: &mut State) {
     let datum = insn.a;
     let shamt = insn.b;
     s.set_u8(datum, standard_bit_set(datum, shamt));
 }
 
-fn bres(insn: &Instruction, state: &mut State) {
-    let datum = insn.a;
-    let shamt = insn.b;
-    s.set_u8(datum, standard_bit_clear(datum, shamt));
+fn cp(insn: &Instruction, s: &mut State) {
+    standard_subtract(s, s.get_u8(insn.a), s.get_u8(insn.b), Some(false));
+}
+
+fn cpw(insn: &Instruction, s: &mut State) {
+    standard_subtract(s, s.get_u16(insn.a), s.get_u16(insn.b), Some(false));
+}
+
+fn cpl(insn: &Instruction, s: &mut State) {
+    let d = standard_complement(s, s.get_u8(insn.a));
+    s.set_u8(insn.a, d);
+}
+
+fn dec(insn: &Instruction, s: &mut State) {
+    let d = standard_decrement(s, s.get_u8(insn.a));
+    s.set_u8(insn.a, d);
+}
+
+fn inc(insn: &Instruction, s: &mut State) {
+    let d = standard_increment(s, s.get_u8(insn.a));
+    s.set_u8(insn.a, d);
+}
+
+fn ld(insn: &Instruction, s: &mut State) {
+    s.set_u8(insn.a, s.get_u8(insn.b));
+}
+
+fn neg(insn: &Instruction, s: &mut State) {
+    let d = standard_negate(s, s.get_i8(insn.a));
+    s.set_i8(insn.a, d);
+}
+
+fn or(insn: &Instruction, s: &mut State) {
+    let n = standard_or(s, s.get_i8(insn.a), s.get_i8(insn.b));
+    s.set_i8(insn.a, n);
+}
+
+fn swap(insn: &Instruction, s: &mut State) {
+    let d = s.get_i8(insn.a).map(|val| val.rotate_right(4));
+    s.set_i8(insn.a, d);
+}
+
+fn swapw(insn: &Instruction, s: &mut State) {
+    let d = s.get_i16(insn.a).map(|val| val.swap_bytes());
+    s.set_i16(insn.a, d);
+}
+
+fn sla(insn: &Instruction, s: &mut State) {
+    let n = arithmetic_shift_left(s, s.get_u8(insn.a));
+    s.set_u8(insn.a, n);
+}
+
+fn sra(insn: &Instruction, s: &mut State) {
+    let n = arithmetic_shift_right(s, s.get_u8(insn.a));
+    s.set_u8(insn.a, n);
+}
+
+fn srl(insn: &Instruction, s: &mut State) {
+    let n = logical_shift_right(s, s.get_u8(insn.a));
+    s.set_u8(insn.a, n);
+}
+
+fn rlc(insn: &Instruction, s: &mut State) {
+    let n = rotate_left(s, s.get_u8(insn.a));
+    s.set_u8(insn.a, n);
+}
+
+fn rrc(insn: &Instruction, s: &mut State) {
+    let n = rotate_right(s, s.get_u8(insn.a));
+    s.set_u8(insn.a, n);
+}
+
+fn sbc(insn: &Instruction, s: &mut State) {
+    let n = standard_subtract(s, s.get_i8(insn.a), s.get_i8(insn.b), s.carry);
+    s.set_i8(insn.a, n);
+}
+
+fn sub(insn: &Instruction, s: &mut State) {
+    let n = standard_subtract(s, s.get_i8(insn.a), s.get_i8(insn.b), Some(false));
+    s.set_i8(insn.a, n);
+}
+
+fn subw(insn: &Instruction, s: &mut State) {
+    let n = standard_subtract(s, s.get_i16(insn.a), s.get_i16(insn.b), Some(false));
+    s.set_i16(insn.a, n);
+}
+
+fn xor(insn: &Instruction, s: &mut State) {
+    let n = standard_xor(s, s.get_i8(insn.a), s.get_i8(insn.b));
+    s.set_i8(insn.a, n);
 }
 
 fn random_imm16() -> Datum {
@@ -104,6 +237,43 @@ fn dasm_bits(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::R
         _ => panic!(),
     };
     write!(f, "{} ${:04x}, #{}", insn.mnemonic, absolute, shamt)
+}
+
+fn dasm_inherent(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Result {
+    write!(f, "{}", insn.mnemonic)
+}
+
+fn dasm_alu(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Result {
+    let s = insn.mnemonic;
+    match insn.a {
+        Datum::Imm8(val) => write!(f, "\t{} {}, #${:2}", insn.mnemonic, regname(insn.a), val),
+        Datum::Absolute(addr) if addr < 256 => {
+            write!(f, "\t{} {}, ${:2}", insn.mnemonic, regname(insn.a), addr)
+        }
+        Datum::Absolute(addr) => write!(f, "\t{} {}, ${:4}", insn.mnemonic, regname(insn.a), addr),
+        _ => write!(f, "{} {:?}", s, insn.a),
+    }
+}
+
+fn dasm_load(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Result {
+    dasm_alu(f, insn)
+}
+
+fn dasm_transfer(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Result {
+    write!(f, "ld {}, {}", regname(insn.a), regname(insn.b))
+}
+
+fn dasm_one(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Result {
+    let s = insn.mnemonic;
+    match insn.a {
+        Datum::Imm8(val) => write!(f, "\t{} #${:2}", s, val),
+        Datum::Absolute(addr) if addr < 256 => write!(f, "\t{} ${:2}", s, addr),
+        Datum::Absolute(addr) => write!(f, "\t{} ${:4}", s, addr),
+        A => write!(f, "\t{} a", s),
+        X => write!(f, "\t{}w x", s),
+        Y => write!(f, "\t{}w y", s),
+        _ => write!(f, "{} {:?}", s, insn.a),
+    }
 }
 
 /*
@@ -296,7 +466,10 @@ fn rotate_right_through_accumulator(s: &mut State, x: Datum) {
     }
 }
 
-fn div(s: &mut State, x: Datum, a: Datum) {
+fn div(insn: &Instruction, s: &mut State) {
+    let x = insn.b;
+    let a = insn.a;
+
     let dividend = s.get_u16(x);
     let divisor = s.get_u8(a);
 
@@ -321,7 +494,7 @@ fn div(s: &mut State, x: Datum, a: Datum) {
     }
 }
 
-fn divw(s: &mut State) {
+fn divw(_insn: &Instruction, s: &mut State) {
     let dividend = s.get_u16(X);
     let divisor = s.get_u16(Y);
 
@@ -347,15 +520,15 @@ fn divw(s: &mut State) {
     }
 }
 
-fn mul_handler(insn: &Instruction, s: &mut State) {
+fn mul(insn: &Instruction, s: &mut State) {
     let (a, b) = (s.get_i8(insn.a), s.get_i8(insn.b));
     if a.is_none() || b.is_none() {
-        s.set_u8(dst, None);
+        s.set_u8(insn.a, None);
         s.carry = None;
         return;
     }
     let product = (a.unwrap() as u16) * (b.unwrap() as u16);
-    s.set_u16(dst, Some(product));
+    s.set_u16(insn.a, Some(product));
     s.carry = Some(false);
 }
 
@@ -372,11 +545,10 @@ fn muldiv(insn: &mut Instruction) {
 
     fn change_instruction(insn: &mut Instruction) {
         /* alters the instruction to be one of mul, div, divw */
-        (insn.mnemonic, insn.implementation, insn.a, insn.b) = randomly!(
-            { ("mul", mul_handler, A, X); }
-            { ("div", div_handler, A, X); }
-            { ("divw", divw_handler, X, Y); }
-        );
+        randomly!(
+        {insn.mnemonic = "mul"; insn.implementation = mul; insn.a = A; insn.b = X}
+        {insn.mnemonic = "div"; insn.implementation = div; insn.a = A; insn.b = X}
+        {insn.mnemonic = "divw"; insn.implementation = divw; insn.a = X; insn.b = Y});
     }
 
     randomly!(
@@ -387,11 +559,10 @@ fn muldiv(insn: &mut Instruction) {
 
 fn alu16(insn: &mut Instruction) {
     randomly!(
-    { (insn.mnemonic, insn.implementation) = ("add", add_without_carry) }
-    { (insn.mnemonic, insn.implementation) = ("and", boolean_and) }
-    { (insn.mnemonic, insn.implementation) = ("cp", cp) }
-    { (insn.mnemonic, insn.implementation) = ("or", boolean_or) }
-    { (insn.mnemonic, insn.implementation) = ("sub", subtract) }
+    { (insn.mnemonic, insn.implementation) = ("addw", addw) }
+    { (insn.mnemonic, insn.implementation) = ("andw", andw) }
+    { (insn.mnemonic, insn.implementation) = ("cpw", cpw) }
+    { (insn.mnemonic, insn.implementation) = ("subw", subw) }
     { (insn.a, insn.length) = random_absolute() }
     { (insn.a, insn.length) = random_immediate() }
     { (insn.b, insn.length) = flip_x_and_y(insn.b, insn.length) }
@@ -400,14 +571,14 @@ fn alu16(insn: &mut Instruction) {
 
 fn alu8(insn: &mut Instruction) {
     randomly!(
-    { (insn.mnemonic, insn.implementation) = ("adc", add_with_carry) }
-    { (insn.mnemonic, insn.implementation) = ("add", add_without_carry) }
-    { (insn.mnemonic, insn.implementation) = ("and", boolean_and) }
+    { (insn.mnemonic, insn.implementation) = ("adc", adc) }
+    { (insn.mnemonic, insn.implementation) = ("add", add) }
+    { (insn.mnemonic, insn.implementation) = ("and", and) }
     { (insn.mnemonic, insn.implementation) = ("cp", cp) }
-    { (insn.mnemonic, insn.implementation) = ("or", boolean_or) }
-    { (insn.mnemonic, insn.implementation) = ("xor", boolean_xor) }
-    { (insn.mnemonic, insn.implementation) = ("sbc", subtract_with_borrow) }
-    { (insn.mnemonic, insn.implementation) = ("sub", subtract) }
+    { (insn.mnemonic, insn.implementation) = ("or", or) }
+    { (insn.mnemonic, insn.implementation) = ("xor", xor) }
+    { (insn.mnemonic, insn.implementation) = ("sbc", sbc) }
+    { (insn.mnemonic, insn.implementation) = ("sub", sub) }
     { (insn.a, insn.length) = random_absolute() }
     { (insn.a, insn.length) = random_immediate() }
     );
@@ -418,6 +589,7 @@ fn bits(insn: &mut Instruction) {
         { (insn.mnemonic, insn.implementation) = ( "bset", bset ) }
         { (insn.mnemonic, insn.implementation) = ( "bres", bres ) }
         { (insn.mnemonic, insn.implementation) = ( "bcpl", bcpl ) }
+        { insn.a = random_shamt(8) }
         { insn.a = randomize_shamt(insn.a, 8) });
 }
 
@@ -438,18 +610,6 @@ fn carry(insn: &mut Instruction) {
             { "rcf", rcf }
             { "scf", scf }
             { "ccf", ccf });
-}
-
-fn compare() -> Operation {
-    randomly!(
-    {Operation::BitCompare(random_stm8_operand(), A)}
-    {Operation::Dyadic(Width::Width8, Subtract, A, Datum::Zero, Datum::Zero)}
-    {Operation::Dyadic(Width::Width8, Subtract, A, random_stm8_operand(), Datum::Zero)}
-    {Operation::Dyadic(Width::Width16, Subtract, X, Datum::Zero, Datum::Zero)}
-    {Operation::Dyadic(Width::Width16, Subtract, Y, Datum::Zero, Datum::Zero)}
-    {Operation::Dyadic(Width::Width16, Subtract, X, random_stm8_operand(), Datum::Zero)}
-    {Operation::Dyadic(Width::Width16, Subtract, Y, random_stm8_operand(), Datum::Zero)}
-    )
 }
 
 fn transfers(insn: &mut Instruction) {
@@ -473,10 +633,10 @@ fn flip_x_and_y(d: Datum, sz: usize) -> (Datum, usize) {
     match d {
         X => (Y, sz + 1),
         Y => (X, sz - 1),
-        Xl => (Yl, sz + 1),
-        Yl => (Xl, sz - 1),
-        Xh => (Yh, sz + 1),
-        Yh => (Xh, sz - 1),
+        XL => (YL, sz + 1),
+        YL => (XL, sz - 1),
+        XH => (YH, sz + 1),
+        YH => (XH, sz - 1),
     }
 }
 
@@ -510,9 +670,9 @@ fn oneargs(insn: &mut Instruction) {
 }
 
 const LOAD_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
-    length: instr_length_stm8,
+    implementation: ld,
+    disassemble: dasm_load,
+    length: 2,
     randomizer: loads,
     a: A,
     b: Datum::Imm8(0),
@@ -521,7 +681,7 @@ const LOAD_INSTRUCTIONS: Instruction = Instruction {
 };
 
 const ALU8_INSTRUCTIONS: Instruction = Instruction {
-    implementation: |i, s| standard_add(s, s.get_i8(i.a), s.get_i8(i.b), Some(false)),
+    implementation: add,
     disassemble: dasm_alu,
     length: 2,
     randomizer: alu8,
@@ -532,20 +692,20 @@ const ALU8_INSTRUCTIONS: Instruction = Instruction {
 };
 
 const ALU16_INSTRUCTIONS: Instruction = Instruction {
-    implementation: |i, s| standard_add(s, s.get_i8(i.a), s.get_i8(i.b), Some(false)),
+    implementation: addw,
     disassemble: dasm_alu,
     length: 2,
     randomizer: alu16,
-    a: A,
+    a: X,
     b: Datum::Imm8(1),
     c: Datum::Nothing,
-    mnemonic: "add",
+    mnemonic: "addw",
 };
 
 const MUL_DIV_INSTRUCTIONS: Instruction = Instruction {
-    implementation: impl_muldiv,
+    implementation: mul,
     disassemble: dasm_muldiv,
-    length: instr_length_muldiv,
+    length: 1,
     randomizer: muldiv,
     a: A,
     b: X,
@@ -554,10 +714,10 @@ const MUL_DIV_INSTRUCTIONS: Instruction = Instruction {
 };
 
 const CLEAR_INSTRUCTIONS: Instruction = Instruction {
-    disassemble: dasm,
-    length: instr_length_stm8,
+    disassemble: dasm_one,
+    length: 1,
     randomizer: clear,
-    implementation: moves,
+    implementation: ld,
     a: A,
     b: Datum::Zero,
     c: Datum::Nothing,
@@ -565,9 +725,9 @@ const CLEAR_INSTRUCTIONS: Instruction = Instruction {
 };
 
 const RMW_INSTRUCTIONS: Instruction = Instruction {
-    implementation: asl,
-    disassemble: dasm,
-    length: instr_length_stm8,
+    implementation: sla,
+    disassemble: dasm_one,
+    length: 1,
     randomizer: oneargs,
     a: A,
     b: Datum::Zero,
@@ -577,8 +737,8 @@ const RMW_INSTRUCTIONS: Instruction = Instruction {
 
 const FLAG_INSTRUCTIONS: Instruction = Instruction {
     implementation: |i, s| s.carry = Some(false),
-    disassemble: dasm,
-    length: instr_length_stm8,
+    disassemble: dasm_inherent,
+    length: 1,
     randomizer: carry,
     a: Datum::Nothing,
     b: Datum::Nothing,
@@ -587,9 +747,9 @@ const FLAG_INSTRUCTIONS: Instruction = Instruction {
 };
 
 const TRANSFER_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_move,
+    implementation: ld,
     disassemble: dasm_transfer,
-    length: instr_length_stm8,
+    length: 1,
     randomizer: transfers,
     a: A,
     b: XH,

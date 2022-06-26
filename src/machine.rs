@@ -2,6 +2,7 @@ use crate::machine::rand::prelude::SliceRandom;
 use std::collections::HashMap;
 extern crate num;
 extern crate rand;
+use crate::machine::rand::prelude::IteratorRandom;
 use num::traits::{WrappingAdd, WrappingSub};
 use std::convert::TryInto;
 
@@ -10,6 +11,8 @@ mod stm8;
 
 use crate::machine::mos6502::{MOS6502, MOS65C02};
 use crate::machine::stm8::STM8;
+
+use rand::random;
 
 #[derive(Clone, Copy)]
 pub struct Machine {
@@ -100,50 +103,23 @@ impl Datum {
 trait Swap {
     fn complement(self) -> Self;
     fn swap(self) -> Self;
-    fn shift_left(self, bit_in: bool) -> (bool, Self);
-    fn shift_right(self, bit_in: bool) -> (bool, Self);
+    fn shift_left(self, bit_in: Option<bool>) -> (bool, Self);
+    fn shift_right(self, bit_in: Option<bool>) -> (bool, Self);
 }
 
-impl Swap for i8 {
-    fn complement(self) -> i8 {
-        self ^ -1
-    }
-    fn swap(self) -> i8 {
-        self.rotate_right(4)
-    }
-    fn shift_left(self, bit_in: bool) -> (bool, Self) {
-        let high_bit_set = self & -128 != 0;
-        let shifted = (self & 0x7f).rotate_left(1);
-        (high_bit_set, if bit_in { shifted + 1 } else { shifted })
-    }
-    fn shift_right(self, bit_in: bool) -> (bool, Self) {
-        let low_bit_set = self & 1 != 0;
-        let shifted = (self & -2).rotate_right(1);
-        (low_bit_set, if bit_in { shifted | -128i8 } else { shifted })
+trait Bits {
+    fn msb() -> Self;
+}
+
+impl Bits for u8 {
+    fn msb() -> Self {
+        2_u8.pow(7)
     }
 }
 
-impl Swap for i16 {
-    fn complement(self) -> i16 {
-        self ^ -1
-    }
-    fn swap(self) -> i16 {
-        self.swap_bytes()
-    }
-    fn shift_left(self, bit_in: bool) -> (bool, Self) {
-        let high_bit_set = self & -32768i16 != 0;
-        // the -2 is to mask out the lowest bit so it doesn't wrap to the top
-        let shifted = (self & 0x7fff).rotate_left(1);
-        (high_bit_set, if bit_in { shifted + 1 } else { shifted })
-    }
-    fn shift_right(self, bit_in: bool) -> (bool, Self) {
-        let low_bit_set = self & 1 != 0;
-        // the -2 is to mask out the lowest bit so it doesn't wrap to the top
-        let shifted = (self & -2).rotate_right(1);
-        (
-            low_bit_set,
-            if bit_in { shifted | -32768i16 } else { shifted },
-        )
+impl Bits for u16 {
+    fn msb() -> Self {
+        2_u16.pow(15)
     }
 }
 
@@ -276,156 +252,6 @@ pub enum MonadicOperation {
     RotateLeftThruAccumulator,
     RotateRightThruAccumulator,
     // TODO: Move the shifts here.
-}
-
-impl MonadicOperation {
-    fn flags_sign_zero<T>(&self, s: &mut State, v: Option<T>)
-    where
-        T: num::PrimInt + std::iter::Sum + WrappingAdd + WrappingSub + Swap,
-    {
-        s.sign = v.map(|v| v.leading_zeros() == 0);
-        s.zero = v.map(|v| v == T::zero());
-    }
-
-    fn evaluate<T>(&self, s: &mut State, v: Option<T>) -> Option<T>
-    where
-        T: num::PrimInt + std::iter::Sum + WrappingAdd + WrappingSub + Swap,
-    {
-        match self {
-            Self::LeftShiftArithmetic => {
-                let result = v.map(|v| v.shift_left(false).1);
-                self.flags_sign_zero(s, result);
-                s.carry = v.map(|v| v.leading_zeros() == 0);
-                result
-            }
-            Self::RightShiftArithmetic => v.map(|v| v.shift_right(v < T::zero()).1),
-            Self::RightShiftLogical => {
-                let result = v.map(|v| v.shift_right(false).1);
-                self.flags_sign_zero(s, result);
-                s.carry = v.map(|v| v.trailing_zeros() == 0);
-                result
-            }
-            Self::RotateLeftThruCarry => {
-                let result = v
-                    .map(|v| s.carry.map(|c| v.shift_left(c).1))
-                    .unwrap_or(None);
-                self.flags_sign_zero(s, result);
-                s.carry = v.map(|v| v.leading_zeros() == 0);
-                result
-            }
-            Self::RotateRightThruCarry => {
-                let result = v
-                    .map(|v| s.carry.map(|c| v.shift_right(c).1))
-                    .unwrap_or(None);
-                self.flags_sign_zero(s, result);
-                s.carry = v.map(|v| v.trailing_zeros() == 0);
-                result
-            }
-            Self::RotateLeftThruAccumulator => {
-                panic!("no standard implementation of RotateLeftThruAccumulator")
-            }
-            Self::RotateRightThruAccumulator => {
-                panic!("no standard implementation of RotateRightThruAccumulator")
-            }
-            Self::Complement => v.map(|v| v.complement()),
-            Self::Negate => v.map(|v| T::zero().wrapping_sub(&v)),
-            Self::Increment => v.map(|v| v.wrapping_add(&T::one())),
-            Self::Decrement => v.map(|v| v.wrapping_sub(&T::one())),
-            Self::Swap => v.map(|v| v.swap()),
-        }
-    }
-}
-
-impl DyadicOperation {
-    fn evaluate<T>(&self, s: &mut State, a: Option<T>, b: Option<T>) -> Option<T>
-    where
-        T: num::PrimInt + std::iter::Sum + WrappingAdd + WrappingSub,
-    {
-        let (zero, one) = (&T::zero(), &T::one());
-        if let (Some(a), Some(b)) = (a, b) {
-            match self {
-                Self::Add => Some(a.wrapping_add(&b)),
-                Self::AddWithCarry => {
-                    if let Some(c) = s.carry {
-                        let result = a.wrapping_add(&b).wrapping_add(if c { one } else { zero });
-                        if let Some(r) = a.checked_add(&b) {
-                            s.carry = Some(r.checked_add(if c { one } else { zero }).is_none());
-                        } else {
-                            s.carry = Some(true);
-                        }
-                        let a_sign = a.leading_zeros() == 0;
-                        let b_sign = b.leading_zeros() == 0;
-                        let r_sign = result.leading_zeros() == 0;
-                        s.zero = Some(result == *zero);
-                        s.sign = Some(r_sign);
-                        s.overflow =
-                            Some((a_sign && b_sign && !r_sign) || (!a_sign && !b_sign && r_sign));
-                        Some(result)
-                    } else {
-                        s.carry = None;
-                        s.zero = None;
-                        s.sign = None;
-                        s.overflow = None;
-                        None
-                    }
-                }
-                Self::And => {
-                    let result = a & b;
-                    s.sign = Some(result.leading_zeros() == 0);
-                    s.zero = Some(result == *zero);
-                    Some(result)
-                }
-                Self::ExclusiveOr => {
-                    let result = a ^ b;
-                    s.sign = Some(result.leading_zeros() == 0);
-                    s.zero = Some(result == *zero);
-                    Some(result)
-                }
-                Self::Or => {
-                    let result = a | b;
-                    s.sign = Some(result.leading_zeros() == 0);
-                    s.zero = Some(result == *zero);
-                    Some(result)
-                }
-                Self::Subtract => Some(a.wrapping_sub(&b)),
-                Self::SubtractWithCarry => {
-                    if let Some(c) = s.carry {
-                        let result = a.wrapping_sub(&b).wrapping_sub(if c { zero } else { one });
-                        if let Some(r) = a.checked_sub(&b) {
-                            s.carry = Some(r.checked_sub(if c { one } else { zero }).is_none());
-                        } else {
-                            s.carry = Some(true);
-                        }
-                        let a_sign = a.leading_zeros() == 0;
-                        let b_sign = b.leading_zeros() == 0;
-                        let r_sign = result.leading_zeros() == 0;
-                        s.zero = Some(result == *zero);
-                        s.sign = Some(r_sign);
-                        s.overflow =
-                            Some((a_sign && b_sign && !r_sign) || (!a_sign && !b_sign && r_sign));
-                        Some(result)
-                    } else {
-                        s.carry = None;
-                        s.zero = None;
-                        s.sign = None;
-                        s.overflow = None;
-                        None
-                    }
-                }
-                Self::SubtractWithBorrow => s
-                    .carry
-                    .map(|c| a.wrapping_sub(&b).wrapping_sub(if c { one } else { zero })),
-                Self::Divide => {
-                    unimplemented!("No standard implementation of DyadicOperation::Divide")
-                }
-                Self::Multiply => {
-                    unimplemented!("No standard implementation of DyadicOperation::Multiply")
-                }
-            }
-        } else {
-            None
-        }
-    }
 }
 
 #[derive(Clone, Debug, Copy)]
@@ -879,6 +705,117 @@ fn random_immediate() -> Datum {
 fn random_absolute() -> Datum {
     let vs = vec![0, 1, 2, 3, 4];
     Datum::Absolute(*vs.choose(&mut rand::thread_rng()).unwrap())
+}
+
+fn random_shamt(width: u8) -> Datum {
+    let s = (0..width).choose(&mut rand::thread_rng()).unwrap();
+    Datum::Imm8(s.try_into().unwrap())
+}
+
+fn randomize_shamt(shamt: Datum, width: usize) -> Datum {
+    match shamt {
+        Datum::Imm8(n) => {
+            if random() {
+                Datum::Imm8(n.saturating_sub(1))
+            } else {
+                Datum::Imm8(n.saturating_add(1))
+            }
+        }
+        anything_else => anything_else,
+    }
+}
+
+fn flags_nz<T: num::PrimInt>(s: &mut State, a: Option<T>) {
+    s.sign = a.map(|a| a.leading_zeros() == 0);
+    s.zero = a.map(|a| a == T::zero());
+}
+
+fn rotate_right<T: num::PrimInt + Bits>(s: &mut State, a: Option<T>) -> Option<T> {
+    let r = a.map(|a| a.unsigned_shr(1));
+    let result = r
+        .zip(s.carry)
+        .map(|(v, c)| if c { v | <T as Bits>::msb() } else { v });
+    s.carry = a.map(|a| a.trailing_zeros() == 0);
+    flags_nz(s, result);
+    result
+}
+
+fn arithmetic_shift_left<T: num::PrimInt + Bits>(s: &mut State, a: Option<T>) -> Option<T> {
+    let result = a.map(|a| a.signed_shl(1));
+    flags_nz(s, result);
+    result
+}
+
+fn arithmetic_shift_right<T: num::PrimInt + Bits>(s: &mut State, a: Option<T>) -> Option<T> {
+    let result = a.map(|a| a.signed_shr(1));
+    s.carry = a.map(|a| a.trailing_zeros() == 0);
+    flags_nz(s, result);
+    result
+}
+
+fn logical_shift_right<T: num::PrimInt + Bits>(s: &mut State, a: Option<T>) -> Option<T> {
+    let result = a.map(|a| a.unsigned_shr(1));
+    flags_nz(s, result);
+    result
+}
+
+fn standard_decrement<T: WrappingSub + num::PrimInt>(s: &mut State, a: Option<T>) -> Option<T> {
+    let result = a.map(|a| a.wrapping_sub(&T::one()));
+    flags_nz(s, result);
+    result
+}
+
+fn standard_increment<T: WrappingAdd + num::PrimInt>(s: &mut State, a: Option<T>) -> Option<T> {
+    let result = a.map(|a| a.wrapping_add(&T::one()));
+    flags_nz(s, result);
+    result
+}
+
+fn standard_negate<T: WrappingSub + num::PrimInt>(s: &mut State, a: Option<T>) -> Option<T> {
+    let minus_one = &T::zero().wrapping_sub(&T::one());
+    let result = a.map(|a| a ^ *minus_one);
+    flags_nz(s, result);
+    result
+}
+
+fn standard_add<T: WrappingAdd + num::PrimInt>(
+    s: &mut State,
+    a: Option<T>,
+    b: Option<T>,
+    carry: Option<bool>,
+) -> Option<T> {
+    let r = a.zip(b).zip(carry).map(|((a, b), c)| {
+        a.wrapping_add(&b)
+            .wrapping_add(if c { &T::one() } else { &T::zero() })
+    });
+    flags_nz(s, r);
+    r
+}
+
+fn standard_sub<T: WrappingSub + num::PrimInt>(
+    s: &mut State,
+    a: Option<T>,
+    b: Option<T>,
+    carry: Option<bool>,
+) -> Option<T> {
+    let r = a.zip(b).zip(carry).map(|((a, b), c)| {
+        a.wrapping_sub(&b)
+            .wrapping_sub(if c { &T::one() } else { &T::zero() })
+    });
+    flags_nz(s, r);
+    r
+}
+
+fn standard_or<T: num::PrimInt>(s: &mut State, a: Option<T>, b: Option<T>) -> Option<T> {
+    let r = a.zip(b).map(|(a, b)| a | b);
+    flags_nz(s, r);
+    r
+}
+
+fn standard_xor<T: num::PrimInt>(s: &mut State, a: Option<T>, b: Option<T>) -> Option<T> {
+    let r = a.zip(b).map(|(a, b)| a ^ b);
+    flags_nz(s, r);
+    r
 }
 
 #[cfg(test)]
