@@ -772,6 +772,12 @@ fn standard_increment<T: WrappingAdd + num::PrimInt>(s: &mut State, a: Option<T>
 }
 
 fn standard_negate<T: WrappingSub + num::PrimInt>(s: &mut State, a: Option<T>) -> Option<T> {
+    let result = a.map(|a| T::zero().wrapping_sub(&a));
+    flags_nz(s, result);
+    result
+}
+
+fn standard_complement<T: WrappingSub + num::PrimInt>(s: &mut State, a: Option<T>) -> Option<T> {
     let minus_one = &T::zero().wrapping_sub(&T::one());
     let result = a.map(|a| a ^ *minus_one);
     flags_nz(s, result);
@@ -816,6 +822,33 @@ fn standard_xor<T: num::PrimInt>(s: &mut State, a: Option<T>, b: Option<T>) -> O
     let r = a.zip(b).map(|(a, b)| a ^ b);
     flags_nz(s, r);
     r
+}
+
+fn standard_bit_clear<T: num::PrimInt>(
+    s: &mut State,
+    a: Option<T>,
+    shamt: Option<usize>,
+) -> Option<T> {
+    let mask = shamt.map(|shamt| !(T::one().shr(shamt)));
+    a.zip(mask).map(|(a, mask)| a & mask)
+}
+
+fn standard_bit_complement<T: num::PrimInt>(
+    s: &mut State,
+    a: Option<T>,
+    shamt: Option<usize>,
+) -> Option<T> {
+    let mask = shamt.map(|shamt| T::one().shr(shamt));
+    a.zip(mask).map(|(a, mask)| a ^ mask)
+}
+
+fn standard_bit_set<T: num::PrimInt>(
+    s: &mut State,
+    a: Option<T>,
+    shamt: Option<usize>,
+) -> Option<T> {
+    let mask = shamt.map(|shamt| T::one().shr(shamt));
+    a.zip(mask).map(|(a, mask)| a | mask)
 }
 
 #[cfg(test)]

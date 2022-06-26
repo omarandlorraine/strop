@@ -13,6 +13,12 @@ use crate::machine::randomize_shamt;
 use crate::machine::reg_by_name;
 use crate::machine::rotate_left;
 use crate::machine::rotate_right;
+use crate::machine::standard_add;
+use crate::machine::standard_and;
+use crate::machine::standard_bit_clear;
+use crate::machine::standard_bit_complement;
+use crate::machine::standard_bit_set;
+use crate::machine::standard_complement;
 use crate::machine::standard_decrement;
 use crate::machine::standard_increment;
 use crate::machine::standard_negate;
@@ -62,35 +68,35 @@ fn addw(insn: &Instruction, s: &mut State) {
 }
 
 fn bccm(insn: &Instruction, s: &mut State) {
-    let datum = insn.a;
-    let shamt = insn.b;
+    let datum = s.get_u8(insn.a);
+    let shamt: Option<usize> = s.get_u8(insn.b).map(|v| v.into());
     if let Some(c) = s.carry {
         if c {
-            s.set_u8(datum, standard_bit_set(datum, shamt));
+            s.set_u8(insn.a, standard_bit_clear(s, datum, shamt));
         } else {
-            s.set_u8(datum, standard_bit_clear(datum, shamt));
+            s.set_u8(insn.a, standard_bit_set(s, datum, shamt));
         }
     } else {
-        s.set_u8(datum, None);
+        s.set_u8(insn.a, None);
     }
 }
 
 fn bcpl(insn: &Instruction, s: &mut State) {
-    let datum = insn.a;
-    let shamt = insn.b;
-    s.set_u8(datum, standard_bit_complement(datum, shamt));
+    let datum = s.get_u8(insn.a);
+    let shamt: Option<usize> = s.get_u8(insn.b).map(|v| v.into());
+    s.set_u8(insn.a, standard_bit_complement(s, datum, shamt));
 }
 
 fn bres(insn: &Instruction, s: &mut State) {
-    let datum = insn.a;
-    let shamt = insn.b;
-    s.set_u8(datum, standard_bit_clear(datum, shamt));
+    let datum = s.get_u8(insn.a);
+    let shamt: Option<usize> = s.get_u8(insn.b).map(|v| v.into());
+    s.set_u8(insn.a, standard_bit_clear(s, datum, shamt));
 }
 
 fn bset(insn: &Instruction, s: &mut State) {
-    let datum = insn.a;
-    let shamt = insn.b;
-    s.set_u8(datum, standard_bit_set(datum, shamt));
+    let datum = s.get_u8(insn.a);
+    let shamt: Option<usize> = s.get_u8(insn.b).map(|v| v.into());
+    s.set_u8(insn.a, standard_bit_set(s, datum, shamt));
 }
 
 fn cp(insn: &Instruction, s: &mut State) {
