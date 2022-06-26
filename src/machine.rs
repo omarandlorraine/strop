@@ -6,10 +6,8 @@ use crate::machine::rand::prelude::IteratorRandom;
 use num::traits::{WrappingAdd, WrappingSub};
 use std::convert::TryInto;
 
-mod mos6502;
 mod stm8;
 
-use crate::machine::mos6502::{MOS6502, MOS65C02};
 use crate::machine::stm8::STM8;
 
 use rand::random;
@@ -21,7 +19,7 @@ pub struct Machine {
     reg_by_name: fn(&str) -> Result<Datum, &'static str>,
 }
 
-pub const MACHINES: [Machine; 3] = [MOS6502, MOS65C02, STM8];
+pub const MACHINES: [Machine; 1] = [STM8];
 
 #[derive(Clone, Copy)]
 pub struct Instruction {
