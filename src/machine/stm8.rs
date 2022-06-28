@@ -247,38 +247,30 @@ fn clear(insn: &mut Instruction) {
     );
 }
 
-fn dasm_muldiv(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Result {
-    write!(
-        f,
-        "\t{} {}, {}",
-        insn.mnemonic,
-        regname(insn.a),
-        regname(insn.b)
-    )
+fn rotate_left_through_accumulator(s: &mut State, ind: Operand) {
+    let ind = match ind {
+        Operand::X => s.x,
+        Operand::Y => s.y,
+        _ => unimplemented!(),
+    };
+
+    let tmp = s.a;
+    s.a = ind.high;
+    ind.high = ind.low;
+    ind.low = tmp;
 }
 
-fn rotate_left_through_accumulator(s: &mut State, x: Datum) {
-    let tmp = s.get_i8(A);
-    match x {
-        Datum::RegisterPair(h, l) => {
-            s.set_i8(A, s.get_i8(Datum::Register(h)));
-            s.set_i8(Datum::Register(h), s.get_i8(Datum::Register(l)));
-            s.set_i8(Datum::Register(l), tmp);
-        }
-        _ => panic!(),
-    }
-}
+fn rotate_right_through_accumulator(s: &mut State, ind: Operand) {
+    let ind = match ind {
+        Operand::X => s.x,
+        Operand::Y => s.y,
+        _ => unimplemented!(),
+    };
 
-fn rotate_right_through_accumulator(s: &mut State, x: Datum) {
-    let tmp = s.get_i8(A);
-    match x {
-        Datum::RegisterPair(h, l) => {
-            s.set_i8(A, s.get_i8(Datum::Register(l)));
-            s.set_i8(Datum::Register(l), s.get_i8(Datum::Register(h)));
-            s.set_i8(Datum::Register(h), tmp);
-        }
-        _ => panic!(),
-    }
+    let tmp = s.a;
+    s.a = ind.low;
+    ind.low = ind.high;
+    ind.high = tmp;
 }
 
 fn div(insn: &Instruction, s: &mut State) {
