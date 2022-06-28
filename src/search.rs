@@ -36,11 +36,11 @@ impl Iterator for BasicBlockSpawn {
     }
 }
 
-impl BasicBlock<State, Operand, OUD, IUD> {
+impl<'a> BasicBlock<State, Operand, OUD, IUD> {
     fn initial_guess<State, Operand, OUD, IUD>(
         mach: Machine,
         max_size: i32,
-    ) -> BasicBlock<State, Operand, OUD, IUD> {
+    ) -> BasicBlock<'a, State, Operand, OUD, IUD> {
         let mut bb = BasicBlock {
             instructions: vec![],
         };
@@ -244,7 +244,7 @@ impl<'a> InitialPopulation<'a> {
 }
 
 impl Iterator for InitialPopulation<'_> {
-    type Item = (f64, BasicBlock<State, Operand, OUD, IUD>);
+    type Item<'a> = (f64, BasicBlock<'a, State, Operand, OUD, IUD>);
 
     fn next(&mut self) -> Option<Self::Item> {
         // Just spawn a random BasicBlock.
@@ -271,7 +271,7 @@ impl<'a> NextGeneration<'a> {
         testrun: &'a TestRun,
         score: f64,
         bb: BasicBlock<State, Operand, OUD, IUD>,
-    ) -> NextGeneration {
+    ) -> NextGeneration<'a> {
         NextGeneration {
             testrun,
             bb: bb.spawn(mach).take(500),
@@ -281,7 +281,7 @@ impl<'a> NextGeneration<'a> {
 }
 
 impl<'a> Iterator for NextGeneration<'a> {
-    type Item = (f64, BasicBlock<State, Operand, OUD, IUD>);
+    type Item = (f64, BasicBlock<'a, State, Operand, OUD, IUD>);
 
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(s) = self.bb.next() {
@@ -298,10 +298,10 @@ impl<'a> Iterator for NextGeneration<'a> {
     }
 }
 
-pub fn quick_dce<State, Operand, OUD, IUD>(
+pub fn quick_dce<'a, State, Operand, OUD, IUD>(
     correctness: &dyn Fn(&BasicBlock<State, Operand, OUD, IUD>) -> f64,
-    prog: &BasicBlock<State, Operand, OUD, IUD>,
-) -> BasicBlock<State, Operand, OUD, IUD> {
+    prog: &BasicBlock<'a, State, Operand, OUD, IUD>,
+) -> BasicBlock<'a, State, Operand, OUD, IUD> {
     let mut better = prog.clone();
     let score = correctness(prog);
     let mut cur: usize = 0;
@@ -320,11 +320,11 @@ pub fn quick_dce<State, Operand, OUD, IUD>(
     }
 }
 
-pub fn optimize<State, Operand, OUD, IUD>(
+pub fn optimize<'a, State, Operand, OUD, IUD>(
     correctness: &TestRun,
     prog: &BasicBlock<State, Operand, OUD, IUD>,
     mach: Machine,
-) -> BasicBlock<State, Operand, OUD, IUD> {
+) -> BasicBlock<'a, State, Operand, OUD, IUD> {
     let mut population: Vec<(f64, BasicBlock)> = vec![];
 
     let fitness = difference(prog, correctness);
