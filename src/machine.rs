@@ -21,18 +21,6 @@ pub struct Machine {
 
 pub const MACHINES: [Machine; 1] = [STM8];
 
-#[derive(Clone, Copy)]
-pub struct Instruction {
-    mnemonic: &'static str,
-    randomizer: fn(&mut Instruction),
-    disassemble: fn(&mut std::fmt::Formatter<'_>, &Instruction) -> std::fmt::Result,
-    length: usize,
-    implementation: fn(&Instruction, &mut State),
-    a: Datum,
-    b: Datum,
-    c: Datum,
-}
-
 fn reg_by_name(name: &str) -> Result<Datum, &'static str> {
     if name[0..1] == *"m" {
         let arg = name[1..].to_string();
@@ -51,7 +39,7 @@ pub enum Width {
     Width16,
 }
 
-impl std::fmt::Display for Instruction {
+impl std::fmt::Display for Instruction<State, Operand, OUD, IUD> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         (self.disassemble)(f, self)
     }
@@ -123,7 +111,7 @@ impl Bits for u16 {
 }
 
 impl Machine {
-    pub fn new_instruction(self) -> Instruction {
+    pub fn new_instruction<'a>(self) -> Instruction<'a, State, Operand, OUD, IUD> {
         (self.random_insn)()
     }
     pub fn register_by_name(self, name: &str) -> Result<Datum, &'static str> {
@@ -196,124 +184,7 @@ fn rotate_right_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>,
     (None, None)
 }
 
-#[derive(Clone, Debug, Copy)]
-pub enum ShiftType {
-    LeftArithmetic,
-    RightArithmetic,
-    LeftRotateThroughCarry,
-    RightRotateThroughCarry,
-}
-
-#[derive(Clone, Debug, Copy)]
-pub enum Test {
-    True,
-    Minus(bool),
-    Zero(bool),
-    HalfCarry(bool),
-    Overflow(bool),
-    Carry(bool),
-    UnsignedGreaterThan,
-    SignedGreaterThanOrEqual,
-    SignedGreaterThan,
-    UnsignedLowerThanOrEqual,
-    SignedLowerThanOrEqual,
-    SignedLowerThan,
-    Bit(u16, u8, bool),
-}
-
-#[derive(Copy, Debug, Clone, PartialEq)]
-pub enum DyadicOperation {
-    Add,
-    AddWithCarry,
-    And,
-    ExclusiveOr,
-    Or,
-    Subtract,
-    SubtractWithBorrow,
-    SubtractWithCarry,
-    Divide,
-    Multiply,
-    // TODO: Move the shifts here.
-}
-
-#[derive(Copy, Debug, Clone, PartialEq)]
-pub enum MonadicOperation {
-    Complement,
-    Decrement,
-    Increment,
-    Negate,
-    Swap,
-    LeftShiftArithmetic,
-    RightShiftArithmetic,
-    RightShiftLogical,
-    RotateLeftThruCarry,
-    RotateRightThruCarry,
-    RotateLeftThruAccumulator,
-    RotateRightThruAccumulator,
-    // TODO: Move the shifts here.
-}
-
-#[derive(Clone, Debug, Copy)]
-pub enum Operation {
-    Monadic(Width, MonadicOperation, Datum, Datum),
-    Exchange(Width, Datum, Datum),
-    Dyadic(Width, DyadicOperation, Datum, Datum, Datum),
-    DecimalAdjustAccumulator,
-    BitCompare(Datum, Datum),
-    Move(Datum, Datum),
-    Shift(ShiftType, Datum),
-    Carry(bool),
-    Overflow(bool),
-    Decimal(bool),
-    ComplementCarry,
-    BitSet(Datum, u8),
-    BitClear(Datum, u8),
-    BitComplement(Datum, u8),
-    BitCopyCarry(Datum, u8),
-    Nop,
-}
-
-impl Test {
-    fn evaluate(&self, s: &State) -> Option<bool> {
-        match self {
-            Test::True => Some(true),
-            Test::Minus(b) => s.sign.map(|flag| &flag == b),
-            Test::Zero(b) => s.zero.map(|flag| &flag == b),
-            Test::HalfCarry(b) => s.halfcarry.map(|flag| &flag == b),
-            Test::Overflow(b) => s.overflow.map(|flag| &flag == b),
-            Test::Carry(b) => s.carry.map(|flag| &flag == b),
-            Test::SignedLowerThan => Test::SignedGreaterThanOrEqual.evaluate(s).map(|r| !r),
-            Test::UnsignedLowerThanOrEqual => Test::UnsignedGreaterThan.evaluate(s).map(|r| !r),
-            Test::SignedLowerThanOrEqual => Test::SignedGreaterThan.evaluate(s).map(|r| !r),
-            Test::UnsignedGreaterThan => s
-                .overflow
-                .map(|v| s.carry.map(|c| !(c || v)))
-                .unwrap_or(None),
-            Test::SignedGreaterThan => s.overflow.map(|v| s.carry.map(|c| c == v)).unwrap_or(None),
-            Test::SignedGreaterThanOrEqual => {
-                if let Some(z) = s.zero {
-                    if z {
-                        Some(true)
-                    } else {
-                        Test::SignedGreaterThan.evaluate(s)
-                    }
-                } else {
-                    None
-                }
-            }
-            Test::Bit(addr, bit_no, b) => {
-                if let Some(byte) = s.get_i8(Datum::Absolute(*addr)) {
-                    let val = byte & !(1 << bit_no) != 0;
-                    Some(&val == b)
-                } else {
-                    None
-                }
-            }
-        }
-    }
-}
-
-impl Instruction {
+impl Instruction<State, Operand, OUD, IUD> {
     pub fn randomize(&mut self) {
         (self.randomizer)(self);
     }
@@ -327,28 +198,19 @@ impl Instruction {
     }
 }
 
-//#[derive(Copy, Clone)]
-pub struct State {
-    accumulator: Option<i8>,
-    reg_b: Option<i8>,
-    reg_c: Option<i8>,
-    reg_d: Option<i8>,
-    reg_e: Option<i8>,
-    reg_h: Option<i8>,
-    reg_l: Option<i8>,
-    reg_h1: Option<i8>,
-    reg_l1: Option<i8>,
-    xl: Option<i8>,
-    yl: Option<i8>,
-    xh: Option<i8>,
-    yh: Option<i8>,
-    zero: Option<bool>,
-    carry: Option<bool>,
-    sign: Option<bool>,
-    halfcarry: Option<bool>,
-    overflow: Option<bool>,
-    decimal: Option<bool>,
-    heap: HashMap<u16, Option<i8>>,
+#[derive(Clone)]
+pub struct Operation<State, Operand, OUD, IUD> {
+    pub disassemble: fn(&Instruction<State, Operand, OUD, IUD>) -> Cow<'static, str>,
+    pub mutate: fn(&mut Instruction<State, Operand, OUD, IUD>) -> (),
+    pub execute: fn(&Instruction<State, Operand, OUD, IUD>, &mut State) -> u64,
+    pub userdata: OUD,
+}
+
+#[derive(Clone)]
+pub struct Instruction<'op, State, Operand, OUD, IUD> {
+    pub operation: &'op Operation<State, Operand, OUD, IUD>,
+    pub operands: SmallVec<[Operand; 4]>,
+    pub userdata: IUD,
 }
 
 impl State {

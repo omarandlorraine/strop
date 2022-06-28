@@ -10,7 +10,6 @@ mod test;
 
 use crate::machine::Datum;
 use crate::machine::Machine;
-use crate::machine::State;
 use crate::machine::MACHINES;
 use crate::search::optimize;
 use crate::search::stochastic_search;
@@ -136,7 +135,7 @@ fn function(m: String, ins: Vec<Datum>, outs: Vec<Datum>) -> Vec<Test> {
     process::exit(1);
 }
 
-fn disassemble(prog: BasicBlock) {
+fn disassemble(prog: BasicBlock<State, Operand, OUD, IUD>) {
     for p in prog.instructions {
         println!("{}", p);
     }

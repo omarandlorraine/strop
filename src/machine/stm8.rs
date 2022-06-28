@@ -1,9 +1,3 @@
-use crate::machine::Instruction;
-use crate::machine::R;
-use crate::Datum;
-use crate::Machine;
-use crate::State;
-
 use crate::machine::arithmetic_shift_left;
 use crate::machine::arithmetic_shift_right;
 use crate::machine::logical_shift_right;
@@ -29,13 +23,63 @@ use strop::randomly;
 
 use std::convert::TryInto;
 
-const A: Datum = Datum::Register(R::A);
-const XL: Datum = Datum::Register(R::Xl);
-const YL: Datum = Datum::Register(R::Yl);
-const XH: Datum = Datum::Register(R::Xh);
-const YH: Datum = Datum::Register(R::Yh);
-const X: Datum = Datum::RegisterPair(R::Xh, R::Xl);
-const Y: Datum = Datum::RegisterPair(R::Yh, R::Yl);
+pub struct IndexRegister {
+    high: u8,
+    low: u8,
+}
+
+pub struct State {
+    a: u8,
+    x: IndexRegister,
+    y: IndexRegister,
+    heap: HashMap<u16, Option<i8>>,
+}
+
+// machine specific instruction operand
+pub enum Operand {
+    A,
+    X,
+    Y,
+    Xh,
+    Xl,
+    Yh,
+    Yl,
+    Absolute(u16),
+    Immediate8(u8),
+    Immediate16(u16),
+    IndX,
+    IndY,
+    // todo: more of these.
+}
+
+impl std::fmt::Display for Operand {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::A => write!(f, "a"),
+            Self::X => write!(f, "x"),
+            Self::Y => write!(f, "y"),
+            Self::Xl => write!(f, "xl"),
+            Self::Yh => write!(f, "yh"),
+            Self::Xl => write!(f, "xl"),
+            Self::Yh => write!(f, "yh"),
+            Self::Absolute(addr) => {
+                if addr < 256 {
+                    write!(f, "${:04x}", addr)
+                } else {
+                    write!(f, "${:06x}", addr)
+                }
+            }
+            Immediate8(byte) => write!(f, "#${:04x}", byte),
+            Immediate16(word) => write!(f, "#${:06x}", word),
+            IndX => write!(f, "(x)"),
+            IndY => write!(f, "(y)"),
+        }
+    }
+}
+
+pub type Operation<'a> =
+    <machine::Instruction<'a, stm8::State, Operand, (), ()> as Trait>::Operation;
+pub type Instruction = crate::machine::Instruction<'static, State, Operand, (), ()>;
 
 fn adc(insn: &Instruction, s: &mut State) {
     let n = standard_add(s, s.get_i8(insn.a), s.get_i8(insn.b), s.carry);
@@ -186,58 +230,17 @@ fn xor(insn: &Instruction, s: &mut State) {
     s.set_i8(insn.a, n);
 }
 
-fn random_imm16() -> Datum {
-    let regs = vec![150];
-    Datum::Imm16(*regs.choose(&mut rand::thread_rng()).unwrap())
-}
-
-fn random_register() -> Datum {
-    let regs = vec![A, X, Y];
-    *regs.choose(&mut rand::thread_rng()).unwrap()
-}
-
-fn random_absolute() -> (Datum, usize) {
-    let d = crate::machine::random_absolute();
-    match d {
-        Datum::Absolute(addr) => {
-            if addr < 256 {
-                (d, 1)
-            } else {
-                (d, 2)
-            }
-        }
-        _ => panic!(),
-    }
-}
-
-fn random_immediate() -> (Datum, usize) {
-    let d = crate::machine::random_immediate();
-    (d, 2)
-}
-
 fn regname(r: Datum) -> &'static str {
     match r {
         A => "a",
-        Xh => "xh",
-        Xl => "xl",
-        Yh => "yh",
+        XH => "xh",
+        XL => "xl",
+        YH => "yh",
+        YL => "yl",
         X => "x",
         Y => "y",
         _ => panic!(),
     }
-}
-
-fn dasm_bits(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Result {
-    let shamt = match insn.b {
-        Datum::Imm8(shamt) => shamt,
-        _ => panic!(),
-    };
-
-    let absolute = match insn.a {
-        Datum::Absolute(addr) => addr,
-        _ => panic!(),
-    };
-    write!(f, "{} ${:04x}, #{}", insn.mnemonic, absolute, shamt)
 }
 
 fn dasm_inherent(f: &mut std::fmt::Formatter<'_>, insn: &Instruction) -> std::fmt::Result {
@@ -782,7 +785,7 @@ const RANDS: [Instruction; 9] = [
     BIT_INSTRUCTIONS,
 ];
 
-pub fn instr_stm8() -> Instruction {
+pub fn instr_stm8() -> Instruction<'static> {
     let mut op = *RANDS.choose(&mut rand::thread_rng()).unwrap();
     op.randomize();
     op

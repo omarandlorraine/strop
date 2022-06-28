@@ -2,7 +2,7 @@ use crate::disassemble;
 use crate::machine::Instruction;
 use crate::machine::Machine;
 use crate::machine::Width;
-use crate::{State, Step, TestRun};
+use crate::{Step, TestRun};
 use rand::{thread_rng, Rng};
 use rayon::iter::IntoParallelRefIterator;
 use rayon::iter::ParallelIterator;
@@ -11,8 +11,8 @@ use std::ops::{Index, IndexMut};
 use strop::randomly;
 
 #[derive(Clone)]
-pub struct BasicBlock {
-    pub instructions: Vec<Instruction>,
+pub struct BasicBlock<'a, State, Operand, OUD, IUD> {
+    pub instructions: Vec<Instruction<'a, State, Operand, OUD, IUD>>,
 }
 
 struct BasicBlockSpawn {
@@ -23,7 +23,7 @@ struct BasicBlockSpawn {
 }
 
 impl Iterator for BasicBlockSpawn {
-    type Item = BasicBlock;
+    type Item<'a> = BasicBlock<'a, State, Operand, OUD, IUD>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.ncount == 0 {
@@ -36,8 +36,11 @@ impl Iterator for BasicBlockSpawn {
     }
 }
 
-impl BasicBlock {
-    fn initial_guess(mach: Machine, max_size: i32) -> BasicBlock {
+impl BasicBlock<State, Operand, OUD, IUD> {
+    fn initial_guess<State, Operand, OUD, IUD>(
+        mach: Machine,
+        max_size: i32,
+    ) -> BasicBlock<State, Operand, OUD, IUD> {
         let mut bb = BasicBlock {
             instructions: vec![],
         };
@@ -64,15 +67,15 @@ impl BasicBlock {
         self.instructions.iter().map(|i| i.len()).sum()
     }
 
-    fn remove(&mut self, offset: usize) -> Instruction {
+    fn remove(&mut self, offset: usize) -> Instruction<State, Operand, OUD, IUD> {
         self.instructions.remove(offset)
     }
 
-    fn insert(&mut self, offset: usize, instr: Instruction) {
+    fn insert(&mut self, offset: usize, instr: Instruction<State, Operand, OUD, IUD>) {
         self.instructions.insert(offset, instr)
     }
 
-    fn push(&mut self, instr: Instruction) {
+    fn push(&mut self, instr: Instruction<State, Operand, OUD, IUD>) {
         self.instructions.push(instr)
     }
 
@@ -82,21 +85,21 @@ impl BasicBlock {
     }
 }
 
-impl Index<usize> for BasicBlock {
-    type Output = Instruction;
+impl Index<usize> for BasicBlock<State, Operand, OUD, IUD> {
+    type Output<'a> = Instruction<'a, State, Operand, OUD, IUD>;
 
     fn index(&self, offset: usize) -> &Self::Output {
         &self.instructions[offset]
     }
 }
 
-impl IndexMut<usize> for BasicBlock {
+impl IndexMut<usize> for BasicBlock<State, Operand, OUD, IUD> {
     fn index_mut(&mut self, offset: usize) -> &mut Self::Output {
         &mut self.instructions[offset]
     }
 }
 
-pub fn difference(prog: &BasicBlock, test_run: &TestRun) -> f64 {
+pub fn difference(prog: &BasicBlock<State, Operand, OUD, IUD>, test_run: &TestRun) -> f64 {
     let mut ret: f64 = 0.0;
 
     for tc in test_run.tests.iter() {
@@ -165,7 +168,7 @@ pub fn difference(prog: &BasicBlock, test_run: &TestRun) -> f64 {
     ret
 }
 
-fn cost(prog: &BasicBlock) -> f64 {
+fn cost(prog: &BasicBlock<State, Operand, OUD, IUD>) -> f64 {
     /* quick and simple cost function,
      * number of instructions in the program.
      * Not really a bad thing to minimise for.
@@ -173,14 +176,17 @@ fn cost(prog: &BasicBlock) -> f64 {
     prog.len() as f64
 }
 
-fn mutate_delete(prog: &mut BasicBlock) {
+fn mutate_delete<State, Operand, OUD, IUD>(prog: &mut BasicBlock<State, Operand, OUD, IUD>) {
     let instr_count = prog.instructions.len();
     if instr_count > 1 {
         prog.remove(prog.random_offset());
     }
 }
 
-fn mutate_insert(prog: &mut BasicBlock, mach: Machine) {
+fn mutate_insert<State, Operand, OUD, IUD>(
+    prog: &mut BasicBlock<State, Operand, OUD, IUD>,
+    mach: Machine,
+) {
     let instr_count = prog.instructions.len();
     let offset: usize = if instr_count > 0 {
         prog.random_offset()
@@ -191,7 +197,10 @@ fn mutate_insert(prog: &mut BasicBlock, mach: Machine) {
     prog.insert(offset, instruction);
 }
 
-fn mutate(prog: &mut BasicBlock, mach: Machine) {
+fn mutate<State, Operand, OUD, IUD>(
+    prog: &mut BasicBlock<State, Operand, OUD, IUD>,
+    mach: Machine,
+) {
     randomly!(
     {
         /* randomize an instruction
@@ -235,15 +244,15 @@ impl<'a> InitialPopulation<'a> {
 }
 
 impl Iterator for InitialPopulation<'_> {
-    type Item = (f64, BasicBlock);
+    type Item = (f64, BasicBlock<State, Operand, OUD, IUD>);
 
     fn next(&mut self) -> Option<Self::Item> {
         // Just spawn a random BasicBlock.
-        let program = BasicBlock::initial_guess(self.mach, 20);
+        let program = BasicBlock::<State, Operand, OUD, IUD>::initial_guess(self.mach, 20);
 
         // TODO: Should this check that the dce doesn't just empty the BB?
         let d = quick_dce(
-            &|prog: &BasicBlock| difference(prog, self.testrun),
+            &|prog: &BasicBlock<State, Operand, OUD, IUD>| difference(prog, self.testrun),
             &program,
         );
         Some((difference(&d, self.testrun), d))
@@ -257,7 +266,12 @@ pub struct NextGeneration<'a> {
 }
 
 impl<'a> NextGeneration<'a> {
-    fn new(mach: Machine, testrun: &'a TestRun, score: f64, bb: BasicBlock) -> NextGeneration {
+    fn new(
+        mach: Machine,
+        testrun: &'a TestRun,
+        score: f64,
+        bb: BasicBlock<State, Operand, OUD, IUD>,
+    ) -> NextGeneration {
         NextGeneration {
             testrun,
             bb: bb.spawn(mach).take(500),
@@ -267,13 +281,16 @@ impl<'a> NextGeneration<'a> {
 }
 
 impl<'a> Iterator for NextGeneration<'a> {
-    type Item = (f64, BasicBlock);
+    type Item = (f64, BasicBlock<State, Operand, OUD, IUD>);
 
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(s) = self.bb.next() {
             let fit = difference(&s, self.testrun);
             if fit < self.score {
-                let t = quick_dce(&|prog: &BasicBlock| difference(prog, self.testrun), &s);
+                let t = quick_dce(
+                    &|prog: &BasicBlock<State, Operand, OUD, IUD>| difference(prog, self.testrun),
+                    &s,
+                );
                 return Some((fit, t));
             }
         }
@@ -281,7 +298,10 @@ impl<'a> Iterator for NextGeneration<'a> {
     }
 }
 
-pub fn quick_dce(correctness: &dyn Fn(&BasicBlock) -> f64, prog: &BasicBlock) -> BasicBlock {
+pub fn quick_dce<State, Operand, OUD, IUD>(
+    correctness: &dyn Fn(&BasicBlock<State, Operand, OUD, IUD>) -> f64,
+    prog: &BasicBlock<State, Operand, OUD, IUD>,
+) -> BasicBlock<State, Operand, OUD, IUD> {
     let mut better = prog.clone();
     let score = correctness(prog);
     let mut cur: usize = 0;
@@ -300,7 +320,11 @@ pub fn quick_dce(correctness: &dyn Fn(&BasicBlock) -> f64, prog: &BasicBlock) ->
     }
 }
 
-pub fn optimize(correctness: &TestRun, prog: &BasicBlock, mach: Machine) -> BasicBlock {
+pub fn optimize<State, Operand, OUD, IUD>(
+    correctness: &TestRun,
+    prog: &BasicBlock<State, Operand, OUD, IUD>,
+    mach: Machine,
+) -> BasicBlock<State, Operand, OUD, IUD> {
     let mut population: Vec<(f64, BasicBlock)> = vec![];
 
     let fitness = difference(prog, correctness);
@@ -326,12 +350,12 @@ pub fn optimize(correctness: &TestRun, prog: &BasicBlock, mach: Machine) -> Basi
     prog.clone()
 }
 
-pub fn stochastic_search(
+pub fn stochastic_search<State, Operand, OUD, IUD>(
     correctness: &TestRun,
     mach: Machine,
     graph: bool,
     debug: bool,
-) -> BasicBlock {
+) -> BasicBlock<State, Operand, OUD, IUD> {
     let mut init = InitialPopulation::new(mach, correctness);
 
     let mut population: Vec<(f64, BasicBlock)> = vec![];
