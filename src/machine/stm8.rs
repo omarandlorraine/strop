@@ -52,6 +52,12 @@ pub enum Operand {
     // todo: more of these.
 }
 
+pub enum Operands {
+    None,
+    One(Operand),
+    Two(Operand, Operand),
+}
+
 impl std::fmt::Display for Operand {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -77,8 +83,8 @@ impl std::fmt::Display for Operand {
     }
 }
 
-pub type Operation<'a> = <crate::machine::Instruction<'a, State, Operand, (), ()>>::Operation;
-pub type Instruction = crate::machine::Instruction<'static, State, Operand, (), ()>;
+pub type Operation<'a> = <crate::machine::Instruction<'a, State, Operands, (), ()>>::Operation;
+pub type Instruction = crate::machine::Instruction<'static, State, Operands, (), ()>;
 
 fn adc(insn: &Instruction, s: &mut State) {
     let n = standard_add(s, s.get_i8(insn.a), s.get_i8(insn.b), s.carry);
