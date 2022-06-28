@@ -77,8 +77,7 @@ impl std::fmt::Display for Operand {
     }
 }
 
-pub type Operation<'a> =
-    <machine::Instruction<'a, stm8::State, Operand, (), ()> as Trait>::Operation;
+pub type Operation<'a> = <machine::Instruction<'a, stm8::State, Operand, (), ()>>::Operation;
 pub type Instruction = crate::machine::Instruction<'static, State, Operand, (), ()>;
 
 fn adc(insn: &Instruction, s: &mut State) {
@@ -785,7 +784,7 @@ const RANDS: [Instruction; 9] = [
     BIT_INSTRUCTIONS,
 ];
 
-pub fn instr_stm8() -> Instruction<'static> {
+pub fn instr_stm8() -> Instruction {
     let mut op = *RANDS.choose(&mut rand::thread_rng()).unwrap();
     op.randomize();
     op
