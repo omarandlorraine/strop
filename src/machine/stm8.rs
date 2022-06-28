@@ -19,6 +19,7 @@ use crate::machine::standard_negate;
 use crate::machine::standard_or;
 use crate::machine::standard_subtract;
 use crate::machine::standard_xor;
+use std::collections::HashMap;
 use strop::randomly;
 
 use std::convert::TryInto;
