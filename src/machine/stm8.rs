@@ -76,10 +76,10 @@ impl std::fmt::Display for Operand {
                     write!(f, "${:06x}", addr)
                 }
             }
-            Immediate8(byte) => write!(f, "#${:04x}", byte),
-            Immediate16(word) => write!(f, "#${:06x}", word),
-            IndX => write!(f, "(x)"),
-            IndY => write!(f, "(y)"),
+            Self::Immediate8(byte) => write!(f, "#${:04x}", byte),
+            Self::Immediate16(word) => write!(f, "#${:06x}", word),
+            Self::IndX => write!(f, "(x)"),
+            Self::IndY => write!(f, "(y)"),
         }
     }
 }
