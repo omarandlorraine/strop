@@ -77,7 +77,7 @@ impl std::fmt::Display for Operand {
     }
 }
 
-pub type Operation<'a> = <machine::Instruction<'a, stm8::State, Operand, (), ()>>::Operation;
+pub type Operation<'a> = <crate::machine::Instruction<'a, State, Operand, (), ()>>::Operation;
 pub type Instruction = crate::machine::Instruction<'static, State, Operand, (), ()>;
 
 fn adc(insn: &Instruction, s: &mut State) {
