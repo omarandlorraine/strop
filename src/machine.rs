@@ -15,7 +15,9 @@ use rand::random;
 #[derive(Clone, Copy)]
 pub struct Machine {
     pub name: &'static str,
-    random_insn: fn() -> Instruction,
+    random_insn: for<'a> fn(
+        &'a BasicBlock<'_, State, Operand, OUD, IUD>,
+    ) -> Instruction<'a, State, Operand, OUD, IUD>,
     reg_by_name: fn(&str) -> Result<Datum, &'static str>,
 }
 
