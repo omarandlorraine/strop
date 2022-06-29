@@ -15,9 +15,9 @@ pub struct BasicBlock<'a, State, Operand, OUD, IUD> {
     pub instructions: Vec<Instruction<'a, State, Operand, OUD, IUD>>,
 }
 
-struct BasicBlockSpawn {
-    parent: BasicBlock,
-    mutant: BasicBlock,
+struct BasicBlockSpawn<'a> {
+    parent: BasicBlock<'a, State, Operand, OUD, IUD>,
+    mutant: BasicBlock<'a, State, Operand, OUD, IUD>,
     ncount: usize,
     mach: Machine,
 }
@@ -261,7 +261,7 @@ impl Iterator for InitialPopulation<'_> {
 
 pub struct NextGeneration<'a> {
     testrun: &'a TestRun,
-    bb: std::iter::Take<BasicBlockSpawn>,
+    bb: std::iter::Take<BasicBlockSpawn<'a>>,
     score: f64,
 }
 
