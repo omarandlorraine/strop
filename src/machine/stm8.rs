@@ -22,8 +22,6 @@ use crate::machine::standard_xor;
 use std::collections::HashMap;
 use strop::randomly;
 
-use std::convert::TryInto;
-
 pub struct IndexRegister {
     high: u8,
     low: u8,

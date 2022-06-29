@@ -4,9 +4,6 @@ use crate::machine::Machine;
 use crate::machine::Width;
 use crate::{Step, TestRun};
 use rand::{thread_rng, Rng};
-use rayon::iter::IntoParallelRefIterator;
-use rayon::iter::ParallelIterator;
-use rayon::prelude::ParallelSliceMut;
 use std::ops::{Index, IndexMut};
 use strop::randomly;
 
