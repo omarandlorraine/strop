@@ -22,7 +22,7 @@ struct BasicBlockSpawn<'a> {
     mach: Machine,
 }
 
-impl Iterator for BasicBlockSpawn {
+impl Iterator for BasicBlockSpawn<'_> {
     type Item<'a> = BasicBlock<'a, State, Operand, OUD, IUD>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -36,7 +36,7 @@ impl Iterator for BasicBlockSpawn {
     }
 }
 
-impl<'a> BasicBlock<State, Operand, OUD, IUD> {
+impl<'a> BasicBlock<'_, State, Operand, OUD, IUD> {
     fn initial_guess<State, Operand, OUD, IUD>(
         mach: Machine,
         max_size: i32,
@@ -83,9 +83,59 @@ impl<'a> BasicBlock<State, Operand, OUD, IUD> {
         let mut rng = thread_rng();
         rng.gen_range(0..self.instructions.len())
     }
+
+    fn mutate_delete(&mut self) {
+        let instr_count = prog.instructions.len();
+        if instr_count > 1 {
+            prog.remove(prog.random_offset());
+        }
+    }
+
+    fn mutate_insert(&mut self) {
+        let instr_count = prog.instructions.len();
+        let offset: usize = if instr_count > 0 {
+            prog.random_offset()
+        } else {
+            0
+        };
+        let instruction = mach.new_instruction();
+        prog.insert(offset, instruction);
+    }
+
+    fn mutate(&mut self) {
+        randomly!(
+        {
+            /* randomize an instruction
+             * (this could involve changing an operand, addressing mode, etc etc.
+             */
+            if !prog.instructions.is_empty() {
+                let offset = prog.random_offset();
+                prog[offset].randomize();
+            }
+        }
+        {
+            /* delete an instruction */
+            mutate_delete(prog);
+        }
+        {
+            /* insert a new instruction */
+            mutate_insert(prog, mach);
+        }
+        {
+            if prog.instructions.len() > 2 {
+                /* Pick two instructions and swap them round */
+                let offset_a = prog.random_offset();
+                let offset_b = prog.random_offset();
+                let ins_a = prog[offset_a];
+                let ins_b = prog[offset_b];
+                prog[offset_a] = ins_b;
+                prog[offset_b] = ins_a;
+            }
+        })
+    }
 }
 
-impl Index<usize> for BasicBlock<State, Operand, OUD, IUD> {
+impl Index<usize> for BasicBlock<'_, State, Operand, OUD, IUD> {
     type Output<'a> = Instruction<'a, State, Operand, OUD, IUD>;
 
     fn index(&self, offset: usize) -> &Self::Output {
@@ -93,7 +143,7 @@ impl Index<usize> for BasicBlock<State, Operand, OUD, IUD> {
     }
 }
 
-impl IndexMut<usize> for BasicBlock<State, Operand, OUD, IUD> {
+impl IndexMut<usize> for BasicBlock<'_, State, Operand, OUD, IUD> {
     fn index_mut(&mut self, offset: usize) -> &mut Self::Output {
         &mut self.instructions[offset]
     }
@@ -174,62 +224,6 @@ fn cost(prog: &BasicBlock<State, Operand, OUD, IUD>) -> f64 {
      * Not really a bad thing to minimise for.
      */
     prog.len() as f64
-}
-
-fn mutate_delete<State, Operand, OUD, IUD>(prog: &mut BasicBlock<State, Operand, OUD, IUD>) {
-    let instr_count = prog.instructions.len();
-    if instr_count > 1 {
-        prog.remove(prog.random_offset());
-    }
-}
-
-fn mutate_insert<State, Operand, OUD, IUD>(
-    prog: &mut BasicBlock<State, Operand, OUD, IUD>,
-    mach: Machine,
-) {
-    let instr_count = prog.instructions.len();
-    let offset: usize = if instr_count > 0 {
-        prog.random_offset()
-    } else {
-        0
-    };
-    let instruction = mach.new_instruction();
-    prog.insert(offset, instruction);
-}
-
-fn mutate<State, Operand, OUD, IUD>(
-    prog: &mut BasicBlock<State, Operand, OUD, IUD>,
-    mach: Machine,
-) {
-    randomly!(
-    {
-        /* randomize an instruction
-         * (this could involve changing an operand, addressing mode, etc etc.
-         */
-        if !prog.instructions.is_empty() {
-            let offset = prog.random_offset();
-            prog[offset].randomize();
-        }
-    }
-    {
-        /* delete an instruction */
-        mutate_delete(prog);
-    }
-    {
-        /* insert a new instruction */
-        mutate_insert(prog, mach);
-    }
-    {
-        if prog.instructions.len() > 2 {
-            /* Pick two instructions and swap them round */
-            let offset_a = prog.random_offset();
-            let offset_b = prog.random_offset();
-            let ins_a = prog[offset_a];
-            let ins_b = prog[offset_b];
-            prog[offset_a] = ins_b;
-            prog[offset_b] = ins_a;
-        }
-    })
 }
 
 pub struct InitialPopulation<'a> {
