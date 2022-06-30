@@ -184,6 +184,12 @@ fn get_machine_by_name(name: &str) -> Machine {
     process::exit(1);
 }
 
+fn search(testrun: &TestRun, machine: Machine, graph: bool, debug: bool) {
+    let prog = stochastic_search::<State, Operand, OUD, IUD>(testrun, machine, graph, debug);
+    let opt = optimize(testrun, &prog, machine);
+    disassemble(opt);
+}
+
 fn main() {
     let opts: Opts = argh::from_env();
 
@@ -197,7 +203,5 @@ fn main() {
         testrun_from_args(&opts, machine)
     };
 
-    let prog = stochastic_search(&testrun, machine, opts.graph, opts.debug);
-    let opt = optimize(&testrun, &prog, machine);
-    disassemble(opt);
+    search(&testrun, machine, opts.graph, opts.debug);
 }
