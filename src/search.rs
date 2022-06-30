@@ -48,10 +48,11 @@ impl<'a> BasicBlock<'_, State, Operand, OUD, IUD> {
         bb
     }
 
-    fn spawn(&self, mach: Machine) -> BasicBlockSpawn {
-        let parent: BasicBlock = BasicBlock {
-            instructions: self.instructions.clone(),
-        };
+    fn spawn<State, Operand, OUD, IUD>(&self, mach: Machine) -> BasicBlockSpawn {
+        let parent: BasicBlock<State, Operand, OUD, IUD> =
+            BasicBlock::<'a, State, Operand, OUD, IUD> {
+                instructions: self.instructions.clone(),
+            };
         BasicBlockSpawn {
             parent,
             mutant: self.clone(),
@@ -300,7 +301,7 @@ pub fn quick_dce<'a, State, Operand, OUD, IUD>(
     loop {
         let mut putative = better.clone();
         if cur >= better.instructions.len() {
-            return better;
+            return *better;
         }
         putative.remove(cur);
         if correctness(&putative) <= score {
@@ -315,12 +316,12 @@ pub fn optimize<'a, State, Operand, OUD, IUD>(
     correctness: &TestRun,
     prog: &BasicBlock<State, Operand, OUD, IUD>,
     mach: Machine,
-) -> BasicBlock<'a, State, Operand, OUD, IUD> {
-    let mut population: Vec<(f64, BasicBlock)> = vec![];
+) -> &'a BasicBlock<'a, State, Operand, OUD, IUD> {
+    let mut population: Vec<(f64, BasicBlock<State, Operand, OUD, IUD>)> = vec![];
 
     let fitness = difference(prog, correctness);
     let ccost = cost(prog);
-    population.push((cost(prog), prog.clone()));
+    population.push((cost(prog), *prog.clone()));
 
     let best = prog;
 
@@ -346,11 +347,17 @@ pub fn stochastic_search<State, Operand, OUD, IUD>(
     mach: Machine,
     graph: bool,
     debug: bool,
-) -> BasicBlock<State, Operand, OUD, IUD> {
+) -> BasicBlock<State, Operand, OUD, IUD>
+where
+    IUD: Clone,
+    OUD: Clone,
+    Operand: Clone,
+    State: Clone,
+{
     let mut init = InitialPopulation::new(mach, correctness);
 
-    let mut population: Vec<(f64, BasicBlock)> = vec![];
-    let mut winners: Vec<BasicBlock> = vec![];
+    let mut population: Vec<(f64, BasicBlock<State, Operand, OUD, IUD>)> = vec![];
+    let mut winners: Vec<BasicBlock<State, Operand, OUD, IUD>> = vec![];
     let mut generation: u64 = 1;
 
     population.push(init.next().unwrap());
@@ -360,8 +367,8 @@ pub fn stochastic_search<State, Operand, OUD, IUD>(
 
         // Spawn more specimens for next generation by mutating the current ones
         let population_size = if best_score < 500.0 { 10 } else { 50 };
-        let mut ng: Vec<(f64, BasicBlock)> = population
-            .par_iter()
+        let mut ng: Vec<(f64, BasicBlock<State, Operand, OUD, IUD>)> = population
+            .iter()
             .flat_map(|s| {
                 NextGeneration::new(mach, correctness, best_score, s.1.clone())
                     .collect::<Vec<(f64, BasicBlock<State, Operand, OUD, IUD>)>>()
@@ -379,7 +386,7 @@ pub fn stochastic_search<State, Operand, OUD, IUD>(
 
         if !ng.is_empty() {
             // Sort the population by score.
-            ng.par_sort_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"));
+            ng.sort_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"));
 
             population = ng;
             let nbest = population[0].0;
