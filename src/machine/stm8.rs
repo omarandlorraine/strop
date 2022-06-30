@@ -52,6 +52,24 @@ pub enum Operand {
     // todo: more of these.
 }
 
+impl Operand {
+    fn get8(s: &State) -> Option<u8> {
+        match self {
+            A => s.a,
+            X => panic!(),
+            Y => panic!(),
+            Xh => s.x.high,
+            Xl => s.x.low,
+            Yh => s.y.high,
+            Yl => s.y.low,
+            Absolute(addr) => s.heap.get(&address),
+            Immediate8(x) => x,
+            IndX => s.heap.get(s.x),
+            IndY => s.heap.get(s.y),
+        }
+    }
+}
+
 pub enum Operands {
     None,
     One(Operand),
