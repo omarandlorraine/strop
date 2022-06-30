@@ -32,6 +32,7 @@ pub struct State {
     x: IndexRegister,
     y: IndexRegister,
     heap: HashMap<u16, Option<i8>>,
+    carry: Option<bool>,
 }
 
 // machine specific instruction operand
