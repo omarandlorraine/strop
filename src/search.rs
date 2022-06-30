@@ -364,7 +364,7 @@ pub fn stochastic_search<State, Operand, OUD, IUD>(
             .par_iter()
             .flat_map(|s| {
                 NextGeneration::new(mach, correctness, best_score, s.1.clone())
-                    .collect::<Vec<(f64, BasicBlock)>>()
+                    .collect::<Vec<(f64, BasicBlock<State, Operand, OUD, IUD>)>>()
             })
             .collect();
 
