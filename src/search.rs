@@ -229,18 +229,18 @@ fn cost(prog: &BasicBlock<State, Operand, OUD, IUD>) -> f64 {
     prog.len() as f64
 }
 
-pub struct InitialPopulation<'a> {
+pub struct InitialPopulation<'a, State, Operand, OUD, IUD> {
     mach: Machine,
     testrun: &'a TestRun,
 }
 
-impl<'a> InitialPopulation<'a> {
-    fn new(mach: Machine, testrun: &TestRun) -> InitialPopulation {
+impl<'a> InitialPopulation<'a, State, Operand, OUD, IUD> {
+    fn new(mach: Machine, testrun: &TestRun) -> InitialPopulation<State, Operand, OUD, IUD> {
         InitialPopulation { testrun, mach }
     }
 }
 
-impl Iterator for InitialPopulation<'_> {
+impl Iterator for InitialPopulation<'_, State, Operand, OUD, IUD> {
     type Item<'a> = (f64, BasicBlock<'a, State, Operand, OUD, IUD>);
 
     fn next(&mut self) -> Option<Self::Item> {
