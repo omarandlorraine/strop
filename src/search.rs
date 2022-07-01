@@ -4,7 +4,6 @@ use crate::machine::Machine;
 use crate::machine::Width;
 use crate::{Step, TestRun};
 use rand::{thread_rng, Rng};
-use std::ops::{Index, IndexMut};
 use strop::randomly;
 
 trait Strop {
@@ -15,27 +14,6 @@ trait Strop {
 #[derive(Clone)]
 pub struct BasicBlock<'a, State, Operand, OUD, IUD> {
     pub instructions: Vec<Instruction<'a, State, Operand, OUD, IUD>>,
-}
-
-struct BasicBlockSpawn<'a> {
-    parent: BasicBlock<'a, State, Operand, OUD, IUD>,
-    mutant: BasicBlock<'a, State, Operand, OUD, IUD>,
-    ncount: usize,
-    mach: Machine,
-}
-
-impl Iterator for BasicBlockSpawn<'_> {
-    type Item<'a> = BasicBlock<'a, State, Operand, OUD, IUD>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.ncount == 0 {
-            self.mutant = self.parent.clone();
-            self.ncount = 100;
-        }
-        self.ncount -= 1;
-        mutate(&mut self.mutant, self.mach);
-        Some(self.mutant.clone())
-    }
 }
 
 impl<'a> BasicBlock<'_, State, Operand, OUD, IUD> {
@@ -138,20 +116,6 @@ impl<'a> BasicBlock<'_, State, Operand, OUD, IUD> {
     }
 }
 
-impl Index<usize> for BasicBlock<'_, State, Operand, OUD, IUD> {
-    type Output<'a> = Instruction<'a, State, Operand, OUD, IUD>;
-
-    fn index(&self, offset: usize) -> &Self::Output {
-        &self.instructions[offset]
-    }
-}
-
-impl IndexMut<usize> for BasicBlock<'_, State, Operand, OUD, IUD> {
-    fn index_mut(&mut self, offset: usize) -> &mut Self::Output {
-        &mut self.instructions[offset]
-    }
-}
-
 pub fn difference(prog: &BasicBlock<State, Operand, OUD, IUD>, test_run: &TestRun) -> f64 {
     let mut ret: f64 = 0.0;
 
@@ -227,72 +191,6 @@ fn cost(prog: &BasicBlock<State, Operand, OUD, IUD>) -> f64 {
      * Not really a bad thing to minimise for.
      */
     prog.len() as f64
-}
-
-pub struct InitialPopulation<'a, State, Operand, OUD, IUD> {
-    mach: Machine,
-    testrun: &'a TestRun,
-}
-
-impl<'a> InitialPopulation<'a, State, Operand, OUD, IUD> {
-    fn new(mach: Machine, testrun: &TestRun) -> InitialPopulation<State, Operand, OUD, IUD> {
-        InitialPopulation { testrun, mach }
-    }
-}
-
-impl Iterator for InitialPopulation<'_, State, Operand, OUD, IUD> {
-    type Item<'a> = (f64, BasicBlock<'a, State, Operand, OUD, IUD>);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        // Just spawn a random BasicBlock.
-        let program = BasicBlock::<State, Operand, OUD, IUD>::initial_guess(self.mach, 20);
-
-        // TODO: Should this check that the dce doesn't just empty the BB?
-        let d = quick_dce(
-            &|prog: &BasicBlock<State, Operand, OUD, IUD>| difference(prog, self.testrun),
-            &program,
-        );
-        Some((difference(&d, self.testrun), d))
-    }
-}
-
-pub struct NextGeneration<'a> {
-    testrun: &'a TestRun,
-    bb: std::iter::Take<BasicBlockSpawn<'a>>,
-    score: f64,
-}
-
-impl<'a> NextGeneration<'a> {
-    fn new(
-        mach: Machine,
-        testrun: &'a TestRun,
-        score: f64,
-        bb: BasicBlock<State, Operand, OUD, IUD>,
-    ) -> NextGeneration<'a> {
-        NextGeneration {
-            testrun,
-            bb: bb.spawn(mach).take(500),
-            score,
-        }
-    }
-}
-
-impl<'a> Iterator for NextGeneration<'a> {
-    type Item = (f64, BasicBlock<'a, State, Operand, OUD, IUD>);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        while let Some(s) = self.bb.next() {
-            let fit = difference(&s, self.testrun);
-            if fit < self.score {
-                let t = quick_dce(
-                    &|prog: &BasicBlock<State, Operand, OUD, IUD>| difference(prog, self.testrun),
-                    &s,
-                );
-                return Some((fit, t));
-            }
-        }
-        None
-    }
 }
 
 pub fn quick_dce<'a, State, Operand, OUD, IUD>(
