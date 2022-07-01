@@ -51,6 +51,47 @@ impl State {
     }
 }
 
+enum BitSelect {
+    B0,
+    B1,
+    B2,
+    B3,
+    B4,
+    B5,
+    B6,
+    B7,
+}
+
+impl From<usize> for BitSelect {
+    fn from(item: usize) {
+        match item {
+            0 => BitSelect::B0,
+            1 => BitSelect::B1,
+            2 => BitSelect::B2,
+            3 => BitSelect::B3,
+            4 => BitSelect::B4,
+            5 => BitSelect::B5,
+            6 => BitSelect::B6,
+            7 => BitSelect::B7,
+        }
+    }
+}
+
+impl From<BitSelect> for usize {
+    fn from(item: usize) {
+        match item {
+            BitSelect::B0 => 0,
+            BitSelect::B1 => 1,
+            BitSelect::B2 => 2,
+            BitSelect::B3 => 3,
+            BitSelect::B4 => 4,
+            BitSelect::B5 => 5,
+            BitSelect::B6 => 6,
+            BitSelect::B7 => 7,
+        }
+    }
+}
+
 // machine specific instruction operand
 pub enum Operand {
     A,
@@ -90,6 +131,7 @@ pub enum Operands {
     None,
     One(Operand),
     Two(Operand, Operand),
+    Bits(Operand, BitSelect),
 }
 
 impl Operands {
