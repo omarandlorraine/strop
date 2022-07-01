@@ -7,6 +7,11 @@ use rand::{thread_rng, Rng};
 use std::ops::{Index, IndexMut};
 use strop::randomly;
 
+trait Strop {
+    fn random() -> Self;
+    fn mutate(self) -> Self;
+}
+
 #[derive(Clone)]
 pub struct BasicBlock<'a, State, Operand, OUD, IUD> {
     pub instructions: Vec<Instruction<'a, State, Operand, OUD, IUD>>,
