@@ -92,6 +92,22 @@ pub enum Operands {
     Two(Operand, Operand),
 }
 
+impl Operands {
+    fn one(self) -> Option<Operand> {
+        match self {
+            Self::One(o) => Some(o),
+            _ => None,
+        }
+    }
+
+    fn two(self) -> Option<(Operand, Operand)> {
+        match self {
+            Self::Two(a, b) => Some((a, b)),
+            _ => None,
+        }
+    }
+}
+
 impl std::fmt::Display for Operand {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
