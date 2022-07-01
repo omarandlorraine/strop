@@ -2,8 +2,6 @@ use crate::machine::arithmetic_shift_left;
 use crate::machine::arithmetic_shift_right;
 use crate::machine::logical_shift_right;
 use crate::machine::rand::prelude::SliceRandom;
-use crate::machine::random_shamt;
-use crate::machine::randomize_shamt;
 use crate::machine::reg_by_name;
 use crate::machine::rotate_left;
 use crate::machine::rotate_right;
@@ -20,7 +18,6 @@ use crate::machine::standard_or;
 use crate::machine::standard_subtract;
 use crate::machine::standard_xor;
 use std::collections::HashMap;
-use strop::randomly;
 
 pub struct IndexRegister {
     high: Some(u8),
