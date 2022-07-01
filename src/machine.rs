@@ -39,7 +39,7 @@ pub enum Width {
     Width16,
 }
 
-impl std::fmt::Display for Instruction<State, Operand, OUD, IUD> {
+impl std::fmt::Display for Instruction<'_, State, Operand, OUD, IUD> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         (self.disassemble)(f, self)
     }
@@ -184,7 +184,7 @@ fn rotate_right_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>,
     (None, None)
 }
 
-impl Instruction<State, Operand, OUD, IUD> {
+impl Instruction<'_, State, Operand, OUD, IUD> {
     pub fn randomize(&mut self) {
         (self.randomizer)(self);
     }
