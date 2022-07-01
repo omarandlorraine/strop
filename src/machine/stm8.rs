@@ -119,7 +119,7 @@ impl std::fmt::Display for Operand {
             Self::Xl => write!(f, "xl"),
             Self::Yh => write!(f, "yh"),
             Self::Absolute(addr) => {
-                if addr < 256 {
+                if addr < &256 {
                     write!(f, "${:04x}", addr)
                 } else {
                     write!(f, "${:06x}", addr)
