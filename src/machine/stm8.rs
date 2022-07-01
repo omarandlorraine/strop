@@ -124,6 +124,27 @@ impl Operand {
     }
 }
 
+impl Distribution<Operand> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Operand {
+        use self::Operand::*;
+        rng.choose(&[
+            A,
+            X,
+            Y,
+            Xh,
+            Xl,
+            Yh,
+            Yl,
+            Absolute(random()),
+            Immediate8(random()),
+            IndX,
+            IndY,
+        ])
+        .unwrap()
+        .clone()
+    }
+}
+
 pub enum Operands {
     None,
     One(Operand),
