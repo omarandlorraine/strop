@@ -23,16 +23,32 @@ use std::collections::HashMap;
 use strop::randomly;
 
 pub struct IndexRegister {
-    high: u8,
-    low: u8,
+    high: Some(u8),
+    low: Some(u8),
 }
 
 pub struct State {
-    a: u8,
+    a: Some(u8),
     x: IndexRegister,
     y: IndexRegister,
     heap: HashMap<u16, Option<i8>>,
     carry: Option<bool>,
+}
+
+impl State {
+    fn get_x(self) -> Some(u16) {
+        self.x
+            .high
+            .zip(self.x.low)
+            .map(|(h, l)| u16::from_be_bytes([h, l]))
+    }
+
+    fn get_y(self) -> Some(u16) {
+        self.x
+            .high
+            .zip(self.x.low)
+            .map(|(h, l)| u16::from_be_bytes([h, l]))
+    }
 }
 
 // machine specific instruction operand
@@ -64,8 +80,8 @@ impl Operand {
             Yl => s.y.low,
             Absolute(addr) => s.heap.get(&address),
             Immediate8(x) => x,
-            IndX => s.heap.get(s.x),
-            IndY => s.heap.get(s.y),
+            IndX => s.get_x().map(|addr| s.heap.get(addr)),
+            IndY => s.get_y().map(|addr| s.heap.get(addr)),
         }
     }
 }
