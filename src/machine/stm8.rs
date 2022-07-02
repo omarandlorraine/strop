@@ -1,22 +1,6 @@
-use crate::machine::arithmetic_shift_left;
-use crate::machine::arithmetic_shift_right;
-use crate::machine::logical_shift_right;
 use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::reg_by_name;
-use crate::machine::rotate_left;
-use crate::machine::rotate_right;
-use crate::machine::standard_add;
-use crate::machine::standard_and;
-use crate::machine::standard_bit_clear;
-use crate::machine::standard_bit_complement;
-use crate::machine::standard_bit_set;
-use crate::machine::standard_complement;
-use crate::machine::standard_decrement;
-use crate::machine::standard_increment;
-use crate::machine::standard_negate;
-use crate::machine::standard_or;
-use crate::machine::standard_subtract;
-use crate::machine::standard_xor;
+use rand::random;
 use std::collections::HashMap;
 
 pub struct IndexRegister {
@@ -197,155 +181,6 @@ pub type Operation<'a> =
     <crate::machine::Instruction<'a, crate::machine::stm8::State, Operands, (), ()>>::Operation;
 pub type Instruction = crate::machine::Instruction<'static, State, Operands, (), ()>;
 
-fn adc(insn: &Instruction, s: &mut State) {
-    let n = standard_add(s, s.get_i8(insn.a), s.get_i8(insn.b), s.carry);
-    s.set_i8(insn.a, n);
-}
-
-fn add(insn: &Instruction, s: &mut State) {
-    let n = standard_add(s, s.get_i8(insn.a), s.get_i8(insn.b), Some(false));
-    s.set_i8(insn.a, n);
-}
-
-fn addw(insn: &Instruction, s: &mut State) {
-    let n = standard_add(s, s.get_i16(insn.a), s.get_i16(insn.b), Some(false));
-    s.set_i16(insn.a, n);
-}
-
-fn and(insn: &Instruction, s: &mut State) {
-    let n = standard_and(s, s.get_i8(insn.a), s.get_i8(insn.b));
-    s.set_i8(insn.a, n);
-}
-
-fn andw(insn: &Instruction, s: &mut State) {
-    let n = standard_and(s, s.get_i16(insn.a), s.get_i16(insn.b));
-    s.set_i16(insn.a, n);
-}
-
-fn bccm(insn: &Instruction, s: &mut State) {
-    let datum = s.get_u8(insn.a);
-    let shamt: Option<usize> = s.get_u8(insn.b).map(|v| v.into());
-    if let Some(c) = s.carry {
-        if c {
-            s.set_u8(insn.a, standard_bit_clear(datum, shamt));
-        } else {
-            s.set_u8(insn.a, standard_bit_set(datum, shamt));
-        }
-    } else {
-        s.set_u8(insn.a, None);
-    }
-}
-
-fn bcpl(insn: &Instruction, s: &mut State) {
-    let datum = s.get_u8(insn.a);
-    let shamt: Option<usize> = s.get_u8(insn.b).map(|v| v.into());
-    s.set_u8(insn.a, standard_bit_complement(datum, shamt));
-}
-
-fn bres(insn: &Instruction, s: &mut State) {
-    let datum = s.get_u8(insn.a);
-    let shamt: Option<usize> = s.get_u8(insn.b).map(|v| v.into());
-    s.set_u8(insn.a, standard_bit_clear(datum, shamt));
-}
-
-fn bset(insn: &Instruction, s: &mut State) {
-    let datum = s.get_u8(insn.a);
-    let shamt: Option<usize> = s.get_u8(insn.b).map(|v| v.into());
-    s.set_u8(insn.a, standard_bit_set(datum, shamt));
-}
-
-fn cp(insn: &Instruction, s: &mut State) {
-    standard_subtract(s, s.get_u8(insn.a), s.get_u8(insn.b), Some(false));
-}
-
-fn cpw(insn: &Instruction, s: &mut State) {
-    standard_subtract(s, s.get_u16(insn.a), s.get_u16(insn.b), Some(false));
-}
-
-fn cpl(insn: &Instruction, s: &mut State) {
-    let d = standard_complement(s, s.get_u8(insn.a));
-    s.set_u8(insn.a, d);
-}
-
-fn dec(insn: &Instruction, s: &mut State) {
-    let d = standard_decrement(s, s.get_u8(insn.a));
-    s.set_u8(insn.a, d);
-}
-
-fn inc(insn: &Instruction, s: &mut State) {
-    let d = standard_increment(s, s.get_u8(insn.a));
-    s.set_u8(insn.a, d);
-}
-
-fn ld(insn: &Instruction, s: &mut State) {
-    s.set_u8(insn.a, s.get_u8(insn.b));
-}
-
-fn neg(insn: &Instruction, s: &mut State) {
-    let d = standard_negate(s, s.get_i8(insn.a));
-    s.set_i8(insn.a, d);
-}
-
-fn or(insn: &Instruction, s: &mut State) {
-    let n = standard_or(s, s.get_i8(insn.a), s.get_i8(insn.b));
-    s.set_i8(insn.a, n);
-}
-
-fn swap(insn: &Instruction, s: &mut State) {
-    let d = s.get_i8(insn.a).map(|val| val.rotate_right(4));
-    s.set_i8(insn.a, d);
-}
-
-fn swapw(insn: &Instruction, s: &mut State) {
-    let d = s.get_i16(insn.a).map(|val| val.swap_bytes());
-    s.set_i16(insn.a, d);
-}
-
-fn sla(insn: &Instruction, s: &mut State) {
-    let n = arithmetic_shift_left(s, s.get_u8(insn.a));
-    s.set_u8(insn.a, n);
-}
-
-fn sra(insn: &Instruction, s: &mut State) {
-    let n = arithmetic_shift_right(s, s.get_u8(insn.a));
-    s.set_u8(insn.a, n);
-}
-
-fn srl(insn: &Instruction, s: &mut State) {
-    let n = logical_shift_right(s, s.get_u8(insn.a));
-    s.set_u8(insn.a, n);
-}
-
-fn rlc(insn: &Instruction, s: &mut State) {
-    let n = rotate_left(s, s.get_u8(insn.a));
-    s.set_u8(insn.a, n);
-}
-
-fn rrc(insn: &Instruction, s: &mut State) {
-    let n = rotate_right(s, s.get_u8(insn.a));
-    s.set_u8(insn.a, n);
-}
-
-fn sbc(insn: &Instruction, s: &mut State) {
-    let n = standard_subtract(s, s.get_i8(insn.a), s.get_i8(insn.b), s.carry);
-    s.set_i8(insn.a, n);
-}
-
-fn sub(insn: &Instruction, s: &mut State) {
-    let n = standard_subtract(s, s.get_i8(insn.a), s.get_i8(insn.b), Some(false));
-    s.set_i8(insn.a, n);
-}
-
-fn subw(insn: &Instruction, s: &mut State) {
-    let n = standard_subtract(s, s.get_i16(insn.a), s.get_i16(insn.b), Some(false));
-    s.set_i16(insn.a, n);
-}
-
-fn xor(insn: &Instruction, s: &mut State) {
-    let n = standard_xor(s, s.get_i8(insn.a), s.get_i8(insn.b));
-    s.set_i8(insn.a, n);
-}
-
 fn rotate_left_through_accumulator(s: &mut State, ind: Operand) {
     let ind = match ind {
         Operand::X => s.x,
@@ -388,12 +223,6 @@ fn flip_x_and_y(d: Operand, sz: usize) -> (Operand, usize) {
         Operand::YH => (Operand::XH, sz - 1),
         x => (x, sz),
     }
-}
-
-pub fn instr_stm8() -> Instruction {
-    let mut op = *RANDS.choose(&mut rand::thread_rng()).unwrap();
-    op.randomize();
-    op
 }
 
 fn stm8_reg_by_name(name: &str) -> Result<Operand, &'static str> {
