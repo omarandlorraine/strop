@@ -2,7 +2,6 @@ use crate::disassemble;
 use crate::machine::Instruction;
 use crate::machine::Machine;
 use crate::machine::Width;
-use crate::{Step, TestRun};
 use rand::{thread_rng, Rng};
 use strop::randomly;
 
@@ -98,78 +97,6 @@ impl<'a, State, Operand, OUD, IUD> BasicBlock<'_, State, Operand, OUD, IUD> {
         };
         self.insert(offset, Instruction::new());
     }
-}
-
-pub fn difference<State, Operand, OUD, IUD>(
-    prog: &BasicBlock<State, Operand, OUD, IUD>,
-    test_run: &TestRun,
-) -> f64 {
-    let mut ret: f64 = 0.0;
-
-    for tc in test_run.tests.iter() {
-        let mut s = State::new();
-
-        for step in &tc.steps {
-            match step {
-                Step::Run => {
-                    for i in &prog.instructions {
-                        i.operate(&mut s);
-                    }
-                }
-                Step::Set(datum, val) => match datum.width() {
-                    Width::Width8 => {
-                        s.set_i8(*datum, Some(*val as i8));
-                    }
-                    Width::Width16 => {
-                        s.set_i16(*datum, Some(*val as i16));
-                    }
-                },
-                Step::Diff(datum, val) => {
-                    if let Some(v) = s.get_i16(*datum) {
-                        let d: f64 = (val - v as i32).into();
-                        ret += d.abs();
-                    } else {
-                        ret += 65536.0;
-                    }
-                }
-                Step::NonZero(datum) => {
-                    if let Some(v) = s.get_i16(*datum) {
-                        if v != 0 {
-                            ret += 2.0;
-                        }
-                    } else {
-                        ret += 100.0;
-                    }
-                }
-                Step::Positive(datum) => {
-                    if let Some(v) = s.get_i16(*datum) {
-                        if v <= 0 {
-                            ret += 2.0;
-                        }
-                    } else {
-                        ret += 100.0;
-                    }
-                }
-                Step::Negative(datum) => {
-                    if let Some(v) = s.get_i16(*datum) {
-                        if v >= 0 {
-                            ret += 2.0;
-                        }
-                    } else {
-                        ret += 100.0;
-                    }
-                }
-                Step::Ham(datum, val, dontcare) => {
-                    if let Some(v) = s.get_i16(*datum) {
-                        ret += (((v as i32) ^ val) & dontcare).count_ones() as f64;
-                    } else {
-                        ret += 1000.0
-                    }
-                }
-            }
-        }
-    }
-    ret
 }
 
 fn cost<State, Operand, OUD, IUD>(prog: &BasicBlock<State, Operand, OUD, IUD>) -> f64 {
