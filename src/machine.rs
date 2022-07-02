@@ -1,4 +1,3 @@
-use crate::machine::rand::prelude::SliceRandom;
 extern crate num;
 extern crate rand;
 use smallvec::SmallVec;

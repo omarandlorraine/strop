@@ -1,4 +1,3 @@
-use crate::disassemble;
 use crate::machine::Instruction;
 use crate::machine::Machine;
 use rand::{thread_rng, Rng};
