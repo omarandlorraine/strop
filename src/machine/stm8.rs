@@ -20,12 +20,12 @@ use crate::machine::standard_xor;
 use std::collections::HashMap;
 
 pub struct IndexRegister {
-    high: Some(u8),
-    low: Some(u8),
+    high: Option<u8>,
+    low: Option<u8>,
 }
 
 pub struct State {
-    a: Some(u8),
+    a: Option<u8>,
     x: IndexRegister,
     y: IndexRegister,
     heap: HashMap<u16, Option<i8>>,
@@ -33,14 +33,14 @@ pub struct State {
 }
 
 impl State {
-    fn get_x(self) -> Some(u16) {
+    fn get_x(self) -> Option<u8> {
         self.x
             .high
             .zip(self.x.low)
             .map(|(h, l)| u16::from_be_bytes([h, l]))
     }
 
-    fn get_y(self) -> Some(u16) {
+    fn get_y(self) -> Option<u8> {
         self.x
             .high
             .zip(self.x.low)
@@ -107,19 +107,19 @@ pub enum Operand {
 }
 
 impl Operand {
-    fn get8(s: &State) -> Option<u8> {
+    fn get8(self, s: &State) -> Option<u8> {
         match self {
-            A => s.a,
-            X => panic!(),
-            Y => panic!(),
-            Xh => s.x.high,
-            Xl => s.x.low,
-            Yh => s.y.high,
-            Yl => s.y.low,
-            Absolute(addr) => s.heap.get(&address),
-            Immediate8(x) => x,
-            IndX => s.get_x().map(|addr| s.heap.get(addr)),
-            IndY => s.get_y().map(|addr| s.heap.get(addr)),
+            Operand::A => s.a,
+            Operand::X => panic!(),
+            Operand::Y => panic!(),
+            Operand::Xh => s.x.high,
+            Operand::Xl => s.x.low,
+            Operand::Yh => s.y.high,
+            Operand::Yl => s.y.low,
+            Operand::Absolute(addr) => s.heap.get(&addr),
+            Operand::Immediate8(x) => x,
+            Operand::IndX => s.get_x().map(|addr| s.heap.get(addr)),
+            Operand::IndY => s.get_y().map(|addr| s.heap.get(addr)),
         }
     }
 }
@@ -380,12 +380,12 @@ fn flip_x_and_y(d: Datum, sz: usize) -> (Datum, usize) {
     // length. This new length may of course be either discarded or written to
     // the Instruction's length field.
     match d {
-        X => (Y, sz + 1),
-        Y => (X, sz - 1),
-        XL => (YL, sz + 1),
-        YL => (XL, sz - 1),
-        XH => (YH, sz + 1),
-        YH => (XH, sz - 1),
+        Operand::X => (Operand::Y, sz + 1),
+        Operand::Y => (Operand::X, sz - 1),
+        Operand::XL => (Operand::YL, sz + 1),
+        Operand::YL => (Operand::XL, sz - 1),
+        Operand::XH => (Operand::YH, sz + 1),
+        Operand::YH => (Operand::XH, sz - 1),
         x => (x, sz),
     }
 }
