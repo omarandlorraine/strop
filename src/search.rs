@@ -218,7 +218,7 @@ pub fn quick_dce<'a, State, Operand, OUD, IUD>(
 pub fn optimize<'a, State, Operand, OUD, IUD>(
     correctness: &TestRun,
     prog: &BasicBlock<State, Operand, OUD, IUD>,
-    mach: Machine,
+    mach: Machine<State, Operand, OUD, IUD>,
 ) -> &'a BasicBlock<'a, State, Operand, OUD, IUD> {
     let mut population: Vec<(f64, BasicBlock<State, Operand, OUD, IUD>)> = vec![];
 
