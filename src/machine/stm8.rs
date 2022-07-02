@@ -124,8 +124,8 @@ impl Operand {
     }
 }
 
-impl Distribution<Operand> for Standard {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Operand {
+impl rand::prelude::Distribution<Operand> for rand::distributions::Standard {
+    fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> Operand {
         use self::Operand::*;
         rng.choose(&[
             A,
@@ -194,7 +194,7 @@ impl std::fmt::Display for Operand {
 }
 
 pub type Operation<'a> =
-    <crate::machine::Instruction<'a, stm8::State, Operands, (), ()>>::Operation;
+    <crate::machine::Instruction<'a, crate::machine::stm8::State, Operands, (), ()>>::Operation;
 pub type Instruction = crate::machine::Instruction<'static, State, Operands, (), ()>;
 
 fn adc(insn: &Instruction, s: &mut State) {
@@ -372,7 +372,7 @@ fn rotate_right_through_accumulator(s: &mut State, ind: Operand) {
     ind.high = tmp;
 }
 
-fn flip_x_and_y(d: Datum, sz: usize) -> (Datum, usize) {
+fn flip_x_and_y(d: Operand, sz: usize) -> (Operand, usize) {
     // Many STM8 instructions operate on either X or Y register. For some
     // instructions, this is controlled by an instruction prefix, which of
     // course needs to be accounted for in the instruction's length.
@@ -396,20 +396,20 @@ pub fn instr_stm8() -> Instruction {
     op
 }
 
-fn stm8_reg_by_name(name: &str) -> Result<Datum, &'static str> {
+fn stm8_reg_by_name(name: &str) -> Result<Operand, &'static str> {
     match name {
-        "a" => Ok(A),
-        "x" => Ok(X),
-        "y" => Ok(Y),
-        "xl" => Ok(XL),
-        "yl" => Ok(YL),
-        "xh" => Ok(XH),
-        "yh" => Ok(YH),
+        "a" => Ok(Operand::A),
+        "x" => Ok(Operand::X),
+        "y" => Ok(Operand::Y),
+        "xl" => Ok(Operand::XL),
+        "yl" => Ok(Operand::YL),
+        "xh" => Ok(Operand::XH),
+        "yh" => Ok(Operand::YH),
         _ => reg_by_name(name),
     }
 }
 
-pub const STM8: Machine = Machine {
+pub const STM8: crate::Machine = crate::Machine {
     name: "stm8",
     random_insn: instr_stm8,
     reg_by_name: stm8_reg_by_name,
