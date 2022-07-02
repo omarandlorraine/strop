@@ -1,4 +1,3 @@
-use std::fs;
 use std::process;
 
 extern crate argh;
@@ -10,13 +9,12 @@ mod test;
 
 use crate::machine::Datum;
 use crate::machine::Machine;
-use crate::machine::MACHINES;
 use crate::search::optimize;
 use crate::search::stochastic_search;
 use crate::search::BasicBlock;
-
-use crate::test::sanity;
-use crate::test::{DeTestRun, Step, Test, TestRun};
+use crate::test::Step;
+use crate::test::Test;
+use crate::test::TestRun;
 
 #[derive(FromArgs, PartialEq, Debug)]
 /// command line arguments
@@ -169,39 +167,29 @@ fn testrun_from_args(opts: &Opts, mach: Machine) -> TestRun {
     }
 }
 
-fn get_machine_by_name(name: &str) -> Machine {
-    for m in MACHINES {
-        if m.name == name {
-            return m;
-        }
-    }
-
-    println!("I don't know a machine called {}", name);
-    println!("Here are the ones I know:");
-    for m in MACHINES {
-        println!(" - {}", m.name);
-    }
-    process::exit(1);
-}
-
-fn search(testrun: &TestRun, machine: Machine, graph: bool, debug: bool) {
+fn arch_search<State, Operand, OUD, IUD>(
+    testrun: &TestRun,
+    machine: Machine,
+    graph: bool,
+    debug: bool,
+) {
     let prog = stochastic_search::<State, Operand, OUD, IUD>(testrun, machine, graph, debug);
     let opt = optimize(testrun, &prog, machine);
     disassemble(opt);
 }
 
+fn search(testrun: &TestRun, machine: &str, graph: bool, debug: bool) {
+    if machine == "stm8" {
+        arch_search::<machine::stm8::State, machine::stm8::Operands, (), ()>(testrun, graph, debug)
+    }
+    println!("I don't know a machine called {}", machine);
+    process::exit(1);
+}
+
 fn main() {
     let opts: Opts = argh::from_env();
 
-    let machine = get_machine_by_name(&opts.arch);
+    let testrun = testrun_from_args(&opts, machine);
 
-    let testrun = if let Some(path) = opts.file {
-        let data = fs::read_to_string(path).expect("Unable to read file");
-        let res: DeTestRun = serde_json::from_str(&data).expect("Unable to parse");
-        sanity(&res, machine)
-    } else {
-        testrun_from_args(&opts, machine)
-    };
-
-    search(&testrun, machine, opts.graph, opts.debug);
+    search(&testrun, opts.arch, opts.graph, opts.debug);
 }

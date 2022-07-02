@@ -16,31 +16,51 @@ pub struct BasicBlock<'a, State, Operand, OUD, IUD> {
     pub instructions: Vec<Instruction<'a, State, Operand, OUD, IUD>>,
 }
 
-impl<'a, State, Operand, OUD, IUD> BasicBlock<'_, State, Operand, OUD, IUD> {
-    fn initial_guess(mach: Machine, max_size: i32) -> BasicBlock<'a, State, Operand, OUD, IUD> {
+impl<'a, State, Operand, OUD, IUD> Strop for BasicBlock<'_, State, Operand, OUD, IUD> {
+    fn random() {
+        // a new random basic block
         let mut bb = BasicBlock {
             instructions: vec![],
         };
-        for _i in 0..max_size {
-            let i = mach.new_instruction();
-            bb.push(i);
-        }
-        bb
-    }
-
-    fn spawn(&self, mach: Machine) -> BasicBlockSpawn {
-        let parent: BasicBlock<State, Operand, OUD, IUD> =
-            BasicBlock::<'a, State, Operand, OUD, IUD> {
-                instructions: self.instructions.clone(),
-            };
-        BasicBlockSpawn {
-            parent,
-            mutant: self.clone(),
-            ncount: 0,
-            mach,
+        for _ in 0..20 {
+            bb.push(Instruction::<'a, State, Operand, OUD, IUD>::random());
         }
     }
 
+    fn mutate(&mut self) {
+        randomly!(
+        {
+            /* randomize an instruction
+             * (this could involve changing an operand, addressing mode, etc etc.
+             */
+            if !self.instructions.is_empty() {
+                let offset = self.random_offset();
+                self[offset].mutate();
+            }
+        }
+        {
+            /* delete an instruction */
+            self.mutate_delete();
+        }
+        {
+            /* insert a new instruction */
+            self.mutate_insert();
+        }
+        {
+            if self.instructions.len() > 2 {
+                /* Pick two instructions and swap them round */
+                let offset_a = self.random_offset();
+                let offset_b = self.random_offset();
+                let ins_a = self[offset_a];
+                let ins_b = self[offset_b];
+                self[offset_a] = ins_b;
+                self[offset_b] = ins_a;
+            }
+        })
+    }
+}
+
+impl<'a, State, Operand, OUD, IUD> BasicBlock<'_, State, Operand, OUD, IUD> {
     fn len(&self) -> usize {
         self.instructions.iter().map(|i| i.len()).sum()
     }
@@ -63,53 +83,20 @@ impl<'a, State, Operand, OUD, IUD> BasicBlock<'_, State, Operand, OUD, IUD> {
     }
 
     fn mutate_delete(&mut self) {
-        let instr_count = prog.instructions.len();
+        let instr_count = self.instructions.len();
         if instr_count > 1 {
-            prog.remove(prog.random_offset());
+            self.remove(self.random_offset());
         }
     }
 
     fn mutate_insert(&mut self) {
-        let instr_count = prog.instructions.len();
+        let instr_count = self.instructions.len();
         let offset: usize = if instr_count > 0 {
-            prog.random_offset()
+            self.random_offset()
         } else {
             0
         };
-        let instruction = mach.new_instruction();
-        prog.insert(offset, instruction);
-    }
-
-    fn mutate(&mut self) {
-        randomly!(
-        {
-            /* randomize an instruction
-             * (this could involve changing an operand, addressing mode, etc etc.
-             */
-            if !prog.instructions.is_empty() {
-                let offset = prog.random_offset();
-                prog[offset].randomize();
-            }
-        }
-        {
-            /* delete an instruction */
-            mutate_delete(prog);
-        }
-        {
-            /* insert a new instruction */
-            mutate_insert(prog, mach);
-        }
-        {
-            if prog.instructions.len() > 2 {
-                /* Pick two instructions and swap them round */
-                let offset_a = prog.random_offset();
-                let offset_b = prog.random_offset();
-                let ins_a = prog[offset_a];
-                let ins_b = prog[offset_b];
-                prog[offset_a] = ins_b;
-                prog[offset_b] = ins_a;
-            }
-        })
+        self.insert(offset, Instruction::new());
     }
 }
 
