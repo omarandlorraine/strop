@@ -15,7 +15,7 @@ use crate::machine::stm8::STM8;
 use rand::random;
 
 #[derive(Clone, Copy)]
-pub struct Machine {
+pub struct Machine<State, Operand, OUD, IUD> {
     pub name: &'static str,
     random_insn: fn() -> Instruction<'static, State, Operand, OUD, IUD>,
     reg_by_name: fn(&str) -> Result<Datum, &'static str>,
@@ -41,7 +41,7 @@ pub enum Width {
     Width16,
 }
 
-impl std::fmt::Display for Instruction<'_, State, Operand, OUD, IUD> {
+impl<State, Operand, OUD, IUD> std::fmt::Display for Instruction<'_, State, Operand, OUD, IUD> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         (self.disassemble)(f, self)
     }
@@ -112,7 +112,7 @@ impl Bits for u16 {
     }
 }
 
-impl Machine {
+impl<State, Operand, OUD, IUD> Machine {
     pub fn new_instruction<'a>(self) -> Instruction<'a, State, Operand, OUD, IUD> {
         (self.random_insn)()
     }
@@ -186,7 +186,7 @@ fn rotate_right_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>,
     (None, None)
 }
 
-impl Instruction<'_, State, Operand, OUD, IUD> {
+impl<State, Operand, OUD, IUD> Instruction<'_, State, Operand, OUD, IUD> {
     pub fn randomize(&mut self) {
         (self.randomizer)(self);
     }

@@ -135,7 +135,7 @@ fn function(m: String, ins: Vec<Datum>, outs: Vec<Datum>) -> Vec<Test> {
     process::exit(1);
 }
 
-fn disassemble(prog: BasicBlock<State, Operand, OUD, IUD>) {
+fn disassemble<State, Operand, OUD, IUD>(prog: BasicBlock<State, Operand, OUD, IUD>) {
     for p in prog.instructions {
         println!("{}", p);
     }

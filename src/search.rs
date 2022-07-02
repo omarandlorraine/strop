@@ -16,11 +16,8 @@ pub struct BasicBlock<'a, State, Operand, OUD, IUD> {
     pub instructions: Vec<Instruction<'a, State, Operand, OUD, IUD>>,
 }
 
-impl<'a> BasicBlock<'_, State, Operand, OUD, IUD> {
-    fn initial_guess<State, Operand, OUD, IUD>(
-        mach: Machine,
-        max_size: i32,
-    ) -> BasicBlock<'a, State, Operand, OUD, IUD> {
+impl<'a, State, Operand, OUD, IUD> BasicBlock<'_, State, Operand, OUD, IUD> {
+    fn initial_guess(mach: Machine, max_size: i32) -> BasicBlock<'a, State, Operand, OUD, IUD> {
         let mut bb = BasicBlock {
             instructions: vec![],
         };
@@ -31,7 +28,7 @@ impl<'a> BasicBlock<'_, State, Operand, OUD, IUD> {
         bb
     }
 
-    fn spawn<State, Operand, OUD, IUD>(&self, mach: Machine) -> BasicBlockSpawn {
+    fn spawn(&self, mach: Machine) -> BasicBlockSpawn {
         let parent: BasicBlock<State, Operand, OUD, IUD> =
             BasicBlock::<'a, State, Operand, OUD, IUD> {
                 instructions: self.instructions.clone(),
@@ -116,7 +113,10 @@ impl<'a> BasicBlock<'_, State, Operand, OUD, IUD> {
     }
 }
 
-pub fn difference(prog: &BasicBlock<State, Operand, OUD, IUD>, test_run: &TestRun) -> f64 {
+pub fn difference<State, Operand, OUD, IUD>(
+    prog: &BasicBlock<State, Operand, OUD, IUD>,
+    test_run: &TestRun,
+) -> f64 {
     let mut ret: f64 = 0.0;
 
     for tc in test_run.tests.iter() {
@@ -185,7 +185,7 @@ pub fn difference(prog: &BasicBlock<State, Operand, OUD, IUD>, test_run: &TestRu
     ret
 }
 
-fn cost(prog: &BasicBlock<State, Operand, OUD, IUD>) -> f64 {
+fn cost<State, Operand, OUD, IUD>(prog: &BasicBlock<State, Operand, OUD, IUD>) -> f64 {
     /* quick and simple cost function,
      * number of instructions in the program.
      * Not really a bad thing to minimise for.
