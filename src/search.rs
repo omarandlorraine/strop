@@ -127,7 +127,7 @@ pub fn quick_dce<'a, State, Operand, OUD, IUD>(
 }
 
 pub fn stochastic_search<State, Operand, OUD, IUD>(
-    correctness: &TestRun,
+    cost: fn(Instruction<'_, State, Operand, OUD, IUD>) -> f64,
     mach: Machine<State, Operand, OUD, IUD>,
 ) -> BasicBlock<'_, State, Operand, OUD, IUD>
 where
@@ -136,14 +136,11 @@ where
     Operand: Clone,
     State: Clone,
 {
-    let mut init = InitialPopulation::new(mach, correctness);
-
     let mut population: Vec<(f64, BasicBlock<'_, State, Operand, OUD, IUD>)> = vec![];
     let mut winners: Vec<BasicBlock<'_, State, Operand, OUD, IUD>> = vec![];
     let mut generation: u64 = 1;
 
-    population.push(init.next().unwrap());
-
+    population.push(BasicBlock::new::<'_, State, Operand, OUD, IUD>());
     while winners.is_empty() {
         let best_score = population[0].0;
 
