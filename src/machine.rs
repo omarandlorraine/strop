@@ -106,7 +106,7 @@ impl Bits for u16 {
     }
 }
 
-impl<State, Operand, OUD, IUD> Machine {
+impl<State, Operand, OUD, IUD> Machine<State, Operand, OUD, IUD> {
     pub fn new_instruction<'a>(self) -> Instruction<'a, State, Operand, OUD, IUD> {
         (self.random_insn)()
     }
@@ -195,16 +195,16 @@ impl<State, Operand, OUD, IUD> Instruction<'_, State, Operand, OUD, IUD> {
 }
 
 #[derive(Clone)]
-pub struct Operation<State, Operand, OUD, IUD> {
-    pub disassemble: fn(&Instruction<State, Operand, OUD, IUD>) -> Cow<'static, str>,
-    pub mutate: fn(&mut Instruction<State, Operand, OUD, IUD>) -> (),
-    pub execute: fn(&Instruction<State, Operand, OUD, IUD>, &mut State) -> u64,
+pub struct Operation<'a, State, Operand, OUD, IUD> {
+    pub disassemble: fn(&Instruction<'a, State, Operand, OUD, IUD>) -> Cow<'static, str>,
+    pub mutate: fn(&mut Instruction<'a, State, Operand, OUD, IUD>) -> (),
+    pub execute: fn(&Instruction<'a, State, Operand, OUD, IUD>, &mut State) -> u64,
     pub userdata: OUD,
 }
 
 #[derive(Clone)]
 pub struct Instruction<'op, State, Operand, OUD, IUD> {
-    pub operation: &'op Operation<State, Operand, OUD, IUD>,
+    pub operation: &'op Operation<'op, State, Operand, OUD, IUD>,
     pub operands: SmallVec<[Operand; 4]>,
     pub userdata: IUD,
 }
