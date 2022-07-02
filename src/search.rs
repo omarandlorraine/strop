@@ -1,9 +1,7 @@
 use crate::disassemble;
 use crate::machine::Instruction;
 use crate::machine::Machine;
-use crate::machine::Width;
 use rand::{thread_rng, Rng};
-use strop::randomly;
 
 trait Strop {
     fn random() -> Self;
@@ -64,15 +62,15 @@ impl<'a, State, Operand, OUD, IUD> BasicBlock<'_, State, Operand, OUD, IUD> {
         self.instructions.iter().map(|i| i.len()).sum()
     }
 
-    fn remove(&mut self, offset: usize) -> Instruction<State, Operand, OUD, IUD> {
+    fn remove(&mut self, offset: usize) -> Instruction<'_, State, Operand, OUD, IUD> {
         self.instructions.remove(offset)
     }
 
-    fn insert(&mut self, offset: usize, instr: Instruction<State, Operand, OUD, IUD>) {
+    fn insert(&mut self, offset: usize, instr: Instruction<'_, State, Operand, OUD, IUD>) {
         self.instructions.insert(offset, instr)
     }
 
-    fn push(&mut self, instr: Instruction<State, Operand, OUD, IUD>) {
+    fn push(&mut self, instr: Instruction<'_, State, Operand, OUD, IUD>) {
         self.instructions.push(instr)
     }
 
@@ -99,7 +97,7 @@ impl<'a, State, Operand, OUD, IUD> BasicBlock<'_, State, Operand, OUD, IUD> {
     }
 }
 
-fn cost<State, Operand, OUD, IUD>(prog: &BasicBlock<State, Operand, OUD, IUD>) -> f64 {
+fn cost<State, Operand, OUD, IUD>(prog: &BasicBlock<'_, State, Operand, OUD, IUD>) -> f64 {
     /* quick and simple cost function,
      * number of instructions in the program.
      * Not really a bad thing to minimise for.
@@ -108,7 +106,7 @@ fn cost<State, Operand, OUD, IUD>(prog: &BasicBlock<State, Operand, OUD, IUD>) -
 }
 
 pub fn quick_dce<'a, State, Operand, OUD, IUD>(
-    correctness: &dyn Fn(&BasicBlock<State, Operand, OUD, IUD>) -> f64,
+    correctness: &dyn Fn(&BasicBlock<'_, State, Operand, OUD, IUD>) -> f64,
     prog: &BasicBlock<'a, State, Operand, OUD, IUD>,
 ) -> BasicBlock<'a, State, Operand, OUD, IUD> {
     let mut better = prog.clone();
@@ -131,10 +129,10 @@ pub fn quick_dce<'a, State, Operand, OUD, IUD>(
 
 pub fn optimize<'a, State, Operand, OUD, IUD>(
     correctness: &TestRun,
-    prog: &BasicBlock<State, Operand, OUD, IUD>,
+    prog: &BasicBlock<'_, State, Operand, OUD, IUD>,
     mach: Machine<State, Operand, OUD, IUD>,
 ) -> &'a BasicBlock<'a, State, Operand, OUD, IUD> {
-    let mut population: Vec<(f64, BasicBlock<State, Operand, OUD, IUD>)> = vec![];
+    let mut population: Vec<(f64, BasicBlock<'_, State, Operand, OUD, IUD>)> = vec![];
 
     let fitness = difference(prog, correctness);
     let ccost = cost(prog);
@@ -161,10 +159,10 @@ pub fn optimize<'a, State, Operand, OUD, IUD>(
 
 pub fn stochastic_search<State, Operand, OUD, IUD>(
     correctness: &TestRun,
-    mach: Machine,
+    mach: Machine<State, Operand, OUD, IUD,
     graph: bool,
     debug: bool,
-) -> BasicBlock<State, Operand, OUD, IUD>
+) -> BasicBlock<'_, State, Operand, OUD, IUD>
 where
     IUD: Clone,
     OUD: Clone,
@@ -173,8 +171,8 @@ where
 {
     let mut init = InitialPopulation::new(mach, correctness);
 
-    let mut population: Vec<(f64, BasicBlock<State, Operand, OUD, IUD>)> = vec![];
-    let mut winners: Vec<BasicBlock<State, Operand, OUD, IUD>> = vec![];
+    let mut population: Vec<(f64, BasicBlock<'_, State, Operand, OUD, IUD>)> = vec![];
+    let mut winners: Vec<BasicBlock<'_, State, Operand, OUD, IUD>> = vec![];
     let mut generation: u64 = 1;
 
     population.push(init.next().unwrap());
@@ -184,11 +182,11 @@ where
 
         // Spawn more specimens for next generation by mutating the current ones
         let population_size = if best_score < 500.0 { 10 } else { 50 };
-        let mut ng: Vec<(f64, BasicBlock<State, Operand, OUD, IUD>)> = population
+        let mut ng: Vec<(f64, BasicBlock<'_, State, Operand, OUD, IUD>)> = population
             .iter()
             .flat_map(|s| {
                 NextGeneration::new(mach, correctness, best_score, s.1.clone())
-                    .collect::<Vec<(f64, BasicBlock<State, Operand, OUD, IUD>)>>()
+                    .collect::<Vec<(f64, BasicBlock<'_, State, Operand, OUD, IUD>)>>()
             })
             .collect();
 
