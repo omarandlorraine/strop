@@ -127,36 +127,6 @@ pub fn quick_dce<'a, State, Operand, OUD, IUD>(
     }
 }
 
-pub fn optimize<'a, State, Operand, OUD, IUD>(
-    correctness: &TestRun,
-    prog: &BasicBlock<'_, State, Operand, OUD, IUD>,
-    mach: Machine<State, Operand, OUD, IUD>,
-) -> &'a BasicBlock<'a, State, Operand, OUD, IUD> {
-    let mut population: Vec<(f64, BasicBlock<'_, State, Operand, OUD, IUD>)> = vec![];
-
-    let fitness = difference(prog, correctness);
-    let ccost = cost(prog);
-    population.push((cost(prog), *prog.clone()));
-
-    let best = prog;
-
-    // if we find a better version, try to optimize that as well.
-    if let Some(s) = best
-        .spawn(mach)
-        .take(1000)
-        .filter(|s| difference(s, correctness) <= fitness)
-        .map(|s| (cost(&s), s))
-        .min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"))
-    {
-        if s.0 < ccost {
-            return optimize(correctness, &s.1, mach);
-        }
-    }
-
-    // Otherwise just return what we got.
-    prog.clone()
-}
-
 pub fn stochastic_search<State, Operand, OUD, IUD>(
     correctness: &TestRun,
     mach: Machine<State, Operand, OUD, IUD>,
