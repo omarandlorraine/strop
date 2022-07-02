@@ -78,3 +78,6 @@ fn test_randomly() {
     }
     assert!(changed);
 }
+
+pub mod machine;
+pub mod search;
