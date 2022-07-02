@@ -4,6 +4,8 @@ extern crate num;
 extern crate rand;
 use crate::machine::rand::prelude::IteratorRandom;
 use num::traits::{WrappingAdd, WrappingSub};
+use smallvec::SmallVec;
+use std::borrow::Cow;
 use std::convert::TryInto;
 
 mod stm8;
