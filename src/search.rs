@@ -159,7 +159,7 @@ pub fn optimize<'a, State, Operand, OUD, IUD>(
 
 pub fn stochastic_search<State, Operand, OUD, IUD>(
     correctness: &TestRun,
-    mach: Machine<State, Operand, OUD, IUD,
+    mach: Machine<State, Operand, OUD, IUD>,
     graph: bool,
     debug: bool,
 ) -> BasicBlock<'_, State, Operand, OUD, IUD>
