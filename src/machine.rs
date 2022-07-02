@@ -8,7 +8,7 @@ use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::convert::TryInto;
 
-mod stm8;
+pub mod stm8;
 
 use crate::machine::stm8::STM8;
 
