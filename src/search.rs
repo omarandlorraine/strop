@@ -129,8 +129,6 @@ pub fn quick_dce<'a, State, Operand, OUD, IUD>(
 pub fn stochastic_search<State, Operand, OUD, IUD>(
     correctness: &TestRun,
     mach: Machine<State, Operand, OUD, IUD>,
-    graph: bool,
-    debug: bool,
 ) -> BasicBlock<'_, State, Operand, OUD, IUD>
 where
     IUD: Clone,
@@ -175,12 +173,6 @@ where
             population = ng;
             let nbest = population[0].0;
 
-            if graph {
-                println!("{}, {}, {}", generation, population.len(), nbest);
-            }
-            if debug {
-                disassemble(population[0].1.clone());
-            }
             population.truncate(50);
             generation += 1;
         }
