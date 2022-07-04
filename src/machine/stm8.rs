@@ -177,9 +177,8 @@ impl std::fmt::Display for Operand {
     }
 }
 
-pub type Operation<'a> =
-    <crate::machine::Instruction<'a, crate::machine::stm8::State, Operands, (), ()>>::Operation;
-pub type Instruction = crate::machine::Instruction<'static, State, Operands, (), ()>;
+pub type Operation = crate::instruction::Operation<State, Operand, (), ()>;
+pub type Instruction = crate::instruction::Instruction<'static, State, Operand, (), ()>;
 
 fn rotate_left_through_accumulator(s: &mut State, ind: Operand) {
     let ind = match ind {
