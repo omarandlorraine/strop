@@ -237,9 +237,3 @@ fn stm8_reg_by_name(name: &str) -> Result<Operand, &'static str> {
         _ => reg_by_name(name),
     }
 }
-
-pub const STM8: crate::Machine<State, Operand, (), ()> = crate::Machine {
-    name: "stm8",
-    random_insn: instr_stm8,
-    reg_by_name: stm8_reg_by_name,
-};

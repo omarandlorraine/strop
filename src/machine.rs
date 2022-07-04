@@ -5,16 +5,11 @@ use std::borrow::Cow;
 
 pub mod stm8;
 
-use crate::machine::stm8::STM8;
-
 #[derive(Clone, Copy)]
-pub struct Machine<State, Operand, OUD, IUD> {
+pub struct Machine {
     pub name: &'static str,
-    random_insn: fn() -> Instruction<'static, State, Operand, OUD, IUD>,
     reg_by_name: fn(&str) -> Result<Datum, &'static str>,
 }
-
-pub const MACHINES: [Machine; 1] = [STM8];
 
 fn reg_by_name(name: &str) -> Result<Datum, &'static str> {
     if name[0..1] == *"m" {
@@ -105,10 +100,7 @@ impl Bits for u16 {
     }
 }
 
-impl<State, Operand, OUD, IUD> Machine<State, Operand, OUD, IUD> {
-    pub fn new_instruction<'a>(self) -> Instruction<'a, State, Operand, OUD, IUD> {
-        (self.random_insn)()
-    }
+impl Machine {
     pub fn register_by_name(self, name: &str) -> Result<Datum, &'static str> {
         (self.reg_by_name)(name)
     }

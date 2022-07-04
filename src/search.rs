@@ -126,10 +126,10 @@ pub fn quick_dce<'a, State, Operand, OUD, IUD>(
     }
 }
 
-pub fn stochastic_search<State, Operand, OUD, IUD>(
+pub fn stochastic_search<'a, State, Operand, OUD, IUD>(
     cost: fn(Instruction<'_, State, Operand, OUD, IUD>) -> f64,
-    mach: Machine<State, Operand, OUD, IUD>,
-) -> BasicBlock<'_, State, Operand, OUD, IUD>
+    mach: Machine,
+) -> BasicBlock<'a, State, Operand, OUD, IUD>
 where
     IUD: Clone,
     OUD: Clone,
