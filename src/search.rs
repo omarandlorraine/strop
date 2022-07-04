@@ -140,22 +140,23 @@ where
     let mut winners: Vec<BasicBlock<'_, State, Operand, OUD, IUD>> = vec![];
     let mut generation: u64 = 1;
 
-    population.push(BasicBlock::new::<'_, State, Operand, OUD, IUD>());
     while winners.is_empty() {
-        let best_score = population[0].0;
+        // Add a new basic block to the population with each generation
+        let newbie = BasicBlock::new::<'_, State, Operand, OUD, IUD>();
+        population.push((cost(newbie), newbie));
 
         // Spawn more specimens for next generation by mutating the current ones
-        let population_size = if best_score < 500.0 { 10 } else { 50 };
-        let mut ng: Vec<(f64, BasicBlock<'_, State, Operand, OUD, IUD>)> = population
-            .iter()
-            .flat_map(|s| {
-                NextGeneration::new(mach, correctness, best_score, s.1.clone())
-                    .collect::<Vec<(f64, BasicBlock<'_, State, Operand, OUD, IUD>)>>()
-            })
-            .collect();
+        let mut ng: Vec<(f64, BasicBlock<'_, State, Operand, OUD, IUD>)> = vec![];
+        for bb in population {
+            let n = bb.1.clone();
+            for _ in 1..500 {
+                n.mutate();
+                ng.push((cost(n), n.clone()));
+            }
+        }
 
         // concatenate the current generation to the next
-        for s in population.clone().into_iter().take(population_size) {
+        for s in population.clone().into_iter().take(50) {
             if s.0 < 0.1 {
                 winners.push(s.1);
             } else {
