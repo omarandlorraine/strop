@@ -215,10 +215,10 @@ fn flip_x_and_y(d: Operand, sz: usize) -> (Operand, usize) {
     match d {
         Operand::X => (Operand::Y, sz + 1),
         Operand::Y => (Operand::X, sz - 1),
-        Operand::XL => (Operand::YL, sz + 1),
-        Operand::YL => (Operand::XL, sz - 1),
-        Operand::XH => (Operand::YH, sz + 1),
-        Operand::YH => (Operand::XH, sz - 1),
+        Operand::Xl => (Operand::Yl, sz + 1),
+        Operand::Yl => (Operand::Xl, sz - 1),
+        Operand::Xh => (Operand::Yh, sz + 1),
+        Operand::Yh => (Operand::Xh, sz - 1),
         x => (x, sz),
     }
 }
@@ -228,10 +228,10 @@ fn stm8_reg_by_name(name: &str) -> Result<Operand, &'static str> {
         "a" => Ok(Operand::A),
         "x" => Ok(Operand::X),
         "y" => Ok(Operand::Y),
-        "xl" => Ok(Operand::XL),
-        "yl" => Ok(Operand::YL),
-        "xh" => Ok(Operand::XH),
-        "yh" => Ok(Operand::YH),
+        "xl" => Ok(Operand::Xl),
+        "yl" => Ok(Operand::Yl),
+        "xh" => Ok(Operand::Xh),
+        "yh" => Ok(Operand::Yh),
         _ => reg_by_name(name),
     }
 }
