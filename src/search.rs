@@ -2,7 +2,7 @@ use crate::machine::Instruction;
 use crate::machine::Machine;
 use rand::{thread_rng, Rng};
 
-trait Strop {
+pub trait Strop {
     fn random<'a, State, Operand, OUD, IUD>() -> Self;
     fn mutate(&mut self);
 }
