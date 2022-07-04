@@ -11,19 +11,19 @@ pub struct State {
     a: Option<u8>,
     x: IndexRegister,
     y: IndexRegister,
-    heap: HashMap<u16, Option<i8>>,
+    heap: HashMap<u16, Option<u8>>,
     carry: Option<bool>,
 }
 
 impl State {
-    fn get_x(self) -> Option<u8> {
+    fn get_x(self) -> Option<u16> {
         self.x
             .high
             .zip(self.x.low)
             .map(|(h, l)| u16::from_be_bytes([h, l]))
     }
 
-    fn get_y(self) -> Option<u8> {
+    fn get_y(self) -> Option<u16> {
         self.x
             .high
             .zip(self.x.low)
@@ -43,7 +43,7 @@ enum BitSelect {
 }
 
 impl From<usize> for BitSelect {
-    fn from(item: usize) {
+    fn from(item: usize) -> BitSelect {
         match item {
             0 => BitSelect::B0,
             1 => BitSelect::B1,
@@ -58,7 +58,7 @@ impl From<usize> for BitSelect {
 }
 
 impl From<BitSelect> for usize {
-    fn from(item: usize) {
+    fn from(item: BitSelect) -> usize {
         match item {
             BitSelect::B0 => 0,
             BitSelect::B1 => 1,
@@ -99,7 +99,7 @@ impl Operand {
             Operand::Xl => s.x.low,
             Operand::Yh => s.y.high,
             Operand::Yl => s.y.low,
-            Operand::Absolute(addr) => s.heap.get(&addr),
+            Operand::Absolute(addr) => *s.heap.get(&addr),
             Operand::Immediate8(x) => x,
             Operand::IndX => s.get_x().map(|addr| s.heap.get(addr)),
             Operand::IndY => s.get_y().map(|addr| s.heap.get(addr)),
