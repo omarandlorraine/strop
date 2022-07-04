@@ -1,5 +1,3 @@
-extern crate num;
-extern crate rand;
 use smallvec::SmallVec;
 use std::borrow::Cow;
 

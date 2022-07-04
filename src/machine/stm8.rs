@@ -1,4 +1,3 @@
-use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::reg_by_name;
 use rand::random;
 use std::collections::HashMap;
