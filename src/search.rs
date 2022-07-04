@@ -3,8 +3,8 @@ use crate::machine::Machine;
 use rand::{thread_rng, Rng};
 
 trait Strop {
-    fn random() -> Self;
-    fn mutate(self) -> Self;
+    fn random<'a, State, Operand, OUD, IUD>() -> Self;
+    fn mutate(&mut self);
 }
 
 #[derive(Clone)]
@@ -127,7 +127,7 @@ pub fn quick_dce<'a, State, Operand, OUD, IUD>(
 }
 
 pub fn stochastic_search<'a, State, Operand, OUD, IUD>(
-    cost: fn(Instruction<'_, State, Operand, OUD, IUD>) -> f64,
+    cost: fn(BasicBlock<'_, State, Operand, OUD, IUD>) -> f64,
     mach: Machine,
 ) -> BasicBlock<'a, State, Operand, OUD, IUD>
 where
@@ -142,7 +142,7 @@ where
 
     while winners.is_empty() {
         // Add a new basic block to the population with each generation
-        let newbie = BasicBlock::new::<'_, State, Operand, OUD, IUD>();
+        let newbie = BasicBlock::random::<'_, State, Operand, OUD, IUD>();
         population.push((cost(newbie), newbie));
 
         // Spawn more specimens for next generation by mutating the current ones
