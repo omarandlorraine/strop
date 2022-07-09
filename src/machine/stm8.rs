@@ -29,6 +29,12 @@ impl State {
             .zip(self.x.low)
             .map(|(h, l)| u16::from_be_bytes([h, l]))
     }
+
+    fn mem_fetch(self, addr: Option<u16>) -> Option<u8> {
+        *addr
+            .map(|addr| self.heap.get(&addr).unwrap_or(&None))
+            .unwrap_or(&None)
+    }
 }
 
 enum BitSelect {
@@ -99,10 +105,10 @@ impl Operand {
             Operand::Xl => s.x.low,
             Operand::Yh => s.y.high,
             Operand::Yl => s.y.low,
-            Operand::Absolute(addr) => *s.heap.get(&addr),
-            Operand::Immediate8(x) => x,
-            Operand::IndX => s.get_x().map(|addr| s.heap.get(addr)),
-            Operand::IndY => s.get_y().map(|addr| s.heap.get(addr)),
+            Operand::Absolute(addr) => s.mem_fetch(Some(addr)),
+            Operand::Immediate8(x) => Some(x),
+            Operand::IndX => s.mem_fetch(s.get_x()),
+            Operand::IndY => s.mem_fetch(s.get_y()),
         }
     }
 }
