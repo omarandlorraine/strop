@@ -3,7 +3,7 @@ use crate::machine::Machine;
 use rand::{thread_rng, Rng};
 
 pub trait Strop {
-    fn random<'a, State, Operand, OUD, IUD>() -> Self;
+    fn random() -> Self;
     fn mutate(&mut self);
 }
 
@@ -13,7 +13,7 @@ pub struct BasicBlock<'a, State, Operand, OUD, IUD> {
 }
 
 impl<'a, State, Operand, OUD, IUD> Strop for BasicBlock<'_, State, Operand, OUD, IUD> {
-    fn random() {
+    fn random() -> Self {
         // a new random basic block
         let mut bb = BasicBlock {
             instructions: vec![],
