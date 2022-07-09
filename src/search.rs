@@ -92,7 +92,7 @@ impl<'a, State, Operand, OUD, IUD> BasicBlock<'_, State, Operand, OUD, IUD> {
         } else {
             0
         };
-        self.insert(offset, Instruction::new());
+        self.insert(offset, Instruction::<'a, State, Operand, OUD, IUD>::new());
     }
 }
 
@@ -160,7 +160,7 @@ where
     fn newbie<'r, State, Operand, OUD, IUD>(
         cost: fn(BasicBlock<'_, State, Operand, OUD, IUD>) -> f64,
     ) -> (f64, BasicBlock<'r, State, Operand, OUD, IUD>) {
-        let n = BasicBlock::random::<State, Operand, OUD, IUD>();
+        let n = BasicBlock::<'r, State, Operand, OUD, IUD>::random();
         (cost(n), n)
     }
 
