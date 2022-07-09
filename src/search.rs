@@ -157,7 +157,7 @@ where
     State: Clone,
 {
     // function to create a completely random basic block and its cost
-    fn newbie<'r>(
+    fn newbie<'r, State, Operand, OUD, IUD>(
         cost: fn(BasicBlock<'_, State, Operand, OUD, IUD>) -> f64,
     ) -> (f64, BasicBlock<'r, State, Operand, OUD, IUD>) {
         let n = BasicBlock::random::<State, Operand, OUD, IUD>();
@@ -165,10 +165,10 @@ where
     }
 
     // get the best speciment in the population
-    fn best<'r>(
+    fn best<'r, State, Operand, OUD, IUD>(
         population: Vec<(f64, BasicBlock<'r, State, Operand, OUD, IUD>)>,
     ) -> (f64, BasicBlock<'r, State, Operand, OUD, IUD>) {
-        population
+        *population
             .iter()
             .min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"))
             .unwrap()
