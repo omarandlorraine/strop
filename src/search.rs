@@ -126,57 +126,68 @@ pub fn quick_dce<'a, State, Operand, OUD, IUD>(
     }
 }
 
-pub fn stochastic_search<'a, State, Operand, OUD, IUD>(
-    cost: fn(BasicBlock<'_, State, Operand, OUD, IUD>) -> f64,
-    mach: Machine,
-) -> BasicBlock<'a, State, Operand, OUD, IUD>
+pub fn stochastic_step<'r, State, Operand, OUD, IUD>(
+    cost_fn: fn(BasicBlock<'_, State, Operand, OUD, IUD>) -> f64,
+    specimen: (f64, BasicBlock<'r, State, Operand, OUD, IUD>),
+) -> (f64, BasicBlock<'r, State, Operand, OUD, IUD>)
 where
     IUD: Clone,
     OUD: Clone,
     Operand: Clone,
     State: Clone,
 {
-    let mut population: Vec<(f64, BasicBlock<'_, State, Operand, OUD, IUD>)> = vec![];
-    let mut winners: Vec<BasicBlock<'_, State, Operand, OUD, IUD>> = vec![];
-    let mut generation: u64 = 1;
+    let mut next = specimen.1.clone();
+    next.mutate();
+    let next_cost = cost_fn(next);
+    if next_cost < specimen.0 {
+        (next_cost, next)
+    } else {
+        specimen
+    }
+}
 
-    while winners.is_empty() {
-        // Add a new basic block to the population with each generation
-        let newbie = BasicBlock::random::<'_, State, Operand, OUD, IUD>();
-        population.push((cost(newbie), newbie));
-
-        // Spawn more specimens for next generation by mutating the current ones
-        let mut ng: Vec<(f64, BasicBlock<'_, State, Operand, OUD, IUD>)> = vec![];
-        for bb in population {
-            let n = bb.1.clone();
-            for _ in 1..500 {
-                n.mutate();
-                ng.push((cost(n), n.clone()));
-            }
-        }
-
-        // concatenate the current generation to the next
-        for s in population.clone().into_iter().take(50) {
-            if s.0 < 0.1 {
-                winners.push(s.1);
-            } else {
-                ng.push(s);
-            }
-        }
-
-        if !ng.is_empty() {
-            // Sort the population by score.
-            ng.sort_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"));
-
-            population = ng;
-            let nbest = population[0].0;
-
-            population.truncate(50);
-            generation += 1;
-        }
+pub fn stochastic_search<'r, State, Operand, OUD, IUD>(
+    cost: fn(BasicBlock<'_, State, Operand, OUD, IUD>) -> f64,
+    mach: Machine,
+) -> BasicBlock<'r, State, Operand, OUD, IUD>
+where
+    IUD: Clone,
+    OUD: Clone,
+    Operand: Clone,
+    State: Clone,
+{
+    // function to create a completely random basic block and its cost
+    fn newbie<'r>(
+        cost: fn(BasicBlock<'_, State, Operand, OUD, IUD>) -> f64,
+    ) -> (f64, BasicBlock<'r, State, Operand, OUD, IUD>) {
+        let n = BasicBlock::random::<State, Operand, OUD, IUD>();
+        (cost(n), n)
     }
 
-    winners[0].clone()
+    // get the best speciment in the population
+    fn best<'r>(
+        population: Vec<(f64, BasicBlock<'r, State, Operand, OUD, IUD>)>,
+    ) -> (f64, BasicBlock<'r, State, Operand, OUD, IUD>) {
+        population
+            .iter()
+            .min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"))
+            .unwrap()
+    }
+
+    // an initial population of 10 randomers
+    let mut population: Vec<(f64, BasicBlock<'r, State, Operand, OUD, IUD>)> =
+        (0..10).map(|_| newbie(cost)).collect();
+    let mut best_cost = best(population).0;
+
+    while best_cost > 0.1 {
+        population = population
+            .iter()
+            .map(|&s| stochastic_step(cost, s))
+            .collect();
+        best_cost = best(population).0;
+    }
+
+    best(population).1
 }
 
 #[cfg(test)]
