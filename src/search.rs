@@ -31,7 +31,7 @@ impl<'a, State, Operand, OUD, IUD> Strop for BasicBlock<'_, State, Operand, OUD,
              */
             if !self.instructions.is_empty() {
                 let offset = self.random_offset();
-                self[offset].mutate();
+                self.instructions[offset].mutate();
             }
         }
         {
@@ -47,10 +47,10 @@ impl<'a, State, Operand, OUD, IUD> Strop for BasicBlock<'_, State, Operand, OUD,
                 /* Pick two instructions and swap them round */
                 let offset_a = self.random_offset();
                 let offset_b = self.random_offset();
-                let ins_a = self[offset_a];
-                let ins_b = self[offset_b];
-                self[offset_a] = ins_b;
-                self[offset_b] = ins_a;
+                let ins_a = self.instructions[offset_a];
+                let ins_b = self.instructions[offset_b];
+                self.instructions[offset_a] = ins_b;
+                self.instructions[offset_b] = ins_a;
             }
         })
     }
