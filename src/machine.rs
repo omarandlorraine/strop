@@ -21,12 +21,6 @@ fn reg_by_name(name: &str) -> Result<Datum, &'static str> {
     Err("no such register")
 }
 
-#[derive(Clone, Copy, Debug)]
-pub enum Width {
-    Width8,
-    Width16,
-}
-
 impl<State, Operand, OUD, IUD> std::fmt::Display for Instruction<'_, State, Operand, OUD, IUD> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         (self.disassemble)(f, self)
@@ -59,20 +53,6 @@ pub enum Datum {
     Imm16(i16),
     Absolute(u16),
     Zero,
-}
-
-impl Datum {
-    pub fn width(&self) -> Width {
-        match self {
-            Self::Register(_) => Width::Width8,
-            Self::RegisterPair(_, _) => Width::Width16,
-            Self::Imm8(_) => Width::Width8,
-            Self::Imm16(_) => Width::Width16,
-            Self::Absolute(_) => Width::Width8,
-            Self::Zero => Width::Width8,
-            Self::Nothing => panic!(),
-        }
-    }
 }
 
 trait Swap {
