@@ -41,4 +41,8 @@ pub struct Instruction<'op, State, Operand, OUD, IUD> {
     pub operation: &'op Operation<'op, State, Operand, OUD, IUD>,
     pub operands: SmallVec<[Operand; 4]>,
     pub userdata: IUD,
+    pub disassemble: fn(
+        f: &mut std::fmt::Formatter<'_>,
+        &Instruction<'_, State, Operand, OUD, IUD>,
+    ) -> std::fmt::Result,
 }
