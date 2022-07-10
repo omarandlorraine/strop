@@ -9,72 +9,9 @@ pub struct Machine {
     reg_by_name: fn(&str) -> Result<Datum, &'static str>,
 }
 
-fn reg_by_name(name: &str) -> Result<Datum, &'static str> {
-    if name[0..1] == *"m" {
-        let arg = name[1..].to_string();
-        if let Ok(addr) = arg.parse::<u16>() {
-            return Ok(Datum::Absolute(addr));
-        } else {
-            return Err("parse error");
-        }
-    }
-    Err("no such register")
-}
-
 impl<State, Operand, OUD, IUD> std::fmt::Display for Instruction<'_, State, Operand, OUD, IUD> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         (self.disassemble)(f, self)
-    }
-}
-
-#[derive(Copy, Debug, Clone, PartialEq, Eq)]
-pub enum R {
-    A,
-    B,
-    C,
-    D,
-    E,
-    H,
-    L,
-    H1,
-    L1,
-    Xh,
-    Xl,
-    Yh,
-    Yl,
-}
-
-#[derive(Copy, Debug, Clone, PartialEq, Eq)]
-pub enum Datum {
-    Nothing,
-    Register(R),
-    RegisterPair(R, R),
-    Imm8(i8),
-    Imm16(i16),
-    Absolute(u16),
-    Zero,
-}
-
-trait Swap {
-    fn complement(self) -> Self;
-    fn swap(self) -> Self;
-    fn shift_left(self, bit_in: Option<bool>) -> (bool, Self);
-    fn shift_right(self, bit_in: Option<bool>) -> (bool, Self);
-}
-
-trait Bits {
-    fn msb() -> Self;
-}
-
-impl Bits for u8 {
-    fn msb() -> Self {
-        2_u8.pow(7)
-    }
-}
-
-impl Bits for u16 {
-    fn msb() -> Self {
-        2_u16.pow(15)
     }
 }
 
