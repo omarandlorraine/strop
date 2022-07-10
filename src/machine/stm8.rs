@@ -115,21 +115,19 @@ impl Operand {
 impl rand::prelude::Distribution<Operand> for rand::distributions::Standard {
     fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> Operand {
         use self::Operand::*;
-        rng.choose(&[
-            A,
-            X,
-            Y,
-            Xh,
-            Xl,
-            Yh,
-            Yl,
-            Absolute(random()),
-            Immediate8(random()),
-            IndX,
-            IndY,
-        ])
-        .unwrap()
-        .clone()
+        randomly!(
+            {    A}
+            {X}
+            {Y}
+            {Xh}
+            {Xl}
+            {Yh}
+            {Yl}
+            {Absolute(random())}
+            {Immediate8(random())}
+            {IndX}
+            {IndY}
+        )
     }
 }
 
