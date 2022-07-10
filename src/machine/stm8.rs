@@ -1,4 +1,3 @@
-use crate::machine::reg_by_name;
 use rand::random;
 use std::collections::HashMap;
 
@@ -226,18 +225,5 @@ fn flip_x_and_y(d: Operand, sz: usize) -> (Operand, usize) {
         Operand::Xh => (Operand::Yh, sz + 1),
         Operand::Yh => (Operand::Xh, sz - 1),
         x => (x, sz),
-    }
-}
-
-fn stm8_reg_by_name(name: &str) -> Result<Operand, &'static str> {
-    match name {
-        "a" => Ok(Operand::A),
-        "x" => Ok(Operand::X),
-        "y" => Ok(Operand::Y),
-        "xl" => Ok(Operand::Xl),
-        "yl" => Ok(Operand::Yl),
-        "xh" => Ok(Operand::Xh),
-        "yh" => Ok(Operand::Yh),
-        _ => reg_by_name(name),
     }
 }
