@@ -9,6 +9,7 @@ pub trait Strop {
 
 #[derive(Clone)]
 pub struct BasicBlock<'a, State, Operand, OUD, IUD> {
+    pub new_insn: fn() -> Instruction<'a, State, Operand, OUD, IUD>,
     pub instructions: Vec<Instruction<'a, State, Operand, OUD, IUD>>,
 }
 
@@ -56,7 +57,13 @@ impl<'a, State, Operand, OUD, IUD> Strop for BasicBlock<'_, State, Operand, OUD,
     }
 }
 
-impl<'a, State, Operand, OUD, IUD> BasicBlock<'_, State, Operand, OUD, IUD> {
+impl<'a, State, Operand, OUD, IUD> BasicBlock<'_, State, Operand, OUD, IUD>
+where
+    State: Copy,
+    Operand: Copy,
+    OUD: Copy,
+    IUD: Copy,
+{
     fn len(&self) -> usize {
         self.instructions.iter().map(|i| i.len()).sum()
     }
@@ -66,11 +73,7 @@ impl<'a, State, Operand, OUD, IUD> BasicBlock<'_, State, Operand, OUD, IUD> {
     }
 
     fn insert(&mut self, offset: usize, instr: Instruction<'_, State, Operand, OUD, IUD>) {
-        self.instructions.insert(offset, instr)
-    }
-
-    fn push(&mut self, instr: Instruction<'_, State, Operand, OUD, IUD>) {
-        self.instructions.push(instr)
+        self.instructions.insert(offset, instr.clone())
     }
 
     fn random_offset(&self) -> usize {
@@ -92,14 +95,17 @@ impl<'a, State, Operand, OUD, IUD> BasicBlock<'_, State, Operand, OUD, IUD> {
         } else {
             0
         };
-        self.insert(
-            offset,
-            Instruction::<'a, State, Operand, OUD, IUD>::random(),
-        );
+        self.insert(offset, (self.new_insn)());
     }
 }
 
-fn cost<State, Operand, OUD, IUD>(prog: &BasicBlock<'_, State, Operand, OUD, IUD>) -> f64 {
+fn cost<State, Operand, OUD, IUD>(prog: &BasicBlock<'_, State, Operand, OUD, IUD>) -> f64
+where
+    IUD: Copy,
+    OUD: Copy,
+    Operand: Copy,
+    State: Copy,
+{
     /* quick and simple cost function,
      * number of instructions in the program.
      * Not really a bad thing to minimise for.
@@ -110,7 +116,13 @@ fn cost<State, Operand, OUD, IUD>(prog: &BasicBlock<'_, State, Operand, OUD, IUD
 pub fn quick_dce<'a, State, Operand, OUD, IUD>(
     correctness: &dyn Fn(&BasicBlock<'_, State, Operand, OUD, IUD>) -> f64,
     prog: &BasicBlock<'a, State, Operand, OUD, IUD>,
-) -> BasicBlock<'a, State, Operand, OUD, IUD> {
+) -> BasicBlock<'a, State, Operand, OUD, IUD>
+where
+    IUD: Copy,
+    OUD: Copy,
+    Operand: Copy,
+    State: Copy,
+{
     let mut better = prog.clone();
     let score = correctness(prog);
     let mut cur: usize = 0;
@@ -118,7 +130,7 @@ pub fn quick_dce<'a, State, Operand, OUD, IUD>(
     loop {
         let mut putative = better.clone();
         if cur >= better.instructions.len() {
-            return *better;
+            return better;
         }
         putative.remove(cur);
         if correctness(&putative) <= score {
