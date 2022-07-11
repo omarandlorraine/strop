@@ -92,7 +92,10 @@ impl<'a, State, Operand, OUD, IUD> BasicBlock<'_, State, Operand, OUD, IUD> {
         } else {
             0
         };
-        self.insert(offset, Instruction::<'a, State, Operand, OUD, IUD>::new());
+        self.insert(
+            offset,
+            Instruction::<'a, State, Operand, OUD, IUD>::random(),
+        );
     }
 }
 
