@@ -3,7 +3,6 @@ use crate::machine::rand::Rng;
 use crate::machine::random_absolute;
 use crate::machine::random_immediate;
 use crate::machine::reg_by_name;
-use crate::machine::standard_implementation;
 use crate::machine::Datum;
 use crate::machine::DyadicOperation::{
     AddWithCarry, And, ExclusiveOr, Or, Subtract, SubtractWithCarry,
@@ -21,9 +20,41 @@ use crate::machine::Test;
 use crate::machine::Test::{Carry, Minus, Overflow, True, Zero};
 use crate::machine::Width;
 use crate::machine::R;
+use crate::State;
 
 use rand::random;
 use strop::randomly;
+
+#[derive(Clone, Copy)]
+pub struct Instruction6502 {
+    randomizer: fn() -> Operation,
+    disassemble: fn(Operation, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
+    handler: fn(&Instruction6502, &mut State) -> FlowControl,
+}
+
+impl std::fmt::Display for Instruction6502 {
+    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        todo!()
+    }
+}
+
+impl Instruction for Instruction6502 {
+    fn randomize(&mut self) {
+        todo!()
+    }
+    fn len(&self) -> usize {
+        todo!()
+    }
+    fn operate(&self, s: &mut State) -> FlowControl {
+        todo!()
+    }
+    fn random() -> Self
+    where
+        Self: Sized,
+    {
+        todo!()
+    }
+}
 
 const A: Datum = Datum::Register(R::A);
 const X: Datum = Datum::Register(R::Xl);
@@ -121,39 +152,6 @@ fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         _ => {
             write!(f, "{:?}", op)
         }
-    }
-}
-
-pub fn instr_length_6502(insn: &Instruction) -> usize {
-    fn length(dat: Datum) -> usize {
-        match dat {
-            Datum::Register(_) => 1,
-            Datum::Imm8(_) => 2,
-            Datum::Absolute(addr) => {
-                if addr < 256 {
-                    2
-                } else {
-                    3
-                }
-            }
-            _ => 0,
-        }
-    }
-
-    match insn.operation {
-        Operation::Move(Datum::Register(_), Datum::Register(_)) => 1,
-        Operation::Move(Datum::Register(_), dat) => length(dat),
-        Operation::Move(dat, Datum::Register(_)) => length(dat),
-        Operation::Shift(_, dat) => length(dat),
-        Operation::BitCompare(dat, A) => length(dat),
-        Operation::Monadic(Width::Width8, _, dat, _) => length(dat),
-        Operation::Dyadic(Width::Width8, _, _, dat, _) => length(dat),
-        Operation::Overflow(_) => 1,
-        Operation::Carry(_) => 1,
-        Operation::Decimal(_) => 1,
-        Operation::Jump(True, _) => 3,
-        Operation::Jump(_, _) => 2,
-        _ => 0,
     }
 }
 
@@ -310,14 +308,6 @@ fn branches() -> Operation {
     Operation::Jump(cond(), j())
 }
 
-const BRANCH_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
-    length: instr_length_6502,
-    operation: Operation::Nop,
-    randomizer: branches,
-};
-
 fn compares() -> Operation {
     randomly!(
     { Operation::BitCompare(random_absolute(), A)}
@@ -325,106 +315,6 @@ fn compares() -> Operation {
     { Operation::Dyadic(Width::Width8, Subtract, X, random_source(), Datum::Zero)}
     { Operation::Dyadic(Width::Width8, Subtract, Y, random_source(), Datum::Zero)}
     )
-}
-
-const COMPARE_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
-    length: instr_length_6502,
-    operation: Operation::Nop,
-    randomizer: compares,
-};
-
-const STORE_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
-    length: instr_length_6502,
-    operation: Operation::Nop,
-    randomizer: stores,
-};
-
-const LOAD_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
-    length: instr_length_6502,
-    operation: Operation::Nop,
-    randomizer: loads,
-};
-
-const TRANSFER_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
-    length: instr_length_6502,
-    operation: Operation::Nop,
-    randomizer: transfers_6502,
-};
-
-const ALU_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
-    length: instr_length_6502,
-    operation: Operation::Nop,
-    randomizer: alu_6502,
-};
-
-const RMW_NMOS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: rmw_dasm,
-    length: instr_length_6502,
-    operation: Operation::Nop,
-    randomizer: || rmw_op(false),
-};
-
-const RMW_CMOS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: rmw_dasm,
-    length: instr_length_6502,
-    operation: Operation::Nop,
-    randomizer: || rmw_op(true),
-};
-
-const FLAG_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
-    length: instr_length_6502,
-    operation: Operation::Nop,
-    randomizer: secl_6502,
-};
-
-const NMOS6502_INSTRUCTIONS: [Instruction; 7] = [
-    ALU_INSTRUCTIONS,
-    FLAG_INSTRUCTIONS,
-    RMW_NMOS,
-    TRANSFER_INSTRUCTIONS,
-    LOAD_INSTRUCTIONS,
-    COMPARE_INSTRUCTIONS,
-    BRANCH_INSTRUCTIONS,
-];
-
-const CMOS6502_INSTRUCTIONS: [Instruction; 7] = [
-    ALU_INSTRUCTIONS,
-    FLAG_INSTRUCTIONS,
-    RMW_CMOS,
-    TRANSFER_INSTRUCTIONS,
-    LOAD_INSTRUCTIONS,
-    COMPARE_INSTRUCTIONS,
-    BRANCH_INSTRUCTIONS,
-];
-
-pub fn random_insn_65c02() -> Instruction {
-    let mut op = *CMOS6502_INSTRUCTIONS
-        .choose(&mut rand::thread_rng())
-        .unwrap();
-    op.randomize();
-    op
-}
-
-fn random_insn_6502() -> Instruction {
-    let mut op = *NMOS6502_INSTRUCTIONS
-        .choose(&mut rand::thread_rng())
-        .unwrap();
-    op.randomize();
-    op
 }
 
 fn reg_mos6502(name: &str) -> Result<Datum, &'static str> {
@@ -442,13 +332,11 @@ fn reg_mos6502(name: &str) -> Result<Datum, &'static str> {
 
 pub const MOS65C02: Machine = Machine {
     name: "65c02",
-    random_insn: random_insn_65c02,
     reg_by_name: reg_mos6502,
 };
 
 pub const MOS6502: Machine = Machine {
     name: "6502",
-    random_insn: random_insn_6502,
     reg_by_name: reg_mos6502,
 };
 

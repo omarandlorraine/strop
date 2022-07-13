@@ -8,12 +8,12 @@ mod machine;
 mod search;
 mod test;
 
+use crate::machine::mos6502::Instruction6502;
+use crate::machine::stm8::Stm8Instruction;
 use crate::machine::Datum;
 use crate::machine::Machine;
 use crate::machine::State;
 use crate::machine::MACHINES;
-use crate::search::optimize;
-use crate::search::stochastic_search;
 use crate::search::BasicBlock;
 
 use crate::test::sanity;
@@ -136,7 +136,7 @@ fn function(m: String, ins: Vec<Datum>, outs: Vec<Datum>) -> Vec<Test> {
     process::exit(1);
 }
 
-fn disassemble(prog: BasicBlock) {
+fn disassemble<I: machine::Instruction + std::fmt::Display>(prog: BasicBlock<I>) {
     for p in prog.instructions {
         println!("{}", p);
     }
@@ -185,9 +185,14 @@ fn get_machine_by_name(name: &str) -> Machine {
     process::exit(1);
 }
 
+fn stocsearch<I: machine::Instruction>(testrun: &TestRun, machine: Machine) {
+    let prog = crate::search::stochastic_search::<I>(&testrun, machine);
+    let opt = crate::search::optimize::<I>(&testrun, &prog, machine);
+    disassemble::<I>(opt);
+}
+
 fn main() {
     let opts: Opts = argh::from_env();
-
     let machine = get_machine_by_name(&opts.arch);
 
     let testrun = if let Some(path) = opts.file {
@@ -198,7 +203,9 @@ fn main() {
         testrun_from_args(&opts, machine)
     };
 
-    let prog = stochastic_search(&testrun, machine, opts.graph, opts.debug);
-    let opt = optimize(&testrun, &prog, machine);
-    disassemble(opt);
+    if &opts.arch == &"stm8" {
+        stocsearch::<Stm8Instruction>(&testrun, machine);
+    } else if &opts.arch == &"mos6502" {
+        stocsearch::<Instruction6502>(&testrun, machine);
+    }
 }

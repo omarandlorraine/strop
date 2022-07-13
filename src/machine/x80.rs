@@ -2,7 +2,6 @@ use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::random_immediate;
 use crate::machine::Datum;
 use crate::machine::DyadicOperation::{Add, AddWithCarry};
-use crate::machine::Instruction;
 use crate::machine::Machine;
 use crate::machine::MonadicOperation;
 use crate::machine::Operation;
@@ -183,23 +182,8 @@ fn registers_kr580vm1(r: &str) -> Result<Datum, &'static str> {
     }
 }
 
-fn insn_len(_insn: &Instruction) -> usize {
-    1 // TODO!
-}
-
-pub fn random_insn_kr580vm1() -> Instruction {
-    randomly!(
-        { Instruction::new(inc_dec_prex86, dasm, insn_len)}
-        { Instruction::new(add8_prex86, dasm, insn_len)}
-        { Instruction::new(rot_a_prex86, dasm, insn_len)}
-        { Instruction::new(ld_prex86, dasm, insn_len)}
-        { Instruction::new(|| Operation::DecimalAdjustAccumulator, dasm, insn_len)}
-    )
-}
-
 pub const KR580VM1: Machine = Machine {
     name: "kr580vm1",
-    random_insn: random_insn_kr580vm1,
     reg_by_name: registers_kr580vm1,
 };
 
