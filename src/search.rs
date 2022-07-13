@@ -1,29 +1,36 @@
-use crate::disassemble;
 use crate::machine::Instruction;
 use crate::machine::Machine;
 use crate::machine::Width;
 use crate::{State, Step, TestRun};
 use rand::{thread_rng, Rng};
-use rayon::iter::IntoParallelRefIterator;
-use rayon::iter::ParallelIterator;
-use rayon::prelude::ParallelSliceMut;
 use std::ops::{Index, IndexMut};
 use strop::randomly;
 
 #[derive(Clone)]
-pub struct BasicBlock {
-    pub instructions: Vec<Instruction>,
+pub struct BasicBlock<I>
+where
+    I: Instruction,
+{
+    pub instructions: Vec<I>,
 }
 
-struct BasicBlockSpawn {
-    parent: BasicBlock,
-    mutant: BasicBlock,
+impl<I: Instruction> Default for BasicBlock<I> {
+    fn default() -> Self {
+        BasicBlock {
+            instructions: vec![],
+        }
+    }
+}
+
+struct BasicBlockSpawn<I: Instruction> {
+    parent: BasicBlock<I>,
+    mutant: BasicBlock<I>,
     ncount: usize,
     mach: Machine,
 }
 
-impl Iterator for BasicBlockSpawn {
-    type Item = BasicBlock;
+impl<I: Instruction> Iterator for BasicBlockSpawn<I> {
+    type Item = BasicBlock<I>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.ncount == 0 {
@@ -31,25 +38,25 @@ impl Iterator for BasicBlockSpawn {
             self.ncount = 100;
         }
         self.ncount -= 1;
-        mutate(&mut self.mutant, self.mach);
+        mutate(&mut self.mutant);
         Some(self.mutant.clone())
     }
 }
 
-impl BasicBlock {
-    fn initial_guess(mach: Machine, max_size: i32) -> BasicBlock {
+impl<I: Instruction + Clone> BasicBlock<I> {
+    fn initial_guess(mach: Machine, max_size: i32) -> BasicBlock<I> {
         let mut bb = BasicBlock {
             instructions: vec![],
         };
         for _i in 0..max_size {
-            let i = mach.new_instruction();
+            let i = I::random();
             bb.push(i);
         }
         bb
     }
 
-    fn spawn(&self, mach: Machine) -> BasicBlockSpawn {
-        let parent: BasicBlock = BasicBlock {
+    fn spawn(&self, mach: Machine) -> BasicBlockSpawn<I> {
+        let parent: BasicBlock<I> = BasicBlock {
             instructions: self.instructions.clone(),
         };
         BasicBlockSpawn {
@@ -60,19 +67,25 @@ impl BasicBlock {
         }
     }
 
+    fn mutation(&self) -> BasicBlock<I> {
+        let mut r = self.clone();
+        mutate(&mut r);
+        r
+    }
+
     fn len(&self) -> usize {
         self.instructions.iter().map(|i| i.len()).sum()
     }
 
-    fn remove(&mut self, offset: usize) -> Instruction {
+    fn remove(&mut self, offset: usize) -> I {
         self.instructions.remove(offset)
     }
 
-    fn insert(&mut self, offset: usize, instr: Instruction) {
+    fn insert(&mut self, offset: usize, instr: I) {
         self.instructions.insert(offset, instr)
     }
 
-    fn push(&mut self, instr: Instruction) {
+    fn push(&mut self, instr: I) {
         self.instructions.push(instr)
     }
 
@@ -82,21 +95,21 @@ impl BasicBlock {
     }
 }
 
-impl Index<usize> for BasicBlock {
-    type Output = Instruction;
+impl<I: Instruction> Index<usize> for BasicBlock<I> {
+    type Output = I;
 
     fn index(&self, offset: usize) -> &Self::Output {
         &self.instructions[offset]
     }
 }
 
-impl IndexMut<usize> for BasicBlock {
+impl<I: Instruction> IndexMut<usize> for BasicBlock<I> {
     fn index_mut(&mut self, offset: usize) -> &mut Self::Output {
         &mut self.instructions[offset]
     }
 }
 
-pub fn difference(prog: &BasicBlock, test_run: &TestRun) -> f64 {
+pub fn difference<I: Instruction>(prog: &BasicBlock<I>, test_run: &TestRun) -> f64 {
     let mut ret: f64 = 0.0;
 
     for tc in test_run.tests.iter() {
@@ -177,7 +190,7 @@ pub fn difference(prog: &BasicBlock, test_run: &TestRun) -> f64 {
     ret
 }
 
-fn cost(prog: &BasicBlock) -> f64 {
+fn cost<I: Instruction>(prog: &BasicBlock<I>) -> f64 {
     /* quick and simple cost function,
      * number of instructions in the program.
      * Not really a bad thing to minimise for.
@@ -185,25 +198,25 @@ fn cost(prog: &BasicBlock) -> f64 {
     prog.len() as f64
 }
 
-fn mutate_delete(prog: &mut BasicBlock) {
+fn mutate_delete<I: Instruction>(prog: &mut BasicBlock<I>) {
     let instr_count = prog.instructions.len();
     if instr_count > 1 {
         prog.remove(prog.random_offset());
     }
 }
 
-fn mutate_insert(prog: &mut BasicBlock, mach: Machine) {
+fn mutate_insert<I: Instruction>(prog: &mut BasicBlock<I>) {
     let instr_count = prog.instructions.len();
     let offset: usize = if instr_count > 0 {
         prog.random_offset()
     } else {
         0
     };
-    let instruction = mach.new_instruction();
+    let instruction = I::random();
     prog.insert(offset, instruction);
 }
 
-fn mutate(prog: &mut BasicBlock, mach: Machine) {
+fn mutate<I: Instruction>(prog: &mut BasicBlock<I>) {
     randomly!(
     {
         /* randomize an instruction
@@ -220,80 +233,15 @@ fn mutate(prog: &mut BasicBlock, mach: Machine) {
     }
     {
         /* insert a new instruction */
-        mutate_insert(prog, mach);
+        mutate_insert(prog);
     }
-    {
-        if prog.instructions.len() > 2 {
-            /* Pick two instructions and swap them round */
-            let offset_a = prog.random_offset();
-            let offset_b = prog.random_offset();
-            let ins_a = prog[offset_a];
-            let ins_b = prog[offset_b];
-            prog[offset_a] = ins_b;
-            prog[offset_b] = ins_a;
-        }
-    })
+    )
 }
 
-pub struct InitialPopulation<'a> {
-    mach: Machine,
-    testrun: &'a TestRun,
-}
-
-impl<'a> InitialPopulation<'a> {
-    fn new(mach: Machine, testrun: &TestRun) -> InitialPopulation {
-        InitialPopulation { testrun, mach }
-    }
-}
-
-impl Iterator for InitialPopulation<'_> {
-    type Item = (f64, BasicBlock);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        // Just spawn a random BasicBlock.
-        let program = BasicBlock::initial_guess(self.mach, 20);
-
-        // TODO: Should this check that the dce doesn't just empty the BB?
-        let d = quick_dce(
-            &|prog: &BasicBlock| difference(prog, self.testrun),
-            &program,
-        );
-        Some((difference(&d, self.testrun), d))
-    }
-}
-
-pub struct NextGeneration<'a> {
-    testrun: &'a TestRun,
-    bb: std::iter::Take<BasicBlockSpawn>,
-    score: f64,
-}
-
-impl<'a> NextGeneration<'a> {
-    fn new(mach: Machine, testrun: &'a TestRun, score: f64, bb: BasicBlock) -> NextGeneration {
-        NextGeneration {
-            testrun,
-            bb: bb.spawn(mach).take(500),
-            score,
-        }
-    }
-}
-
-impl<'a> Iterator for NextGeneration<'a> {
-    type Item = (f64, BasicBlock);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        while let Some(s) = self.bb.next() {
-            let fit = difference(&s, self.testrun);
-            if fit < self.score {
-                let t = quick_dce(&|prog: &BasicBlock| difference(prog, self.testrun), &s);
-                return Some((fit, t));
-            }
-        }
-        None
-    }
-}
-
-pub fn quick_dce(correctness: &dyn Fn(&BasicBlock) -> f64, prog: &BasicBlock) -> BasicBlock {
+pub fn quick_dce<I: Instruction>(
+    correctness: &dyn Fn(&BasicBlock<I>) -> f64,
+    prog: &BasicBlock<I>,
+) -> BasicBlock<I> {
     let mut better = prog.clone();
     let score = correctness(prog);
     let mut cur: usize = 0;
@@ -312,8 +260,12 @@ pub fn quick_dce(correctness: &dyn Fn(&BasicBlock) -> f64, prog: &BasicBlock) ->
     }
 }
 
-pub fn optimize(correctness: &TestRun, prog: &BasicBlock, mach: Machine) -> BasicBlock {
-    let mut population: Vec<(f64, BasicBlock)> = vec![];
+pub fn optimize<I: Instruction>(
+    correctness: &TestRun,
+    prog: &BasicBlock<I>,
+    mach: Machine,
+) -> BasicBlock<I> {
+    let mut population: Vec<(f64, BasicBlock<I>)> = vec![];
 
     let fitness = difference(prog, correctness);
     let ccost = cost(prog);
@@ -338,31 +290,26 @@ pub fn optimize(correctness: &TestRun, prog: &BasicBlock, mach: Machine) -> Basi
     prog.clone()
 }
 
-pub fn stochastic_search(
+pub fn stochastic_search<I: Instruction + Clone>(
     correctness: &TestRun,
     mach: Machine,
-    graph: bool,
-    debug: bool,
-) -> BasicBlock {
-    let mut init = InitialPopulation::new(mach, correctness);
-
-    let mut population: Vec<(f64, BasicBlock)> = vec![];
-    let mut winners: Vec<BasicBlock> = vec![];
+) -> BasicBlock<I> {
+    let mut population: Vec<(f64, BasicBlock<I>)> = vec![];
+    let mut winners: Vec<BasicBlock<I>> = vec![];
     let mut generation: u64 = 1;
 
-    population.push(init.next().unwrap());
+    let default = BasicBlock::<I>::default();
+    population.push((difference(&default, correctness), default));
 
     while winners.is_empty() {
         let best_score = population[0].0;
 
         // Spawn more specimens for next generation by mutating the current ones
         let population_size = if best_score < 500.0 { 10 } else { 50 };
-        let mut ng: Vec<(f64, BasicBlock)> = population
-            .par_iter()
-            .flat_map(|s| {
-                NextGeneration::new(mach, correctness, best_score, s.1.clone())
-                    .collect::<Vec<(f64, BasicBlock)>>()
-            })
+        let mut ng: Vec<(f64, BasicBlock<I>)> = population
+            .iter()
+            .map(|s| s.1.mutation())
+            .map(|s| (difference(&s, correctness), s))
             .collect();
 
         // concatenate the current generation to the next
@@ -376,17 +323,11 @@ pub fn stochastic_search(
 
         if !ng.is_empty() {
             // Sort the population by score.
-            ng.par_sort_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"));
+            ng.sort_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"));
 
             population = ng;
             let nbest = population[0].0;
 
-            if graph {
-                println!("{}, {}, {}", generation, population.len(), nbest);
-            }
-            if debug {
-                disassemble(population[0].1.clone());
-            }
             population.truncate(50);
             generation += 1;
         }
