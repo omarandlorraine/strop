@@ -335,16 +335,3 @@ pub fn stochastic_search<I: Instruction + Clone>(
 
     winners[0].clone()
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::search::mutate_delete;
-    use crate::BasicBlock;
-    #[test]
-    fn delete_from_basic_block() {
-        let mut bb = BasicBlock {
-            instructions: vec![],
-        };
-        mutate_delete(&mut bb);
-    }
-}

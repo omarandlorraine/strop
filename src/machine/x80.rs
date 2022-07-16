@@ -222,10 +222,4 @@ pub const KR580VM1: Machine = Machine {
 };
 
 #[cfg(test)]
-mod tests {
-    #[test]
-    fn p() {
-        // This "unit test" is here to demonstrate that the x80 machines are unsupported.
-        panic!();
-    }
-}
+mod tests {}
