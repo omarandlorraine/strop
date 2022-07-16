@@ -2,14 +2,48 @@ use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::random_immediate;
 use crate::machine::Datum;
 use crate::machine::DyadicOperation::{Add, AddWithCarry};
+use crate::machine::FlowControl;
+use crate::machine::Instruction;
 use crate::machine::Machine;
 use crate::machine::MonadicOperation;
 use crate::machine::Operation;
 use crate::machine::ShiftType;
 use crate::machine::Width;
 use crate::machine::R;
+use crate::State;
 use rand::random;
 use strop::randomly;
+
+#[derive(Clone, Copy)]
+pub struct KR580VM1Instruction {
+    randomizer: fn() -> Operation,
+    disassemble: fn(Operation, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
+    handler: fn(&KR580VM1Instruction, &mut State) -> FlowControl,
+}
+
+impl std::fmt::Display for KR580VM1Instruction {
+    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        todo!()
+    }
+}
+
+impl Instruction for KR580VM1Instruction {
+    fn randomize(&mut self) {
+        todo!()
+    }
+    fn len(&self) -> usize {
+        todo!()
+    }
+    fn operate(&self, s: &mut State) -> FlowControl {
+        todo!()
+    }
+    fn random() -> Self
+    where
+        Self: Sized,
+    {
+        todo!()
+    }
+}
 
 fn random_r_prex86() -> Datum {
     randomly!(
