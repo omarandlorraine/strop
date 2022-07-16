@@ -10,6 +10,7 @@ mod test;
 
 use crate::machine::mos6502::Instruction6502;
 use crate::machine::stm8::Stm8Instruction;
+use crate::machine::x80::KR580VM1Instruction;
 use crate::machine::Datum;
 use crate::machine::Machine;
 use crate::machine::State;
@@ -207,5 +208,7 @@ fn main() {
         stocsearch::<Stm8Instruction>(&testrun, machine);
     } else if &opts.arch == &"mos6502" {
         stocsearch::<Instruction6502>(&testrun, machine);
+    } else if &opts.arch == &"kr580vm1" {
+        stocsearch::<KR580VM1Instruction>(&testrun, machine);
     }
 }
