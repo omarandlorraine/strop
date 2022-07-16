@@ -45,7 +45,7 @@ impl Instruction for Instruction6502 {
     fn len(&self) -> usize {
         todo!()
     }
-    fn operate(&self, s: &mut State) -> FlowControl {
+    fn operate(&self, _s: &mut State) -> FlowControl {
         todo!()
     }
     fn random() -> Self
@@ -355,15 +355,13 @@ pub mod tests {
     }
 
     use crate::machine::mos6502::{A, X, Y};
-    use crate::machine::DyadicOperation;
-    use crate::machine::Operation;
+
     use crate::Datum;
 
     extern crate mos6502;
     use mos6502::address::Address;
     use mos6502::cpu;
     use mos6502::registers::Status;
-    use rand::random;
 
     fn run_mos6502(
         opcode: u8,
