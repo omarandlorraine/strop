@@ -34,7 +34,7 @@ impl Instruction for KR580VM1Instruction {
     fn len(&self) -> usize {
         todo!()
     }
-    fn operate(&self, s: &mut State) -> FlowControl {
+    fn operate(&self, _s: &mut State) -> FlowControl {
         todo!()
     }
     fn random() -> Self

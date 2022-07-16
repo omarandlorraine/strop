@@ -44,7 +44,7 @@ impl<I: Instruction> Iterator for BasicBlockSpawn<I> {
 }
 
 impl<I: Instruction + Clone> BasicBlock<I> {
-    fn initial_guess(mach: Machine, max_size: i32) -> BasicBlock<I> {
+    fn initial_guess(_mach: Machine, max_size: i32) -> BasicBlock<I> {
         let mut bb = BasicBlock {
             instructions: vec![],
         };
@@ -292,7 +292,7 @@ pub fn optimize<I: Instruction>(
 
 pub fn stochastic_search<I: Instruction + Clone>(
     correctness: &TestRun,
-    mach: Machine,
+    _mach: Machine,
 ) -> BasicBlock<I> {
     let mut population: Vec<(f64, BasicBlock<I>)> = vec![];
     let mut winners: Vec<BasicBlock<I>> = vec![];
@@ -326,7 +326,7 @@ pub fn stochastic_search<I: Instruction + Clone>(
             ng.sort_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"));
 
             population = ng;
-            let nbest = population[0].0;
+            let _nbest = population[0].0;
 
             population.truncate(50);
             generation += 1;
