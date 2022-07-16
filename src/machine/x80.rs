@@ -16,26 +16,26 @@ use strop::randomly;
 
 #[derive(Clone, Copy)]
 pub struct KR580VM1Instruction {
-    randomizer: fn() -> Operation,
-    disassemble: fn(Operation, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
+    randomizer: fn(&mut KR580VM1Instruction),
+    disassemble: fn(&mut std::fmt::Formatter<'_>) -> std::fmt::Result,
     handler: fn(&KR580VM1Instruction, &mut State) -> FlowControl,
 }
 
 impl std::fmt::Display for KR580VM1Instruction {
-    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        todo!()
+    fn fmt(&self, s: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        (self.disassemble)(s)
     }
 }
 
 impl Instruction for KR580VM1Instruction {
     fn randomize(&mut self) {
-        todo!()
+        (self.randomizer)(self);
     }
     fn len(&self) -> usize {
         todo!()
     }
-    fn operate(&self, _s: &mut State) -> FlowControl {
-        todo!()
+    fn operate(&self, s: &mut State) -> FlowControl {
+        (self.handler)(self, s)
     }
     fn random() -> Self
     where
