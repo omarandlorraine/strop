@@ -3,17 +3,24 @@ use crate::machine::Instruction;
 use rand::random;
 use strop::randomly;
 
+#[derive(Default)]
 pub struct RegisterPair {
     low: Option<u8>,
     high: Option<u8>,
 }
 
+#[derive(Default)]
 pub struct KR580VM1 {
     a: Option<u8>,
     b: RegisterPair,
     d: RegisterPair,
     h: RegisterPair,
     h1: RegisterPair,
+    sp: Option<u16>,
+    m: HashMap<u16, Option<u8>>,
+    m1: HashMap<u16, Option<u8>>,
+    /// True if the program ever uses a KR580VM1 extension (i.e. not Intel 8080 compatible)
+    kr580vm1_extension: bool,
 }
 
 #[derive(Clone, Copy)]

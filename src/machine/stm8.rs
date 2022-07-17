@@ -1,16 +1,20 @@
 use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::Instruction;
 use rand::random;
+use std::collections::HashMap;
 
+#[derive(Default)]
 pub struct IndexRegister {
     high: Option<u8>,
     low: Option<u8>,
 }
 
+#[derive(Default)]
 pub struct Stm8 {
     a: Option<u8>,
     x: IndexRegister,
     y: IndexRegister,
+    m: HashMap<u16, Option<u8>>,
 }
 
 struct Opcode {
