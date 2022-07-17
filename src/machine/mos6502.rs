@@ -49,20 +49,6 @@ impl Instruction for Instruction6502 {
 pub mod tests {
     use super::*;
 
-    #[test]
-    fn reg_names() {
-        assert_eq!(reg_mos6502("a").unwrap(), A);
-        assert_eq!(reg_mos6502("x").unwrap(), X);
-        assert_eq!(reg_mos6502("y").unwrap(), Y);
-        assert_eq!(reg_mos6502("m6").unwrap(), Datum::Absolute(6));
-        assert!(reg_mos6502("n").is_err());
-        assert!(reg_mos6502("m").is_err());
-    }
-
-    use crate::machine::mos6502::{A, X, Y};
-
-    use crate::Datum;
-
     extern crate mos6502;
     use mos6502::address::Address;
     use mos6502::cpu;
