@@ -1,6 +1,7 @@
 use crate::machine::rand::prelude::SliceRandom;
 use crate::machine::Instruction;
 use rand::random;
+use std::collections::HashMap;
 use strop::randomly;
 
 #[derive(Default)]

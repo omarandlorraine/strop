@@ -78,14 +78,6 @@ impl<I: Instruction> IndexMut<usize> for BasicBlock<I> {
     }
 }
 
-fn cost<I: Instruction>(prog: &BasicBlock<I>) -> f64 {
-    /* quick and simple cost function,
-     * number of instructions in the program.
-     * Not really a bad thing to minimise for.
-     */
-    prog.len() as f64
-}
-
 fn mutate_delete<I: Instruction>(prog: &mut BasicBlock<I>) {
     let instr_count = prog.instructions.len();
     if instr_count > 1 {
