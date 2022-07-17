@@ -1,5 +1,3 @@
-use std::fs;
-use std::process;
 
 extern crate argh;
 use argh::FromArgs;
