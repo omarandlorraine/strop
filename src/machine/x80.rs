@@ -1,13 +1,17 @@
 use crate::machine::Instruction;
 use std::collections::HashMap;
 
+// some clippy warnings disabled for this module because KR580VM1 support is not there yet.
+
 #[derive(Default)]
+#[allow(dead_code, unused_variables)]
 pub struct RegisterPair {
     low: Option<u8>,
     high: Option<u8>,
 }
 
 #[derive(Default)]
+#[allow(dead_code, unused_variables)]
 pub struct KR580VM1 {
     a: Option<u8>,
     b: RegisterPair,
