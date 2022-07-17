@@ -1,18 +1,20 @@
-use crate::machine::random_absolute;
-use crate::machine::random_immediate;
-use crate::machine::FlowControl;
-use crate::machine::R;
-use crate::Datum;
-use crate::Machine;
-use crate::State;
-
 use crate::machine::rand::prelude::SliceRandom;
-use crate::machine::reg_by_name;
 use crate::machine::Instruction;
 use rand::random;
 
+pub struct IndexRegister {
+    high: Option<u8>,
+    low: Option<u8>,
+}
+
+pub struct Stm8 {
+    a: Option<u8>,
+    x: IndexRegister,
+    y: IndexRegister,
+}
+
 struct Opcode {
-    handler: fn(&Stm8Instruction, &mut State) -> FlowControl,
+    handler: fn(&Stm8Instruction, &mut Stm8),
     name: &'static str,
 }
 
@@ -20,7 +22,7 @@ struct Opcode {
 pub struct Stm8Instruction {
     randomizer: fn(&mut Self),
     disassemble: fn(&Self, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
-    implementation: fn(&Self, &mut State) -> FlowControl,
+    implementation: fn(&Self, &mut Stm8),
 }
 
 impl std::fmt::Display for Stm8Instruction {
@@ -30,13 +32,15 @@ impl std::fmt::Display for Stm8Instruction {
 }
 
 impl Instruction for Stm8Instruction {
+    type State = Stm8;
+
     fn randomize(&mut self) {
         todo!()
     }
     fn len(&self) -> usize {
         todo!()
     }
-    fn operate(&self, _s: &mut State) -> FlowControl {
+    fn operate(&self, _s: &mut Stm8) {
         todo!()
     }
     fn random() -> Self
@@ -46,50 +50,6 @@ impl Instruction for Stm8Instruction {
         todo!()
     }
 }
-
-const A: Datum = Datum::Register(R::A);
-const XL: Datum = Datum::Register(R::Xl);
-const YL: Datum = Datum::Register(R::Yl);
-const XH: Datum = Datum::Register(R::Xh);
-const YH: Datum = Datum::Register(R::Yh);
-const X: Datum = Datum::RegisterPair(R::Xh, R::Xl);
-const Y: Datum = Datum::RegisterPair(R::Yh, R::Yl);
-
-fn random_imm16() -> Datum {
-    let regs = vec![150];
-    Datum::Imm16(*regs.choose(&mut rand::thread_rng()).unwrap())
-}
-
-fn random_stm8_operand() -> Datum {
-    if random() {
-        random_immediate()
-    } else {
-        random_absolute()
-    }
-}
-
-fn random_register() -> Datum {
-    let regs = vec![A, X, Y];
-    *regs.choose(&mut rand::thread_rng()).unwrap()
-}
-
-fn stm8_reg_by_name(name: &str) -> Result<Datum, &'static str> {
-    match name {
-        "a" => Ok(A),
-        "x" => Ok(X),
-        "y" => Ok(Y),
-        "xl" => Ok(XL),
-        "yl" => Ok(YL),
-        "xh" => Ok(XH),
-        "yh" => Ok(YH),
-        _ => reg_by_name(name),
-    }
-}
-
-pub const STM8: Machine = Machine {
-    name: "stm8",
-    reg_by_name: stm8_reg_by_name,
-};
 
 #[cfg(test)]
 mod tests {

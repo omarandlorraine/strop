@@ -1,7 +1,4 @@
 use crate::machine::Instruction;
-use crate::machine::Machine;
-use crate::machine::Width;
-use crate::{State, Step, TestRun};
 use rand::{thread_rng, Rng};
 use std::ops::{Index, IndexMut};
 use strop::randomly;
@@ -26,7 +23,6 @@ struct BasicBlockSpawn<I: Instruction> {
     parent: BasicBlock<I>,
     mutant: BasicBlock<I>,
     ncount: usize,
-    mach: Machine,
 }
 
 impl<I: Instruction> Iterator for BasicBlockSpawn<I> {
@@ -44,29 +40,6 @@ impl<I: Instruction> Iterator for BasicBlockSpawn<I> {
 }
 
 impl<I: Instruction + Clone> BasicBlock<I> {
-    fn initial_guess(_mach: Machine, max_size: i32) -> BasicBlock<I> {
-        let mut bb = BasicBlock {
-            instructions: vec![],
-        };
-        for _i in 0..max_size {
-            let i = I::random();
-            bb.push(i);
-        }
-        bb
-    }
-
-    fn spawn(&self, mach: Machine) -> BasicBlockSpawn<I> {
-        let parent: BasicBlock<I> = BasicBlock {
-            instructions: self.instructions.clone(),
-        };
-        BasicBlockSpawn {
-            parent,
-            mutant: self.clone(),
-            ncount: 0,
-            mach,
-        }
-    }
-
     fn mutation(&self) -> BasicBlock<I> {
         let mut r = self.clone();
         mutate(&mut r);
@@ -83,10 +56,6 @@ impl<I: Instruction + Clone> BasicBlock<I> {
 
     fn insert(&mut self, offset: usize, instr: I) {
         self.instructions.insert(offset, instr)
-    }
-
-    fn push(&mut self, instr: I) {
-        self.instructions.push(instr)
     }
 
     fn random_offset(&self) -> usize {
@@ -107,87 +76,6 @@ impl<I: Instruction> IndexMut<usize> for BasicBlock<I> {
     fn index_mut(&mut self, offset: usize) -> &mut Self::Output {
         &mut self.instructions[offset]
     }
-}
-
-pub fn difference<I: Instruction>(prog: &BasicBlock<I>, test_run: &TestRun) -> f64 {
-    let mut ret: f64 = 0.0;
-
-    for tc in test_run.tests.iter() {
-        let mut s = State::new();
-
-        for step in &tc.steps {
-            match step {
-                Step::Run => {
-                    let mut pc: usize = 0;
-                    for _i in 0..100 {
-                        if pc == prog.instructions.len() {
-                            break;
-                        }
-                        if let Some(new_pc) = prog.instructions[pc].operate(&mut s).newpc(pc) {
-                            pc = new_pc;
-                            if pc > prog.instructions.len() {
-                                ret += 1000.0;
-                                break;
-                            }
-                        } else {
-                            break;
-                        }
-                    }
-                }
-                Step::Set(datum, val) => match datum.width() {
-                    Width::Width8 => {
-                        s.set_i8(*datum, Some(*val as i8));
-                    }
-                    Width::Width16 => {
-                        s.set_i16(*datum, Some(*val as i16));
-                    }
-                },
-                Step::Diff(datum, val) => {
-                    if let Some(v) = s.get_i16(*datum) {
-                        let d: f64 = (val - v as i32).into();
-                        ret += d.abs();
-                    } else {
-                        ret += 65536.0;
-                    }
-                }
-                Step::NonZero(datum) => {
-                    if let Some(v) = s.get_i16(*datum) {
-                        if v != 0 {
-                            ret += 2.0;
-                        }
-                    } else {
-                        ret += 100.0;
-                    }
-                }
-                Step::Positive(datum) => {
-                    if let Some(v) = s.get_i16(*datum) {
-                        if v <= 0 {
-                            ret += 2.0;
-                        }
-                    } else {
-                        ret += 100.0;
-                    }
-                }
-                Step::Negative(datum) => {
-                    if let Some(v) = s.get_i16(*datum) {
-                        if v >= 0 {
-                            ret += 2.0;
-                        }
-                    } else {
-                        ret += 100.0;
-                    }
-                }
-                Step::Ham(datum, val, dontcare) => {
-                    if let Some(v) = s.get_i16(*datum) {
-                        ret += (((v as i32) ^ val) & dontcare).count_ones() as f64;
-                    } else {
-                        ret += 1000.0
-                    }
-                }
-            }
-        }
-    }
-    ret
 }
 
 fn cost<I: Instruction>(prog: &BasicBlock<I>) -> f64 {
@@ -238,68 +126,13 @@ fn mutate<I: Instruction>(prog: &mut BasicBlock<I>) {
     )
 }
 
-pub fn quick_dce<I: Instruction>(
-    correctness: &dyn Fn(&BasicBlock<I>) -> f64,
-    prog: &BasicBlock<I>,
-) -> BasicBlock<I> {
-    let mut better = prog.clone();
-    let score = correctness(prog);
-    let mut cur: usize = 0;
-
-    loop {
-        let mut putative = better.clone();
-        if cur >= better.instructions.len() {
-            return better;
-        }
-        putative.remove(cur);
-        if correctness(&putative) <= score {
-            better = putative.clone();
-        } else {
-            cur += 1;
-        }
-    }
-}
-
-pub fn optimize<I: Instruction>(
-    correctness: &TestRun,
-    prog: &BasicBlock<I>,
-    mach: Machine,
-) -> BasicBlock<I> {
-    let mut population: Vec<(f64, BasicBlock<I>)> = vec![];
-
-    let fitness = difference(prog, correctness);
-    let ccost = cost(prog);
-    population.push((cost(prog), prog.clone()));
-
-    let best = prog;
-
-    // if we find a better version, try to optimize that as well.
-    if let Some(s) = best
-        .spawn(mach)
-        .take(1000)
-        .filter(|s| difference(s, correctness) <= fitness)
-        .map(|s| (cost(&s), s))
-        .min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"))
-    {
-        if s.0 < ccost {
-            return optimize(correctness, &s.1, mach);
-        }
-    }
-
-    // Otherwise just return what we got.
-    prog.clone()
-}
-
-pub fn stochastic_search<I: Instruction + Clone>(
-    correctness: &TestRun,
-    _mach: Machine,
-) -> BasicBlock<I> {
+pub fn stochastic_search<I: Instruction + Clone>(cost: fn(&BasicBlock<I>) -> f64) -> BasicBlock<I> {
     let mut population: Vec<(f64, BasicBlock<I>)> = vec![];
     let mut winners: Vec<BasicBlock<I>> = vec![];
     let mut generation: u64 = 1;
 
     let default = BasicBlock::<I>::default();
-    population.push((difference(&default, correctness), default));
+    population.push((cost(&default), default));
 
     while winners.is_empty() {
         let best_score = population[0].0;
@@ -309,7 +142,7 @@ pub fn stochastic_search<I: Instruction + Clone>(
         let mut ng: Vec<(f64, BasicBlock<I>)> = population
             .iter()
             .map(|s| s.1.mutation())
-            .map(|s| (difference(&s, correctness), s))
+            .map(|s| (cost(&s), s))
             .collect();
 
         // concatenate the current generation to the next
