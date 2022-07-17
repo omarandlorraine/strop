@@ -5,6 +5,7 @@ use rand::random;
 use std::collections::HashMap;
 use strop::randomly;
 
+#[derive(Default)]
 pub struct Mos6502 {
     a: Option<u8>,
     x: Option<u8>,
