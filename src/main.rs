@@ -1,4 +1,3 @@
-
 extern crate argh;
 use argh::FromArgs;
 
