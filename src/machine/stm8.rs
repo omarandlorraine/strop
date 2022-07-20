@@ -236,4 +236,22 @@ impl Instruction for Stm8Instruction {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn find_it(opcode: &'static str) {
+        let mut insn = Stm8Instruction::random();
+        for _ in 0..5000 {
+            let dasm = format!("{}", insn);
+            if dasm.contains(opcode) {
+                return;
+            }
+        }
+        panic!("Could not find opcode {}", opcode);
+    }
+
+    #[test]
+    fn instruction_set() {
+        find_it("adc");
+        find_it("add");
+        find_it("and");
+    }
 }
