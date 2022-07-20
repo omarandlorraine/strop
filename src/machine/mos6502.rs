@@ -34,7 +34,7 @@ impl Instruction for Instruction6502 {
     fn operate(&self, _s: &mut Mos6502) {
         todo!()
     }
-    fn random() -> Self
+    fn new() -> Self
     where
         Self: Sized,
     {

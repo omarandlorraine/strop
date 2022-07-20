@@ -49,7 +49,7 @@ impl Instruction for KR580VM1Instruction {
     fn operate(&self, s: &mut KR580VM1) {
         (self.handler)(self, s)
     }
-    fn random() -> Self
+    fn new() -> Self
     where
         Self: Sized,
     {

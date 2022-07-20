@@ -225,7 +225,7 @@ impl Instruction for Stm8Instruction {
     fn operate(&self, _s: &mut Stm8) {
         todo!()
     }
-    fn random() -> Self
+    fn new() -> Self
     where
         Self: Sized,
     {
