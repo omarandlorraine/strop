@@ -243,8 +243,8 @@ mod tests {
     use super::*;
 
     fn find_it(opcode: &'static str) {
-        let mut insn = Stm8Instruction::random();
         for _ in 0..5000 {
+            let insn = Stm8Instruction::random();
             let dasm = format!("{}", insn);
             if dasm.contains(opcode) {
                 return;
