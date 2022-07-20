@@ -92,7 +92,7 @@ fn mutate_insert<I: Instruction>(prog: &mut BasicBlock<I>) {
     } else {
         0
     };
-    let instruction = I::random();
+    let instruction = I::new();
     prog.insert(offset, instruction);
 }
 

@@ -17,7 +17,7 @@ pub trait Instruction: std::fmt::Display + Clone + Sized {
     fn randomize(&mut self);
     fn len(&self) -> usize;
     fn operate(&self, s: &mut Self::State);
-    fn random() -> Self
+    fn new() -> Self
     where
         Self: Sized;
 }
