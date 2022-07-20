@@ -1,6 +1,9 @@
 use crate::machine::Instruction;
 use crate::machine::Strop;
+use rand::distributions::Standard;
+use rand::prelude::Distribution;
 use rand::random;
+use rand::Rng;
 use std::collections::HashMap;
 use strop::randomly;
 
@@ -162,9 +165,36 @@ const AND: Alu8Operation = Alu8Operation {
     },
 };
 
+impl Distribution<Alu8Operation> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Alu8Operation {
+        randomly!(
+            {ADC} {ADD} {AND}
+        )
+    }
+}
+
 #[derive(Clone, Copy)]
 pub enum Stm8Instruction {
     Alu8(Alu8Operation, Operand8),
+}
+
+impl Strop for Stm8Instruction {
+    fn random() -> Stm8Instruction {
+        use Stm8Instruction::*;
+        randomly!({ Alu8(random(), Operand8::random()) })
+    }
+
+    fn mutate(&mut self) {
+        use Stm8Instruction::*;
+        match self {
+            Alu8(op, operand) => {
+                randomly!(
+                    {*self = Alu8(random(), *operand); }
+                    {*self = Alu8(*op, Operand8::random()); }
+                );
+            }
+        }
+    }
 }
 
 impl std::fmt::Display for Operand8 {
