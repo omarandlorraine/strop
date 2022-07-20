@@ -208,8 +208,13 @@ impl std::fmt::Display for Operand8 {
 }
 
 impl std::fmt::Display for Stm8Instruction {
-    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        todo!()
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        use Stm8Instruction::*;
+        match self {
+            Alu8(op, operand) => {
+                write!(f, "\t{} a, {}", op.opcode, operand)
+            }
+        }
     }
 }
 
