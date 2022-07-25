@@ -109,6 +109,20 @@ impl Strop for Operand16 {
     }
 }
 
+impl Operand16 {
+    fn get_u16(self, s: &Stm8) -> Option<u16> {
+        use Operand16::*;
+        match self {
+            Imm(x) => Some(x),
+            Abs(addr) => {
+                let low = s.read_mem(Some(addr));
+                let high = s.read_mem(Some(addr + 1));
+                low.zip(high).map(|(l, h)| u16::from_le_bytes([l, h]))
+            }
+        }
+    }
+}
+
 impl Operand8 {
     fn get_u8(self, s: &Stm8) -> Option<u8> {
         use Operand8::*;
@@ -389,9 +403,15 @@ impl Instruction for Stm8Instruction {
     fn len(&self) -> usize {
         todo!()
     }
-    fn operate(&self, _s: &mut Stm8) {
-        todo!()
+
+    fn operate(&self, s: &mut Stm8) {
+        use Stm8Instruction::*;
+        match self {
+            Alu8(op, operand) => (op.handler)(operand.get_u8(s), s),
+            Alu16(op, register, operand) => (op.handler)(operand.get_u16(s), *register, s),
+        }
     }
+
     fn new() -> Self
     where
         Self: Sized,
