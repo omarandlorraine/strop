@@ -264,7 +264,7 @@ const ADDW: Alu16Operation = Alu16Operation {
         s.carry = carrytests.map(|t| t.leading_zeros() == 0);
         s.zero = r.map(|r| r == 0);
         s.sign = r.map(|r| r.leading_zeros() == 0);
-        s.halfcarry = carrytests.map(|t| t & 0x8000 != 0);
+        s.halfcarry = carrytests.map(|t| t & 0x0080 != 0);
         s.overflow = overflowtests.map(|t| t != 0 && t != -64);
         s.set_register16(register, r.map(|v| u16::from_ne_bytes(v.to_ne_bytes())));
     },
@@ -333,11 +333,31 @@ impl Strop for Stm8Instruction {
     }
 }
 
+impl std::fmt::Display for Register16 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        use Operand16::*;
+        match self {
+            X => write!(f, "x"),
+            Y => write!(f, "y"),
+        }
+    }
+}
+
 impl std::fmt::Display for Operand8 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         use Operand8::*;
         match self {
             Imm8(x) => write!(f, "#${:#04x}", x),
+            Abs(addr) => write!(f, "${:#06x}", addr),
+        }
+    }
+}
+
+impl std::fmt::Display for Operand16 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        use Operand16::*;
+        match self {
+            Imm(x) => write!(f, "#${:#06x}", x),
             Abs(addr) => write!(f, "${:#06x}", addr),
         }
     }
@@ -349,6 +369,9 @@ impl std::fmt::Display for Stm8Instruction {
         match self {
             Alu8(op, operand) => {
                 write!(f, "\t{} a, {}", op.opcode, operand)
+            }
+            Alu16(op, register, operand) => {
+                write!(f, "\t{} {}, {}", op.opcode, register, operand)
             }
         }
     }
