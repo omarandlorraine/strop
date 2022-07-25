@@ -335,10 +335,10 @@ impl Strop for Stm8Instruction {
 
 impl std::fmt::Display for Register16 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        use Operand16::*;
+        use Register16::*;
         match self {
-            X => write!(f, "x"),
-            Y => write!(f, "y"),
+            Register16::X => write!(f, "x"),
+            Register16::Y => write!(f, "y"),
         }
     }
 }
