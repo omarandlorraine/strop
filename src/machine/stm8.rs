@@ -311,9 +311,9 @@ impl Strop for Stm8Instruction {
     fn random() -> Stm8Instruction {
         use Stm8Instruction::*;
         randomly!(
-            { Alu8(random(), Operand8::random()) }
-            { Alu16(random(), random(), Operand16::random()) }
-            )
+        { Alu8(random(), Operand8::random()) }
+        { Alu16(random(), random(), Operand16::random()) }
+        )
     }
 
     fn mutate(&mut self) {

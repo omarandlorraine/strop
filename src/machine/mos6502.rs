@@ -4,7 +4,7 @@ use std::collections::HashMap;
 // some clippy warnings disabled for this module because 6502 support is not there yet.
 
 #[derive(Default)]
-#[allow(dead_code, unused_variables)] 
+#[allow(dead_code, unused_variables)]
 pub struct Mos6502 {
     a: Option<u8>,
     x: Option<u8>,
