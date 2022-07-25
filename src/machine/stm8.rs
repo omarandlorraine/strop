@@ -13,6 +13,18 @@ enum Operand8 {
     Abs(u16),
 }
 
+#[derive(Clone, Copy)]
+enum Operand16 {
+    Imm(u16),
+    Abs(u16),
+}
+
+#[derive(Clone, Copy)]
+enum Register16 {
+    X,
+    Y,
+}
+
 impl Strop for u8 {
     fn random() -> u8 {
         random()
@@ -27,6 +39,26 @@ impl Strop for u8 {
             /* could try flipping a bit */
             {
                 let bit_select = 1_u8.rotate_left(rand::thread_rng().gen_range(0..8));
+                *self ^= bit_select;
+            }
+        );
+    }
+}
+
+impl Strop for u16 {
+    fn random() -> u16 {
+        random()
+    }
+
+    fn mutate(&mut self) {
+        randomly!(
+            /* could try incrementing or decrementing */
+            { *self += 1 }
+            { *self -= 1 }
+
+            /* could try flipping a bit */
+            {
+                let bit_select = 1_u16.rotate_left(rand::thread_rng().gen_range(0..16));
                 *self ^= bit_select;
             }
         );
@@ -55,6 +87,28 @@ impl Strop for Operand8 {
     }
 }
 
+impl Strop for Operand16 {
+    fn random() -> Operand16 {
+        use Operand16::*;
+        randomly!(
+            {Imm(random())}
+            {Abs(random())}
+        )
+    }
+    fn mutate(&mut self) {
+        use Operand16::*;
+        let e = match self {
+            Imm(v) => {
+                let e = v;
+                e.mutate();
+                Imm(*e)
+            }
+            Abs(addr) => Abs(*addr),
+        };
+        *self = e;
+    }
+}
+
 impl Operand8 {
     fn get_u8(self, s: &Stm8) -> Option<u8> {
         use Operand8::*;
@@ -75,6 +129,20 @@ pub struct IndexRegister {
     low: Option<u8>,
 }
 
+impl IndexRegister {
+    fn set_u16(&mut self, val: Option<u16>) {
+        let v = val.map(|v| v.to_be_bytes());
+        self.high = v.map(|v| u8::from_ne_bytes(v[0].to_ne_bytes()));
+        self.low = v.map(|v| u8::from_ne_bytes(v[1].to_ne_bytes()));
+    }
+
+    fn get_u16(&self) -> Option<u16> {
+        self.low
+            .zip(self.high)
+            .map(|(h, l)| u16::from_be_bytes([h, l]))
+    }
+}
+
 #[derive(Default)]
 pub struct Stm8 {
     a: Option<u8>,
@@ -89,6 +157,20 @@ pub struct Stm8 {
 }
 
 impl Stm8 {
+    fn get_register16(&self, select: Register16) -> Option<u16> {
+        match select {
+            Register16::X => self.x.get_u16(),
+            Register16::Y => self.y.get_u16(),
+        }
+    }
+
+    fn set_register16(&mut self, select: Register16, val: Option<u16>) {
+        match select {
+            Register16::X => self.x.set_u16(val),
+            Register16::Y => self.y.set_u16(val),
+        }
+    }
+
     fn read_mem(&self, addr: Option<u16>) -> Option<u8> {
         if let Some(addr) = addr {
             self.m[&addr]
@@ -107,6 +189,12 @@ struct Opcode {
 struct Alu8Operation {
     opcode: &'static str,
     handler: fn(Option<u8>, &mut Stm8),
+}
+
+#[derive(Clone, Copy)]
+struct Alu16Operation {
+    opcode: &'static str,
+    handler: fn(Option<u16>, Register16, &mut Stm8),
 }
 
 const ADC: Alu8Operation = Alu8Operation {
@@ -153,6 +241,32 @@ const ADD: Alu8Operation = Alu8Operation {
         s.sign = r.map(|r| r.leading_zeros() == 0);
         s.halfcarry = carrytests.map(|t| t & 0x08 != 0);
         s.overflow = overflowtests.map(|t| t != 0 && t != -64);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+    },
+};
+
+const ADDW: Alu16Operation = Alu16Operation {
+    opcode: "addw",
+    handler: |val, register, s| {
+        let m = val.map(|v| i16::from_ne_bytes(v.to_ne_bytes()));
+        let a = s
+            .get_register16(register)
+            .map(|v| i16::from_ne_bytes(v.to_ne_bytes()));
+        let r = a.zip(m).map(|(a, m)| a.wrapping_add(m));
+        let carrytests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
+        let overflowtests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
+        s.carry = carrytests.map(|t| t.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.halfcarry = carrytests.map(|t| t & 0x8000 != 0);
+        s.overflow = overflowtests.map(|t| t != 0 && t != -64);
+        s.set_register16(register, r.map(|v| u16::from_ne_bytes(v.to_ne_bytes())));
     },
 };
 
@@ -173,9 +287,24 @@ impl Distribution<Alu8Operation> for Standard {
     }
 }
 
+impl Distribution<Alu16Operation> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Alu16Operation {
+        randomly!({ ADDW })
+    }
+}
+
+impl Distribution<Register16> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Register16 {
+        randomly!(
+            {Register16::X} {Register16::Y}
+        )
+    }
+}
+
 #[derive(Clone, Copy)]
 pub enum Stm8Instruction {
     Alu8(Alu8Operation, Operand8),
+    Alu16(Alu16Operation, Register16, Operand16),
 }
 
 impl Strop for Stm8Instruction {
@@ -191,6 +320,13 @@ impl Strop for Stm8Instruction {
                 randomly!(
                     {*self = Alu8(random(), *operand); }
                     {*self = Alu8(*op, Operand8::random()); }
+                );
+            }
+            Alu16(op, register, operand) => {
+                randomly!(
+                    {*self = Alu16(random(), *register, *operand); }
+                    {*self = Alu16(*op, *register, Operand16::random()); }
+                    {*self = Alu16(*op, random(), *operand); }
                 );
             }
         }
@@ -255,8 +391,11 @@ mod tests {
 
     #[test]
     fn instruction_set() {
-        find_it("adc");
-        find_it("add");
-        find_it("and");
+        for opcode in vec![
+            "adc", "add", "addw", "and", "bccm", "bcp", "bcpl", "bres", "bset", "ccf", "clr",
+            "clrw",
+        ] {
+            find_it(opcode);
+        }
     }
 }
