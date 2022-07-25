@@ -1,7 +1,10 @@
 use crate::machine::Instruction;
 use std::collections::HashMap;
 
+// some clippy warnings disabled for this module because 6502 support is not there yet.
+
 #[derive(Default)]
+#[allow(dead_code, unused_variables)] 
 pub struct Mos6502 {
     a: Option<u8>,
     x: Option<u8>,
@@ -51,6 +54,7 @@ pub mod tests {
     use mos6502::cpu;
     use mos6502::registers::Status;
 
+    #[allow(dead_code)]
     fn run_mos6502(
         opcode: u8,
         val1: u8,
