@@ -8,19 +8,19 @@ use std::collections::HashMap;
 use strop::randomly;
 
 #[derive(Clone, Copy)]
-enum Operand8 {
+pub enum Operand8 {
     Imm8(u8),
     Abs(u16),
 }
 
 #[derive(Clone, Copy)]
-enum Operand16 {
+pub enum Operand16 {
     Imm(u16),
     Abs(u16),
 }
 
 #[derive(Clone, Copy)]
-enum Register16 {
+pub enum Register16 {
     X,
     Y,
 }
@@ -131,10 +131,6 @@ impl Operand8 {
             Abs(addr) => s.read_mem(Some(addr)),
         }
     }
-
-    fn get_i8(self, s: &Stm8) -> Option<i8> {
-        self.get_u8(s).map(|v| i8::from_ne_bytes(v.to_ne_bytes()))
-    }
 }
 
 #[derive(Default)]
@@ -194,19 +190,14 @@ impl Stm8 {
     }
 }
 
-struct Opcode {
-    handler: fn(&Stm8Instruction, &mut Stm8),
-    name: &'static str,
-}
-
 #[derive(Clone, Copy)]
-struct Alu8Operation {
+pub struct Alu8Operation {
     opcode: &'static str,
     handler: fn(Option<u8>, &mut Stm8),
 }
 
 #[derive(Clone, Copy)]
-struct Alu16Operation {
+pub struct Alu16Operation {
     opcode: &'static str,
     handler: fn(Option<u16>, Register16, &mut Stm8),
 }
@@ -228,11 +219,12 @@ const ADC: Alu8Operation = Alu8Operation {
             .zip(m)
             .zip(r)
             .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
-        let carry = carrytests.map(|t| t.leading_zeros() == 0);
-        let zero = r.map(|r| r == 0);
-        let sign = r.map(|r| r.leading_zeros() == 0);
-        let halfcarry = carrytests.map(|t| t & 0x08 != 0);
-        let overflow = overflowtests.map(|t| t != 0 && t != -64);
+        s.carry = carrytests.map(|t| t.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.halfcarry = carrytests.map(|t| t & 0x08 != 0);
+        s.overflow = overflowtests.map(|t| t != 0 && t != -64);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
     },
 };
 
@@ -290,11 +282,12 @@ const AND: Alu8Operation = Alu8Operation {
         let r = s.a.zip(m).map(|(a, m)| a & m);
         s.zero = r.map(|r| r == 0);
         s.sign = r.map(|r| r & 0x80 != 0);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
     },
 };
 
 impl Distribution<Alu8Operation> for Standard {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Alu8Operation {
+    fn sample<R: Rng + ?Sized>(&self, _rng: &mut R) -> Alu8Operation {
         randomly!(
             {ADC} {ADD} {AND}
         )
@@ -302,13 +295,13 @@ impl Distribution<Alu8Operation> for Standard {
 }
 
 impl Distribution<Alu16Operation> for Standard {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Alu16Operation {
+    fn sample<R: Rng + ?Sized>(&self, _rng: &mut R) -> Alu16Operation {
         randomly!({ ADDW })
     }
 }
 
 impl Distribution<Register16> for Standard {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Register16 {
+    fn sample<R: Rng + ?Sized>(&self, _rng: &mut R) -> Register16 {
         randomly!(
             {Register16::X} {Register16::Y}
         )
@@ -352,7 +345,6 @@ impl Strop for Stm8Instruction {
 
 impl std::fmt::Display for Register16 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        use Register16::*;
         match self {
             Register16::X => write!(f, "x"),
             Register16::Y => write!(f, "y"),
