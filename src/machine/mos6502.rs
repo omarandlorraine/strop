@@ -21,21 +21,21 @@ pub struct Instruction6502 {
 }
 
 impl std::fmt::Display for Instruction6502 {
-    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        todo!()
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        (self.disassemble)(self, f)
     }
 }
 
 impl Instruction for Instruction6502 {
     type State = Mos6502;
     fn randomize(&mut self) {
-        todo!()
+        (self.randomizer)(self);
     }
     fn len(&self) -> usize {
         todo!()
     }
-    fn operate(&self, _s: &mut Mos6502) {
-        todo!()
+    fn operate(&self, s: &mut Mos6502) {
+        (self.handler)(self, s);
     }
     fn new() -> Self
     where
