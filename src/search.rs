@@ -121,7 +121,6 @@ fn mutate<I: Instruction>(prog: &mut BasicBlock<I>) {
 pub fn stochastic_search<I: Instruction + Clone>(cost: fn(&BasicBlock<I>) -> f64) -> BasicBlock<I> {
     let mut population: Vec<(f64, BasicBlock<I>)> = vec![];
     let mut winners: Vec<BasicBlock<I>> = vec![];
-    let mut generation: u64 = 1;
 
     let default = BasicBlock::<I>::default();
     population.push((cost(&default), default));
@@ -154,7 +153,6 @@ pub fn stochastic_search<I: Instruction + Clone>(cost: fn(&BasicBlock<I>) -> f64
             let _nbest = population[0].0;
 
             population.truncate(50);
-            generation += 1;
         }
     }
 
