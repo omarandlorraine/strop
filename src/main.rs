@@ -34,6 +34,8 @@ fn main() {
          (@arg rorbug: --rorbug "avoid the bug in the ROR instruction of very early chips")
          (@arg cmos: --cmos "allow CMOS instructions (including phx, stz)")
          (@arg illegal: --illegal "allow illegal instructions (including lax, dcp, anc)"))
+        (@arg ins: -i --in +takes_value ... "where to find inputs to the function")
+        (@arg outs: -o --out +takes_value ... "where to put the function's output")
     ).get_matches();
 
     match matches.subcommand() {
