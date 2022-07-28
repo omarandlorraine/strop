@@ -44,9 +44,10 @@ fn main() {
             println!("Calling out to kr580vm1");
         }
         Some(("mos6502", opts)) => {
-            let cmos = opts.is_present("cmos");
-            let illegal = opts.is_present("illegal");
-            let rorbug = opts.is_present("rorbug");
+            let cmos = *opts.get_one::<bool>("cmos").unwrap_or(&false);
+            let illegal = *opts.get_one::<bool>("illegal").unwrap_or(&false);
+            let rorbug = *opts.get_one::<bool>("rorbug").unwrap_or(&false);
+            println!("{} {} {}", cmos, illegal, rorbug);
             if cmos && rorbug {
                 println!("Don't specify --cmos and --rorbug together; there are no chips having both CMOS instructions and the ROR bug.");
             }
