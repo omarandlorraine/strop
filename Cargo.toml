@@ -10,7 +10,7 @@ license = "MIT"
 
 [dependencies]
 num = "0.4.0"
-clap = "~2.27.0"
+clap = "3.2.15"
 rand = "0.8.5"
 enum-utils = "0.1.2"
 yaml-rust = "0.4"
