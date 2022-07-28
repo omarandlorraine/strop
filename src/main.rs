@@ -26,14 +26,14 @@ fn main() {
         .about("Stochastically generates machine code")
         .subcommand(
             Command::new("kr580vm1").about("Generates code for the KR580VM1 or Intel 8080")
-            .arg(Arg::new("only80").action(ArgAction::SetTrue)).about("do not permit KR580VM1 specific instructions (i.e., the generated program will be compatible with the Intel 8080)"))
+            .arg(Arg::new("only80").long("only80").action(ArgAction::SetTrue).help("do not permit KR580VM1 specific instructions (i.e., the generated program will be compatible with the Intel 8080)")))
         .subcommand(
             Command::new("stm8").about("Generates code for the STM8"))
         .subcommand(
             Command::new("mos6502").about("Generates code for the MOS 6502")
-            .arg(Arg::new("rorbug").action(ArgAction::SetTrue)).about("avoid the bug in the ROR instruction of very early chips")
-            .arg(Arg::new("cmos").action(ArgAction::SetTrue)).about("allow CMOS instructions (including phx, stz)")
-            .arg(Arg::new("illegal").action(ArgAction::SetTrue)).about("allow illegal instructions (including lax, dcp, anc)")
+            .arg(Arg::new("rorbug").long("rorbug").action(ArgAction::SetTrue).help("avoid the bug in the ROR instruction of very early chips"))
+            .arg(Arg::new("cmos").long("cmos").action(ArgAction::SetTrue).help("allow CMOS instructions (including phx, stz)"))
+            .arg(Arg::new("illegal").long("illegal").action(ArgAction::SetTrue).help("allow illegal instructions (including lax, dcp, anc)"))
         )
         .arg(Arg::new("in").short('i').help("where to find inputs to the function").action(ArgAction::Append))
         .arg(Arg::new("out").short('o').help("where to put the function's outputs").action(ArgAction::Append))
