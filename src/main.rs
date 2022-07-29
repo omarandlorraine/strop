@@ -51,7 +51,7 @@ fn main() {
                 println!("Don't specify --cmos and --rorbug together; there are no chips having both CMOS instructions and the ROR bug.");
             }
             if cmos && illegal {
-                println!("Don't specify --cmos and --illegal together; there are no chips having both CMOS instructions and NMOC illegal instructions.");
+                println!("Don't specify --cmos and --illegal together; there are no chips having both CMOS instructions and NMOS illegal instructions.");
             }
         }
         Some((_, _)) => {
