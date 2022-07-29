@@ -3,9 +3,6 @@ use clap::{Arg, ArgAction, Command};
 
 mod machine;
 mod search;
-use crate::machine::mos6502::Instruction6502;
-use crate::machine::stm8::Stm8Instruction;
-use crate::machine::x80::KR580VM1Instruction;
 use crate::search::BasicBlock;
 
 fn disassemble<I: machine::Instruction + std::fmt::Display>(prog: BasicBlock<I>) {
@@ -17,6 +14,21 @@ fn disassemble<I: machine::Instruction + std::fmt::Display>(prog: BasicBlock<I>)
 fn stocsearch<I: machine::Instruction>() {
     let prog = crate::search::stochastic_search::<I>(|bb| 0.0);
     disassemble::<I>(prog);
+}
+
+fn search_stm8(func: &String, ins: Vec<&String>, outs: Vec<&String>) {
+    use crate::machine::stm8::Stm8Instruction;
+    stocsearch::<Stm8Instruction>();
+}
+
+fn search_kr580vm1(func: &String, ins: Vec<&String>, outs: Vec<&String>, only80: bool) {
+    use crate::machine::x80::KR580VM1Instruction;
+    stocsearch::<KR580VM1Instruction>();
+}
+
+fn search_mos6502(func: &String, ins: Vec<&String>, outs: Vec<&String>, cmos: bool, illegal: bool, rorbug: bool) {
+    use crate::machine::mos6502::Instruction6502;
+    stocsearch::<Instruction6502>();
 }
 
 fn main() {
@@ -46,7 +58,11 @@ fn main() {
 
     match matches.subcommand() {
         Some(("kr580vm1", opts)) => {
-            println!("Calling out to kr580vm1");
+            let only80 = *opts.get_one::<bool>("only80").unwrap_or(&false);
+            search_kr580vm1(func, ins, outs, only80)
+        }
+        Some(("stm8", opts)) => {
+            search_stm8(func, ins, outs)
         }
         Some(("mos6502", opts)) => {
             let cmos = *opts.get_one::<bool>("cmos").unwrap_or(&false);
@@ -58,6 +74,7 @@ fn main() {
             if cmos && illegal {
                 println!("Don't specify --cmos and --illegal together; there are no chips having both CMOS instructions and NMOS illegal instructions.");
             }
+            search_mos6502(func, ins, outs, cmos, illegal, rorbug)
         }
         Some((_, _)) => {
             panic!();
