@@ -24,6 +24,7 @@ fn main() {
         .version("0.1.0")
         .author("Sam M W <sam.magnus.wilson@gmail.com>")
         .about("Stochastically generates machine code")
+        .arg(Arg::new("function").required(true).help("function to compute"))
         .subcommand(
             Command::new("kr580vm1").about("Generates code for the KR580VM1 or Intel 8080")
             .arg(Arg::new("only80").long("only80").action(ArgAction::SetTrue).help("do not permit KR580VM1 specific instructions (i.e., the generated program will be compatible with the Intel 8080)")))
@@ -35,9 +36,13 @@ fn main() {
             .arg(Arg::new("cmos").long("cmos").action(ArgAction::SetTrue).help("allow CMOS instructions (including phx, stz)"))
             .arg(Arg::new("illegal").long("illegal").action(ArgAction::SetTrue).help("allow illegal instructions (including lax, dcp, anc)"))
         )
-        .arg(Arg::new("in").short('i').help("where to find inputs to the function").action(ArgAction::Append))
-        .arg(Arg::new("out").short('o').help("where to put the function's outputs").action(ArgAction::Append))
+        .arg(Arg::new("in").short('i').long("in").global(true).action(ArgAction::Append).help("where to find inputs to the function"))
+        .arg(Arg::new("out").short('o').long("out").global(true).action(ArgAction::Append).help("where to put the function's outputs"))
     .get_matches();
+
+    let ins: Vec<_> = matches.get_many::<String>("in").unwrap().collect();
+    let outs: Vec<_> = matches.get_many::<String>("out").unwrap().collect();
+    let func = matches.get_one::<String>("function").unwrap();
 
     match matches.subcommand() {
         Some(("kr580vm1", opts)) => {
