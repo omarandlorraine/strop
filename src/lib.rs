@@ -10,7 +10,6 @@ where taking random actions is common.
 
 ```
 use strop::randomly;
-pub mod machine;
 
 let n = randomly! {
     { println!("hello"); 0 }
@@ -21,6 +20,7 @@ println!("chose {}", n);
 */
 
 pub use rand;
+pub mod machine;
 
 /// Randomly select a block to be executed. Blocks have
 /// equal probability of being selected (that is, selection
