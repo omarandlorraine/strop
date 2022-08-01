@@ -18,5 +18,9 @@ rayon = "1.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.81"
 
+[dependencies.randomly]
+version = "0.2.1"
+git = "https://github.com/BartMassey/randomly"
+
 [dev-dependencies]
 mos6502 = "0.2.0"

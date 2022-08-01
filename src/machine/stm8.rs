@@ -4,8 +4,8 @@ use rand::distributions::Standard;
 use rand::prelude::Distribution;
 use rand::random;
 use rand::Rng;
+use randomly::randomly;
 use std::collections::HashMap;
-use strop::randomly;
 
 #[derive(Clone, Copy)]
 pub enum Operand8 {
