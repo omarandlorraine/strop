@@ -20,6 +20,7 @@ println!("chose {}", n);
 */
 
 pub use rand;
+pub mod machine;
 
 /// Randomly select a block to be executed. Blocks have
 /// equal probability of being selected (that is, selection
