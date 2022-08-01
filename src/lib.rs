@@ -10,7 +10,7 @@ where taking random actions is common.
 
 ```
 use strop::randomly;
-use strop::machine;
+pub mod machine;
 
 let n = randomly! {
     { println!("hello"); 0 }
