@@ -1,7 +1,7 @@
 use crate::machine::Instruction;
 use rand::{thread_rng, Rng};
+use randomly::randomly;
 use std::ops::{Index, IndexMut};
-use strop::randomly;
 
 #[derive(Clone)]
 pub struct BasicBlock<I>
