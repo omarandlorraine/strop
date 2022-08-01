@@ -10,9 +10,7 @@ where taking random actions is common.
 
 ```
 use strop::randomly;
-mod strop::machine::mos6502;
-mod strop::machine::stm8;
-mod strop::machine::x80;
+use strop::machine;
 
 let n = randomly! {
     { println!("hello"); 0 }
