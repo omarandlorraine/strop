@@ -224,8 +224,34 @@ pub mod tests {
 
     #[test]
     fn instruction_set() {
-        for opcode in vec!["adc", "asl"] {
+        for opcode in vec![
+            "adc", "and", "asl", "bit", "clc", "cld", "clv", "cmp", "cpx", "cpy", "dec", "dex",
+            "dey", "eor", "inc", "inx", "iny", "lda", "ldx", "ldy", "lsr", "ora", "pha", "pla",
+            "rol", "ror", "sbc", "sec", "sed", "sta", "stx", "sty", "tax", "tay", "tsx", "txa",
+            "txs", "tya",
+        ] {
             find_it(opcode);
+            // todo: execute these instructions and check that they don't set the CMOS flag
+        }
+    }
+
+    #[test]
+    fn instruction_set_illegal() {
+        // I've taken the list from https://www.masswerk.at/nowgobang/2021/6502-illegal-opcodes
+        for opcode in vec![
+            "alr", "anc", "arr", "dcp", "isc", "las", "lax", "rla", "rra", "sax", "sbx", "slo",
+            "sre",
+        ] {
+            find_it(opcode);
+            // todo: execute these instructions and check that they set the illegal flag
+        }
+    }
+
+    #[test]
+    fn instruction_set_cmos() {
+        for opcode in vec!["phx", "phy", "plx", "ply", "stz", "trb", "tsb"] {
+            find_it(opcode);
+            // todo: execute these instructions and check that they set the CMOS flag
         }
     }
 }
