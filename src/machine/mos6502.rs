@@ -69,6 +69,28 @@ fn aluop_randomizer(insn: &mut Instruction6502) {
     }
 }
 
+fn rmwop_randomizer(insn: &mut Instruction6502) {
+    fn rnd() -> Operand6502 {
+        randomly!(
+            {Operand6502::A}
+            {Operand6502::Absolute(random())}
+        )
+    }
+
+    insn.operand = match insn.operand {
+        Operand6502::A => rnd(),
+        Operand6502::Immediate(_) => {
+            rnd()
+        }
+        Operand6502::Absolute(addr) => {
+            randomly!(
+                {Operand6502::Absolute(addr.wrapping_add(1))}
+                {Operand6502::Absolute(addr.wrapping_sub(1))}
+            )
+        }
+    }
+}
+
 fn disassemble(insn: &Instruction6502, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match insn.operand {
         Operand6502::A => {
@@ -121,7 +143,43 @@ const ADC: Instruction6502 = Instruction6502 {
     },
 };
 
-const Instructions: [Instruction6502; 1] = [ADC];
+const AND: Instruction6502 = Instruction6502 {
+    mnem: "and",
+    randomizer: aluop_randomizer,
+    disassemble: disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |insn, s| {
+        let val = insn.operand.get(s);
+        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let r = a
+            .zip(m)
+            .map(|(a, m)| a & m);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+    },
+};
+
+const ASL: Instruction6502 = Instruction6502 {
+    mnem: "asl",
+    randomizer: rmwop_randomizer,
+    disassemble: disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |insn, s| {
+        let val = insn.operand.get(s);
+        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let r = a
+            .zip(m)
+            .map(|(a, m)| a & m);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+    },
+};
+
+const INSTRUCTIONS: [Instruction6502; 3] = [ADC, AND, ASL];
 
 impl std::fmt::Display for Instruction6502 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
@@ -145,7 +203,7 @@ impl Instruction for Instruction6502 {
         Self: Sized,
     {
         use rand::seq::SliceRandom;
-        let mut insn = Instructions
+        let mut insn = INSTRUCTIONS
             .choose(&mut rand::thread_rng())
             .unwrap()
             .clone();
