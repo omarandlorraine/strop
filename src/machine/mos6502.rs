@@ -275,7 +275,7 @@ pub mod tests {
         )
     }
 
-    fn run_strop6502(
+    fn run_strop(
         instr: Instruction6502,
         val1: u8,
         val2: u8,
@@ -305,7 +305,7 @@ pub mod tests {
             let c: bool = random();
             let d: bool = random();
             let t = run_mos6502(opcode, a, b, c, d);
-            let s = run_strop6502(*insn, a, b, c, d);
+            let s = run_strop(*insn, a, b, c, d);
 
             let msg = format!("For {:#04x} {:?}", opcode, insn.mnem);
             let regr = format!(
