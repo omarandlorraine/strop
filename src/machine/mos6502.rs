@@ -238,7 +238,6 @@ pub mod tests {
     use mos6502::cpu;
     use mos6502::registers::Status;
 
-    #[allow(dead_code)]
     fn run_mos6502(
         opcode: u8,
         val1: u8,
