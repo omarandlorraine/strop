@@ -30,8 +30,6 @@ the badges:
 
  * [![Build Status](https://github.com/omarandlorraine/strop/workflows/stm8/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=stm8) stm8
  * [![Build Status](https://github.com/omarandlorraine/strop/workflows/mos6502/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=mos6502) 6502 65n02 65c02
- * [![Build Status](https://github.com/omarandlorraine/strop/workflows/6800/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=6800) 6800 6801
- * [![Build Status](https://github.com/omarandlorraine/strop/workflows/pic/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=pic) pic12 pic14 pic16
  * [![Build Status](https://github.com/omarandlorraine/strop/workflows/x80/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=x80) kr580vm1
 
 ### Theory of operation

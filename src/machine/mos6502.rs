@@ -1,557 +1,242 @@
-use crate::machine::rand::prelude::SliceRandom;
-use crate::machine::rand::Rng;
-use crate::machine::random_absolute;
-use crate::machine::random_immediate;
-use crate::machine::reg_by_name;
-use crate::machine::standard_implementation;
-use crate::machine::Datum;
-use crate::machine::DyadicOperation::{
-    AddWithCarry, And, ExclusiveOr, Or, Subtract, SubtractWithCarry,
-};
-use crate::machine::FlowControl;
 use crate::machine::Instruction;
-use crate::machine::Machine;
-use crate::machine::MonadicOperation;
-use crate::machine::MonadicOperation::{
-    Decrement, Increment, LeftShiftArithmetic, RightShiftLogical, RotateLeftThruCarry,
-    RotateRightThruCarry,
-};
-use crate::machine::Operation;
-use crate::machine::Test;
-use crate::machine::Test::{Carry, Minus, Overflow, True, Zero};
-use crate::machine::Width;
-use crate::machine::R;
-
+use crate::machine::Strop;
 use rand::random;
-use strop::randomly;
+use randomly::randomly;
+use std::collections::HashMap;
 
-const A: Datum = Datum::Register(R::A);
-const X: Datum = Datum::Register(R::Xl);
-const Y: Datum = Datum::Register(R::Yl);
+// some clippy warnings disabled for this module because 6502 support is not there yet.
 
-fn dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    fn regname(r: R) -> &'static str {
-        match r {
-            R::A => "a",
-            R::Xl => "x",
-            R::Yl => "y",
-            _ => unimplemented!(),
+#[derive(Default)]
+#[allow(dead_code, unused_variables)]
+pub struct Mos6502 {
+    a: Option<u8>,
+    x: Option<u8>,
+    y: Option<u8>,
+    s: Option<u8>,
+    heap: HashMap<u16, Option<u8>>,
+    carry: Option<bool>,
+    zero: Option<bool>,
+    sign: Option<bool>,
+    overflow: Option<bool>,
+}
+
+impl Mos6502 {
+    fn new() -> Mos6502 {
+        Mos6502 {
+            a: None,
+            x: None,
+            y: None,
+            s: None,
+            heap: HashMap::new(),
+            carry: None,
+            zero: None,
+            sign: None,
+            overflow: None,
         }
     }
-
-    fn branch(f: &mut std::fmt::Formatter, s: &'static str, d: FlowControl) -> std::fmt::Result {
-        match d {
-            FlowControl::Backward(o) => {
-                write!(f, "\t{} -{}", s, o)
-            }
-            FlowControl::Forward(o) => {
-                write!(f, "\t{} +{}", s, o)
-            }
-            _ => {
-                write!(f, "\t{} {:?}", s, d)
-            }
-        }
+    fn read_mem(&self, addr: u16) -> Option<u8> {
+        *self.heap.get(&addr).unwrap_or(&None)
     }
+}
 
-    fn syn(f: &mut std::fmt::Formatter, s: &'static str, d: Datum) -> std::fmt::Result {
-        match d {
-            Datum::Absolute(address) => {
-                write!(f, "\t{} {}", s, address)
-            }
-            Datum::Register(R::A) => {
-                write!(f, "\t{} a", s)
-            }
-            Datum::Imm8(val) => {
-                write!(f, "\t{} #{}", s, val)
-            }
-            _ => {
-                write!(f, "\t{} {:?}", s, d)
-            }
-        }
-    }
+#[derive(Clone, Copy)]
+pub enum Operand6502 {
+    A,
+    Immediate(u8),
+    Absolute(u16),
+}
 
-    match op {
-        Operation::Move(Datum::Register(from), Datum::Register(to)) => {
-            // tax, txa, tay, tya, txs, tsx, txy, tyx (the latter two exist on 65816)
-            write!(f, "\tt{}{}", regname(from), regname(to))
-        }
-        Operation::Move(A, thing) => syn(f, "sta", thing),
-        Operation::Move(X, thing) => syn(f, "stx", thing),
-        Operation::Move(Y, thing) => syn(f, "sty", thing),
-        Operation::Move(Datum::Zero, thing) => syn(f, "stz", thing),
-        Operation::Move(thing, A) => syn(f, "lda", thing),
-        Operation::Move(thing, X) => syn(f, "ldx", thing),
-        Operation::Move(thing, Y) => syn(f, "ldy", thing),
-        Operation::BitCompare(thing, A) => syn(f, "bit", thing),
-        Operation::Dyadic(Width::Width8, Subtract, A, thing, Datum::Zero) => syn(f, "cmp", thing),
-        Operation::Dyadic(Width::Width8, Subtract, X, thing, Datum::Zero) => syn(f, "cpx", thing),
-        Operation::Dyadic(Width::Width8, Subtract, Y, thing, Datum::Zero) => syn(f, "cpy", thing),
-        Operation::Dyadic(Width::Width8, SubtractWithCarry, A, thing, A) => syn(f, "sbc", thing),
-        Operation::Dyadic(Width::Width8, AddWithCarry, A, thing, A) => syn(f, "adc", thing),
-        Operation::Dyadic(Width::Width8, And, A, thing, A) => syn(f, "and", thing),
-        Operation::Dyadic(Width::Width8, ExclusiveOr, A, thing, A) => syn(f, "eor", thing),
-        Operation::Dyadic(Width::Width8, Or, A, thing, A) => syn(f, "ora", thing),
-        Operation::Monadic(Width::Width8, LeftShiftArithmetic, d, _) => syn(f, "asl", d),
-        Operation::Monadic(Width::Width8, MonadicOperation::Increment, Datum::Register(r), _) => {
-            write!(f, "\tin{}", regname(r))
-        }
-        Operation::Monadic(Width::Width8, MonadicOperation::Decrement, Datum::Register(r), _) => {
-            write!(f, "\tde{}", regname(r))
-        }
-        Operation::Monadic(Width::Width8, MonadicOperation::Increment, dat, _) => {
-            syn(f, "inc", dat)
-        }
-        Operation::Monadic(Width::Width8, MonadicOperation::Decrement, dat, _) => {
-            syn(f, "dec", dat)
-        }
-        Operation::Overflow(false) => write!(f, "\tclv"),
-        Operation::Carry(false) => write!(f, "\tclc"),
-        Operation::Carry(true) => write!(f, "\tsec"),
-        Operation::Decimal(false) => write!(f, "\tcld"),
-        Operation::Decimal(true) => write!(f, "\tsed"),
-        Operation::Jump(Overflow(false), offs) => branch(f, "bvc", offs),
-        Operation::Jump(Overflow(true), offs) => branch(f, "bvs", offs),
-        Operation::Jump(Zero(false), offs) => branch(f, "bne", offs),
-        Operation::Jump(Zero(true), offs) => branch(f, "beq", offs),
-        Operation::Jump(Minus(false), offs) => branch(f, "bpl", offs),
-        Operation::Jump(Minus(true), offs) => branch(f, "bmi", offs),
-        Operation::Jump(Carry(false), offs) => branch(f, "bcc", offs),
-        Operation::Jump(Carry(true), offs) => branch(f, "bcs", offs),
-        Operation::Jump(True, offs) => branch(f, "jmp", offs),
-        _ => {
-            write!(f, "{:?}", op)
+impl Operand6502 {
+    fn get(self, s: &Mos6502) -> Option<u8> {
+        match self {
+            Operand6502::A => s.a,
+            Operand6502::Immediate(v) => Some(v),
+            Operand6502::Absolute(addr) => s.read_mem(addr),
         }
     }
 }
 
-pub fn instr_length_6502(insn: &Instruction) -> usize {
-    fn length(dat: Datum) -> usize {
-        match dat {
-            Datum::Register(_) => 1,
-            Datum::Imm8(_) => 2,
-            Datum::Absolute(addr) => {
-                if addr < 256 {
-                    2
-                } else {
-                    3
-                }
-            }
-            _ => 0,
-        }
-    }
-
-    match insn.operation {
-        Operation::Move(Datum::Register(_), Datum::Register(_)) => 1,
-        Operation::Move(Datum::Register(_), dat) => length(dat),
-        Operation::Move(dat, Datum::Register(_)) => length(dat),
-        Operation::Shift(_, dat) => length(dat),
-        Operation::BitCompare(dat, A) => length(dat),
-        Operation::Monadic(Width::Width8, _, dat, _) => length(dat),
-        Operation::Dyadic(Width::Width8, _, _, dat, _) => length(dat),
-        Operation::Overflow(_) => 1,
-        Operation::Carry(_) => 1,
-        Operation::Decimal(_) => 1,
-        Operation::Jump(True, _) => 3,
-        Operation::Jump(_, _) => 2,
-        _ => 0,
-    }
-}
-
-fn random_source() -> Datum {
-    if random() {
-        random_immediate()
-    } else {
-        random_absolute()
-    }
-}
-
-fn rmw_dasm(op: Operation, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    fn syn(f: &mut std::fmt::Formatter, s: &'static str, d: Datum) -> std::fmt::Result {
-        match d {
-            Datum::Absolute(address) => {
-                write!(f, "\t{} {}", s, address)
-            }
-            Datum::Register(R::A) => {
-                write!(f, "\t{} a", s)
-            }
-            _ => {
-                write!(f, "\t{} {:?}", s, d)
-            }
-        }
-    }
-
-    fn opcode(oper: MonadicOperation) -> &'static str {
-        match oper {
-            Decrement => "dec",
-            Increment => "inc",
-            LeftShiftArithmetic => "asl",
-            RightShiftLogical => "lsr",
-            RotateRightThruCarry => "ror",
-            RotateLeftThruCarry => "rol",
-            _ => panic!("I don't know the opcode for {:?}", oper),
-        }
-    }
-
-    match op {
-        Operation::Monadic(Width::Width8, Decrement, X, X) => {
-            write!(f, "\tdex")
-        }
-        Operation::Monadic(Width::Width8, Decrement, Y, Y) => {
-            write!(f, "\tdey")
-        }
-        Operation::Monadic(Width::Width8, Increment, X, X) => {
-            write!(f, "\tinx")
-        }
-        Operation::Monadic(Width::Width8, Increment, Y, Y) => {
-            write!(f, "\tiny")
-        }
-        Operation::Monadic(Width::Width8, oper, d, _) => syn(f, opcode(oper), d),
-        _ => {
-            write!(f, "{:?}", op)
-        }
-    }
-}
-
-fn rmw_op(cmos: bool) -> Operation {
-    // Operations which can be performed on either memory or the accumulator
-    let ma = vec![
-        LeftShiftArithmetic,
-        RightShiftLogical,
-        RotateLeftThruCarry,
-        RotateRightThruCarry,
-    ];
-
-    // Operations which can be performed on either memory or an index register
-    let mxy = vec![Decrement, Increment];
-
-    fn xy(cmos: bool) -> Datum {
-        // Pick an index register (if CMOS this includes the accumulator)
-        if cmos {
-            *[X, Y, A].choose(&mut rand::thread_rng()).unwrap()
-        } else {
-            *[X, Y].choose(&mut rand::thread_rng()).unwrap()
-        }
-    }
-
-    if random() {
-        let op = *ma.choose(&mut rand::thread_rng()).unwrap();
-        let d = if random() { A } else { random_absolute() };
-        Operation::Monadic(Width::Width8, op, d, d)
-    } else {
-        let op = *mxy.choose(&mut rand::thread_rng()).unwrap();
-        let d = if random() {
-            xy(cmos)
-        } else {
-            random_absolute()
-        };
-        Operation::Monadic(Width::Width8, op, d, d)
-    }
-}
-
-fn alu_6502() -> Operation {
-    // randomly generate the instructions ora, and, eor, adc, sbc, cmp
-    // these all have the same available addressing modes
-    let ops = vec![AddWithCarry, And, Or, ExclusiveOr, SubtractWithCarry];
-    let op = *ops.choose(&mut rand::thread_rng()).unwrap();
-    Operation::Dyadic(Width::Width8, op, A, random_source(), A)
-}
-
-fn transfers_6502() -> Operation {
-    let reg = if random() { X } else { Y };
-    if random() {
-        Operation::Move(A, reg)
-    } else {
-        Operation::Move(reg, A)
-    }
-}
-
-fn loads() -> Operation {
-    let reg = randomly!( { A } { X } { Y } );
-
-    if random() {
-        Operation::Move(random_absolute(), reg)
-    } else {
-        Operation::Move(random_immediate(), reg)
-    }
-}
-
-fn stores() -> Operation {
-    let reg = randomly!( { A } { X } { Y } );
-
-    Operation::Move(reg, random_absolute())
-}
-
-fn secl_6502() -> Operation {
-    randomly!(
-        {Operation::Carry(random())}
-        {Operation::Decimal(random())}
-        {Operation::Overflow(false)}
-    )
-}
-
-fn branches() -> Operation {
-    fn j() -> FlowControl {
-        if random() {
-            FlowControl::Forward(rand::thread_rng().gen_range(1..3))
-        } else {
-            FlowControl::Backward(rand::thread_rng().gen_range(1..3))
-        }
-    }
-
-    fn cond() -> Test {
+fn aluop_randomizer(insn: &mut Instruction6502) {
+    fn rnd() -> Operand6502 {
         randomly!(
-           { Test::True}
-           { Test::Minus(random())}
-           { Test::Zero(random())}
-           { Test::Overflow(random())}
-           { Test::Carry(random())})
+            {Operand6502::Immediate(random())}
+            {Operand6502::Absolute(random())}
+        )
     }
 
-    Operation::Jump(cond(), j())
-}
-
-const BRANCH_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
-    length: instr_length_6502,
-    operation: Operation::Nop,
-    randomizer: branches,
-};
-
-fn compares() -> Operation {
-    randomly!(
-    { Operation::BitCompare(random_absolute(), A)}
-    { Operation::Dyadic(Width::Width8, Subtract, A, random_source(), Datum::Zero)}
-    { Operation::Dyadic(Width::Width8, Subtract, X, random_source(), Datum::Zero)}
-    { Operation::Dyadic(Width::Width8, Subtract, Y, random_source(), Datum::Zero)}
-    )
-}
-
-const COMPARE_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
-    length: instr_length_6502,
-    operation: Operation::Nop,
-    randomizer: compares,
-};
-
-const STORE_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
-    length: instr_length_6502,
-    operation: Operation::Nop,
-    randomizer: stores,
-};
-
-const LOAD_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
-    length: instr_length_6502,
-    operation: Operation::Nop,
-    randomizer: loads,
-};
-
-const TRANSFER_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
-    length: instr_length_6502,
-    operation: Operation::Nop,
-    randomizer: transfers_6502,
-};
-
-const ALU_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
-    length: instr_length_6502,
-    operation: Operation::Nop,
-    randomizer: alu_6502,
-};
-
-const RMW_NMOS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: rmw_dasm,
-    length: instr_length_6502,
-    operation: Operation::Nop,
-    randomizer: || rmw_op(false),
-};
-
-const RMW_CMOS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: rmw_dasm,
-    length: instr_length_6502,
-    operation: Operation::Nop,
-    randomizer: || rmw_op(true),
-};
-
-const FLAG_INSTRUCTIONS: Instruction = Instruction {
-    implementation: standard_implementation,
-    disassemble: dasm,
-    length: instr_length_6502,
-    operation: Operation::Nop,
-    randomizer: secl_6502,
-};
-
-const NMOS6502_INSTRUCTIONS: [Instruction; 7] = [
-    ALU_INSTRUCTIONS,
-    FLAG_INSTRUCTIONS,
-    RMW_NMOS,
-    TRANSFER_INSTRUCTIONS,
-    LOAD_INSTRUCTIONS,
-    COMPARE_INSTRUCTIONS,
-    BRANCH_INSTRUCTIONS,
-];
-
-const CMOS6502_INSTRUCTIONS: [Instruction; 7] = [
-    ALU_INSTRUCTIONS,
-    FLAG_INSTRUCTIONS,
-    RMW_CMOS,
-    TRANSFER_INSTRUCTIONS,
-    LOAD_INSTRUCTIONS,
-    COMPARE_INSTRUCTIONS,
-    BRANCH_INSTRUCTIONS,
-];
-
-pub fn random_insn_65c02() -> Instruction {
-    let mut op = *CMOS6502_INSTRUCTIONS
-        .choose(&mut rand::thread_rng())
-        .unwrap();
-    op.randomize();
-    op
-}
-
-fn random_insn_6502() -> Instruction {
-    let mut op = *NMOS6502_INSTRUCTIONS
-        .choose(&mut rand::thread_rng())
-        .unwrap();
-    op.randomize();
-    op
-}
-
-fn reg_mos6502(name: &str) -> Result<Datum, &'static str> {
-    if name == "a" {
-        return Ok(Datum::Register(R::A));
+    insn.operand = match insn.operand {
+        Operand6502::A => rnd(),
+        Operand6502::Immediate(v) => {
+            randomly!(
+                {Operand6502::Immediate(v.wrapping_add(1))}
+                {Operand6502::Immediate(v.wrapping_sub(1))}
+                {let bitsel = 1_u8.rotate_left(rand::thread_rng().gen_range(0..8)); Operand6502::Immediate(v ^ bitsel)}
+            )
+        }
+        Operand6502::Absolute(addr) => {
+            randomly!(
+                {Operand6502::Absolute(addr.wrapping_add(1))}
+                {Operand6502::Absolute(addr.wrapping_sub(1))}
+            )
+        }
     }
-    if name == "x" {
-        return Ok(Datum::Register(R::Xl));
-    }
-    if name == "y" {
-        return Ok(Datum::Register(R::Yl));
-    }
-    reg_by_name(name)
 }
 
-pub const MOS65C02: Machine = Machine {
-    name: "65c02",
-    random_insn: random_insn_65c02,
-    reg_by_name: reg_mos6502,
+fn rmwop_randomizer(insn: &mut Instruction6502) {
+    fn rnd() -> Operand6502 {
+        randomly!(
+            {Operand6502::A}
+            {Operand6502::Absolute(random())}
+        )
+    }
+
+    insn.operand = match insn.operand {
+        Operand6502::A => rnd(),
+        Operand6502::Immediate(_) => rnd(),
+        Operand6502::Absolute(addr) => {
+            randomly!(
+                {Operand6502::Absolute(addr.wrapping_add(1))}
+                {Operand6502::Absolute(addr.wrapping_sub(1))}
+            )
+        }
+    }
+}
+
+fn disassemble(insn: &Instruction6502, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match insn.operand {
+        Operand6502::A => {
+            write!(f, "\t{} a", insn.mnem)
+        }
+        Operand6502::Immediate(val) => {
+            write!(f, "\t{} #${:#04x}", insn.mnem, val)
+        }
+        Operand6502::Absolute(addr) => {
+            write!(f, "\t{} ${:#06x}", insn.mnem, addr)
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct Instruction6502 {
+    mnem: &'static str,
+    randomizer: fn(&mut Instruction6502),
+    disassemble: fn(&Instruction6502, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
+    handler: fn(&Instruction6502, &mut Mos6502),
+    operand: Operand6502,
+}
+
+const ADC: Instruction6502 = Instruction6502 {
+    mnem: "adc",
+    randomizer: aluop_randomizer,
+    disassemble: disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |insn, s| {
+        let val = insn.operand.get(s);
+        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let r = a
+            .zip(m)
+            .zip(s.carry)
+            .map(|((a, m), c)| a.wrapping_add(m).wrapping_add(if c { 1 } else { 0 }));
+        let carrytests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
+        let overflowtests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
+        s.carry = carrytests.map(|t| t.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.overflow = overflowtests.map(|t| t != 0 && t != -64);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+    },
 };
 
-pub const MOS6502: Machine = Machine {
-    name: "6502",
-    random_insn: random_insn_6502,
-    reg_by_name: reg_mos6502,
+const AND: Instruction6502 = Instruction6502 {
+    mnem: "and",
+    randomizer: aluop_randomizer,
+    disassemble: disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |insn, s| {
+        let val = insn.operand.get(s);
+        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let r = a.zip(m).map(|(a, m)| a & m);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+    },
 };
+
+const ASL: Instruction6502 = Instruction6502 {
+    mnem: "asl",
+    randomizer: rmwop_randomizer,
+    disassemble: disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |insn, s| {
+        let val = insn.operand.get(s);
+        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let r = a.zip(m).map(|(a, m)| a & m);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+    },
+};
+
+const INSTRUCTIONS: [Instruction6502; 3] = [ADC, AND, ASL];
+
+impl std::fmt::Display for Instruction6502 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        (self.disassemble)(self, f)
+    }
+}
+
+impl Instruction for Instruction6502 {
+    type State = Mos6502;
+    fn randomize(&mut self) {
+        (self.randomizer)(self);
+    }
+    fn len(&self) -> usize {
+        todo!()
+    }
+    fn operate(&self, s: &mut Mos6502) {
+        (self.handler)(self, s);
+    }
+    fn new() -> Self
+    where
+        Self: Sized,
+    {
+        use rand::seq::SliceRandom;
+        let mut insn = INSTRUCTIONS
+            .choose(&mut rand::thread_rng())
+            .unwrap()
+            .clone();
+        insn.randomize();
+        insn
+    }
+}
+
+impl Strop for Instruction6502 {
+    fn random() -> Instruction6502 {
+        Instruction6502::new()
+    }
+
+    fn mutate(&mut self) {
+        (self.randomizer)(self);
+    }
+}
 
 #[cfg(test)]
 pub mod tests {
     use super::*;
 
-    fn find_it(opcode: &'static str, insn: &Instruction) {
-        let mut i = insn.clone();
-        let mut found_it = false;
-
-        for _i in 0..5000 {
-            i.randomize();
-            let d = format!("{}", i);
-
-            // Does the disassembler output something starting with a tab?
-            assert!(
-                d[0..1] == "\t".to_owned(),
-                "Cannot disassemble {:?}, got {}",
-                i.operation,
-                d
-            );
-
-            // Is the opcode a substring of whatever the disassembler spat out?
-            found_it |= d.contains(opcode);
-
-            // Does this instruction have a length
-            assert!(i.len() > 0, "No instruction length for {}", i);
-        }
-        assert!(found_it, "Couldn't find instruction {}", opcode);
-    }
-
-    #[test]
-    fn reg_names() {
-        assert_eq!(reg_mos6502("a").unwrap(), A);
-        assert_eq!(reg_mos6502("x").unwrap(), X);
-        assert_eq!(reg_mos6502("y").unwrap(), Y);
-        assert_eq!(reg_mos6502("m6").unwrap(), Datum::Absolute(6));
-        assert!(reg_mos6502("n").is_err());
-        assert!(reg_mos6502("m").is_err());
-    }
-
-    #[test]
-    fn instruction_set_6502() {
-        for i in [
-            "asl", "dec", "dex", "dey", "inc", "inx", "iny", "lsr", "rol", "ror",
-        ] {
-            find_it(i, &RMW_CMOS);
-            find_it(i, &RMW_NMOS);
-        }
-
-        for i in ["tax", "txa", "tay", "tya"] {
-            find_it(i, &TRANSFER_INSTRUCTIONS);
-        }
-
-        for i in ["clc", "sec", "clv", "sed", "cld"] {
-            find_it(i, &FLAG_INSTRUCTIONS);
-        }
-
-        for i in ["adc", "and", "eor", "ora", "sbc"] {
-            find_it(i, &ALU_INSTRUCTIONS);
-        }
-
-        for i in ["lda", "ldx", "ldy"] {
-            find_it(i, &LOAD_INSTRUCTIONS);
-        }
-
-        for i in ["bit", "cmp", "cpx", "cpy"] {
-            find_it(i, &COMPARE_INSTRUCTIONS);
-        }
-
-        for i in [
-            "bcc", "bcs", "beq", "bmi", "bne", "bpl", "bvc", "bvs", "jmp",
-        ] {
-            find_it(i, &BRANCH_INSTRUCTIONS);
-        }
-
-        for i in ["sta", "stx", "sty"] {
-            find_it(i, &STORE_INSTRUCTIONS);
-        }
-
-        // not bothering with nop; there's NO Point
-        // not bothering with brk; it's some kind of buggy software interrupt instruction.
-        // not bothering with cli; strop does not handle interrupts
-        // not bothering with jsr; strop does not call subroutines
-        // not bothering with rti; strop does not handle interrupts
-        // not bothering with rts; strop does not call subroutines
-        // not bothering with sei; strop does not handle interrupts
-        // as for txs tsx pha pla php plp, we need ot figure out how/if we're going to implement a stack.
-        // need to add stz for 65c02
-        // need to add lax sax for 65n02
-    }
-
-    use crate::machine::mos6502::{A, X, Y};
-    use crate::machine::DyadicOperation;
-    use crate::machine::Operation;
-    use crate::Datum;
-
-    extern crate mos6502;
+    use mos6502;
     use mos6502::address::Address;
     use mos6502::cpu;
     use mos6502::registers::Status;
-    use rand::random;
 
     fn run_mos6502(
         opcode: u8,
@@ -590,318 +275,122 @@ pub mod tests {
         )
     }
 
-    fn run_strop_monadic(
-        op: MonadicOperation,
-        val1: u8,
-        carry: bool,
-        decimal: bool,
-    ) -> (i8, bool, bool, bool, bool) {
-        use crate::State;
-        let mut c = FLAG_INSTRUCTIONS.clone();
-        c.operation = Operation::Carry(carry);
-
-        let mut d = FLAG_INSTRUCTIONS.clone();
-        d.operation = Operation::Decimal(decimal);
-
-        let mut lda1 = LOAD_INSTRUCTIONS.clone();
-        lda1.operation = Operation::Move(Datum::Imm8(i8::from_ne_bytes(val1.to_ne_bytes())), A);
-
-        let mut ope = RMW_NMOS.clone();
-        ope.operation = Operation::Monadic(Width::Width8, op, A, A);
-
-        let mut s = State::new();
-        c.operate(&mut s);
-        d.operate(&mut s);
-        lda1.operate(&mut s);
-        ope.operate(&mut s);
-
-        (
-            s.get_i8(A).unwrap(),
-            s.zero.unwrap_or(false),
-            s.carry.unwrap_or(false),
-            s.sign.unwrap_or(false),
-            s.overflow.unwrap_or(false),
-        )
-    }
-
-    fn run_strop(
-        op: DyadicOperation,
+    fn run_strop6502(
+        instr: Instruction6502,
         val1: u8,
         val2: u8,
         carry: bool,
         decimal: bool,
     ) -> (i8, bool, bool, bool, bool) {
-        use crate::State;
-        let mut c = FLAG_INSTRUCTIONS.clone();
-        c.operation = Operation::Carry(carry);
+        let mut state = Mos6502::new();
+        state.carry = Some(carry);
+        state.a = Some(val1);
+        let mut insn = instr.clone();
+        insn.operand = Operand6502::Immediate(val2);
 
-        let mut d = FLAG_INSTRUCTIONS.clone();
-        d.operation = Operation::Decimal(decimal);
-
-        let mut lda1 = LOAD_INSTRUCTIONS.clone();
-        lda1.operation = Operation::Move(Datum::Imm8(i8::from_ne_bytes(val1.to_ne_bytes())), A);
-
-        let mut ope = ALU_INSTRUCTIONS.clone();
-        ope.operation = Operation::Dyadic(
-            Width::Width8,
-            op,
-            A,
-            Datum::Imm8(i8::from_ne_bytes(val2.to_ne_bytes())),
-            A,
-        );
-
-        let mut s = State::new();
-        c.operate(&mut s);
-        d.operate(&mut s);
-        lda1.operate(&mut s);
-        ope.operate(&mut s);
-
+        insn.operate(&mut state);
         (
-            s.get_i8(A).unwrap(),
-            s.zero.unwrap_or(false),
-            s.carry.unwrap_or(false),
-            s.sign.unwrap_or(false),
-            s.overflow.unwrap_or(false),
+            i8::from_ne_bytes(state.a.unwrap().to_ne_bytes()),
+            state.zero.unwrap_or(false),
+            state.carry.unwrap_or(false),
+            state.sign.unwrap_or(false),
+            state.overflow.unwrap_or(false),
         )
     }
 
-    #[test]
-    fn adc_flags() {
-        // check that the carry flag is set when unsigned addition carries over
-        assert!(
-            run_strop(AddWithCarry, 0x94, 0x83, false, false).2,
-            "adc instruction didn't set carry flag but should have"
-        );
-        assert!(
-            run_strop(AddWithCarry, 0x31, 0xb5, false, false).3,
-            "adc instruction didn't set sign flag but should have"
-        );
-        assert!(
-            run_strop(AddWithCarry, 0x82, 0x87, true, false).4,
-            "adc instruction didn't set overflow flag but should have"
-        );
-    }
-
-    #[test]
-    fn asl_flags() {
-        assert!(
-            run_strop_monadic(LeftShiftArithmetic, 0x86, false, false).2,
-            "asl instruction should've set carry flag but didn't"
-        );
-        assert!(
-            run_strop_monadic(LeftShiftArithmetic, 0xde, false, false).3,
-            "asl instruction didn't set sign flag but should have"
-        );
-        assert!(
-            run_strop_monadic(LeftShiftArithmetic, 0x80, false, false).1,
-            "asl instruction didn't set zero flag but should have"
-        );
-    }
-
-    #[test]
-    fn ora_flags() {
-        assert!(
-            run_strop(Or, 0x00, 0x00, true, false).1,
-            "eor instruction didn't set zero flag but should've"
-        );
-        assert!(
-            run_strop(Or, 0x04, 0xbe, true, false).3,
-            "ora instruction didn't set sign flag but should've"
-        );
-    }
-
-    #[test]
-    fn eor_flags() {
-        assert!(
-            run_strop(ExclusiveOr, 0x37, 0x37, true, false).1,
-            "eor instruction didn't set zero flag but should've"
-        );
-        assert!(
-            run_strop(ExclusiveOr, 0x29, 0x87, false, false).3,
-            "eor instruction didn't set sign flag but should've"
-        );
-    }
-
-    #[test]
-    fn ror_flags() {
-        assert!(
-            run_strop_monadic(RotateRightThruCarry, 0x5f, true, false).3,
-            "ror instruction shouldn've set the sign flag but didn't"
-        );
-        assert!(
-            run_strop_monadic(RotateRightThruCarry, 0x71, false, false).2,
-            "ror instruction shouldn've set the carry flag but didn't"
-        );
-    }
-
-    #[test]
-    fn ror_result() {
-        let result = run_strop_monadic(RotateRightThruCarry, 0x43, false, false).0;
-        assert!(
-            result == 0x21,
-            "0x43 rotated right should be 0x21 but was found to be {:#04x}",
-            result
-        );
-    }
-
-    #[test]
-    fn rol_flags() {
-        assert!(
-            !run_strop_monadic(RotateLeftThruCarry, 0x58, true, false).2,
-            "rol instruction set carry flag but shouldn't've"
-        );
-    }
-
-    #[test]
-    fn lsr_flags() {
-        assert!(
-            !run_strop_monadic(RightShiftLogical, 0xab, false, false).3,
-            "lsr instruction didn't set sign flag but should've"
-        );
-        assert!(
-            !run_strop_monadic(RightShiftLogical, 0xde, false, false).2,
-            "lsr instruction should've set carry flag but didn't"
-        );
-    }
-
-    #[test]
-    fn and_flags() {
-        assert!(
-            run_strop(And, 0xe8, 0x80, true, false).3,
-            "and instruction didn't set sign flag but should've"
-        );
-        assert!(
-            run_strop(And, 0x8e, 0x70, true, false).1,
-            "and instruction didn't set zero flag but should've"
-        );
-    }
-
-    fn fuzz_monadic(op: MonadicOperation, opcode: u8) {
-        for _i in 0..5000 {
+    fn fuzz_test_immediate(insn: &Instruction6502, opcode: u8) {
+        for _ in 0..5000 {
             let a: u8 = random();
             let b: u8 = random();
             let c: bool = random();
-            let d: bool = false;
+            let d: bool = random();
+            let t = run_mos6502(opcode, a, b, c, d);
+            let s = run_strop6502(*insn, a, b, c, d);
 
-            let msg = format!("For {:#04x} {:?}", opcode, op);
-            let regr = format!("run_strop_monadic({:?}, {:#04x}, {}, {})", op, a, c, d);
-            let truth = run_mos6502(opcode, a, 0xff, c, d);
-            let strop = run_strop_monadic(op, a, c, d);
+            let msg = format!("For {:#04x} {:?}", opcode, insn.mnem);
+            let regr = format!(
+                "run_strop({:?}, {:#04x}, {:#04x}, {}, {})",
+                insn.mnem, a, b, c, d
+            );
 
             assert!(
-                truth.0 == strop.0,
+                t.0 == s.0,
                 "{}, run {} and check accumulator == {:#04x}",
                 msg,
                 regr,
-                truth.0
+                t.0
             );
-
             assert!(
-                truth.1 == strop.1,
+                t.1 == s.1,
                 "{}, run {} and check zero flag == {}",
                 msg,
                 regr,
-                truth.1
+                t.1
             );
-
-            if b != 0xff {
-                // There should be no if here.
-                // This is a workaround for a bug in the mos6502 crate
-                assert!(
-                    truth.2 == strop.2,
-                    "{}, run {} and check carry == {}",
-                    msg,
-                    regr,
-                    truth.2
-                );
-            }
-
             assert!(
-                truth.3 == strop.3,
+                t.2 == s.2,
+                "{}, run {} and check carry == {}",
+                msg,
+                regr,
+                t.2
+            );
+            assert!(
+                t.3 == s.3,
                 "{}, run {} and check sign flag == {}",
                 msg,
                 regr,
-                truth.3
-            );
-
-            assert!(
-                truth.4 == strop.4,
-                "{}, run {} and check overflow flag == {}",
-                msg,
-                regr,
-                truth.4
+                t.3
             );
         }
     }
 
-    fn fuzz_dyadic(op: DyadicOperation, opcode: u8) {
-        for _i in 0..5000 {
-            let a: u8 = random();
-            let b: u8 = random();
-            let c: bool = random();
-            let d: bool = false;
+    #[test]
+    fn fuzzing() {
+        fuzz_test_immediate(&AND, 0x29);
+        fuzz_test_immediate(&ADC, 0x69);
+    }
 
-            let msg = format!("For {:#04x} {:?}", opcode, op);
-            let regr = format!("run_strop({:?}, {:#04x}, {:#04x}, {}, {})", op, a, b, c, d);
-            let truth = run_mos6502(opcode, a, b, c, d);
-            let strop = run_strop(op, a, b, c, d);
-
-            assert!(
-                truth.0 == strop.0,
-                "{}, run {} and check accumulator == {:#04x}",
-                msg,
-                regr,
-                truth.0
-            );
-
-            assert!(
-                truth.1 == strop.1,
-                "{}, run {} and check zero flag == {}",
-                msg,
-                regr,
-                truth.1
-            );
-
-            if b != 0xff {
-                // There should be no if here.
-                // This is a workaround for a bug in the mos6502 crate
-                assert!(
-                    truth.2 == strop.2,
-                    "{}, run {} and check carry == {}",
-                    msg,
-                    regr,
-                    truth.2
-                );
+    fn find_it(opcode: &'static str) {
+        for _ in 0..5000 {
+            let insn = Instruction6502::random();
+            let dasm = format!("{}", insn);
+            if dasm.contains(opcode) {
+                return;
             }
+        }
+        panic!("Could not find opcode {}", opcode);
+    }
 
-            assert!(
-                truth.3 == strop.3,
-                "{}, run {} and check sign flag == {}",
-                msg,
-                regr,
-                truth.3
-            );
-
-            assert!(
-                truth.4 == strop.4,
-                "{}, run {} and check overflow flag == {}",
-                msg,
-                regr,
-                truth.4
-            );
+    #[test]
+    fn instruction_set() {
+        for opcode in vec![
+            "adc", "and", "asl", "bit", "clc", "cld", "clv", "cmp", "cpx", "cpy", "dec", "dex",
+            "dey", "eor", "inc", "inx", "iny", "lda", "ldx", "ldy", "lsr", "ora", "pha", "pla",
+            "rol", "ror", "sbc", "sec", "sed", "sta", "stx", "sty", "tax", "tay", "tsx", "txa",
+            "txs", "tya",
+        ] {
+            find_it(opcode);
+            // todo: execute these instructions and check that they don't set the CMOS flag
         }
     }
 
-    pub fn fuzz_test() {
-        fuzz_monadic(LeftShiftArithmetic, 0x0a);
-        fuzz_monadic(RightShiftLogical, 0x4a);
-        fuzz_monadic(RotateLeftThruCarry, 0x2a);
-        fuzz_monadic(RotateRightThruCarry, 0x6a);
-        fuzz_dyadic(AddWithCarry, 0x69);
-        fuzz_dyadic(And, 0x29);
-        // Not testing BitCompare (the BIT opcode) here because there is no immediate mode
-        fuzz_dyadic(ExclusiveOr, 0x49);
-        fuzz_dyadic(Or, 0x09);
-        fuzz_dyadic(SubtractWithCarry, 0xe9);
+    #[test]
+    fn instruction_set_illegal() {
+        // I've taken the list from https://www.masswerk.at/nowgobang/2021/6502-illegal-opcodes
+        for opcode in vec![
+            "alr", "anc", "arr", "dcp", "isc", "las", "lax", "rla", "rra", "sax", "sbx", "slo",
+            "sre",
+        ] {
+            find_it(opcode);
+            // todo: execute these instructions and check that they set the illegal flag
+        }
+    }
+
+    #[test]
+    fn instruction_set_cmos() {
+        for opcode in vec!["phx", "phy", "plx", "ply", "stz", "trb", "tsb"] {
+            find_it(opcode);
+            // todo: execute these instructions and check that they set the CMOS flag
+        }
     }
 }

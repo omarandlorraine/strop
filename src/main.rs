@@ -1,204 +1,91 @@
-use std::fs;
-use std::process;
-
-extern crate argh;
-use argh::FromArgs;
+extern crate clap;
+use clap::{Arg, ArgAction, Command};
 
 mod machine;
 mod search;
-mod test;
-
-use crate::machine::Datum;
-use crate::machine::Machine;
-use crate::machine::State;
-use crate::machine::MACHINES;
-use crate::search::optimize;
-use crate::search::stochastic_search;
 use crate::search::BasicBlock;
 
-use crate::test::sanity;
-use crate::test::{DeTestRun, Step, Test, TestRun};
-
-#[derive(FromArgs, PartialEq, Debug)]
-/// command line arguments
-struct Opts {
-    #[argh(option, short = 'm')]
-    /// the name of the architecture.
-    arch: String,
-
-    #[argh(option, short = 'f')]
-    /// file containing the custom test run
-    file: Option<String>,
-
-    #[argh(option)]
-    /// the function to compute
-    function: Option<String>,
-
-    #[argh(option, long = "in")]
-    /// in variables
-    r#in: Vec<String>,
-
-    #[argh(option)]
-    /// out variables
-    out: Vec<String>,
-
-    #[argh(option)]
-    /// constants
-    constant: Vec<i8>,
-
-    #[argh(switch, short = 'g')]
-    /// graph progress
-    graph: bool,
-
-    #[argh(switch, short = 'd')]
-    /// disassemble the best specimen from each generation
-    debug: bool,
-}
-
-fn function(m: String, ins: Vec<Datum>, outs: Vec<Datum>) -> Vec<Test> {
-    // TODO: test_cases does not need to be mutable..
-    let mut test_cases = Vec::new();
-    if m == *"abs" {
-        for n in -127_i8..=127 {
-            test_cases.push(Test {
-                steps: vec![
-                    Step::Set(ins[0], n as i32),
-                    Step::Run,
-                    Step::Diff(outs[0], n.abs() as i32),
-                ],
-            });
-        }
-        return test_cases;
-    }
-
-    if m[0..4] == *"mult" {
-        let arg = m[4..].to_string();
-        let a = arg.parse::<i8>();
-
-        if let Ok(f) = a {
-            for n in -128_i8..=127 {
-                if let Some(res) = n.checked_mul(f) {
-                    test_cases.push(Test {
-                        steps: vec![
-                            Step::Set(ins[0], n as i32),
-                            Step::Run,
-                            Step::Diff(outs[0], res as i32),
-                        ],
-                    });
-                }
-            }
-            return test_cases;
-        } else {
-            println!("Can't multiply by {}", arg);
-        }
-    }
-    if m[0..3] == *"add" {
-        let arg = m[3..].to_string();
-        let a = arg.parse::<i8>();
-
-        if let Ok(f) = a {
-            for n in -128_i8..=127 {
-                if let Some(res) = n.checked_add(f) {
-                    test_cases.push(Test {
-                        steps: vec![
-                            Step::Set(ins[0], n as i32),
-                            Step::Run,
-                            Step::Diff(outs[0], res as i32),
-                        ],
-                    });
-                }
-            }
-            return test_cases;
-        } else {
-            println!("Can't add {}", arg);
-        }
-    }
-    if m[0..3] == *"max" {
-        let arg = m[3..].to_string();
-        let a = arg.parse::<i8>();
-
-        if let Ok(f) = a {
-            for n in -128_i8..=127 {
-                test_cases.push(Test {
-                    steps: vec![
-                        Step::Set(ins[0], n as i32),
-                        Step::Run,
-                        Step::Diff(outs[0], if n < f { n } else { f } as i32),
-                    ],
-                });
-            }
-            return test_cases;
-        } else {
-            println!("Can't add {}", arg);
-        }
-    }
-    println!("I don't understand what you mean by the argument {}", m);
-    process::exit(1);
-}
-
-fn disassemble(prog: BasicBlock) {
+fn disassemble<I: machine::Instruction + std::fmt::Display>(prog: BasicBlock<I>) {
     for p in prog.instructions {
         println!("{}", p);
     }
 }
 
-fn testrun_from_args(opts: &Opts, mach: Machine) -> TestRun {
-    for l in opts.r#in.clone().into_iter().chain(opts.out.clone()) {
-        if let Some(error_message) = mach.register_by_name(&l).err() {
-            println!(
-                "I don't understand what you mean by the datum {}: {}.",
-                l, error_message
-            );
-            process::exit(1);
-        }
-    }
-
-    let ins: Vec<Datum> = opts
-        .r#in
-        .clone()
-        .into_iter()
-        .map(|reg| mach.register_by_name(&reg).unwrap())
-        .collect();
-    let outs: Vec<Datum> = opts
-        .out
-        .clone()
-        .into_iter()
-        .map(|reg| mach.register_by_name(&reg).unwrap())
-        .collect();
-    TestRun {
-        tests: function(opts.function.clone().unwrap(), ins, outs),
-    }
+fn stocsearch<I: machine::Instruction>() {
+    let prog = crate::search::stochastic_search::<I>(|bb| 0.0);
+    disassemble::<I>(prog);
 }
 
-fn get_machine_by_name(name: &str) -> Machine {
-    for m in MACHINES {
-        if m.name == name {
-            return m;
-        }
-    }
+fn search_stm8(func: &String, ins: Vec<&String>, outs: Vec<&String>) {
+    use crate::machine::stm8::Stm8Instruction;
+    stocsearch::<Stm8Instruction>();
+}
 
-    println!("I don't know a machine called {}", name);
-    println!("Here are the ones I know:");
-    for m in MACHINES {
-        println!(" - {}", m.name);
-    }
-    process::exit(1);
+fn search_kr580vm1(func: &String, ins: Vec<&String>, outs: Vec<&String>, only80: bool) {
+    use crate::machine::x80::KR580VM1Instruction;
+    stocsearch::<KR580VM1Instruction>();
+}
+
+fn search_mos6502(
+    func: &String,
+    ins: Vec<&String>,
+    outs: Vec<&String>,
+    cmos: bool,
+    illegal: bool,
+    rorbug: bool,
+) {
+    use crate::machine::mos6502::Instruction6502;
+    stocsearch::<Instruction6502>();
 }
 
 fn main() {
-    let opts: Opts = argh::from_env();
+    let matches = Command::new("strop")
+        .version("0.1.0")
+        .author("Sam M W <sam.magnus.wilson@gmail.com>")
+        .about("Stochastically generates machine code")
+        .arg(Arg::new("function").required(true).help("function to compute"))
+        .subcommand(
+            Command::new("kr580vm1").about("Generates code for the KR580VM1 or Intel 8080")
+            .arg(Arg::new("only80").long("only80").action(ArgAction::SetTrue).help("do not permit KR580VM1 specific instructions (i.e., the generated program will be compatible with the Intel 8080)")))
+        .subcommand(
+            Command::new("stm8").about("Generates code for the STM8"))
+        .subcommand(
+            Command::new("mos6502").about("Generates code for the MOS 6502")
+            .arg(Arg::new("rorbug").long("rorbug").action(ArgAction::SetTrue).help("avoid the bug in the ROR instruction of very early chips"))
+            .arg(Arg::new("cmos").long("cmos").action(ArgAction::SetTrue).help("allow CMOS instructions (including phx, stz)"))
+            .arg(Arg::new("illegal").long("illegal").action(ArgAction::SetTrue).help("allow illegal instructions (including lax, dcp, anc)"))
+        )
+        .arg(Arg::new("in").short('i').long("in").global(true).action(ArgAction::Append).help("where to find inputs to the function"))
+        .arg(Arg::new("out").short('o').long("out").global(true).action(ArgAction::Append).help("where to put the function's outputs"))
+    .get_matches();
 
-    let machine = get_machine_by_name(&opts.arch);
+    let ins: Vec<_> = matches.get_many::<String>("in").unwrap().collect();
+    let outs: Vec<_> = matches.get_many::<String>("out").unwrap().collect();
+    let func = matches.get_one::<String>("function").unwrap();
 
-    let testrun = if let Some(path) = opts.file {
-        let data = fs::read_to_string(path).expect("Unable to read file");
-        let res: DeTestRun = serde_json::from_str(&data).expect("Unable to parse");
-        sanity(&res, machine)
-    } else {
-        testrun_from_args(&opts, machine)
-    };
-
-    let prog = stochastic_search(&testrun, machine, opts.graph, opts.debug);
-    let opt = optimize(&testrun, &prog, machine);
-    disassemble(opt);
+    match matches.subcommand() {
+        Some(("kr580vm1", opts)) => {
+            let only80 = *opts.get_one::<bool>("only80").unwrap_or(&false);
+            search_kr580vm1(func, ins, outs, only80)
+        }
+        Some(("stm8", opts)) => search_stm8(func, ins, outs),
+        Some(("mos6502", opts)) => {
+            let cmos = *opts.get_one::<bool>("cmos").unwrap_or(&false);
+            let illegal = *opts.get_one::<bool>("illegal").unwrap_or(&false);
+            let rorbug = *opts.get_one::<bool>("rorbug").unwrap_or(&false);
+            if cmos && rorbug {
+                println!("Don't specify --cmos and --rorbug together; there are no chips having both CMOS instructions and the ROR bug.");
+            }
+            if cmos && illegal {
+                println!("Don't specify --cmos and --illegal together; there are no chips having both CMOS instructions and NMOS illegal instructions.");
+            }
+            search_mos6502(func, ins, outs, cmos, illegal, rorbug)
+        }
+        Some((_, _)) => {
+            panic!();
+        }
+        None => {
+            panic!();
+        }
+    }
 }
