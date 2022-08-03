@@ -309,38 +309,18 @@ pub mod tests {
 
             let msg = format!("For {:#04x} {:?}", opcode, insn.mnem);
             let regr = format!(
-                "run_strop({:?}, {:#04x}, {:#04x}, {}, {})",
-                insn.mnem, a, b, c, d
+                "run_strop({}, {:#04x}, {:#04x}, {}, {})",
+                insn.mnem.to_ascii_uppercase(),
+                a,
+                b,
+                c,
+                d
             );
 
-            assert!(
-                t.0 == s.0,
-                "{}, run {} and check accumulator == {:#04x}",
-                msg,
-                regr,
-                t.0
-            );
-            assert!(
-                t.1 == s.1,
-                "{}, run {} and check zero flag == {}",
-                msg,
-                regr,
-                t.1
-            );
-            assert!(
-                t.2 == s.2,
-                "{}, run {} and check carry == {}",
-                msg,
-                regr,
-                t.2
-            );
-            assert!(
-                t.3 == s.3,
-                "{}, run {} and check sign flag == {}",
-                msg,
-                regr,
-                t.3
-            );
+            assert!(t.0 == s.0, "assert!({}.0 == {:#04x})", regr, t.0);
+            assert!(t.1 == s.1, "assert!({}.1 == {})", regr, t.1);
+            assert!(t.2 == s.2, "assert!({}.2 == {})", regr, t.2);
+            assert!(t.3 == s.3, "assert!({}.3 == {})", regr, t.3);
         }
     }
 
