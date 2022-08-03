@@ -1,6 +1,3 @@
-extern crate num;
-extern crate rand;
-
 pub mod mos6502;
 pub mod stm8;
 pub mod x80;
