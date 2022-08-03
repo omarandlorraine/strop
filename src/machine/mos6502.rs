@@ -92,9 +92,7 @@ fn rmwop_randomizer(insn: &mut Instruction6502) {
 
     insn.operand = match insn.operand {
         Operand6502::A => rnd(),
-        Operand6502::Immediate(_) => {
-            rnd()
-        }
+        Operand6502::Immediate(_) => rnd(),
         Operand6502::Absolute(addr) => {
             randomly!(
                 {Operand6502::Absolute(addr.wrapping_add(1))}
@@ -165,9 +163,7 @@ const AND: Instruction6502 = Instruction6502 {
         let val = insn.operand.get(s);
         let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
         let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
-        let r = a
-            .zip(m)
-            .map(|(a, m)| a & m);
+        let r = a.zip(m).map(|(a, m)| a & m);
         s.zero = r.map(|r| r == 0);
         s.sign = r.map(|r| r.leading_zeros() == 0);
         s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
@@ -183,9 +179,7 @@ const ASL: Instruction6502 = Instruction6502 {
         let val = insn.operand.get(s);
         let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
         let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
-        let r = a
-            .zip(m)
-            .map(|(a, m)| a & m);
+        let r = a.zip(m).map(|(a, m)| a & m);
         s.zero = r.map(|r| r == 0);
         s.sign = r.map(|r| r.leading_zeros() == 0);
         s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
