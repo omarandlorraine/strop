@@ -26,7 +26,14 @@ fn search_kr580vm1(func: &String, ins: Vec<&String>, outs: Vec<&String>, only80:
     stocsearch::<KR580VM1Instruction>();
 }
 
-fn search_mos6502(func: &String, ins: Vec<&String>, outs: Vec<&String>, cmos: bool, illegal: bool, rorbug: bool) {
+fn search_mos6502(
+    func: &String,
+    ins: Vec<&String>,
+    outs: Vec<&String>,
+    cmos: bool,
+    illegal: bool,
+    rorbug: bool,
+) {
     use crate::machine::mos6502::Instruction6502;
     stocsearch::<Instruction6502>();
 }
@@ -61,9 +68,7 @@ fn main() {
             let only80 = *opts.get_one::<bool>("only80").unwrap_or(&false);
             search_kr580vm1(func, ins, outs, only80)
         }
-        Some(("stm8", opts)) => {
-            search_stm8(func, ins, outs)
-        }
+        Some(("stm8", opts)) => search_stm8(func, ins, outs),
         Some(("mos6502", opts)) => {
             let cmos = *opts.get_one::<bool>("cmos").unwrap_or(&false);
             let illegal = *opts.get_one::<bool>("illegal").unwrap_or(&false);
