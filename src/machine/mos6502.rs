@@ -21,6 +21,19 @@ pub struct Mos6502 {
 }
 
 impl Mos6502 {
+    fn new() -> Mos6502 {
+        Mos6502 {
+            a: None,
+            x: None,
+            y: None,
+            s: None,
+            heap: HashMap::new(),
+            carry: None,
+            zero: None,
+            sign: None,
+            overflow: None,
+        }
+    }
     fn read_mem(&self, addr: u16) -> Option<u8> {
         *self.heap.get(&addr).unwrap_or(&None)
     }
@@ -267,6 +280,81 @@ pub mod tests {
             cpu.registers.status.contains(Status::PS_NEGATIVE),
             cpu.registers.status.contains(Status::PS_OVERFLOW),
         )
+    }
+
+    fn run_strop6502(
+        instr: Instruction6502,
+        val1: u8,
+        val2: u8,
+        carry: bool,
+        decimal: bool,
+    ) -> (i8, bool, bool, bool, bool) {
+        let mut state = Mos6502::new();
+        state.carry = Some(carry);
+        state.a = Some(val1);
+        let mut insn = instr.clone();
+        insn.operand = Operand6502::Immediate(val2);
+
+        insn.operate(&mut state);
+        (
+            i8::from_ne_bytes(state.a.unwrap().to_ne_bytes()),
+            state.zero.unwrap_or(false),
+            state.carry.unwrap_or(false),
+            state.sign.unwrap_or(false),
+            state.overflow.unwrap_or(false),
+        )
+    }
+
+    fn fuzz_test_immediate(insn: &Instruction6502, opcode: u8) {
+        for _ in 0..5000 {
+            let a: u8 = random();
+            let b: u8 = random();
+            let c: bool = random();
+            let d: bool = random();
+            let t = run_mos6502(opcode, a, b, c, d);
+            let s = run_strop6502(*insn, a, b, c, d);
+
+            let msg = format!("For {:#04x} {:?}", opcode, insn.mnem);
+            let regr = format!(
+                "run_strop({:?}, {:#04x}, {:#04x}, {}, {})",
+                insn.mnem, a, b, c, d
+            );
+
+            assert!(
+                t.0 == s.0,
+                "{}, run {} and check accumulator == {:#04x}",
+                msg,
+                regr,
+                t.0
+            );
+            assert!(
+                t.1 == s.1,
+                "{}, run {} and check zero flag == {}",
+                msg,
+                regr,
+                t.1
+            );
+            assert!(
+                t.2 == s.2,
+                "{}, run {} and check carry == {}",
+                msg,
+                regr,
+                t.2
+            );
+            assert!(
+                t.3 == s.3,
+                "{}, run {} and check sign flag == {}",
+                msg,
+                regr,
+                t.3
+            );
+        }
+    }
+
+    #[test]
+    fn fuzzing() {
+        fuzz_test_immediate(&AND, 0x29);
+        fuzz_test_immediate(&ADC, 0x69);
     }
 
     fn find_it(opcode: &'static str) {
