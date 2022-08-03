@@ -330,6 +330,12 @@ pub mod tests {
         fuzz_test_immediate(&ADC, 0x69);
     }
 
+    #[test]
+    fn decimal_regression_tests() {
+        assert!(run_strop(ADC, 0x05, 0x05, false, true).0 == 0x10);
+        assert!(run_strop(ADC, 0x03, 0xfa, true, true).0 == 0x04);
+    }
+
     fn find_it(opcode: &'static str) {
         for _ in 0..5000 {
             let insn = Instruction6502::random();
