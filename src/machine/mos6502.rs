@@ -18,6 +18,7 @@ pub struct Mos6502 {
     zero: Option<bool>,
     sign: Option<bool>,
     overflow: Option<bool>,
+    decimal: Option<bool>,
 }
 
 impl Mos6502 {
@@ -32,6 +33,7 @@ impl Mos6502 {
             zero: None,
             sign: None,
             overflow: None,
+            decimal: None,
         }
     }
     fn read_mem(&self, addr: u16) -> Option<u8> {
@@ -134,10 +136,26 @@ const ADC: Instruction6502 = Instruction6502 {
         let val = insn.operand.get(s);
         let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
         let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
-        let r = a
+        let addition = a
             .zip(m)
             .zip(s.carry)
             .map(|((a, m), c)| a.wrapping_add(m).wrapping_add(if c { 1 } else { 0 }));
+
+        let decimal_adjust = s.decimal.zip(addition).map(|(d, q)| {
+            let r = u8::from_ne_bytes(q.to_ne_bytes());
+            if d {
+                let s1 = if r & 0x0f > 9 { r.wrapping_add(6) } else { r };
+                if s1 & 0xf0 > 0x90 {
+                    s.carry = Some(true);
+                    s1.wrapping_add(0x60)
+                } else {
+                    s1
+                }
+            } else {
+                r
+            }
+        });
+        let r = decimal_adjust.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
         let carrytests = a
             .zip(m)
             .zip(r)
@@ -284,6 +302,7 @@ pub mod tests {
     ) -> (i8, bool, bool, bool, bool) {
         let mut state = Mos6502::new();
         state.carry = Some(carry);
+        state.decimal = Some(decimal);
         state.a = Some(val1);
         let mut insn = instr.clone();
         insn.operand = Operand6502::Immediate(val2);
