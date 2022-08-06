@@ -12,7 +12,7 @@ pub struct Mos6502 {
     a: Option<u8>,
     x: Option<u8>,
     y: Option<u8>,
-    s: Option<u8>,
+    s: u8,
     heap: HashMap<u16, Option<u8>>,
     carry: Option<bool>,
     zero: Option<bool>,
@@ -24,6 +24,22 @@ pub struct Mos6502 {
 impl Mos6502 {
     fn read_mem(&self, addr: u16) -> Option<u8> {
         *self.heap.get(&addr).unwrap_or(&None)
+    }
+
+    fn write_mem(&mut self, addr: u16, val: Option<u8>) {
+        self.heap.insert(addr, val);
+    }
+
+    fn push(&mut self, val: Option<u8>) {
+        let addr: u16 = 0x0100 + self.s as u16;
+        self.write_mem(addr, val);
+        self.s -= 1;
+    }
+
+    fn pull(&mut self) -> Option<u8> {
+        self.s += 1;
+        let addr: u16 = 0x0100 + self.s as u16;
+        self.read_mem(addr)
     }
 }
 
@@ -40,6 +56,13 @@ impl Operand6502 {
             Operand6502::A => s.a,
             Operand6502::Immediate(v) => Some(v),
             Operand6502::Absolute(addr) => s.read_mem(addr),
+        }
+    }
+    fn set(self, s: &mut Mos6502, val: Option<u8>) {
+        match self {
+            Operand6502::A => s.a = val,
+            Operand6502::Immediate(_) => panic!(),
+            Operand6502::Absolute(addr) => s.write_mem(addr, val),
         }
     }
 }
@@ -90,6 +113,10 @@ fn rmwop_randomizer(insn: &mut Instruction6502) {
     }
 }
 
+fn nop_randomizer(_insn: &mut Instruction6502) {
+    // nothing to do
+}
+
 fn disassemble(insn: &Instruction6502, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match insn.operand {
         Operand6502::A => {
@@ -111,6 +138,39 @@ pub struct Instruction6502 {
     disassemble: fn(&Instruction6502, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
     handler: fn(&Instruction6502, &mut Mos6502),
     operand: Operand6502,
+}
+
+fn compare(insn: &Instruction6502, register: Option<u8>, s: &mut Mos6502) {
+    let val = insn.operand.get(s);
+    let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+    let a = register.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+    let r = a.zip(m).map(|(a, m)| a.wrapping_sub(m));
+    s.carry = register.zip(val).map(|(a, m)| a >= m);
+
+    let a_sign = a.map(|a| a.leading_zeros() == 0);
+    let b_sign = m.map(|a| a.leading_zeros() == 0);
+    let r_sign = r.map(|a| a.leading_zeros() == 0);
+    s.overflow = a_sign
+        .zip(b_sign)
+        .zip(r_sign)
+        .map(|((a, b), r)| (a && b && !r) || (!a && !b && r));
+
+    s.zero = r.map(|r| r == 0);
+    s.sign = r.map(|r| r.leading_zeros() == 0);
+}
+
+fn decrement(val: Option<u8>, s: &mut Mos6502) -> Option<u8> {
+    let r = val.map(|v| v.wrapping_sub(1));
+    s.zero = r.map(|r| r == 0);
+    s.sign = r.map(|r| r.leading_zeros() == 0);
+    r
+}
+
+fn increment(val: Option<u8>, s: &mut Mos6502) -> Option<u8> {
+    let r = val.map(|v| v.wrapping_add(1));
+    s.zero = r.map(|r| r == 0);
+    s.sign = r.map(|r| r.leading_zeros() == 0);
+    r
 }
 
 const ADC: Instruction6502 = Instruction6502 {
@@ -181,17 +241,408 @@ const ASL: Instruction6502 = Instruction6502 {
     disassemble,
     operand: Operand6502::Immediate(0),
     handler: |insn, s| {
+        let m = insn.operand.get(s);
+        let r = m.map(|a| (a & 0x7f) << 1);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.carry = m.map(|m| m.leading_zeros() == 0);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+    },
+};
+
+const BIT: Instruction6502 = Instruction6502 {
+    mnem: "bit",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |insn, s| {
+        let m = insn.operand.get(s);
+        let r = s.a.zip(m).map(|(a, m)| a & m);
+        s.zero = r.map(|r| r == 0);
+        s.sign = m.map(|r| r.leading_zeros() == 0);
+        s.overflow = m.map(|r| (r & 0x40) != 0);
+    },
+};
+
+const CLC: Instruction6502 = Instruction6502 {
+    mnem: "clc",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |_, s| {
+        s.carry = Some(false);
+    },
+};
+
+const CLD: Instruction6502 = Instruction6502 {
+    mnem: "cld",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |_, s| {
+        s.decimal = Some(false);
+    },
+};
+
+const CLV: Instruction6502 = Instruction6502 {
+    mnem: "clv",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |_, s| {
+        s.overflow = Some(false);
+    },
+};
+
+const CMP: Instruction6502 = Instruction6502 {
+    mnem: "cmp",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |insn, s| {
+        compare(insn, s.a, s);
+    },
+};
+
+const CPX: Instruction6502 = Instruction6502 {
+    mnem: "cpx",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |insn, s| {
+        compare(insn, s.x, s);
+    },
+};
+
+const CPY: Instruction6502 = Instruction6502 {
+    mnem: "cpy",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |insn, s| {
+        compare(insn, s.y, s);
+    },
+};
+
+const DEC: Instruction6502 = Instruction6502 {
+    mnem: "dec",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let res = decrement(insn.operand.get(s), s);
+        insn.operand.set(s, res);
+    },
+};
+
+const DEX: Instruction6502 = Instruction6502 {
+    mnem: "dex",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |_, s| {
+        let res = decrement(s.x, s);
+        s.x = res;
+    },
+};
+
+const DEY: Instruction6502 = Instruction6502 {
+    mnem: "dey",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |_, s| {
+        let res = decrement(s.y, s);
+        s.y = res;
+    },
+};
+
+const EOR: Instruction6502 = Instruction6502 {
+    mnem: "eor",
+    randomizer: aluop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |insn, s| {
         let val = insn.operand.get(s);
         let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
         let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
-        let r = a.zip(m).map(|(a, m)| a & m);
+        let r = a.zip(m).map(|(a, m)| a ^ m);
+
         s.zero = r.map(|r| r == 0);
         s.sign = r.map(|r| r.leading_zeros() == 0);
         s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
     },
 };
 
-const INSTRUCTIONS: [Instruction6502; 3] = [ADC, AND, ASL];
+const INC: Instruction6502 = Instruction6502 {
+    mnem: "inc",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let res = increment(insn.operand.get(s), s);
+        insn.operand.set(s, res);
+    },
+};
+
+const INX: Instruction6502 = Instruction6502 {
+    mnem: "inx",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |_, s| {
+        let res = increment(s.x, s);
+        s.x = res;
+    },
+};
+
+const INY: Instruction6502 = Instruction6502 {
+    mnem: "iny",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |_, s| {
+        let res = increment(s.y, s);
+        s.y = res;
+    },
+};
+
+const LDA: Instruction6502 = Instruction6502 {
+    mnem: "lda",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        s.a = insn.operand.get(s);
+        s.zero = s.a.map(|r| r == 0);
+        s.sign = s.a.map(|r| r.leading_zeros() == 0);
+    },
+};
+
+const LDX: Instruction6502 = Instruction6502 {
+    mnem: "ldx",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        s.x = insn.operand.get(s);
+        s.zero = s.x.map(|r| r == 0);
+        s.sign = s.x.map(|r| r.leading_zeros() == 0);
+    },
+};
+
+const LDY: Instruction6502 = Instruction6502 {
+    mnem: "ldy",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        s.y = insn.operand.get(s);
+        s.zero = s.y.map(|r| r == 0);
+        s.sign = s.y.map(|r| r.leading_zeros() == 0);
+    },
+};
+
+const LSR: Instruction6502 = Instruction6502 {
+    mnem: "lsr",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let before = insn.operand.get(s);
+        let result = before.map(|v| v.rotate_right(1) & 0x7f);
+        s.zero = result.map(|r| r == 0);
+        s.sign = result.map(|r| r.leading_zeros() == 0);
+        s.carry = before.map(|v| v & 0x01 != 0);
+        insn.operand.set(s, result);
+    },
+};
+
+const ORA: Instruction6502 = Instruction6502 {
+    mnem: "ora",
+    randomizer: aluop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |insn, s| {
+        let val = insn.operand.get(s);
+        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let r = a.zip(m).map(|(a, m)| a | m);
+
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+    },
+};
+
+const PHA: Instruction6502 = Instruction6502 {
+    mnem: "pha",
+    randomizer: nop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |_, s| {
+        s.push(s.a);
+    },
+};
+
+const PHX: Instruction6502 = Instruction6502 {
+    mnem: "phx",
+    randomizer: nop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |_, s| {
+        s.push(s.a);
+    },
+};
+
+const PHY: Instruction6502 = Instruction6502 {
+    mnem: "phy",
+    randomizer: nop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |_, s| {
+        s.push(s.a);
+    },
+};
+
+const PLA: Instruction6502 = Instruction6502 {
+    mnem: "pla",
+    randomizer: nop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |_, s| {
+        s.a = s.pull();
+        s.zero = s.a.map(|r| r == 0);
+        s.sign = s.a.map(|r| r.leading_zeros() == 0);
+    },
+};
+
+const PLX: Instruction6502 = Instruction6502 {
+    mnem: "plx",
+    randomizer: nop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |_, s| {
+        s.x = s.pull();
+        s.zero = s.x.map(|r| r == 0);
+        s.sign = s.x.map(|r| r.leading_zeros() == 0);
+    },
+};
+
+const PLY: Instruction6502 = Instruction6502 {
+    mnem: "ply",
+    randomizer: nop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |_, s| {
+        s.y = s.pull();
+        s.zero = s.y.map(|r| r == 0);
+        s.sign = s.y.map(|r| r.leading_zeros() == 0);
+    },
+};
+
+const ROL: Instruction6502 = Instruction6502 {
+    mnem: "rol",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |insn, s| {
+        let m = insn.operand.get(s);
+        let p = m.map(|a| (a & 0x7f) << 1);
+        let r = p.zip(s.carry).map(|(r, c)| r + if c { 1 } else { 0 });
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.carry = m.map(|m| m.leading_zeros() == 0);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+    },
+};
+
+const ROR: Instruction6502 = Instruction6502 {
+    mnem: "ror",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let before = insn.operand.get(s);
+        let shifted = before.map(|v| v.rotate_right(1) & 0x7f);
+        let result = shifted.zip(s.carry).map(|(r, c)| r+ if c { 0x80 } else { 0 });
+        s.zero = result.map(|r| r == 0);
+        s.sign = result.map(|r| r.leading_zeros() == 0);
+        s.carry = before.map(|v| v & 0x01 != 0);
+        insn.operand.set(s, result);
+    },
+};
+
+const SBC: Instruction6502 = Instruction6502 {
+    mnem: "sbc",
+    randomizer: aluop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |insn, s| {
+        let val = insn.operand.get(s);
+        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let addition = a
+            .zip(m)
+            .zip(s.carry)
+            .map(|((a, m), c)| a.wrapping_sub(m).wrapping_sub(if c { 1 } else { 0 }));
+
+        let decimal_adjust = s.decimal.zip(addition).map(|(d, q)| {
+            let r = u8::from_ne_bytes(q.to_ne_bytes());
+            if d {
+                let s1 = if r & 0x0f > 9 { r.wrapping_sub(6) } else { r };
+                if s1 & 0xf0 > 0x90 {
+                    s.carry = Some(true);
+                    s1.wrapping_sub(0x60)
+                } else {
+                    s.carry = Some(false);
+                    s1
+                }
+            } else {
+                r
+            }
+        });
+        let r = decimal_adjust.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let carrytests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
+        let overflowtests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
+        s.carry = carrytests.map(|t| t.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.overflow = overflowtests.map(|t| t != 0 && t != -64);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+    },
+};
+
+const SEC: Instruction6502 = Instruction6502 {
+    mnem: "sec",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |_, s| {
+        s.carry = Some(true);
+    },
+};
+
+const SED: Instruction6502 = Instruction6502 {
+    mnem: "sed",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |_, s| {
+        s.decimal = Some(true);
+    },
+};
+
+const INSTRUCTIONS: [Instruction6502; 33] = [
+    ADC, AND, ASL, BIT, CLC, CLD, CLV, CMP, CPX, CPY, DEC, DEX, DEY, EOR, INC, INX, INY, LDA, LDX,
+    LDY, LSR, ORA, PHA, PHX, PHY, PLA, PLX, PLY, ROL, ROR, SBC, SEC, SED
+];
 
 impl std::fmt::Display for Instruction6502 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
@@ -369,9 +820,63 @@ pub mod tests {
     }
 
     #[test]
+    fn fuzz_cmp() {
+        fuzz_test_immediate(&CMP, 0xc9);
+    }
+
+    #[test]
+    fn fuzz_eor() {
+        fuzz_test_immediate(&EOR, 0x49);
+    }
+
+    #[test]
+    fn fuzz_lsr() {
+        fuzz_test_implied(&LSR, 0x4a);
+    }
+
+    #[test]
+    fn fuzz_ora() {
+        fuzz_test_immediate(&ORA, 0x09);
+    }
+
+    #[test]
+    fn fuzz_sbc() {
+        fuzz_test_immediate(&SBC, 0xe9);
+    }
+
+    #[test]
+    fn fuzz_rol() {
+        fuzz_test_implied(&ROL, 0x2a);
+    }
+
+    #[test]
+    fn fuzz_ror() {
+        fuzz_test_implied(&ROR, 0x6a);
+    }
+
+    #[test]
     fn regression_decimal_mode() {
         assert!(run_strop(ADC, 0x05, Some(0x05), false, true).0 == 0x10);
         assert!(run_strop(ADC, 0x03, Some(0xfa), true, true).0 == 0x04);
+    }
+
+    #[test]
+    fn regression_asl() {
+        assert!(run_strop(ASL, 0xc3, None, false, false).2 == true);
+        assert!(run_strop(ASL, 0x63, None, false, false).0 == 0xc6);
+    }
+
+    #[test]
+    fn regression_cmp() {
+        assert!(run_strop(CMP, 0x1a, Some(0xbf), true, true).2 == false);
+        assert!(run_strop(CMP, 0x45, Some(0xe7), true, false).2 == false);
+        assert!(run_strop(CMP, 0x63, Some(0xd1), false, false).2 == false);
+    }
+
+    #[test]
+    fn regression_lsr() {
+        assert!(run_strop(LSR, 0xa6, None, true, false).0 == 0x53);
+        assert!(run_strop(LSR, 0x01, None, true, true).1 == true);
     }
 
     fn find_it(opcode: &'static str) {
