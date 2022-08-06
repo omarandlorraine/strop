@@ -149,6 +149,7 @@ const ADC: Instruction6502 = Instruction6502 {
                     s.carry = Some(true);
                     s1.wrapping_add(0x60)
                 } else {
+                    s.carry = Some(false);
                     s1
                 }
             } else {
