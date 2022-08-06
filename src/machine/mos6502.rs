@@ -333,17 +333,15 @@ pub mod tests {
     fn fuzz_test_implied(insn: &Instruction6502, opcode: u8) {
         for _ in 0..5000 {
             let a: u8 = random();
-            let b: u8 = random();
             let c: bool = random();
             let d: bool = random();
             let t = run_mos6502(opcode, a, 0xea, c, d);
             let s = run_strop(*insn, a, None, c, d);
 
             let regr = format!(
-                "run_strop({}, {:#04x}, Some({:#04x}), {}, {})",
+                "run_strop({}, {:#04x}, None, {}, {})",
                 insn.mnem.to_ascii_uppercase(),
                 a,
-                b,
                 c,
                 d
             );
@@ -367,7 +365,7 @@ pub mod tests {
 
     #[test]
     fn fuzz_asl() {
-        fuzz_test_implied(&ASL, 0x69);
+        fuzz_test_implied(&ASL, 0x0a);
     }
 
     #[test]
