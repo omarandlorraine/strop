@@ -369,7 +369,7 @@ pub mod tests {
     }
 
     #[test]
-    fn decimal_regression_tests() {
+    fn regression_decimal_mode() {
         assert!(run_strop(ADC, 0x05, Some(0x05), false, true).0 == 0x10);
         assert!(run_strop(ADC, 0x03, Some(0xfa), true, true).0 == 0x04);
     }
