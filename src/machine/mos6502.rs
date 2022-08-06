@@ -246,7 +246,7 @@ pub mod tests {
         val2: u8,
         carry: bool,
         decimal: bool,
-    ) -> (i8, bool, bool, bool, bool) {
+    ) -> (u8, bool, bool, bool, bool) {
         let mut cpu = cpu::CPU::new();
 
         let program = [
@@ -269,7 +269,7 @@ pub mod tests {
         cpu.run();
 
         (
-            cpu.registers.accumulator,
+            u8::from_ne_bytes(cpu.registers.accumulator.to_ne_bytes()),
             cpu.registers.status.contains(Status::PS_ZERO),
             cpu.registers.status.contains(Status::PS_CARRY),
             cpu.registers.status.contains(Status::PS_NEGATIVE),
@@ -283,7 +283,7 @@ pub mod tests {
         val2: Option<u8>,
         carry: bool,
         decimal: bool,
-    ) -> (i8, bool, bool, bool, bool) {
+    ) -> (u8, bool, bool, bool, bool) {
         let mut state: Mos6502 = Default::default();
         state.carry = Some(carry);
         state.decimal = Some(decimal);
@@ -297,7 +297,7 @@ pub mod tests {
 
         insn.operate(&mut state);
         (
-            i8::from_ne_bytes(state.a.unwrap().to_ne_bytes()),
+            state.a.unwrap(),
             state.zero.unwrap_or(false),
             state.carry.unwrap_or(false),
             state.sign.unwrap_or(false),
