@@ -22,20 +22,6 @@ pub struct Mos6502 {
 }
 
 impl Mos6502 {
-    fn new() -> Mos6502 {
-        Mos6502 {
-            a: None,
-            x: None,
-            y: None,
-            s: None,
-            heap: HashMap::new(),
-            carry: None,
-            zero: None,
-            sign: None,
-            overflow: None,
-            decimal: None,
-        }
-    }
     fn read_mem(&self, addr: u16) -> Option<u8> {
         *self.heap.get(&addr).unwrap_or(&None)
     }
@@ -298,7 +284,7 @@ pub mod tests {
         carry: bool,
         decimal: bool,
     ) -> (i8, bool, bool, bool, bool) {
-        let mut state = Mos6502::new();
+        let mut state: Mos6502 = Default::default();
         state.carry = Some(carry);
         state.decimal = Some(decimal);
         state.a = Some(val1);
