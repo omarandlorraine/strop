@@ -1,9 +1,7 @@
 extern crate clap;
-use clap::{Arg, ArgAction, Command};
 
-mod machine;
-mod search;
-use crate::search::BasicBlock;
+pub mod machine;
+pub mod search;
 
 fn main() {
     println!("Nothing here yet.");

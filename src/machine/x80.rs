@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 // some clippy warnings disabled for this module because KR580VM1 support is not there yet.
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 #[allow(dead_code, unused_variables)]
 pub struct RegisterPair {
     low: Option<u8>,

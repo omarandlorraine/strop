@@ -130,7 +130,7 @@ pub struct Instruction6502 {
 const ADC: Instruction6502 = Instruction6502 {
     mnem: "adc",
     randomizer: aluop_randomizer,
-    disassemble: disassemble,
+    disassemble,
     operand: Operand6502::Immediate(0),
     handler: |insn, s| {
         let val = insn.operand.get(s);
@@ -176,7 +176,7 @@ const ADC: Instruction6502 = Instruction6502 {
 const AND: Instruction6502 = Instruction6502 {
     mnem: "and",
     randomizer: aluop_randomizer,
-    disassemble: disassemble,
+    disassemble,
     operand: Operand6502::Immediate(0),
     handler: |insn, s| {
         let val = insn.operand.get(s);
@@ -192,7 +192,7 @@ const AND: Instruction6502 = Instruction6502 {
 const ASL: Instruction6502 = Instruction6502 {
     mnem: "asl",
     randomizer: rmwop_randomizer,
-    disassemble: disassemble,
+    disassemble,
     operand: Operand6502::Immediate(0),
     handler: |insn, s| {
         let val = insn.operand.get(s);
@@ -229,10 +229,7 @@ impl Instruction for Instruction6502 {
         Self: Sized,
     {
         use rand::seq::SliceRandom;
-        let mut insn = INSTRUCTIONS
-            .choose(&mut rand::thread_rng())
-            .unwrap()
-            .clone();
+        let mut insn = *INSTRUCTIONS.choose(&mut rand::thread_rng()).unwrap();
         insn.randomize();
         insn
     }
@@ -305,7 +302,7 @@ pub mod tests {
         state.carry = Some(carry);
         state.decimal = Some(decimal);
         state.a = Some(val1);
-        let mut insn = instr.clone();
+        let mut insn = instr;
         insn.operand = if let Some(v) = val2 {
             Operand6502::Immediate(v)
         } else {
@@ -331,7 +328,6 @@ pub mod tests {
             let t = run_mos6502(opcode, a, b, c, d);
             let s = run_strop(*insn, a, Some(b), c, d);
 
-            let msg = format!("For {:#04x} {:?}", opcode, insn.mnem);
             let regr = format!(
                 "run_strop({}, {:#04x}, Some({:#04x}), {}, {})",
                 insn.mnem.to_ascii_uppercase(),
@@ -357,7 +353,6 @@ pub mod tests {
             let t = run_mos6502(opcode, a, 0xea, c, d);
             let s = run_strop(*insn, a, None, c, d);
 
-            let msg = format!("For {:#04x} {:?}", opcode, insn.mnem);
             let regr = format!(
                 "run_strop({}, {:#04x}, Some({:#04x}), {}, {})",
                 insn.mnem.to_ascii_uppercase(),
@@ -433,7 +428,7 @@ pub mod tests {
 
     #[test]
     fn instruction_set_cmos() {
-        for opcode in vec!["phx", "phy", "plx", "ply", "stz", "trb", "tsb"] {
+        for opcode in &["phx", "phy", "plx", "ply", "stz", "trb", "tsb"] {
             find_it(opcode);
             // todo: execute these instructions and check that they set the CMOS flag
         }

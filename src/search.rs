@@ -3,7 +3,7 @@ use rand::{thread_rng, Rng};
 use randomly::randomly;
 use std::ops::{Index, IndexMut};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BasicBlock<I>
 where
     I: Instruction,
