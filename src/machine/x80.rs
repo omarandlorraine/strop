@@ -43,7 +43,7 @@ impl Instruction for KR580VM1Instruction {
     fn randomize(&mut self) {
         (self.randomizer)(self);
     }
-    fn len(&self) -> usize {
+    fn length(&self) -> usize {
         todo!()
     }
     fn operate(&self, s: &mut KR580VM1) {

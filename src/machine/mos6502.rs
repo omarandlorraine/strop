@@ -204,7 +204,7 @@ impl Instruction for Instruction6502 {
     fn randomize(&mut self) {
         (self.randomizer)(self);
     }
-    fn len(&self) -> usize {
+    fn length(&self) -> usize {
         todo!()
     }
     fn operate(&self, s: &mut Mos6502) {

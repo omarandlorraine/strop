@@ -392,7 +392,7 @@ impl Instruction for Stm8Instruction {
     fn randomize(&mut self) {
         todo!()
     }
-    fn len(&self) -> usize {
+    fn length(&self) -> usize {
         todo!()
     }
 

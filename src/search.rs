@@ -46,8 +46,12 @@ impl<I: Instruction + Clone> BasicBlock<I> {
         r
     }
 
-    fn len(&self) -> usize {
-        self.instructions.iter().map(|i| i.len()).sum()
+    pub fn is_empty(&self) -> bool {
+        self.instructions.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.instructions.iter().map(|i| i.length()).sum()
     }
 
     fn remove(&mut self, offset: usize) -> I {

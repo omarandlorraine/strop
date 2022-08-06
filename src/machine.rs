@@ -12,7 +12,7 @@ pub trait Strop {
 pub trait Instruction: std::fmt::Display + Clone + Sized {
     type State: Default;
     fn randomize(&mut self);
-    fn len(&self) -> usize;
+    fn length(&self) -> usize;
     fn operate(&self, s: &mut Self::State);
     fn new() -> Self
     where
