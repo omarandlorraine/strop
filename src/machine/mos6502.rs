@@ -297,7 +297,7 @@ pub mod tests {
     fn run_strop(
         instr: Instruction6502,
         val1: u8,
-        val2: u8,
+        val2: Option<u8>,
         carry: bool,
         decimal: bool,
     ) -> (i8, bool, bool, bool, bool) {
@@ -306,7 +306,11 @@ pub mod tests {
         state.decimal = Some(decimal);
         state.a = Some(val1);
         let mut insn = instr.clone();
-        insn.operand = Operand6502::Immediate(val2);
+        insn.operand = if let Some(v) = val2 {
+            Operand6502::Immediate(v)
+        } else {
+            Operand6502::A
+        };
 
         insn.operate(&mut state);
         (
@@ -325,11 +329,37 @@ pub mod tests {
             let c: bool = random();
             let d: bool = random();
             let t = run_mos6502(opcode, a, b, c, d);
-            let s = run_strop(*insn, a, b, c, d);
+            let s = run_strop(*insn, a, Some(b), c, d);
 
             let msg = format!("For {:#04x} {:?}", opcode, insn.mnem);
             let regr = format!(
-                "run_strop({}, {:#04x}, {:#04x}, {}, {})",
+                "run_strop({}, {:#04x}, Some({:#04x}), {}, {})",
+                insn.mnem.to_ascii_uppercase(),
+                a,
+                b,
+                c,
+                d
+            );
+
+            assert!(t.0 == s.0, "assert!({}.0 == {:#04x})", regr, t.0);
+            assert!(t.1 == s.1, "assert!({}.1 == {})", regr, t.1);
+            assert!(t.2 == s.2, "assert!({}.2 == {})", regr, t.2);
+            assert!(t.3 == s.3, "assert!({}.3 == {})", regr, t.3);
+        }
+    }
+
+    fn fuzz_test_implied(insn: &Instruction6502, opcode: u8) {
+        for _ in 0..5000 {
+            let a: u8 = random();
+            let b: u8 = random();
+            let c: bool = random();
+            let d: bool = random();
+            let t = run_mos6502(opcode, a, 0xea, c, d);
+            let s = run_strop(*insn, a, None, c, d);
+
+            let msg = format!("For {:#04x} {:?}", opcode, insn.mnem);
+            let regr = format!(
+                "run_strop({}, {:#04x}, Some({:#04x}), {}, {})",
                 insn.mnem.to_ascii_uppercase(),
                 a,
                 b,
@@ -345,15 +375,24 @@ pub mod tests {
     }
 
     #[test]
-    fn fuzzing() {
+    fn fuzz_and() {
         fuzz_test_immediate(&AND, 0x29);
+    }
+
+    #[test]
+    fn fuzz_adc() {
         fuzz_test_immediate(&ADC, 0x69);
     }
 
     #[test]
+    fn fuzz_asl() {
+        fuzz_test_implied(&ASL, 0x69);
+    }
+
+    #[test]
     fn decimal_regression_tests() {
-        assert!(run_strop(ADC, 0x05, 0x05, false, true).0 == 0x10);
-        assert!(run_strop(ADC, 0x03, 0xfa, true, true).0 == 0x04);
+        assert!(run_strop(ADC, 0x05, Some(0x05), false, true).0 == 0x10);
+        assert!(run_strop(ADC, 0x03, Some(0xfa), true, true).0 == 0x04);
     }
 
     fn find_it(opcode: &'static str) {
