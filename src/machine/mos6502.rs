@@ -565,7 +565,9 @@ const ROR: Instruction6502 = Instruction6502 {
     handler: |insn, s| {
         let before = insn.operand.get(s);
         let shifted = before.map(|v| v.rotate_right(1) & 0x7f);
-        let result = shifted.zip(s.carry).map(|(r, c)| r+ if c { 0x80 } else { 0 });
+        let result = shifted
+            .zip(s.carry)
+            .map(|(r, c)| r + if c { 0x80 } else { 0 });
         s.zero = result.map(|r| r == 0);
         s.sign = result.map(|r| r.leading_zeros() == 0);
         s.carry = before.map(|v| v & 0x01 != 0);
@@ -641,7 +643,7 @@ const SED: Instruction6502 = Instruction6502 {
 
 const INSTRUCTIONS: [Instruction6502; 33] = [
     ADC, AND, ASL, BIT, CLC, CLD, CLV, CMP, CPX, CPY, DEC, DEX, DEY, EOR, INC, INX, INY, LDA, LDX,
-    LDY, LSR, ORA, PHA, PHX, PHY, PLA, PLX, PLY, ROL, ROR, SBC, SEC, SED
+    LDY, LSR, ORA, PHA, PHX, PHY, PLA, PLX, PLY, ROL, ROR, SBC, SEC, SED,
 ];
 
 impl std::fmt::Display for Instruction6502 {
