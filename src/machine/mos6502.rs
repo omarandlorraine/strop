@@ -113,6 +113,23 @@ fn rmwop_randomizer(insn: &mut Instruction6502) {
     }
 }
 
+fn store_randomizer(insn: &mut Instruction6502) {
+    fn rnd() -> Operand6502 {
+        Operand6502::Absolute(random())
+    }
+
+    insn.operand = match insn.operand {
+        Operand6502::A => rnd(),
+        Operand6502::Immediate(_) => rnd(),
+        Operand6502::Absolute(addr) => {
+            randomly!(
+                {Operand6502::Absolute(addr.wrapping_add(1))}
+                {Operand6502::Absolute(addr.wrapping_sub(1))}
+            )
+        }
+    }
+}
+
 fn nop_randomizer(_insn: &mut Instruction6502) {
     // nothing to do
 }
@@ -641,9 +658,140 @@ const SED: Instruction6502 = Instruction6502 {
     },
 };
 
-const INSTRUCTIONS: [Instruction6502; 33] = [
+const STA: Instruction6502 = Instruction6502 {
+    mnem: "sta",
+    randomizer: store_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let result = s.a;
+        s.zero = result.map(|r| r == 0);
+        s.sign = result.map(|r| r.leading_zeros() == 0);
+        insn.operand.set(s, result);
+    },
+};
+
+const STX: Instruction6502 = Instruction6502 {
+    mnem: "stx",
+    randomizer: store_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let result = s.x;
+        s.zero = result.map(|r| r == 0);
+        s.sign = result.map(|r| r.leading_zeros() == 0);
+        insn.operand.set(s, result);
+    },
+};
+
+const STY: Instruction6502 = Instruction6502 {
+    mnem: "sty",
+    randomizer: store_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let result = s.y;
+        s.zero = result.map(|r| r == 0);
+        s.sign = result.map(|r| r.leading_zeros() == 0);
+        insn.operand.set(s, result);
+    },
+};
+
+const STZ: Instruction6502 = Instruction6502 {
+    mnem: "stz",
+    randomizer: store_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let result = Some(0u8);
+        s.zero = result.map(|r| r == 0);
+        s.sign = result.map(|r| r.leading_zeros() == 0);
+        insn.operand.set(s, result);
+    },
+};
+
+const TAX: Instruction6502 = Instruction6502 {
+    mnem: "tax",
+    randomizer: store_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let result = s.a;
+        s.zero = result.map(|r| r == 0);
+        s.sign = result.map(|r| r.leading_zeros() == 0);
+        s.x = result;
+    },
+};
+
+const TAY: Instruction6502 = Instruction6502 {
+    mnem: "tay",
+    randomizer: store_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let result = s.a;
+        s.zero = result.map(|r| r == 0);
+        s.sign = result.map(|r| r.leading_zeros() == 0);
+        s.y = result;
+    },
+};
+
+const TSX: Instruction6502 = Instruction6502 {
+    mnem: "tsx",
+    randomizer: store_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let result = Some(s.s);
+        s.zero = result.map(|r| r == 0);
+        s.sign = result.map(|r| r.leading_zeros() == 0);
+        s.x = result;
+    },
+};
+
+const TXA: Instruction6502 = Instruction6502 {
+    mnem: "txa",
+    randomizer: store_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let result = s.x;
+        s.zero = result.map(|r| r == 0);
+        s.sign = result.map(|r| r.leading_zeros() == 0);
+        s.a = result;
+    },
+};
+
+const TYA: Instruction6502 = Instruction6502 {
+    mnem: "tya",
+    randomizer: store_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let result = s.y;
+        s.zero = result.map(|r| r == 0);
+        s.sign = result.map(|r| r.leading_zeros() == 0);
+        s.a = result;
+    },
+};
+
+const TXS: Instruction6502 = Instruction6502 {
+    mnem: "txs",
+    randomizer: store_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let result = s.x;
+        s.zero = result.map(|r| r == 0);
+        s.sign = result.map(|r| r.leading_zeros() == 0);
+        s.s = result.unwrap_or(0);
+    },
+};
+
+const INSTRUCTIONS: [Instruction6502; 43] = [
     ADC, AND, ASL, BIT, CLC, CLD, CLV, CMP, CPX, CPY, DEC, DEX, DEY, EOR, INC, INX, INY, LDA, LDX,
-    LDY, LSR, ORA, PHA, PHX, PHY, PLA, PLX, PLY, ROL, ROR, SBC, SEC, SED,
+    LDY, LSR, ORA, PHA, PHX, PHY, PLA, PLX, PLY, ROL, ROR, SBC, SEC, SED, STA, STX, STY, STZ, TAX,
+    TAY, TSX, TXA, TYA, TXS,
 ];
 
 impl std::fmt::Display for Instruction6502 {
