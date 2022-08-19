@@ -172,6 +172,25 @@ fn rmwop_randomizer(insn: &mut Instruction6502) {
     }
 }
 
+fn absolute_randomizer(insn: &mut Instruction6502) {
+    fn rnd() -> Operand6502 {
+        randomly!({ Operand6502::Absolute(random()) })
+    }
+
+    insn.operand = match insn.operand {
+        Operand6502::None => rnd(),
+        Operand6502::A => rnd(),
+        Operand6502::Immediate(_) => rnd(),
+        Operand6502::Absolute(addr) => {
+            randomly!(
+                {rnd()}
+                {Operand6502::Absolute(addr.wrapping_add(1))}
+                {Operand6502::Absolute(addr.wrapping_sub(1))}
+            )
+        }
+    }
+}
+
 fn store_randomizer(insn: &mut Instruction6502) {
     fn rnd() -> Operand6502 {
         Operand6502::Absolute(random())
@@ -391,7 +410,7 @@ const ASL: Instruction6502 = Instruction6502 {
 
 const BIT: Instruction6502 = Instruction6502 {
     mnem: "bit",
-    randomizer: rmwop_randomizer,
+    randomizer: absolute_randomizer,
     disassemble,
     operand: Operand6502::Immediate(0),
     handler: |insn, s| {
@@ -910,10 +929,38 @@ const TXS: Instruction6502 = Instruction6502 {
     },
 };
 
-const INSTRUCTIONS: [Instruction6502; 46] = [
+const TRB: Instruction6502 = Instruction6502 {
+    mnem: "trb",
+    randomizer: absolute_randomizer,
+    disassemble,
+    operand: Operand6502::Absolute(0),
+    handler: |insn, s| {
+        let m = insn.operand.get(s);
+        let r = s.a.zip(m).map(|(a, m)| a & m);
+        let w = s.a.zip(m).map(|(a, m)| (a ^ 0xff) & m);
+        s.zero = r.map(|r| r == 0);
+        insn.operand.set(s, w);
+    },
+};
+
+const TSB: Instruction6502 = Instruction6502 {
+    mnem: "tsb",
+    randomizer: absolute_randomizer,
+    disassemble,
+    operand: Operand6502::Absolute(0),
+    handler: |insn, s| {
+        let m = insn.operand.get(s);
+        let r = s.a.zip(m).map(|(a, m)| a & m);
+        let w = s.a.zip(m).map(|(a, m)| a | m);
+        s.zero = r.map(|r| r == 0);
+        insn.operand.set(s, w);
+    },
+};
+
+const INSTRUCTIONS: [Instruction6502; 48] = [
     ADC, ALR, ANC, AND, ASL, ARR, BIT, CLC, CLD, CLV, CMP, CPX, CPY, DEC, DEX, DEY, EOR, INC, INX,
     INY, LDA, LDX, LDY, LSR, ORA, PHA, PHX, PHY, PLA, PLX, PLY, ROL, ROR, SBC, SEC, SED, STA, STX,
-    STY, STZ, TAX, TAY, TSX, TXA, TYA, TXS,
+    STY, STZ, TAX, TAY, TRB, TSB, TSX, TXA, TYA, TXS,
 ];
 
 impl std::fmt::Display for Instruction6502 {
