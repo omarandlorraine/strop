@@ -12,7 +12,9 @@ pub mod search;
 
 use crate::machine::mos6502::Instruction6502;
 
-fn mult8_6502_a_x(bb: &BasicBlock<Instruction6502>) -> f64 {
+fn function(bb: &BasicBlock<Instruction6502>) -> f64 {
+    // Leave registers A and X having the same value as eachother,
+    // and Y having the value 70 (decimal).
     let mut s: Mos6502 = Default::default();
     let mut error_accumulate: f64 = 0.0;
     for i in 0..5000 {
@@ -32,7 +34,7 @@ fn mult8_6502_a_x(bb: &BasicBlock<Instruction6502>) -> f64 {
 }
 
 fn main() {
-    let bb = stochastic_search::<Instruction6502>(mult8_6502_a_x);
+    let bb = stochastic_search::<Instruction6502>(function);
 
     for insn in bb.instructions {
         println!("{:?}", insn);
