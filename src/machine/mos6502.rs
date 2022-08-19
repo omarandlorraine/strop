@@ -3,22 +3,24 @@ use crate::machine::Strop;
 use rand::random;
 use randomly::randomly;
 use std::collections::HashMap;
+use std::fmt::Debug;
+use std::fmt::Formatter;
 
 // some clippy warnings disabled for this module because 6502 support is not there yet.
 
 #[derive(Default)]
 #[allow(dead_code, unused_variables)]
 pub struct Mos6502 {
-    a: Option<u8>,
-    x: Option<u8>,
-    y: Option<u8>,
-    s: u8,
-    heap: HashMap<u16, Option<u8>>,
-    carry: Option<bool>,
-    zero: Option<bool>,
-    sign: Option<bool>,
-    overflow: Option<bool>,
-    decimal: Option<bool>,
+    pub a: Option<u8>,
+    pub x: Option<u8>,
+    pub y: Option<u8>,
+    pub s: u8,
+    pub heap: HashMap<u16, Option<u8>>,
+    pub carry: Option<bool>,
+    pub zero: Option<bool>,
+    pub sign: Option<bool>,
+    pub overflow: Option<bool>,
+    pub decimal: Option<bool>,
 }
 
 impl Mos6502 {
@@ -33,11 +35,11 @@ impl Mos6502 {
     fn push(&mut self, val: Option<u8>) {
         let addr: u16 = 0x0100 + self.s as u16;
         self.write_mem(addr, val);
-        self.s -= 1;
+        self.s = self.s.wrapping_sub(1);
     }
 
     fn pull(&mut self) -> Option<u8> {
-        self.s += 1;
+        self.s = self.s.wrapping_add(1);
         let addr: u16 = 0x0100 + self.s as u16;
         self.read_mem(addr)
     }
@@ -45,6 +47,7 @@ impl Mos6502 {
 
 #[derive(Clone, Copy)]
 pub enum Operand6502 {
+    None,
     A,
     Immediate(u8),
     Absolute(u16),
@@ -53,6 +56,7 @@ pub enum Operand6502 {
 impl Operand6502 {
     fn get(self, s: &Mos6502) -> Option<u8> {
         match self {
+            Operand6502::None => panic!(),
             Operand6502::A => s.a,
             Operand6502::Immediate(v) => Some(v),
             Operand6502::Absolute(addr) => s.read_mem(addr),
@@ -60,12 +64,15 @@ impl Operand6502 {
     }
     fn set(self, s: &mut Mos6502, val: Option<u8>) {
         match self {
+            Operand6502::None => panic!(),
             Operand6502::A => s.a = val,
             Operand6502::Immediate(_) => panic!(),
             Operand6502::Absolute(addr) => s.write_mem(addr, val),
         }
     }
 }
+
+fn no_randomizer(insn: &mut Instruction6502) {}
 
 fn aluop_randomizer(insn: &mut Instruction6502) {
     fn rnd() -> Operand6502 {
@@ -76,6 +83,7 @@ fn aluop_randomizer(insn: &mut Instruction6502) {
     }
 
     insn.operand = match insn.operand {
+        Operand6502::None => rnd(),
         Operand6502::A => rnd(),
         Operand6502::Immediate(v) => {
             randomly!(
@@ -102,6 +110,7 @@ fn rmwop_randomizer(insn: &mut Instruction6502) {
     }
 
     insn.operand = match insn.operand {
+        Operand6502::None => rnd(),
         Operand6502::A => rnd(),
         Operand6502::Immediate(_) => rnd(),
         Operand6502::Absolute(addr) => {
@@ -119,6 +128,7 @@ fn store_randomizer(insn: &mut Instruction6502) {
     }
 
     insn.operand = match insn.operand {
+        Operand6502::None => rnd(),
         Operand6502::A => rnd(),
         Operand6502::Immediate(_) => rnd(),
         Operand6502::Absolute(addr) => {
@@ -130,12 +140,11 @@ fn store_randomizer(insn: &mut Instruction6502) {
     }
 }
 
-fn nop_randomizer(_insn: &mut Instruction6502) {
-    // nothing to do
-}
-
 fn disassemble(insn: &Instruction6502, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match insn.operand {
+        Operand6502::None => {
+            write!(f, "\t{}", insn.mnem)
+        }
         Operand6502::A => {
             write!(f, "\t{} a", insn.mnem)
         }
@@ -145,6 +154,12 @@ fn disassemble(insn: &Instruction6502, f: &mut std::fmt::Formatter<'_>) -> std::
         Operand6502::Absolute(addr) => {
             write!(f, "\t{} ${:#06x}", insn.mnem, addr)
         }
+    }
+}
+
+impl Debug for Instruction6502 {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        (self.disassemble)(&self, f)
     }
 }
 
@@ -283,9 +298,9 @@ const BIT: Instruction6502 = Instruction6502 {
 
 const CLC: Instruction6502 = Instruction6502 {
     mnem: "clc",
-    randomizer: rmwop_randomizer,
+    randomizer: no_randomizer,
     disassemble,
-    operand: Operand6502::Immediate(0),
+    operand: Operand6502::None,
     handler: |_, s| {
         s.carry = Some(false);
     },
@@ -293,9 +308,9 @@ const CLC: Instruction6502 = Instruction6502 {
 
 const CLD: Instruction6502 = Instruction6502 {
     mnem: "cld",
-    randomizer: rmwop_randomizer,
+    randomizer: no_randomizer,
     disassemble,
-    operand: Operand6502::Immediate(0),
+    operand: Operand6502::None,
     handler: |_, s| {
         s.decimal = Some(false);
     },
@@ -303,9 +318,9 @@ const CLD: Instruction6502 = Instruction6502 {
 
 const CLV: Instruction6502 = Instruction6502 {
     mnem: "clv",
-    randomizer: rmwop_randomizer,
+    randomizer: no_randomizer,
     disassemble,
-    operand: Operand6502::Immediate(0),
+    operand: Operand6502::None,
     handler: |_, s| {
         s.overflow = Some(false);
     },
@@ -313,7 +328,7 @@ const CLV: Instruction6502 = Instruction6502 {
 
 const CMP: Instruction6502 = Instruction6502 {
     mnem: "cmp",
-    randomizer: rmwop_randomizer,
+    randomizer: aluop_randomizer,
     disassemble,
     operand: Operand6502::Immediate(0),
     handler: |insn, s| {
@@ -323,7 +338,7 @@ const CMP: Instruction6502 = Instruction6502 {
 
 const CPX: Instruction6502 = Instruction6502 {
     mnem: "cpx",
-    randomizer: rmwop_randomizer,
+    randomizer: aluop_randomizer,
     disassemble,
     operand: Operand6502::Immediate(0),
     handler: |insn, s| {
@@ -333,7 +348,7 @@ const CPX: Instruction6502 = Instruction6502 {
 
 const CPY: Instruction6502 = Instruction6502 {
     mnem: "cpy",
-    randomizer: rmwop_randomizer,
+    randomizer: aluop_randomizer,
     disassemble,
     operand: Operand6502::Immediate(0),
     handler: |insn, s| {
@@ -354,9 +369,9 @@ const DEC: Instruction6502 = Instruction6502 {
 
 const DEX: Instruction6502 = Instruction6502 {
     mnem: "dex",
-    randomizer: rmwop_randomizer,
+    randomizer: no_randomizer,
     disassemble,
-    operand: Operand6502::A,
+    operand: Operand6502::None,
     handler: |_, s| {
         let res = decrement(s.x, s);
         s.x = res;
@@ -365,9 +380,9 @@ const DEX: Instruction6502 = Instruction6502 {
 
 const DEY: Instruction6502 = Instruction6502 {
     mnem: "dey",
-    randomizer: rmwop_randomizer,
+    randomizer: no_randomizer,
     disassemble,
-    operand: Operand6502::A,
+    operand: Operand6502::None,
     handler: |_, s| {
         let res = decrement(s.y, s);
         s.y = res;
@@ -426,9 +441,9 @@ const INY: Instruction6502 = Instruction6502 {
 
 const LDA: Instruction6502 = Instruction6502 {
     mnem: "lda",
-    randomizer: rmwop_randomizer,
+    randomizer: aluop_randomizer,
     disassemble,
-    operand: Operand6502::A,
+    operand: Operand6502::Immediate(0),
     handler: |insn, s| {
         s.a = insn.operand.get(s);
         s.zero = s.a.map(|r| r == 0);
@@ -438,9 +453,9 @@ const LDA: Instruction6502 = Instruction6502 {
 
 const LDX: Instruction6502 = Instruction6502 {
     mnem: "ldx",
-    randomizer: rmwop_randomizer,
+    randomizer: aluop_randomizer,
     disassemble,
-    operand: Operand6502::A,
+    operand: Operand6502::Immediate(0),
     handler: |insn, s| {
         s.x = insn.operand.get(s);
         s.zero = s.x.map(|r| r == 0);
@@ -450,9 +465,9 @@ const LDX: Instruction6502 = Instruction6502 {
 
 const LDY: Instruction6502 = Instruction6502 {
     mnem: "ldy",
-    randomizer: rmwop_randomizer,
+    randomizer: aluop_randomizer,
     disassemble,
-    operand: Operand6502::A,
+    operand: Operand6502::Immediate(0),
     handler: |insn, s| {
         s.y = insn.operand.get(s);
         s.zero = s.y.map(|r| r == 0);
@@ -494,9 +509,9 @@ const ORA: Instruction6502 = Instruction6502 {
 
 const PHA: Instruction6502 = Instruction6502 {
     mnem: "pha",
-    randomizer: nop_randomizer,
+    randomizer: no_randomizer,
     disassemble,
-    operand: Operand6502::Immediate(0),
+    operand: Operand6502::None,
     handler: |_, s| {
         s.push(s.a);
     },
@@ -504,29 +519,29 @@ const PHA: Instruction6502 = Instruction6502 {
 
 const PHX: Instruction6502 = Instruction6502 {
     mnem: "phx",
-    randomizer: nop_randomizer,
+    randomizer: no_randomizer,
     disassemble,
-    operand: Operand6502::Immediate(0),
+    operand: Operand6502::None,
     handler: |_, s| {
-        s.push(s.a);
+        s.push(s.x);
     },
 };
 
 const PHY: Instruction6502 = Instruction6502 {
     mnem: "phy",
-    randomizer: nop_randomizer,
+    randomizer: no_randomizer,
     disassemble,
-    operand: Operand6502::Immediate(0),
+    operand: Operand6502::None,
     handler: |_, s| {
-        s.push(s.a);
+        s.push(s.y);
     },
 };
 
 const PLA: Instruction6502 = Instruction6502 {
     mnem: "pla",
-    randomizer: nop_randomizer,
+    randomizer: no_randomizer,
     disassemble,
-    operand: Operand6502::Immediate(0),
+    operand: Operand6502::None,
     handler: |_, s| {
         s.a = s.pull();
         s.zero = s.a.map(|r| r == 0);
@@ -536,9 +551,9 @@ const PLA: Instruction6502 = Instruction6502 {
 
 const PLX: Instruction6502 = Instruction6502 {
     mnem: "plx",
-    randomizer: nop_randomizer,
+    randomizer: no_randomizer,
     disassemble,
-    operand: Operand6502::Immediate(0),
+    operand: Operand6502::None,
     handler: |_, s| {
         s.x = s.pull();
         s.zero = s.x.map(|r| r == 0);
@@ -548,9 +563,9 @@ const PLX: Instruction6502 = Instruction6502 {
 
 const PLY: Instruction6502 = Instruction6502 {
     mnem: "ply",
-    randomizer: nop_randomizer,
+    randomizer: no_randomizer,
     disassemble,
-    operand: Operand6502::Immediate(0),
+    operand: Operand6502::None,
     handler: |_, s| {
         s.y = s.pull();
         s.zero = s.y.map(|r| r == 0);
@@ -640,9 +655,9 @@ const SBC: Instruction6502 = Instruction6502 {
 
 const SEC: Instruction6502 = Instruction6502 {
     mnem: "sec",
-    randomizer: rmwop_randomizer,
+    randomizer: no_randomizer,
     disassemble,
-    operand: Operand6502::Immediate(0),
+    operand: Operand6502::None,
     handler: |_, s| {
         s.carry = Some(true);
     },
@@ -650,9 +665,9 @@ const SEC: Instruction6502 = Instruction6502 {
 
 const SED: Instruction6502 = Instruction6502 {
     mnem: "sed",
-    randomizer: rmwop_randomizer,
+    randomizer: no_randomizer,
     disassemble,
-    operand: Operand6502::Immediate(0),
+    operand: Operand6502::None,
     handler: |_, s| {
         s.decimal = Some(true);
     },
@@ -806,7 +821,12 @@ impl Instruction for Instruction6502 {
         (self.randomizer)(self);
     }
     fn length(&self) -> usize {
-        todo!()
+        match self.operand {
+            Operand6502::None => 1usize,
+            Operand6502::A => 1usize,
+            Operand6502::Immediate(_) => 2usize,
+            Operand6502::Absolute(addr) => 3usize,
+        }
     }
     fn operate(&self, s: &mut Mos6502) {
         (self.handler)(self, s);

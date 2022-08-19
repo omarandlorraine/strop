@@ -1,25 +1,40 @@
 extern crate clap;
+use crate::machine::mos6502::Mos6502;
+use crate::machine::Instruction;
+use crate::search::stochastic_search;
+use crate::search::BasicBlock;
 use clap::Arg;
 use clap::Command;
+use rand::random;
 
 pub mod machine;
 pub mod search;
 
-fn main() {
-    let matches = Command::new("strop")
-        .about("Stochastically generates machine code snippets")
-        .version("0.1.1")
-        .subcommand_required(true)
-        .arg_required_else_help(true)
-        .author("Sam M W")
-        .subcommand(
-            Command::new("mult8")
-            .about("Multiply an eight-bit value by a constant. The result is also eight bits, so overflows are undefined.")
-            .arg_required_else_help(true)
-            .arg(Arg::new("factor").help("multiply by this number").required(true))
-            .arg(Arg::new("machine").help("target machine").required(true))
-            .arg(Arg::new("source").help("what to multiply").required(true))
-            .arg(Arg::new("destination").help("where do you want the result").required(true))).get_matches();
+use crate::machine::mos6502::Instruction6502;
 
-    println!("Nothing here yet.");
+fn mult8_6502_a_x(bb: &BasicBlock<Instruction6502>) -> f64 {
+    let mut s: Mos6502 = Default::default();
+    let mut error_accumulate: f64 = 0.0;
+    for i in 0..5000 {
+        s.a = Some(random());
+        s.x = Some(random());
+        s.y = Some(random());
+
+        for i in &bb.instructions {
+            i.operate(&mut s);
+        }
+
+        error_accumulate += ((s.a.unwrap_or(255) as f64) - (s.x.unwrap_or(0) as f64)).abs();
+        error_accumulate += (s.y.unwrap_or(255) as f64 - 70.0).abs();
+    }
+    println!("{}", error_accumulate);
+    error_accumulate
+}
+
+fn main() {
+    let bb = stochastic_search::<Instruction6502>(mult8_6502_a_x);
+
+    for insn in bb.instructions {
+        println!("{:?}", insn);
+    }
 }
