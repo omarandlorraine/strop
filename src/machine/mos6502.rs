@@ -12,11 +12,8 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fmt::Formatter;
 
-// some clippy warnings disabled for this module because 6502 support is not there yet.
-
 /// The internal state of a 6502
-#[derive(Default)]
-#[allow(dead_code, unused_variables)]
+#[derive(Debug, Default)]
 pub struct Mos6502 {
     /// The A register
     pub a: Option<u8>,
@@ -72,7 +69,7 @@ impl Mos6502 {
 }
 
 /// A 6502 instruction's operand
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Operand6502 {
     /// Used for implicit instructions, which take no operand
     None,
