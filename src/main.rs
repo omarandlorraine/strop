@@ -3,8 +3,6 @@ use crate::machine::mos6502::Mos6502;
 use crate::machine::Instruction;
 use crate::search::stochastic_search;
 use crate::search::BasicBlock;
-use clap::Arg;
-use clap::Command;
 use rand::random;
 
 pub mod machine;
@@ -17,7 +15,7 @@ fn function(bb: &BasicBlock<Instruction6502>) -> f64 {
     // and Y having the value 70 (decimal).
     let mut s: Mos6502 = Default::default();
     let mut error_accumulate: f64 = 0.0;
-    for i in 0..5000 {
+    for _ in 0..5000 {
         s.a = Some(random());
         s.x = Some(random());
         s.y = Some(random());

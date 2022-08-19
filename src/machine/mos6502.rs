@@ -72,7 +72,7 @@ impl Operand6502 {
     }
 }
 
-fn no_randomizer(insn: &mut Instruction6502) {}
+fn no_randomizer(_: &mut Instruction6502) {}
 
 fn immediate_randomizer(insn: &mut Instruction6502) {
     fn rnd() -> Operand6502 {
@@ -89,7 +89,7 @@ fn immediate_randomizer(insn: &mut Instruction6502) {
                 {let bitsel = 1_u8.rotate_left(rand::thread_rng().gen_range(0..8)); Operand6502::Immediate(v ^ bitsel)}
             )
         }
-        Operand6502::Absolute(addr) => rnd(),
+        Operand6502::Absolute(_) => rnd(),
     }
 }
 
@@ -178,7 +178,7 @@ fn disassemble(insn: &Instruction6502, f: &mut std::fmt::Formatter<'_>) -> std::
 
 impl Debug for Instruction6502 {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        (self.disassemble)(&self, f)
+        (self.disassemble)(self, f)
     }
 }
 
@@ -805,7 +805,7 @@ const TAX: Instruction6502 = Instruction6502 {
     randomizer: store_randomizer,
     disassemble,
     operand: Operand6502::A,
-    handler: |insn, s| {
+    handler: |_, s| {
         let result = s.a;
         s.zero = result.map(|r| r == 0);
         s.sign = result.map(|r| r.leading_zeros() == 0);
@@ -818,7 +818,7 @@ const TAY: Instruction6502 = Instruction6502 {
     randomizer: store_randomizer,
     disassemble,
     operand: Operand6502::A,
-    handler: |insn, s| {
+    handler: |_, s| {
         let result = s.a;
         s.zero = result.map(|r| r == 0);
         s.sign = result.map(|r| r.leading_zeros() == 0);
@@ -831,7 +831,7 @@ const TSX: Instruction6502 = Instruction6502 {
     randomizer: store_randomizer,
     disassemble,
     operand: Operand6502::A,
-    handler: |insn, s| {
+    handler: |_, s| {
         let result = Some(s.s);
         s.zero = result.map(|r| r == 0);
         s.sign = result.map(|r| r.leading_zeros() == 0);
@@ -844,7 +844,7 @@ const TXA: Instruction6502 = Instruction6502 {
     randomizer: store_randomizer,
     disassemble,
     operand: Operand6502::A,
-    handler: |insn, s| {
+    handler: |_, s| {
         let result = s.x;
         s.zero = result.map(|r| r == 0);
         s.sign = result.map(|r| r.leading_zeros() == 0);
@@ -857,7 +857,7 @@ const TYA: Instruction6502 = Instruction6502 {
     randomizer: store_randomizer,
     disassemble,
     operand: Operand6502::A,
-    handler: |insn, s| {
+    handler: |_, s| {
         let result = s.y;
         s.zero = result.map(|r| r == 0);
         s.sign = result.map(|r| r.leading_zeros() == 0);
@@ -870,7 +870,7 @@ const TXS: Instruction6502 = Instruction6502 {
     randomizer: store_randomizer,
     disassemble,
     operand: Operand6502::A,
-    handler: |insn, s| {
+    handler: |_, s| {
         let result = s.x;
         s.zero = result.map(|r| r == 0);
         s.sign = result.map(|r| r.leading_zeros() == 0);
@@ -900,7 +900,7 @@ impl Instruction for Instruction6502 {
             Operand6502::None => 1usize,
             Operand6502::A => 1usize,
             Operand6502::Immediate(_) => 2usize,
-            Operand6502::Absolute(addr) => 3usize,
+            Operand6502::Absolute(_) => 3usize,
         }
     }
     fn operate(&self, s: &mut Mos6502) {
