@@ -1,3 +1,9 @@
+//! The `mos6502` backend, for generating code sequences for the famous 8-bit
+//! CPU from 1975. It also supports the later CMOS opcodes and known illegal opcodes
+//! present on the NMOS models.
+
+#![warn(missing_debug_implementations, missing_docs)]
+
 use crate::machine::Instruction;
 use crate::machine::Strop;
 use rand::random;
@@ -8,18 +14,38 @@ use std::fmt::Formatter;
 
 // some clippy warnings disabled for this module because 6502 support is not there yet.
 
+/// The internal state of a 6502
 #[derive(Default)]
 #[allow(dead_code, unused_variables)]
 pub struct Mos6502 {
+    /// The A register
     pub a: Option<u8>,
+
+    /// The X register
     pub x: Option<u8>,
+
+    /// The Y register
     pub y: Option<u8>,
+
+    /// Stack pointer
     pub s: u8,
+
+    /// Memory
     pub heap: HashMap<u16, Option<u8>>,
+
+    /// Carry flag
     pub carry: Option<bool>,
+
+    /// Zero flag
     pub zero: Option<bool>,
+
+    /// Sign flag
     pub sign: Option<bool>,
+
+    /// Overflow flag
     pub overflow: Option<bool>,
+
+    /// Decimal flag
     pub decimal: Option<bool>,
 }
 
@@ -45,11 +71,19 @@ impl Mos6502 {
     }
 }
 
+/// A 6502 instruction's operand
 #[derive(Clone, Copy)]
 pub enum Operand6502 {
+    /// Used for implicit instructions, which take no operand
     None,
+
+    /// For RMW instructions operating on the accumulator
     A,
+
+    /// An immediate value
     Immediate(u8),
+
+    /// Absolute addressing mode
     Absolute(u16),
 }
 
@@ -182,6 +216,7 @@ impl Debug for Instruction6502 {
     }
 }
 
+/// Represents a 6502 Instruction
 #[derive(Clone, Copy)]
 pub struct Instruction6502 {
     mnem: &'static str,
