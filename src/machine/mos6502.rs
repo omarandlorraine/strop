@@ -74,6 +74,25 @@ impl Operand6502 {
 
 fn no_randomizer(insn: &mut Instruction6502) {}
 
+fn immediate_randomizer(insn: &mut Instruction6502) {
+    fn rnd() -> Operand6502 {
+        Operand6502::Immediate(random())
+    }
+
+    insn.operand = match insn.operand {
+        Operand6502::None => rnd(),
+        Operand6502::A => rnd(),
+        Operand6502::Immediate(v) => {
+            randomly!(
+                {Operand6502::Immediate(v.wrapping_add(1))}
+                {Operand6502::Immediate(v.wrapping_sub(1))}
+                {let bitsel = 1_u8.rotate_left(rand::thread_rng().gen_range(0..8)); Operand6502::Immediate(v ^ bitsel)}
+            )
+        }
+        Operand6502::Absolute(addr) => rnd(),
+    }
+}
+
 fn aluop_randomizer(insn: &mut Instruction6502) {
     fn rnd() -> Operand6502 {
         randomly!(
@@ -248,6 +267,62 @@ const ADC: Instruction6502 = Instruction6502 {
         s.sign = r.map(|r| r.leading_zeros() == 0);
         s.overflow = overflowtests.map(|t| t != 0 && t != -64);
         s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+    },
+};
+
+const ALR: Instruction6502 = Instruction6502 {
+    mnem: "alr",
+    randomizer: immediate_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |insn, s| {
+        let val = insn.operand.get(s);
+        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let r = a.zip(m).map(|(a, m)| a & m);
+        s.carry = r.map(|v| v & 0x01 != 0);
+        let result = r.map(|v| v.rotate_right(1) & 0x7f);
+        s.zero = result.map(|r| r == 0);
+        s.sign = result.map(|r| r.leading_zeros() == 0);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+    },
+};
+
+const ANC: Instruction6502 = Instruction6502 {
+    mnem: "anc",
+    randomizer: aluop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |insn, s| {
+        let val = insn.operand.get(s);
+        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let r = a.zip(m).map(|(a, m)| a & m);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.carry = s.sign;
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+    },
+};
+
+const ARR: Instruction6502 = Instruction6502 {
+    mnem: "arr",
+    randomizer: aluop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |insn, s| {
+        let val = insn.operand.get(s);
+        let m = val.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+        let r = a.zip(m).map(|(a, m)| a & m);
+        let shifted = r.map(|v| v.rotate_right(1) & 0x7f);
+        let result = shifted
+            .zip(s.carry)
+            .map(|(r, c)| r + if c { 0x80 } else { 0 });
+        s.zero = result.map(|r| r == 0);
+        s.sign = result.map(|r| r.leading_zeros() == 0);
+        s.carry = r.map(|v| v & 0x01 != 0);
+        s.a = result;
     },
 };
 
@@ -803,10 +878,10 @@ const TXS: Instruction6502 = Instruction6502 {
     },
 };
 
-const INSTRUCTIONS: [Instruction6502; 43] = [
-    ADC, AND, ASL, BIT, CLC, CLD, CLV, CMP, CPX, CPY, DEC, DEX, DEY, EOR, INC, INX, INY, LDA, LDX,
-    LDY, LSR, ORA, PHA, PHX, PHY, PLA, PLX, PLY, ROL, ROR, SBC, SEC, SED, STA, STX, STY, STZ, TAX,
-    TAY, TSX, TXA, TYA, TXS,
+const INSTRUCTIONS: [Instruction6502; 46] = [
+    ADC, ALR, ANC, AND, ASL, ARR, BIT, CLC, CLD, CLV, CMP, CPX, CPY, DEC, DEX, DEY, EOR, INC, INX,
+    INY, LDA, LDX, LDY, LSR, ORA, PHA, PHX, PHY, PLA, PLX, PLY, ROL, ROR, SBC, SEC, SED, STA, STX,
+    STY, STZ, TAX, TAY, TSX, TXA, TYA, TXS,
 ];
 
 impl std::fmt::Display for Instruction6502 {
