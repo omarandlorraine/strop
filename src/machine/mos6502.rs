@@ -275,6 +275,45 @@ fn increment(val: Option<u8>, s: &mut Mos6502) -> Option<u8> {
     r
 }
 
+fn subtract(a: Option<i8>, m: Option<i8>, s: &mut Mos6502) -> Option<u8> {
+    let m = m.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+    let a = a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+    let subtraction = a
+        .zip(m)
+        .zip(s.carry)
+        .map(|((a, m), c)| a.wrapping_sub(m).wrapping_sub(if c { 1 } else { 0 }));
+
+    let decimal_adjust = s.decimal.zip(subtraction).map(|(d, q)| {
+        let r = u8::from_ne_bytes(q.to_ne_bytes());
+        if d {
+            let s1 = if r & 0x0f > 9 { r.wrapping_sub(6) } else { r };
+            if s1 & 0xf0 > 0x90 {
+                s.carry = Some(true);
+                s1.wrapping_sub(0x60)
+            } else {
+                s.carry = Some(false);
+                s1
+            }
+        } else {
+            r
+        }
+    });
+    let r = decimal_adjust.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+    let carrytests = a
+        .zip(m)
+        .zip(r)
+        .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
+    let overflowtests = a
+        .zip(m)
+        .zip(r)
+        .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
+    s.carry = carrytests.map(|t| t.leading_zeros() == 0);
+    s.zero = r.map(|r| r == 0);
+    s.sign = r.map(|r| r.leading_zeros() == 0);
+    s.overflow = overflowtests.map(|t| t != 0 && t != -64);
+    r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()))
+}
+
 const ADC: Instruction6502 = Instruction6502 {
     mnem: "adc",
     randomizer: aluop_randomizer,
@@ -482,6 +521,18 @@ const CPY: Instruction6502 = Instruction6502 {
     },
 };
 
+const DCP: Instruction6502 = Instruction6502 {
+    mnem: "dcp",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let res = decrement(insn.operand.get(s), s);
+        insn.operand.set(s, res);
+        compare(insn, s.a, s);
+    },
+};
+
 const DEC: Instruction6502 = Instruction6502 {
     mnem: "dec",
     randomizer: rmwop_randomizer,
@@ -540,6 +591,21 @@ const INC: Instruction6502 = Instruction6502 {
     handler: |insn, s| {
         let res = increment(insn.operand.get(s), s);
         insn.operand.set(s, res);
+    },
+};
+
+const ISC: Instruction6502 = Instruction6502 {
+    mnem: "isc",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let res = increment(insn.operand.get(s), s);
+        insn.operand.set(s, res);
+        let m = res.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let r = subtract(a, m, s);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
     },
 };
 
@@ -742,39 +808,7 @@ const SBC: Instruction6502 = Instruction6502 {
         let val = insn.operand.get(s);
         let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
         let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
-        let addition = a
-            .zip(m)
-            .zip(s.carry)
-            .map(|((a, m), c)| a.wrapping_sub(m).wrapping_sub(if c { 1 } else { 0 }));
-
-        let decimal_adjust = s.decimal.zip(addition).map(|(d, q)| {
-            let r = u8::from_ne_bytes(q.to_ne_bytes());
-            if d {
-                let s1 = if r & 0x0f > 9 { r.wrapping_sub(6) } else { r };
-                if s1 & 0xf0 > 0x90 {
-                    s.carry = Some(true);
-                    s1.wrapping_sub(0x60)
-                } else {
-                    s.carry = Some(false);
-                    s1
-                }
-            } else {
-                r
-            }
-        });
-        let r = decimal_adjust.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
-        let carrytests = a
-            .zip(m)
-            .zip(r)
-            .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
-        let overflowtests = a
-            .zip(m)
-            .zip(r)
-            .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
-        s.carry = carrytests.map(|t| t.leading_zeros() == 0);
-        s.zero = r.map(|r| r == 0);
-        s.sign = r.map(|r| r.leading_zeros() == 0);
-        s.overflow = overflowtests.map(|t| t != 0 && t != -64);
+        let r = subtract(a, m, s);
         s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
     },
 };
@@ -957,10 +991,10 @@ const TSB: Instruction6502 = Instruction6502 {
     },
 };
 
-const INSTRUCTIONS: [Instruction6502; 48] = [
-    ADC, ALR, ANC, AND, ASL, ARR, BIT, CLC, CLD, CLV, CMP, CPX, CPY, DEC, DEX, DEY, EOR, INC, INX,
-    INY, LDA, LDX, LDY, LSR, ORA, PHA, PHX, PHY, PLA, PLX, PLY, ROL, ROR, SBC, SEC, SED, STA, STX,
-    STY, STZ, TAX, TAY, TRB, TSB, TSX, TXA, TYA, TXS,
+const INSTRUCTIONS: [Instruction6502; 50] = [
+    ADC, ALR, ANC, AND, ASL, ARR, BIT, CLC, CLD, CLV, CMP, CPX, CPY, DCP, DEC, DEX, DEY, EOR, INC,
+    INX, INY, ISC, LDA, LDX, LDY, LSR, ORA, PHA, PHX, PHY, PLA, PLX, PLY, ROL, ROR, SBC, SEC, SED,
+    STA, STX, STY, STZ, TAX, TAY, TRB, TSB, TSX, TXA, TYA, TXS,
 ];
 
 impl std::fmt::Display for Instruction6502 {
