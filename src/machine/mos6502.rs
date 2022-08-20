@@ -52,6 +52,11 @@ pub struct Mos6502 {
     /// True iff an illegal instruction has been run. (You may want to use this flag in your cost
     /// function to determine if the program will run reliably on your device)
     pub illegal: bool,
+
+    /// True iff a ROR instruction has been run. (Very early parts do not have this opcode; if you
+    /// intend to use such a specimen, then you may want to use this flag in your cost function to
+    /// determine if the program will run at all on your device)
+    pub requires_ror: bool,
 }
 
 impl Mos6502 {
@@ -872,6 +877,7 @@ const ROR: Instruction6502 = Instruction6502 {
         s.sign = result.map(|r| r.leading_zeros() == 0);
         s.carry = before.map(|v| v & 0x01 != 0);
         insn.operand.set(s, result);
+        s.requires_ror = true;
     },
 };
 
