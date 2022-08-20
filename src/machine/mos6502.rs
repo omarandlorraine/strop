@@ -1058,9 +1058,9 @@ const STZ: Instruction6502 = Instruction6502 {
 
 const TAX: Instruction6502 = Instruction6502 {
     mnem: "tax",
-    randomizer: store_randomizer,
+    randomizer: no_randomizer,
     disassemble,
-    operand: Operand6502::A,
+    operand: Operand6502::None,
     handler: |_, s| {
         let result = s.a;
         s.zero = result.map(|r| r == 0);
@@ -1071,9 +1071,9 @@ const TAX: Instruction6502 = Instruction6502 {
 
 const TAY: Instruction6502 = Instruction6502 {
     mnem: "tay",
-    randomizer: store_randomizer,
+    randomizer: no_randomizer,
     disassemble,
-    operand: Operand6502::A,
+    operand: Operand6502::None,
     handler: |_, s| {
         let result = s.a;
         s.zero = result.map(|r| r == 0);
@@ -1084,9 +1084,9 @@ const TAY: Instruction6502 = Instruction6502 {
 
 const TSX: Instruction6502 = Instruction6502 {
     mnem: "tsx",
-    randomizer: store_randomizer,
+    randomizer: no_randomizer,
     disassemble,
-    operand: Operand6502::A,
+    operand: Operand6502::None,
     handler: |_, s| {
         let result = Some(s.s);
         s.zero = result.map(|r| r == 0);
@@ -1097,9 +1097,9 @@ const TSX: Instruction6502 = Instruction6502 {
 
 const TXA: Instruction6502 = Instruction6502 {
     mnem: "txa",
-    randomizer: store_randomizer,
+    randomizer: no_randomizer,
     disassemble,
-    operand: Operand6502::A,
+    operand: Operand6502::None,
     handler: |_, s| {
         let result = s.x;
         s.zero = result.map(|r| r == 0);
@@ -1110,9 +1110,9 @@ const TXA: Instruction6502 = Instruction6502 {
 
 const TYA: Instruction6502 = Instruction6502 {
     mnem: "tya",
-    randomizer: store_randomizer,
+    randomizer: no_randomizer,
     disassemble,
-    operand: Operand6502::A,
+    operand: Operand6502::None,
     handler: |_, s| {
         let result = s.y;
         s.zero = result.map(|r| r == 0);
@@ -1123,9 +1123,9 @@ const TYA: Instruction6502 = Instruction6502 {
 
 const TXS: Instruction6502 = Instruction6502 {
     mnem: "txs",
-    randomizer: store_randomizer,
+    randomizer: no_randomizer,
     disassemble,
-    operand: Operand6502::A,
+    operand: Operand6502::None,
     handler: |_, s| {
         let result = s.x;
         s.zero = result.map(|r| r == 0);
