@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 use crate::machine::Instruction;
 use crate::machine::Strop;
 use rand::distributions::Standard;
