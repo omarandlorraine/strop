@@ -44,6 +44,9 @@ pub struct Mos6502 {
 
     /// Decimal flag
     pub decimal: Option<bool>,
+
+    /// True iff a CMOS-only instruction has been run
+    pub requires_cmos: bool,
 }
 
 impl Mos6502 {
@@ -716,6 +719,7 @@ const PHX: Instruction6502 = Instruction6502 {
     operand: Operand6502::None,
     handler: |_, s| {
         s.push(s.x);
+        s.requires_cmos = true;
     },
 };
 
@@ -726,6 +730,7 @@ const PHY: Instruction6502 = Instruction6502 {
     operand: Operand6502::None,
     handler: |_, s| {
         s.push(s.y);
+        s.requires_cmos = true;
     },
 };
 
@@ -750,6 +755,7 @@ const PLX: Instruction6502 = Instruction6502 {
         s.x = s.pull();
         s.zero = s.x.map(|r| r == 0);
         s.sign = s.x.map(|r| r.leading_zeros() == 0);
+        s.requires_cmos = true;
     },
 };
 
@@ -762,6 +768,7 @@ const PLY: Instruction6502 = Instruction6502 {
         s.y = s.pull();
         s.zero = s.y.map(|r| r == 0);
         s.sign = s.y.map(|r| r.leading_zeros() == 0);
+        s.requires_cmos = true;
     },
 };
 
@@ -882,6 +889,7 @@ const STZ: Instruction6502 = Instruction6502 {
         s.zero = result.map(|r| r == 0);
         s.sign = result.map(|r| r.leading_zeros() == 0);
         insn.operand.set(s, result);
+        s.requires_cmos = true;
     },
 };
 
@@ -974,6 +982,7 @@ const TRB: Instruction6502 = Instruction6502 {
         let w = s.a.zip(m).map(|(a, m)| (a ^ 0xff) & m);
         s.zero = r.map(|r| r == 0);
         insn.operand.set(s, w);
+        s.requires_cmos = true;
     },
 };
 
@@ -988,6 +997,7 @@ const TSB: Instruction6502 = Instruction6502 {
         let w = s.a.zip(m).map(|(a, m)| a | m);
         s.zero = r.map(|r| r == 0);
         insn.operand.set(s, w);
+        s.requires_cmos = true;
     },
 };
 
@@ -1238,12 +1248,12 @@ pub mod tests {
         assert!(run_strop(LSR, 0x01, None, true, true).1 == true);
     }
 
-    fn find_it(opcode: &'static str) {
+    fn find_it(opcode: &'static str) -> Instruction6502 {
         for _ in 0..5000 {
             let insn = Instruction6502::random();
             let dasm = format!("{}", insn);
             if dasm.contains(opcode) {
-                return;
+                return insn;
             }
         }
         panic!("Could not find opcode {}", opcode);
@@ -1277,8 +1287,14 @@ pub mod tests {
     #[test]
     fn instruction_set_cmos() {
         for opcode in &["phx", "phy", "plx", "ply", "stz", "trb", "tsb"] {
-            find_it(opcode);
-            // todo: execute these instructions and check that they set the CMOS flag
+            let insn = find_it(opcode);
+            let mut state: Mos6502 = Default::default();
+            insn.operate(&mut state);
+            assert!(
+                state.requires_cmos,
+                "{} should set requires_cmos",
+                insn.mnem
+            );
         }
     }
 }
