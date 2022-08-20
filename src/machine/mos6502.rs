@@ -45,8 +45,13 @@ pub struct Mos6502 {
     /// Decimal flag
     pub decimal: Option<bool>,
 
-    /// True iff a CMOS-only instruction has been run
+    /// True iff a CMOS-only instruction has been run. (You may want to use this flag in your cost
+    /// function to determine if the program will run at all on your device)
     pub requires_cmos: bool,
+
+    /// True iff an illegal instruction has been run. (You may want to use this flag in your cost
+    /// function to determine if the program will run reliably on your device)
+    pub illegal: bool,
 }
 
 impl Mos6502 {
@@ -278,6 +283,45 @@ fn increment(val: Option<u8>, s: &mut Mos6502) -> Option<u8> {
     r
 }
 
+fn add_with_carry(val: Option<u8>, s: &mut Mos6502) -> Option<u8> {
+    let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+    let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+    let addition = a
+        .zip(m)
+        .zip(s.carry)
+        .map(|((a, m), c)| a.wrapping_add(m).wrapping_add(if c { 1 } else { 0 }));
+
+    let decimal_adjust = s.decimal.zip(addition).map(|(d, q)| {
+        let r = u8::from_ne_bytes(q.to_ne_bytes());
+        if d {
+            let s1 = if r & 0x0f > 9 { r.wrapping_add(6) } else { r };
+            if s1 & 0xf0 > 0x90 {
+                s.carry = Some(true);
+                s1.wrapping_add(0x60)
+            } else {
+                s.carry = Some(false);
+                s1
+            }
+        } else {
+            r
+        }
+    });
+    let r = decimal_adjust.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+    let carrytests = a
+        .zip(m)
+        .zip(r)
+        .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
+    let overflowtests = a
+        .zip(m)
+        .zip(r)
+        .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
+    s.carry = carrytests.map(|t| t.leading_zeros() == 0);
+    s.zero = r.map(|r| r == 0);
+    s.sign = r.map(|r| r.leading_zeros() == 0);
+    s.overflow = overflowtests.map(|t| t != 0 && t != -64);
+    r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()))
+}
+
 fn subtract(a: Option<i8>, m: Option<i8>, s: &mut Mos6502) -> Option<u8> {
     let m = m.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
     let a = a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
@@ -324,42 +368,8 @@ const ADC: Instruction6502 = Instruction6502 {
     operand: Operand6502::Immediate(0),
     handler: |insn, s| {
         let val = insn.operand.get(s);
-        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
-        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
-        let addition = a
-            .zip(m)
-            .zip(s.carry)
-            .map(|((a, m), c)| a.wrapping_add(m).wrapping_add(if c { 1 } else { 0 }));
-
-        let decimal_adjust = s.decimal.zip(addition).map(|(d, q)| {
-            let r = u8::from_ne_bytes(q.to_ne_bytes());
-            if d {
-                let s1 = if r & 0x0f > 9 { r.wrapping_add(6) } else { r };
-                if s1 & 0xf0 > 0x90 {
-                    s.carry = Some(true);
-                    s1.wrapping_add(0x60)
-                } else {
-                    s.carry = Some(false);
-                    s1
-                }
-            } else {
-                r
-            }
-        });
-        let r = decimal_adjust.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
-        let carrytests = a
-            .zip(m)
-            .zip(r)
-            .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
-        let overflowtests = a
-            .zip(m)
-            .zip(r)
-            .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
-        s.carry = carrytests.map(|t| t.leading_zeros() == 0);
-        s.zero = r.map(|r| r == 0);
-        s.sign = r.map(|r| r.leading_zeros() == 0);
-        s.overflow = overflowtests.map(|t| t != 0 && t != -64);
-        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+        let result = add_with_carry(val, s);
+        s.a = result;
     },
 };
 
@@ -378,6 +388,7 @@ const ALR: Instruction6502 = Instruction6502 {
         s.zero = result.map(|r| r == 0);
         s.sign = result.map(|r| r.leading_zeros() == 0);
         s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+        s.illegal = true;
     },
 };
 
@@ -395,6 +406,7 @@ const ANC: Instruction6502 = Instruction6502 {
         s.sign = r.map(|r| r.leading_zeros() == 0);
         s.carry = s.sign;
         s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+        s.illegal = true;
     },
 };
 
@@ -416,6 +428,7 @@ const ARR: Instruction6502 = Instruction6502 {
         s.sign = result.map(|r| r.leading_zeros() == 0);
         s.carry = r.map(|v| v & 0x01 != 0);
         s.a = result;
+        s.illegal = true;
     },
 };
 
@@ -533,6 +546,7 @@ const DCP: Instruction6502 = Instruction6502 {
         let res = decrement(insn.operand.get(s), s);
         insn.operand.set(s, res);
         compare(insn, s.a, s);
+        s.illegal = true;
     },
 };
 
@@ -615,6 +629,7 @@ const ISC: Instruction6502 = Instruction6502 {
         let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
         let r = subtract(a, m, s);
         s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+        s.illegal = true;
     },
 };
 
@@ -649,6 +664,36 @@ const LDA: Instruction6502 = Instruction6502 {
         s.a = insn.operand.get(s);
         s.zero = s.a.map(|r| r == 0);
         s.sign = s.a.map(|r| r.leading_zeros() == 0);
+    },
+};
+
+const LAS: Instruction6502 = Instruction6502 {
+    mnem: "las",
+    randomizer: aluop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |insn, s| {
+        let result = insn.operand.get(s).map(|v| v & s.s);
+        s.a = result;
+        s.x = result;
+        s.s = result.unwrap_or(s.s);
+        s.zero = s.a.map(|r| r == 0);
+        s.sign = s.a.map(|r| r.leading_zeros() == 0);
+        s.illegal = true;
+    },
+};
+
+const LAX: Instruction6502 = Instruction6502 {
+    mnem: "lax",
+    randomizer: aluop_randomizer,
+    disassemble,
+    operand: Operand6502::Immediate(0),
+    handler: |insn, s| {
+        s.a = insn.operand.get(s);
+        s.x = s.a;
+        s.zero = s.a.map(|r| r == 0);
+        s.sign = s.a.map(|r| r.leading_zeros() == 0);
+        s.illegal = true;
     },
 };
 
@@ -794,6 +839,24 @@ const ROL: Instruction6502 = Instruction6502 {
     },
 };
 
+const RLA: Instruction6502 = Instruction6502 {
+    mnem: "rla",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let m = insn.operand.get(s);
+        let p = m.map(|a| (a & 0x7f) << 1);
+        let r = p.zip(s.carry).map(|(r, c)| r + if c { 1 } else { 0 });
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.carry = m.map(|m| m.leading_zeros() == 0);
+        insn.operand.set(s, r);
+        s.a = r.zip(s.a).map(|(a, m)| a & m);
+        s.illegal = true;
+    },
+};
+
 const ROR: Instruction6502 = Instruction6502 {
     mnem: "ror",
     randomizer: rmwop_randomizer,
@@ -809,6 +872,58 @@ const ROR: Instruction6502 = Instruction6502 {
         s.sign = result.map(|r| r.leading_zeros() == 0);
         s.carry = before.map(|v| v & 0x01 != 0);
         insn.operand.set(s, result);
+    },
+};
+
+const RRA: Instruction6502 = Instruction6502 {
+    mnem: "rra",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let before = insn.operand.get(s);
+        let shifted = before.map(|v| v.rotate_right(1) & 0x7f);
+        let result = shifted
+            .zip(s.carry)
+            .map(|(r, c)| r + if c { 0x80 } else { 0 });
+        s.zero = result.map(|r| r == 0);
+        s.sign = result.map(|r| r.leading_zeros() == 0);
+        s.carry = before.map(|v| v & 0x01 != 0);
+
+        insn.operand.set(s, result);
+        let added = add_with_carry(result, s);
+        s.a = added;
+        s.illegal = true;
+    },
+};
+
+const SAX: Instruction6502 = Instruction6502 {
+    mnem: "sax",
+    randomizer: store_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let result = s.a.zip(s.x).map(|(a, x)| a & x);
+        s.zero = result.map(|r| r == 0);
+        s.sign = result.map(|r| r.leading_zeros() == 0);
+        insn.operand.set(s, result);
+        s.illegal = true;
+    },
+};
+
+const SBX: Instruction6502 = Instruction6502 {
+    mnem: "sbx",
+    randomizer: immediate_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let result =
+            s.a.zip(s.x)
+                .map(|(a, x)| (a & x).wrapping_sub(insn.operand.get(s).unwrap()));
+        s.zero = result.map(|r| r == 0);
+        s.sign = result.map(|r| r.leading_zeros() == 0);
+        s.x = result;
+        s.illegal = true;
     },
 };
 
@@ -843,6 +958,48 @@ const SED: Instruction6502 = Instruction6502 {
     operand: Operand6502::None,
     handler: |_, s| {
         s.decimal = Some(true);
+    },
+};
+
+const SLO: Instruction6502 = Instruction6502 {
+    mnem: "slo",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let val = insn.operand.get(s);
+        let result = val.map(|a| (a & 0x7f) << 1);
+        s.carry = val.map(|v| v & 0x01 != 0);
+
+        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let r = a.zip(m).map(|(a, m)| a | m);
+
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+
+        insn.operand.set(s, result);
+        s.illegal = true;
+    },
+};
+
+const SRE: Instruction6502 = Instruction6502 {
+    mnem: "sre",
+    randomizer: rmwop_randomizer,
+    disassemble,
+    operand: Operand6502::A,
+    handler: |insn, s| {
+        let before = insn.operand.get(s);
+        let result = before.map(|v| v.rotate_right(1) & 0x7f);
+        s.carry = before.map(|v| v & 0x01 != 0);
+        insn.operand.set(s, result);
+
+        let r = s.a.zip(result).map(|(a, m)| a ^ m);
+
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.set(s, r);
+        s.illegal = true;
     },
 };
 
@@ -1007,10 +1164,11 @@ const TSB: Instruction6502 = Instruction6502 {
     },
 };
 
-const INSTRUCTIONS: [Instruction6502; 50] = [
+const INSTRUCTIONS: [Instruction6502; 58] = [
     ADC, ALR, ANC, AND, ASL, ARR, BIT, CLC, CLD, CLV, CMP, CPX, CPY, DCP, DEC, DEX, DEY, EOR, INC,
-    INX, INY, ISC, LDA, LDX, LDY, LSR, ORA, PHA, PHX, PHY, PLA, PLX, PLY, ROL, ROR, SBC, SEC, SED,
-    STA, STX, STY, STZ, TAX, TAY, TRB, TSB, TSX, TXA, TYA, TXS,
+    INX, INY, ISC, LAS, LAX, LDA, LDX, LDY, LSR, ORA, PHA, PHX, PHY, PLA, PLX, PLY, RLA, ROL, ROR,
+    RRA, SAX, SBC, SBX, SEC, SED, SLO, SRE, STA, STX, STY, STZ, TAX, TAY, TRB, TSB, TSX, TXA, TYA,
+    TXS,
 ];
 
 impl std::fmt::Display for Instruction6502 {
@@ -1274,7 +1432,6 @@ pub mod tests {
             "txs", "tya",
         ] {
             find_it(opcode);
-            // todo: execute these instructions and check that they don't set the CMOS flag
         }
     }
 
@@ -1285,8 +1442,10 @@ pub mod tests {
             "alr", "anc", "arr", "dcp", "isc", "las", "lax", "rla", "rra", "sax", "sbx", "slo",
             "sre",
         ] {
-            find_it(opcode);
-            // todo: execute these instructions and check that they set the illegal flag
+            let insn = find_it(opcode);
+            let mut state: Mos6502 = Default::default();
+            insn.operate(&mut state);
+            assert!(state.illegal, "{} should set illegal flag", insn.mnem);
         }
     }
 
