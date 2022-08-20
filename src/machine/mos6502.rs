@@ -226,10 +226,10 @@ fn disassemble(insn: &Instruction6502, f: &mut std::fmt::Formatter<'_>) -> std::
             write!(f, "\t{} a", insn.mnem)
         }
         Operand6502::Immediate(val) => {
-            write!(f, "\t{} #${:#04x}", insn.mnem, val)
+            write!(f, "\t{} #${:02x}", insn.mnem, val)
         }
         Operand6502::Absolute(addr) => {
-            write!(f, "\t{} ${:#06x}", insn.mnem, addr)
+            write!(f, "\t{} ${:04x}", insn.mnem, addr)
         }
     }
 }
