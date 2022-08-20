@@ -1,3 +1,6 @@
+//! This module defines the `Instruction` trait and pulls in the architecture-
+//! specific modules.
+
 pub mod kr580vm1;
 pub mod mos6502;
 pub mod stm8;

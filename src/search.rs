@@ -1,3 +1,6 @@
+//! The `search` module provides conveniences for searching for the target
+//! sequence.
+
 use crate::machine::Instruction;
 use rand::{thread_rng, Rng};
 use randomly::randomly;
