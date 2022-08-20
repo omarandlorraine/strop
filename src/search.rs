@@ -3,11 +3,17 @@ use rand::{thread_rng, Rng};
 use randomly::randomly;
 use std::ops::{Index, IndexMut};
 
+/// A [basic block](https://en.wikipedia.org/wiki/Basic_block) is a sequence of
+/// instructions that contains no jumps or branches. Another key word for this
+/// is "branchless" or "branch-free". This property guarantees that the sequence
+/// of instructions does not loop or halt, and makes it amenable to certain
+/// kinds of optimizations.
 #[derive(Clone, Debug)]
 pub struct BasicBlock<I>
 where
     I: Instruction,
 {
+    /// The list of instructions in the basic block
     pub instructions: Vec<I>,
 }
 
@@ -47,10 +53,13 @@ impl<I: Instruction + Clone> BasicBlock<I> {
     }
 
     pub fn is_empty(&self) -> bool {
+        //! Returns true if this basic block contains no instructions, or false if it contains at least
+        //! one instruction.
         self.instructions.is_empty()
     }
 
     pub fn len(&self) -> usize {
+        //! returns the length of the program, in machine words
         self.instructions.iter().map(|i| i.length()).sum()
     }
 
