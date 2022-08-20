@@ -1,6 +1,6 @@
+pub mod kr580vm1;
 pub mod mos6502;
 pub mod stm8;
-pub mod x80;
 
 pub trait Strop {
     fn mutate(&mut self);
