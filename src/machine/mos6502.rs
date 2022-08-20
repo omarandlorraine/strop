@@ -72,7 +72,7 @@ impl Mos6502 {
 }
 
 /// A 6502 instruction's operand
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Operand6502 {
     /// Used for implicit instructions, which take no operand
     None,
@@ -544,6 +544,9 @@ const DEC: Instruction6502 = Instruction6502 {
     handler: |insn, s| {
         let res = decrement(insn.operand.get(s), s);
         insn.operand.set(s, res);
+        if insn.operand == Operand6502::A {
+            s.requires_cmos = true;
+        }
     },
 };
 
@@ -594,6 +597,9 @@ const INC: Instruction6502 = Instruction6502 {
     handler: |insn, s| {
         let res = increment(insn.operand.get(s), s);
         insn.operand.set(s, res);
+        if insn.operand == Operand6502::A {
+            s.requires_cmos = true;
+        }
     },
 };
 
