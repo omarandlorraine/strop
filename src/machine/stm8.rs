@@ -1,14 +1,16 @@
 //! The `stm8` backend, for generating code sequences for the 8-bit microcontroller family by
 //! STMicroelectronics.
 
+// Just temporarily allow these lints while we're working on a half-baked implementation
+#![allow(missing_debug_implementations, missing_docs, dead_code)]
+
 use crate::machine::Instruction;
 use crate::machine::Strop;
 use rand::random;
 use randomly::randomly;
 use std::collections::HashMap;
-use std::fmt::Debug;
-use std::fmt::Formatter;
 use std::fmt;
+use std::fmt::Debug;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Operand8 {
@@ -26,6 +28,29 @@ pub enum Operand16 {
 pub enum Register16 {
     X,
     Y,
+}
+
+impl Register16 {
+    fn get_u16(&self, s: &Stm8) -> Option<u16> {
+        match self {
+            Register16::X => s.x.get_u16(),
+            Register16::Y => s.y.get_u16(),
+        }
+    }
+
+    fn set_u16(&self, s: &mut Stm8, v: Option<u16>) {
+        match self {
+            Register16::X => s.x.set_u16(v),
+            Register16::Y => s.y.set_u16(v),
+        }
+    }
+
+    fn set_i16(&self, s: &mut Stm8, v: Option<i16>) {
+        match self {
+            Register16::X => s.x.set_i16(v),
+            Register16::Y => s.y.set_i16(v),
+        }
+    }
 }
 
 impl fmt::Display for Register16 {
@@ -74,6 +99,19 @@ impl Strop for u16 {
                 *self ^= bit_select;
             }
         );
+    }
+}
+
+impl Strop for Register16 {
+    fn random() -> Register16 {
+        use Register16::*;
+        randomly!(
+            {X}
+            {Y}
+        )
+    }
+    fn mutate(&mut self) {
+        *self = Register16::random();
     }
 }
 
@@ -137,9 +175,10 @@ impl Operand16 {
 
 impl fmt::Display for Operand16 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use Operand16::*;
         match self {
             Imm(x) => write!(f, "#${:04x}", x),
-            Abs(addr) => write!(f, "${:04x}", x),
+            Abs(addr) => write!(f, "${:04x}", addr),
         }
     }
 }
@@ -162,6 +201,12 @@ pub struct IndexRegister {
 
 impl IndexRegister {
     fn set_u16(&mut self, val: Option<u16>) {
+        let v = val.map(|v| v.to_be_bytes());
+        self.high = v.map(|v| u8::from_ne_bytes(v[0].to_ne_bytes()));
+        self.low = v.map(|v| u8::from_ne_bytes(v[1].to_ne_bytes()));
+    }
+
+    fn set_i16(&mut self, val: Option<i16>) {
         let v = val.map(|v| v.to_be_bytes());
         self.high = v.map(|v| u8::from_ne_bytes(v[0].to_ne_bytes()));
         self.low = v.map(|v| u8::from_ne_bytes(v[1].to_ne_bytes()));
@@ -241,6 +286,7 @@ impl Strop for Stm8Operands {
     fn mutate(&mut self) {
         match self {
             Stm8Operands::Alu8(v) => v.mutate(),
+            Stm8Operands::Alu16(r, v) => randomly!({r.mutate()} {v.mutate()}),
         }
     }
 }
@@ -258,6 +304,9 @@ fn disassemble(insn: &Stm8Instruction, f: &mut std::fmt::Formatter<'_>) -> std::
     match insn.operand {
         Stm8Operands::Alu8(v) => {
             write!(f, "\t{} a, {:?}", insn.mnem, v)
+        }
+        Stm8Operands::Alu16(r, v) => {
+            write!(f, "\t{} {}, {}", insn.mnem, r, v)
         }
     }
 }
@@ -317,7 +366,48 @@ const ADD: Stm8Instruction = Stm8Instruction {
     },
 };
 
-const INSTRUCTIONS: [Stm8Instruction; 2] = [ADC, ADD];
+const ADDW: Stm8Instruction = Stm8Instruction {
+    mnem: "addw",
+    disassemble,
+    operand: Stm8Operands::Alu8(Operand8::Imm8(0)),
+    handler: |insn, s| {
+        let (dst, src) = insn.operand.get_alu16();
+        let m = src.get_u16(s).map(|v| i16::from_ne_bytes(v.to_ne_bytes()));
+        let a = dst.get_u16(s).map(|v| i16::from_ne_bytes(v.to_ne_bytes()));
+        let r = a.zip(m).map(|(a, m)| a.wrapping_add(m));
+        let carrytests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
+        let overflowtests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
+        s.carry = carrytests.map(|t| t.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.halfcarry = carrytests.map(|t| t & 0x0080 != 0);
+        s.overflow = overflowtests.map(|t| t != 0 && t != -64);
+        dst.set_i16(s, r);
+    },
+};
+
+const AND: Stm8Instruction = Stm8Instruction {
+    mnem: "and",
+    disassemble,
+    operand: Stm8Operands::Alu8(Operand8::Imm8(0)),
+    handler: |insn, s| {
+        let val = insn.operand.get_alu8().get_u8(s);
+        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let r = a.zip(m).map(|(a, m)| a & m);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+    },
+};
+
+const INSTRUCTIONS: [Stm8Instruction; 4] = [ADC, ADD, ADDW, AND];
 
 impl std::fmt::Display for Stm8Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
