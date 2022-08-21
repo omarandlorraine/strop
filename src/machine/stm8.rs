@@ -1,14 +1,15 @@
-#![allow(missing_docs)]
+//! The `stm8` backend, for generating code sequences for the 8-bit microcontroller family by
+//! STMicroelectronics.
+
 use crate::machine::Instruction;
 use crate::machine::Strop;
-use rand::distributions::Standard;
-use rand::prelude::Distribution;
 use rand::random;
-use rand::Rng;
 use randomly::randomly;
 use std::collections::HashMap;
+use std::fmt::Debug;
+use std::fmt::Formatter;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Operand8 {
     Imm8(u8),
     Abs(u16),
@@ -34,8 +35,8 @@ impl Strop for u8 {
     fn mutate(&mut self) {
         randomly!(
             /* could try incrementing or decrementing */
-            { *self += 1 }
-            { *self -= 1 }
+            { *self = self.wrapping_add(1) }
+            { *self = self.wrapping_sub(1) }
 
             /* could try flipping a bit */
             {
@@ -192,237 +193,120 @@ impl Stm8 {
 }
 
 #[derive(Clone, Copy)]
-pub struct Alu8Operation {
-    opcode: &'static str,
-    handler: fn(Option<u8>, &mut Stm8),
+pub enum Stm8Operands {
+    Alu8(Operand8),
 }
 
-#[derive(Clone, Copy)]
-pub struct Alu16Operation {
-    opcode: &'static str,
-    handler: fn(Option<u16>, Register16, &mut Stm8),
-}
-
-const ADC: Alu8Operation = Alu8Operation {
-    opcode: "adc",
-    handler: |val, s| {
-        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
-        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
-        let r = a
-            .zip(m)
-            .zip(s.carry)
-            .map(|((a, m), c)| a.wrapping_add(m).wrapping_add(if c { 1 } else { 0 }));
-        let carrytests = a
-            .zip(m)
-            .zip(r)
-            .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
-        let overflowtests = a
-            .zip(m)
-            .zip(r)
-            .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
-        s.carry = carrytests.map(|t| t.leading_zeros() == 0);
-        s.zero = r.map(|r| r == 0);
-        s.sign = r.map(|r| r.leading_zeros() == 0);
-        s.halfcarry = carrytests.map(|t| t & 0x08 != 0);
-        s.overflow = overflowtests.map(|t| t != 0 && t != -64);
-        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
-    },
-};
-
-const ADD: Alu8Operation = Alu8Operation {
-    opcode: "add",
-    handler: |val, s| {
-        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
-        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
-        let r = a.zip(m).map(|(a, m)| a.wrapping_add(m));
-        let carrytests = a
-            .zip(m)
-            .zip(r)
-            .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
-        let overflowtests = a
-            .zip(m)
-            .zip(r)
-            .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
-        s.carry = carrytests.map(|t| t.leading_zeros() == 0);
-        s.zero = r.map(|r| r == 0);
-        s.sign = r.map(|r| r.leading_zeros() == 0);
-        s.halfcarry = carrytests.map(|t| t & 0x08 != 0);
-        s.overflow = overflowtests.map(|t| t != 0 && t != -64);
-        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
-    },
-};
-
-const ADDW: Alu16Operation = Alu16Operation {
-    opcode: "addw",
-    handler: |val, register, s| {
-        let m = val.map(|v| i16::from_ne_bytes(v.to_ne_bytes()));
-        let a = s
-            .get_register16(register)
-            .map(|v| i16::from_ne_bytes(v.to_ne_bytes()));
-        let r = a.zip(m).map(|(a, m)| a.wrapping_add(m));
-        let carrytests = a
-            .zip(m)
-            .zip(r)
-            .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
-        let overflowtests = a
-            .zip(m)
-            .zip(r)
-            .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
-        s.carry = carrytests.map(|t| t.leading_zeros() == 0);
-        s.zero = r.map(|r| r == 0);
-        s.sign = r.map(|r| r.leading_zeros() == 0);
-        s.halfcarry = carrytests.map(|t| t & 0x0080 != 0);
-        s.overflow = overflowtests.map(|t| t != 0 && t != -64);
-        s.set_register16(register, r.map(|v| u16::from_ne_bytes(v.to_ne_bytes())));
-    },
-};
-
-const AND: Alu8Operation = Alu8Operation {
-    opcode: "and",
-    handler: |m, s| {
-        let r = s.a.zip(m).map(|(a, m)| a & m);
-        s.zero = r.map(|r| r == 0);
-        s.sign = r.map(|r| r & 0x80 != 0);
-        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
-    },
-};
-
-impl Distribution<Alu8Operation> for Standard {
-    fn sample<R: Rng + ?Sized>(&self, _rng: &mut R) -> Alu8Operation {
-        randomly!(
-            {ADC} {ADD} {AND}
-        )
+impl Stm8Operands {
+    fn get_alu8(self) -> Operand8 {
+        match self {
+            Stm8Operands::Alu8(operand) => operand,
+            _ => panic!(),
+        }
     }
 }
 
-impl Distribution<Alu16Operation> for Standard {
-    fn sample<R: Rng + ?Sized>(&self, _rng: &mut R) -> Alu16Operation {
-        randomly!({ ADDW })
-    }
-}
-
-impl Distribution<Register16> for Standard {
-    fn sample<R: Rng + ?Sized>(&self, _rng: &mut R) -> Register16 {
-        randomly!(
-            {Register16::X} {Register16::Y}
-        )
-    }
-}
-
-#[derive(Clone, Copy)]
-pub enum Stm8Instruction {
-    Alu8(Alu8Operation, Operand8),
-    Alu16(Alu16Operation, Register16, Operand16),
-}
-
-impl Strop for Stm8Instruction {
-    fn random() -> Stm8Instruction {
-        use Stm8Instruction::*;
-        randomly!(
-        { Alu8(random(), Operand8::random()) }
-        { Alu16(random(), random(), Operand16::random()) }
-        )
+impl Strop for Stm8Operands {
+    fn random() -> Self {
+        unimplemented!();
     }
 
     fn mutate(&mut self) {
-        use Stm8Instruction::*;
         match self {
-            Alu8(op, operand) => {
-                randomly!(
-                    {*self = Alu8(random(), *operand); }
-                    {*self = Alu8(*op, Operand8::random()); }
-                );
-            }
-            Alu16(op, register, operand) => {
-                randomly!(
-                    {*self = Alu16(random(), *register, *operand); }
-                    {*self = Alu16(*op, *register, Operand16::random()); }
-                    {*self = Alu16(*op, random(), *operand); }
-                );
-            }
+            Stm8Operands::Alu8(v) => v.mutate(),
         }
     }
 }
 
-impl std::fmt::Display for Register16 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            Register16::X => write!(f, "x"),
-            Register16::Y => write!(f, "y"),
+/// Represents a STM8 Instruction
+#[derive(Clone, Copy)]
+pub struct Stm8Instruction {
+    mnem: &'static str,
+    disassemble: fn(&Stm8Instruction, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
+    handler: fn(&Stm8Instruction, &mut Stm8),
+    operand: Stm8Operands,
+}
+
+fn disassemble(insn: &Stm8Instruction, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match insn.operand {
+        Stm8Operands::Alu8(v) => {
+            write!(f, "\t{} a, {:?}", insn.mnem, v)
         }
     }
 }
 
-impl std::fmt::Display for Operand8 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        use Operand8::*;
-        match self {
-            Imm8(x) => write!(f, "#${:#04x}", x),
-            Abs(addr) => write!(f, "${:#06x}", addr),
-        }
-    }
-}
+const ADC: Stm8Instruction = Stm8Instruction {
+    mnem: "adc",
+    disassemble,
+    operand: Stm8Operands::Alu8(Operand8::Imm8(0)),
+    handler: |insn, s| {
+        let val = insn.operand.get_alu8();
+        let result =
+            s.a.zip(val.get_u8(s))
+                .zip(s.carry)
+                .map(|((a, m), c)| a.wrapping_add(m).wrapping_add(if c { 1 } else { 0 }));
+        let carries =
+            s.a.zip(val.get_u8(s))
+                .zip(result)
+                .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
+        s.zero = result.map(|v| v == 0);
+        s.carry = carries.map(|c| c & 0x80 != 0);
+        s.halfcarry = carries.map(|c| c & 0x08 != 0);
+        s.a = result;
+    },
+};
 
-impl std::fmt::Display for Operand16 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        use Operand16::*;
-        match self {
-            Imm(x) => write!(f, "#${:#06x}", x),
-            Abs(addr) => write!(f, "${:#06x}", addr),
-        }
-    }
-}
+const INSTRUCTIONS: [Stm8Instruction; 1] = [ADC];
 
 impl std::fmt::Display for Stm8Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        use Stm8Instruction::*;
-        match self {
-            Alu8(op, operand) => {
-                write!(f, "\t{} a, {}", op.opcode, operand)
-            }
-            Alu16(op, register, operand) => {
-                write!(f, "\t{} {}, {}", op.opcode, register, operand)
-            }
-        }
+        (self.disassemble)(self, f)
     }
 }
 
 impl Instruction for Stm8Instruction {
     type State = Stm8;
-
     fn randomize(&mut self) {
-        todo!()
+        todo!();
     }
     fn length(&self) -> usize {
-        todo!()
+        // TODO: an actual implementation for this.
+        1usize
     }
-
     fn operate(&self, s: &mut Stm8) {
-        use Stm8Instruction::*;
-        match self {
-            Alu8(op, operand) => (op.handler)(operand.get_u8(s), s),
-            Alu16(op, register, operand) => (op.handler)(operand.get_u16(s), *register, s),
-        }
+        (self.handler)(self, s);
     }
-
     fn new() -> Self
     where
         Self: Sized,
     {
-        todo!()
+        use rand::seq::SliceRandom;
+        let mut insn = *INSTRUCTIONS.choose(&mut rand::thread_rng()).unwrap();
+        insn.mutate();
+        insn
+    }
+}
+
+impl Strop for Stm8Instruction {
+    fn random() -> Stm8Instruction {
+        Stm8Instruction::new()
+    }
+
+    fn mutate(&mut self) {
+        self.operand.mutate()
     }
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
 
-    fn find_it(opcode: &'static str) {
+    fn find_it(opcode: &'static str) -> Stm8Instruction {
         for _ in 0..5000 {
             let insn = Stm8Instruction::random();
             let dasm = format!("{}", insn);
             if dasm.contains(opcode) {
-                return;
+                return insn;
             }
         }
         panic!("Could not find opcode {}", opcode);
