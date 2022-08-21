@@ -1,4 +1,4 @@
-#![allow(missing_docs)]
+#![allow(missing_debug_implementations, missing_docs)]
 
 use crate::machine::Instruction;
 use std::collections::HashMap;
