@@ -8,6 +8,7 @@ use randomly::randomly;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fmt::Formatter;
+use std::fmt;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Operand8 {
@@ -25,6 +26,15 @@ pub enum Operand16 {
 pub enum Register16 {
     X,
     Y,
+}
+
+impl fmt::Display for Register16 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Register16::X => write!(f, "x"),
+            Register16::Y => write!(f, "y"),
+        }
+    }
 }
 
 impl Strop for u8 {
@@ -125,6 +135,15 @@ impl Operand16 {
     }
 }
 
+impl fmt::Display for Operand16 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Imm(x) => write!(f, "#${:04x}", x),
+            Abs(addr) => write!(f, "${:04x}", x),
+        }
+    }
+}
+
 impl Operand8 {
     fn get_u8(self, s: &Stm8) -> Option<u8> {
         use Operand8::*;
@@ -195,12 +214,20 @@ impl Stm8 {
 #[derive(Clone, Copy)]
 pub enum Stm8Operands {
     Alu8(Operand8),
+    Alu16(Register16, Operand16),
 }
 
 impl Stm8Operands {
     fn get_alu8(self) -> Operand8 {
         match self {
             Stm8Operands::Alu8(operand) => operand,
+            _ => panic!(),
+        }
+    }
+
+    fn get_alu16(self) -> (Register16, Operand16) {
+        match self {
+            Stm8Operands::Alu16(r, operand) => (r, operand),
             _ => panic!(),
         }
     }
