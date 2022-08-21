@@ -240,23 +240,57 @@ const ADC: Stm8Instruction = Stm8Instruction {
     disassemble,
     operand: Stm8Operands::Alu8(Operand8::Imm8(0)),
     handler: |insn, s| {
-        let val = insn.operand.get_alu8();
-        let result =
-            s.a.zip(val.get_u8(s))
-                .zip(s.carry)
-                .map(|((a, m), c)| a.wrapping_add(m).wrapping_add(if c { 1 } else { 0 }));
-        let carries =
-            s.a.zip(val.get_u8(s))
-                .zip(result)
-                .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
-        s.zero = result.map(|v| v == 0);
-        s.carry = carries.map(|c| c & 0x80 != 0);
-        s.halfcarry = carries.map(|c| c & 0x08 != 0);
-        s.a = result;
+        let val = insn.operand.get_alu8().get_u8(s);
+        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let r = a
+            .zip(m)
+            .zip(s.carry)
+            .map(|((a, m), c)| a.wrapping_add(m).wrapping_add(if c { 1 } else { 0 }));
+        let carrytests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
+        let overflowtests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
+        s.carry = carrytests.map(|t| t.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.halfcarry = carrytests.map(|t| t & 0x08 != 0);
+        s.overflow = overflowtests.map(|t| t != 0 && t != -64);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
     },
 };
 
-const INSTRUCTIONS: [Stm8Instruction; 1] = [ADC];
+const ADD: Stm8Instruction = Stm8Instruction {
+    mnem: "add",
+    disassemble,
+    operand: Stm8Operands::Alu8(Operand8::Imm8(0)),
+    handler: |insn, s| {
+        let val = insn.operand.get_alu8().get_u8(s);
+        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let r = a.zip(m).map(|(a, m)| a.wrapping_add(m));
+        let carrytests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
+        let overflowtests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
+        s.carry = carrytests.map(|t| t.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.halfcarry = carrytests.map(|t| t & 0x08 != 0);
+        s.overflow = overflowtests.map(|t| t != 0 && t != -64);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+    },
+};
+
+const INSTRUCTIONS: [Stm8Instruction; 2] = [ADC, ADD];
 
 impl std::fmt::Display for Stm8Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
