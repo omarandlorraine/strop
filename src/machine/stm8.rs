@@ -439,10 +439,12 @@ const BCCM: Stm8Instruction = Stm8Instruction {
     handler: |insn, s| {
         let (addr, bit) = insn.operand.get_bits();
         let m = s.read_mem(Some(addr));
-        let r = m.zip(s.carry).map(|(a, c)| if c {
-            a | (0x01 << bit)
-        } else {
-            a & !(0x01 << bit)
+        let r = m.zip(s.carry).map(|(a, c)| {
+            if c {
+                a | (0x01 << bit)
+            } else {
+                a & !(0x01 << bit)
+            }
         });
         s.write_mem(addr, r);
     },
