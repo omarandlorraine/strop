@@ -262,6 +262,7 @@ impl Stm8 {
 
 #[derive(Clone, Copy)]
 pub enum Stm8Operands {
+    None,
     Alu8(Operand8),
     Alu16(Register16, Operand16),
     Bits(u16, usize),
@@ -297,6 +298,7 @@ impl Strop for Stm8Operands {
 
     fn mutate(&mut self) {
         match self {
+            Stm8Operands::None => (),
             Stm8Operands::Alu8(v) => v.mutate(),
             Stm8Operands::Alu16(r, v) => randomly!({r.mutate()} {v.mutate()}),
             Stm8Operands::Bits(addr, bit) => randomly!(
@@ -319,6 +321,9 @@ pub struct Stm8Instruction {
 
 fn disassemble(insn: &Stm8Instruction, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match insn.operand {
+        Stm8Operands::None => {
+            write!(f, "\t{}", insn.mnem)
+        }
         Stm8Operands::Alu8(v) => {
             write!(f, "\t{} a, {:?}", insn.mnem, v)
         }
@@ -443,7 +448,66 @@ const BCCM: Stm8Instruction = Stm8Instruction {
     },
 };
 
-const INSTRUCTIONS: [Stm8Instruction; 5] = [ADC, ADD, ADDW, AND, BCCM];
+const BCP: Stm8Instruction = Stm8Instruction {
+    mnem: "bcp",
+    disassemble,
+    operand: Stm8Operands::Alu8(Operand8::Imm8(0)),
+    handler: |insn, s| {
+        let val = insn.operand.get_alu8().get_u8(s);
+        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let r = a.zip(m).map(|(a, m)| a & m);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+    },
+};
+
+const BCPL: Stm8Instruction = Stm8Instruction {
+    mnem: "bcpl",
+    disassemble,
+    operand: Stm8Operands::Bits(0, 0),
+    handler: |insn, s| {
+        let (addr, bit) = insn.operand.get_bits();
+        let m = s.read_mem(Some(addr));
+        let r = m.map(|m| m ^ (0x01 << bit));
+        s.write_mem(addr, r);
+    },
+};
+
+const BRES: Stm8Instruction = Stm8Instruction {
+    mnem: "bres",
+    disassemble,
+    operand: Stm8Operands::Bits(0, 0),
+    handler: |insn, s| {
+        let (addr, bit) = insn.operand.get_bits();
+        let m = s.read_mem(Some(addr));
+        let r = m.map(|m| m & !(0x01 << bit));
+        s.write_mem(addr, r);
+    },
+};
+
+const BSET: Stm8Instruction = Stm8Instruction {
+    mnem: "bset",
+    disassemble,
+    operand: Stm8Operands::Bits(0, 0),
+    handler: |insn, s| {
+        let (addr, bit) = insn.operand.get_bits();
+        let m = s.read_mem(Some(addr));
+        let r = m.map(|m| m | (0x01 << bit));
+        s.write_mem(addr, r);
+    },
+};
+
+const CCF: Stm8Instruction = Stm8Instruction {
+    mnem: "ccf",
+    disassemble,
+    operand: Stm8Operands::None,
+    handler: |_insn, s| {
+        s.carry = s.carry.map(|c| !c);
+    },
+};
+
+const INSTRUCTIONS: [Stm8Instruction; 10] = [ADC, ADD, ADDW, AND, BCCM, BCP, BCPL, BRES, BSET, CCF];
 
 impl std::fmt::Display for Stm8Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
