@@ -134,6 +134,8 @@ fn mutate<I: Instruction>(prog: &mut BasicBlock<I>) {
     )
 }
 
+/// Search for a basic block. Supply this function with a cost function; `stochastic_search` will
+/// halt when the cost function returns zero.
 pub fn stochastic_search<I: Instruction + Clone>(cost: fn(&BasicBlock<I>) -> f64) -> BasicBlock<I> {
     let mut population: Vec<(f64, BasicBlock<I>)> = vec![];
     let mut winners: Vec<BasicBlock<I>> = vec![];
