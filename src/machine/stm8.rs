@@ -90,8 +90,8 @@ impl Strop for u16 {
     fn mutate(&mut self) {
         randomly!(
             /* could try incrementing or decrementing */
-            { *self += 1 }
-            { *self -= 1 }
+            { *self = self.wrapping_add(1) }
+            { *self = self.wrapping_sub(1) }
 
             /* could try flipping a bit */
             {
@@ -254,12 +254,17 @@ impl Stm8 {
             None
         }
     }
+
+    fn write_mem(&mut self, addr: u16, v: Option<u8>) {
+        self.m.insert(addr, v);
+    }
 }
 
 #[derive(Clone, Copy)]
 pub enum Stm8Operands {
     Alu8(Operand8),
     Alu16(Register16, Operand16),
+    Bits(u16, usize),
 }
 
 impl Stm8Operands {
@@ -276,6 +281,13 @@ impl Stm8Operands {
             _ => panic!(),
         }
     }
+
+    fn get_bits(self) -> (u16, usize) {
+        match self {
+            Stm8Operands::Bits(addr, bit) => (addr, bit),
+            _ => panic!(),
+        }
+    }
 }
 
 impl Strop for Stm8Operands {
@@ -287,6 +299,11 @@ impl Strop for Stm8Operands {
         match self {
             Stm8Operands::Alu8(v) => v.mutate(),
             Stm8Operands::Alu16(r, v) => randomly!({r.mutate()} {v.mutate()}),
+            Stm8Operands::Bits(addr, bit) => randomly!(
+                {addr.mutate()}
+                {*bit = (*bit + 1) % 8}
+                {*bit = (*bit + 7) % 8}
+            ),
         }
     }
 }
@@ -307,6 +324,9 @@ fn disassemble(insn: &Stm8Instruction, f: &mut std::fmt::Formatter<'_>) -> std::
         }
         Stm8Operands::Alu16(r, v) => {
             write!(f, "\t{} {}, {}", insn.mnem, r, v)
+        }
+        Stm8Operands::Bits(addr, bit) => {
+            write!(f, "\t{} ${:04x}, #{}", insn.mnem, addr, bit)
         }
     }
 }
@@ -407,7 +427,23 @@ const AND: Stm8Instruction = Stm8Instruction {
     },
 };
 
-const INSTRUCTIONS: [Stm8Instruction; 4] = [ADC, ADD, ADDW, AND];
+const BCCM: Stm8Instruction = Stm8Instruction {
+    mnem: "bccm",
+    disassemble,
+    operand: Stm8Operands::Bits(0, 0),
+    handler: |insn, s| {
+        let (addr, bit) = insn.operand.get_bits();
+        let m = s.read_mem(Some(addr));
+        let r = m.zip(s.carry).map(|(a, c)| if c {
+            a | (0x01 << bit)
+        } else {
+            a & !(0x01 << bit)
+        });
+        s.write_mem(addr, r);
+    },
+};
+
+const INSTRUCTIONS: [Stm8Instruction; 5] = [ADC, ADD, ADDW, AND, BCCM];
 
 impl std::fmt::Display for Stm8Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
