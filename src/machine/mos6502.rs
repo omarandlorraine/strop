@@ -1313,7 +1313,13 @@ pub mod tests {
                 d
             );
 
-            assert!(t.0 == s.0, "assert!({}.0 == {:#04x})", regr, t.0);
+            assert!(
+                t.0 == s.0,
+                "assert!({}.0 == {:#04x} /* not {:#04x} */)",
+                regr,
+                t.0,
+                s.0
+            );
             assert!(t.1 == s.1, "assert!({}.1 == {})", regr, t.1);
             assert!(t.2 == s.2, "assert!({}.2 == {})", regr, t.2);
             assert!(t.3 == s.3, "assert!({}.3 == {})", regr, t.3);
