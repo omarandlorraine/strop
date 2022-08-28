@@ -333,7 +333,7 @@ fn subtract(a: Option<i8>, m: Option<i8>, s: &mut Mos6502) -> Option<u8> {
     let subtraction = a
         .zip(m)
         .zip(s.carry)
-        .map(|((a, m), c)| a.wrapping_sub(m).wrapping_sub(if c { 1 } else { 0 }));
+        .map(|((a, m), c)| a.wrapping_sub(m).wrapping_sub(if c { 0 } else { 1 }));
 
     let decimal_adjust = s.decimal.zip(subtraction).map(|(d, q)| {
         let r = u8::from_ne_bytes(q.to_ne_bytes());
@@ -359,7 +359,7 @@ fn subtract(a: Option<i8>, m: Option<i8>, s: &mut Mos6502) -> Option<u8> {
         .zip(m)
         .zip(r)
         .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
-    s.carry = carrytests.map(|t| t.leading_zeros() == 0);
+    s.carry = carrytests.map(|t| t.leading_zeros() != 0);
     s.zero = r.map(|r| r == 0);
     s.sign = r.map(|r| r.leading_zeros() == 0);
     s.overflow = overflowtests.map(|t| t != 0 && t != -64);
