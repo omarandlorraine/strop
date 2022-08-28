@@ -14,6 +14,7 @@ use std::fmt::Debug;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Operand8 {
+    A,
     Imm8(u8),
     Abs(u16),
 }
@@ -126,6 +127,7 @@ impl Strop for Operand8 {
     fn mutate(&mut self) {
         use Operand8::*;
         let e = match self {
+            A => A,
             Imm8(v) => {
                 let e = v;
                 e.mutate();
@@ -184,9 +186,19 @@ impl fmt::Display for Operand16 {
 }
 
 impl Operand8 {
+    fn set_u8(self, s: &mut Stm8, val: Option<u8>) {
+        use Operand8::*;
+        match self {
+            A => s.a = val,
+            Imm8(_) => panic!(),
+            Abs(addr) => s.write_mem(addr, val),
+        }
+    }
+
     fn get_u8(self, s: &Stm8) -> Option<u8> {
         use Operand8::*;
         match self {
+            A => s.a,
             Imm8(x) => Some(x),
             Abs(addr) => s.read_mem(Some(addr)),
         }
@@ -263,12 +275,20 @@ impl Stm8 {
 #[derive(Clone, Copy)]
 pub enum Stm8Operands {
     None,
+    Rmw(Operand8),
     Alu8(Operand8),
     Alu16(Register16, Operand16),
     Bits(u16, usize),
 }
 
 impl Stm8Operands {
+    fn get_rmw(self) -> Operand8 {
+        match self {
+            Stm8Operands::Rmw(operand) => operand,
+            _ => panic!(),
+        }
+    }
+
     fn get_alu8(self) -> Operand8 {
         match self {
             Stm8Operands::Alu8(operand) => operand,
@@ -299,6 +319,7 @@ impl Strop for Stm8Operands {
     fn mutate(&mut self) {
         match self {
             Stm8Operands::None => (),
+            Stm8Operands::Rmw(v) => v.mutate(),
             Stm8Operands::Alu8(v) => v.mutate(),
             Stm8Operands::Alu16(r, v) => randomly!({r.mutate()} {v.mutate()}),
             Stm8Operands::Bits(addr, bit) => randomly!(
@@ -323,6 +344,9 @@ fn disassemble(insn: &Stm8Instruction, f: &mut std::fmt::Formatter<'_>) -> std::
     match insn.operand {
         Stm8Operands::None => {
             write!(f, "\t{}", insn.mnem)
+        }
+        Stm8Operands::Rmw(v) => {
+            write!(f, "\t{} {:?}", insn.mnem, v)
         }
         Stm8Operands::Alu8(v) => {
             write!(f, "\t{} a, {:?}", insn.mnem, v)
@@ -509,7 +533,17 @@ const CCF: Stm8Instruction = Stm8Instruction {
     },
 };
 
-const INSTRUCTIONS: [Stm8Instruction; 10] = [ADC, ADD, ADDW, AND, BCCM, BCP, BCPL, BRES, BSET, CCF];
+const CLR: Stm8Instruction = Stm8Instruction {
+    mnem: "clr",
+    disassemble,
+    operand: Stm8Operands::Rmw(Operand8::A),
+    handler: |insn, s| {
+        insn.operand.get_rmw().set_u8(s, Some(0));
+    },
+};
+
+const INSTRUCTIONS: [Stm8Instruction; 11] =
+    [ADC, ADD, ADDW, AND, BCCM, BCP, BCPL, BRES, BSET, CCF, CLR];
 
 impl std::fmt::Display for Stm8Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
