@@ -279,6 +279,7 @@ pub enum Stm8Operands {
     Alu8(Operand8),
     Alu16(Register16, Operand16),
     Bits(u16, usize),
+    R16(Register16),
 }
 
 impl Stm8Operands {
@@ -292,6 +293,13 @@ impl Stm8Operands {
     fn get_alu8(self) -> Operand8 {
         match self {
             Stm8Operands::Alu8(operand) => operand,
+            _ => panic!(),
+        }
+    }
+
+    fn get_r16(self) -> Register16 {
+        match self {
+            Stm8Operands::R16(r) => r,
             _ => panic!(),
         }
     }
@@ -319,6 +327,7 @@ impl Strop for Stm8Operands {
     fn mutate(&mut self) {
         match self {
             Stm8Operands::None => (),
+            Stm8Operands::R16(x) => x.mutate(),
             Stm8Operands::Rmw(v) => v.mutate(),
             Stm8Operands::Alu8(v) => v.mutate(),
             Stm8Operands::Alu16(r, v) => randomly!({r.mutate()} {v.mutate()}),
@@ -350,6 +359,9 @@ fn disassemble(insn: &Stm8Instruction, f: &mut std::fmt::Formatter<'_>) -> std::
         }
         Stm8Operands::Alu8(v) => {
             write!(f, "\t{} a, {:?}", insn.mnem, v)
+        }
+        Stm8Operands::R16(r) => {
+            write!(f, "\t{} {}", insn.mnem, r)
         }
         Stm8Operands::Alu16(r, v) => {
             write!(f, "\t{} {}, {}", insn.mnem, r, v)
@@ -542,8 +554,18 @@ const CLR: Stm8Instruction = Stm8Instruction {
     },
 };
 
-const INSTRUCTIONS: [Stm8Instruction; 11] =
-    [ADC, ADD, ADDW, AND, BCCM, BCP, BCPL, BRES, BSET, CCF, CLR];
+const CLRW: Stm8Instruction = Stm8Instruction {
+    mnem: "clrw",
+    disassemble,
+    operand: Stm8Operands::R16(Register16::X),
+    handler: |insn, s| {
+        insn.operand.get_r16().set_u16(s, Some(0));
+    },
+};
+
+const INSTRUCTIONS: [Stm8Instruction; 12] = [
+    ADC, ADD, ADDW, AND, BCCM, BCP, BCPL, BRES, BSET, CCF, CLR, CLRW,
+];
 
 impl std::fmt::Display for Stm8Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
