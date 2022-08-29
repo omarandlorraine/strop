@@ -551,6 +551,8 @@ const CLR: Stm8Instruction = Stm8Instruction {
     operand: Stm8Operands::Rmw(Operand8::A),
     handler: |insn, s| {
         insn.operand.get_rmw().set_u8(s, Some(0));
+        s.zero = Some(true);
+        s.sign = Some(false);
     },
 };
 
@@ -560,6 +562,8 @@ const CLRW: Stm8Instruction = Stm8Instruction {
     operand: Stm8Operands::R16(Register16::X),
     handler: |insn, s| {
         insn.operand.get_r16().set_u16(s, Some(0));
+        s.zero = Some(true);
+        s.sign = Some(false);
     },
 };
 
