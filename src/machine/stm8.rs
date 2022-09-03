@@ -292,6 +292,7 @@ impl Stm8 {
 pub enum Stm8Operands {
     None,
     Ld(Operand8, Operand8),
+    Mov(Operand8, Operand8),
     Rmw(Operand8),
     Alu8(Operand8),
     Alu16(Register16, Operand16),
@@ -311,6 +312,7 @@ impl Stm8Operands {
     fn get_ld(self) -> (Operand8, Operand8) {
         match self {
             Stm8Operands::Ld(src, dst) => (src, dst),
+            Stm8Operands::Mov(src, dst) => (src, dst),
             _ => panic!(),
         }
     }
@@ -356,6 +358,13 @@ impl Strop for Stm8Operands {
 
         match self {
             Stm8Operands::None => (),
+            Stm8Operands::Mov(src, dst) => {
+                randomly!(
+                    { *src = Imm8(random()) }
+                    { *src = Abs(random()) }
+                    { src.mutate() }
+                    { dst.mutate() })
+            }
             Stm8Operands::Ld(src, dst) => {
                 if *src == Operand8::A {
                     randomly!(
@@ -420,6 +429,9 @@ fn disassemble(insn: &Stm8Instruction, f: &mut std::fmt::Formatter<'_>) -> std::
             write!(f, "\t{} {}, {}", insn.mnem, r, v)
         }
         Stm8Operands::Ld(r, v) => {
+            write!(f, "\t{} {}, {}", insn.mnem, r, v)
+        }
+        Stm8Operands::Mov(r, v) => {
             write!(f, "\t{} {}, {}", insn.mnem, r, v)
         }
         Stm8Operands::Bits(addr, bit) => {
@@ -867,9 +879,83 @@ const LDW: Stm8Instruction = Stm8Instruction {
     },
 };
 
-const INSTRUCTIONS: [Stm8Instruction; 26] = [
+const MOV: Stm8Instruction = Stm8Instruction {
+    mnem: "mov",
+    disassemble,
+    operand: Stm8Operands::Mov(Operand8::Imm8(0), Operand8::Abs(0)),
+    handler: |insn, s| {
+        let (src, dst) = insn.operand.get_ld();
+        s.zero = src.get_u8(s).map(|r| r == 0);
+        s.sign = src.get_u8(s).map(|r| r.leading_zeros() == 0);
+        dst.set_u8(s, src.get_u8(s));
+    },
+};
+
+const MUL: Stm8Instruction = Stm8Instruction {
+    mnem: "mul",
+    disassemble,
+    operand: Stm8Operands::R16(Register16::X),
+    handler: |insn, s| {
+        let dst = insn.operand.get_r16();
+        let b = dst.get_u16(s);
+        let a = s.a;
+        if a.is_none() || b.is_none() {
+            dst.set_u16(s, None);
+            s.carry = None;
+            return;
+        }
+        let product = (a.unwrap() as u16) * (b.unwrap() as u16);
+        dst.set_u16(s, Some(product));
+        s.carry = Some(false);
+    },
+};
+
+const NEG: Stm8Instruction = Stm8Instruction {
+    mnem: "neg",
+    disassemble,
+    operand: Stm8Operands::Rmw(Operand8::A),
+    handler: |insn, s| {
+        let val = insn.operand.get_rmw().get_u8(s);
+        let r = val.map(|a| (a ^ 0xff).wrapping_add(1));
+        s.carry = val.map(|a| a == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_rmw().set_u8(s, r);
+    },
+};
+
+const NEGW: Stm8Instruction = Stm8Instruction {
+    mnem: "negw",
+    disassemble,
+    operand: Stm8Operands::R16(Register16::X),
+    handler: |insn, s| {
+        let a = insn.operand.get_r16().get_u16(s);
+        let r = a.map(|a| (a ^ 0xffff).wrapping_add(1));
+        s.carry = a.map(|a| a == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_r16().set_u16(s, r);
+    },
+};
+
+const OR: Stm8Instruction = Stm8Instruction {
+    mnem: "or",
+    disassemble,
+    operand: Stm8Operands::Alu8(Operand8::Imm8(0)),
+    handler: |insn, s| {
+        let val = insn.operand.get_alu8().get_u8(s);
+        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let r = a.zip(m).map(|(a, m)| a & m);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+    },
+};
+
+const INSTRUCTIONS: [Stm8Instruction; 31] = [
     ADC, ADD, ADDW, AND, BCCM, BCP, BCPL, BRES, BSET, CCF, CLR, CLRW, CP, CPW, CPL, CPLW, DEC,
-    DECW, DIV, DIVW, EXG, EXGW, INC, INCW, LD, LDW,
+    DECW, DIV, DIVW, EXG, EXGW, INC, INCW, LD, LDW, MOV, MUL, NEG, NEGW, OR
 ];
 
 impl std::fmt::Display for Operand8 {
