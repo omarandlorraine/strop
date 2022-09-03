@@ -12,6 +12,8 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Debug;
 
+use num_traits::int::PrimInt;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Operand8 {
     A,
@@ -29,7 +31,7 @@ pub enum Operand16 {
     Abs(u16),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Register16 {
     X,
     Y,
@@ -953,9 +955,276 @@ const OR: Stm8Instruction = Stm8Instruction {
     },
 };
 
-const INSTRUCTIONS: [Stm8Instruction; 31] = [
+const RCF: Stm8Instruction = Stm8Instruction {
+    mnem: "rcf",
+    disassemble,
+    operand: Stm8Operands::None,
+    handler: |_, s| {
+        s.carry = Some(false);
+    },
+};
+
+const SCF: Stm8Instruction = Stm8Instruction {
+    mnem: "scf",
+    disassemble,
+    operand: Stm8Operands::None,
+    handler: |_, s| {
+        s.carry = Some(true);
+    },
+};
+
+const RLC: Stm8Instruction = Stm8Instruction {
+    mnem: "rlc",
+    disassemble,
+    operand: Stm8Operands::Rmw(Operand8::A),
+    handler: |insn, s| {
+        let val = insn.operand.get_rmw().get_u8(s);
+        let r = val
+            .map(|v| {
+                s.carry
+                    .map(|c| (v & 0x7f).rotate_left(1) | if c { 1 } else { 0 })
+            })
+            .unwrap_or(None);
+        s.carry = val.map(|v| v.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_rmw().set_u8(s, r);
+    },
+};
+
+const RLCW: Stm8Instruction = Stm8Instruction {
+    mnem: "rlcw",
+    disassemble,
+    operand: Stm8Operands::R16(Register16::X),
+    handler: |insn, s| {
+        let val = insn.operand.get_r16().get_u16(s);
+        let r = val
+            .map(|v| {
+                s.carry
+                    .map(|c| (v & 0x7fff).rotate_left(1) | if c { 1 } else { 0 })
+            })
+            .unwrap_or(None);
+        s.carry = val.map(|v| v.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_r16().set_u16(s, r);
+    },
+};
+
+const RLWA: Stm8Instruction = Stm8Instruction {
+    mnem: "rlwa",
+    disassemble,
+    operand: Stm8Operands::R16(Register16::X),
+    handler: |insn, s| {
+        let reg = insn.operand.get_r16();
+        let mut r = if reg == Register16::X {
+            &mut s.x
+        } else {
+            &mut s.y
+        };
+
+        let tmp = r.high;
+        r.high = r.low;
+        r.low = s.a;
+        s.a = tmp;
+    },
+};
+
+const RRWA: Stm8Instruction = Stm8Instruction {
+    mnem: "rrwa",
+    disassemble,
+    operand: Stm8Operands::R16(Register16::X),
+    handler: |insn, s| {
+        let reg = insn.operand.get_r16();
+        let mut r = if reg == Register16::X {
+            &mut s.x
+        } else {
+            &mut s.y
+        };
+
+        let tmp = r.low;
+        r.low = r.high;
+        r.high = s.a;
+        s.a = tmp;
+    },
+};
+
+const RRC: Stm8Instruction = Stm8Instruction {
+    mnem: "rrc",
+    disassemble,
+    operand: Stm8Operands::Rmw(Operand8::A),
+    handler: |insn, s| {
+        let val = insn.operand.get_rmw().get_u8(s);
+        let r = val
+            .map(|v| {
+                s.carry
+                    .map(|c| (v & 0xfe).rotate_right(1) | if c { 0x80 } else { 0 })
+            })
+            .unwrap_or(None);
+        s.carry = val.map(|v| v.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_rmw().set_u8(s, r);
+    },
+};
+
+const RRCW: Stm8Instruction = Stm8Instruction {
+    mnem: "rrcw",
+    disassemble,
+    operand: Stm8Operands::R16(Register16::X),
+    handler: |insn, s| {
+        let val = insn.operand.get_r16().get_u16(s);
+        let r = val
+            .map(|v| {
+                s.carry
+                    .map(|c| (v & 0xfffe).rotate_right(1) | if c { 0x8000 } else { 0 })
+            })
+            .unwrap_or(None);
+        s.carry = val.map(|v| v.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_r16().set_u16(s, r);
+    },
+};
+
+const RVF: Stm8Instruction = Stm8Instruction {
+    mnem: "rvf",
+    disassemble,
+    operand: Stm8Operands::None,
+    handler: |_, s| {
+        s.overflow = Some(false);
+    },
+};
+
+const SBC: Stm8Instruction = Stm8Instruction {
+    mnem: "sbc",
+    disassemble,
+    operand: Stm8Operands::Alu8(Operand8::Imm8(0)),
+    handler: |insn, s| {
+        let val = insn.operand.get_alu8().get_u8(s);
+        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let r = a
+            .zip(m)
+            .zip(s.carry)
+            .map(|((a, m), c)| a.wrapping_sub(m).wrapping_sub(if c { 1 } else { 0 }));
+        let carrytests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
+        let overflowtests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
+        s.carry = carrytests.map(|t| t.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.halfcarry = carrytests.map(|t| t & 0x08 != 0);
+        s.overflow = overflowtests.map(|t| t != 0 && t != -64);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+    },
+};
+
+const SLL: Stm8Instruction = Stm8Instruction {
+    mnem: "sll",
+    disassemble,
+    operand: Stm8Operands::Rmw(Operand8::A),
+    handler: |insn, s| {
+        let val = insn.operand.get_rmw().get_u8(s);
+        let r = val
+            .map(|v| s.carry.map(|c| (v & 0x7f).rotate_left(1)))
+            .unwrap_or(None);
+        s.carry = val.map(|v| v.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_rmw().set_u8(s, r);
+    },
+};
+
+const SLLW: Stm8Instruction = Stm8Instruction {
+    mnem: "sllw",
+    disassemble,
+    operand: Stm8Operands::R16(Register16::X),
+    handler: |insn, s| {
+        let val = insn.operand.get_r16().get_u16(s);
+        let r = val
+            .map(|v| s.carry.map(|c| (v & 0x7fff).rotate_left(1)))
+            .unwrap_or(None);
+        s.carry = val.map(|v| v.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_r16().set_u16(s, r);
+    },
+};
+
+const SRA: Stm8Instruction = Stm8Instruction {
+    mnem: "sra",
+    disassemble,
+    operand: Stm8Operands::Rmw(Operand8::A),
+    handler: |insn, s| {
+        let val = insn.operand.get_rmw().get_u8(s);
+        let r = val
+            .map(|v| s.carry.map(|c| (v & 0xfe).signed_shr(1)))
+            .unwrap_or(None);
+        s.carry = val.map(|v| v.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_rmw().set_u8(s, r);
+    },
+};
+
+const SRAW: Stm8Instruction = Stm8Instruction {
+    mnem: "sraw",
+    disassemble,
+    operand: Stm8Operands::R16(Register16::X),
+    handler: |insn, s| {
+        let val = insn.operand.get_r16().get_u16(s);
+        let r = val
+            .map(|v| s.carry.map(|c| (v & 0xfffe).signed_shr(1)))
+            .unwrap_or(None);
+        s.carry = val.map(|v| v.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_r16().set_u16(s, r);
+    },
+};
+
+const SRL: Stm8Instruction = Stm8Instruction {
+    mnem: "srl",
+    disassemble,
+    operand: Stm8Operands::Rmw(Operand8::A),
+    handler: |insn, s| {
+        let val = insn.operand.get_rmw().get_u8(s);
+        let r = val
+            .map(|v| s.carry.map(|c| (v & 0xfe).rotate_right(1)))
+            .unwrap_or(None);
+        s.carry = val.map(|v| v.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_rmw().set_u8(s, r);
+    },
+};
+
+const SRLW: Stm8Instruction = Stm8Instruction {
+    mnem: "srlw",
+    disassemble,
+    operand: Stm8Operands::R16(Register16::X),
+    handler: |insn, s| {
+        let val = insn.operand.get_r16().get_u16(s);
+        let r = val
+            .map(|v| s.carry.map(|c| (v & 0xfffe).rotate_right(1)))
+            .unwrap_or(None);
+        s.carry = val.map(|v| v.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_r16().set_u16(s, r);
+    },
+};
+
+const INSTRUCTIONS: [Stm8Instruction; 47] = [
     ADC, ADD, ADDW, AND, BCCM, BCP, BCPL, BRES, BSET, CCF, CLR, CLRW, CP, CPW, CPL, CPLW, DEC,
-    DECW, DIV, DIVW, EXG, EXGW, INC, INCW, LD, LDW, MOV, MUL, NEG, NEGW, OR
+    DECW, DIV, DIVW, EXG, EXGW, INC, INCW, LD, LDW, MOV, MUL, NEG, NEGW, OR, RCF, RLC, RLCW, RLWA,
+    RRC, RRCW, RRWA, RVF, SBC, SCF, SLL, SLLW, SRA, SRAW, SRL, SRLW,
 ];
 
 impl std::fmt::Display for Operand8 {
