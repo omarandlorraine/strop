@@ -1221,10 +1221,128 @@ const SRLW: Stm8Instruction = Stm8Instruction {
     },
 };
 
-const INSTRUCTIONS: [Stm8Instruction; 47] = [
+const SUB: Stm8Instruction = Stm8Instruction {
+    mnem: "sub",
+    disassemble,
+    operand: Stm8Operands::Alu8(Operand8::Imm8(0)),
+    handler: |insn, s| {
+        let val = insn.operand.get_alu8().get_u8(s);
+        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let r = a.zip(m).map(|(a, m)| a.wrapping_sub(m));
+        let carrytests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
+        let overflowtests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
+        s.carry = carrytests.map(|t| t.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.halfcarry = carrytests.map(|t| t & 0x08 != 0);
+        s.overflow = overflowtests.map(|t| t != 0 && t != -64);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+    },
+};
+
+const SUBW: Stm8Instruction = Stm8Instruction {
+    mnem: "subw",
+    disassemble,
+    operand: Stm8Operands::Alu8(Operand8::Imm8(0)),
+    handler: |insn, s| {
+        let (dst, src) = insn.operand.get_alu16();
+        let m = src.get_u16(s).map(|v| i16::from_ne_bytes(v.to_ne_bytes()));
+        let a = dst.get_u16(s).map(|v| i16::from_ne_bytes(v.to_ne_bytes()));
+        let r = a.zip(m).map(|(a, m)| a.wrapping_sub(m));
+        let carrytests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
+        let overflowtests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
+        s.carry = carrytests.map(|t| t.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.halfcarry = carrytests.map(|t| t & 0x0080 != 0);
+        s.overflow = overflowtests.map(|t| t != 0 && t != -64);
+        dst.set_i16(s, r);
+    },
+};
+
+const SWAP: Stm8Instruction = Stm8Instruction {
+    mnem: "swap",
+    disassemble,
+    operand: Stm8Operands::Rmw(Operand8::A),
+    handler: |insn, s| {
+        let val = insn.operand.get_rmw().get_u8(s);
+        let r = val.map(|a| a.rotate_right(4));
+        s.carry = val.map(|a| a == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_rmw().set_u8(s, r);
+    },
+};
+
+const SWAPW: Stm8Instruction = Stm8Instruction {
+    mnem: "swapw",
+    disassemble,
+    operand: Stm8Operands::R16(Register16::X),
+    handler: |insn, s| {
+        let a = insn.operand.get_r16().get_u16(s);
+        let r = a.map(|a| a.swap_bytes());
+        s.carry = a.map(|a| a == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_r16().set_u16(s, r);
+    },
+};
+
+const TNZ: Stm8Instruction = Stm8Instruction {
+    mnem: "tnz",
+    disassemble,
+    operand: Stm8Operands::Rmw(Operand8::A),
+    handler: |insn, s| {
+        let a = insn.operand.get_rmw().get_u8(s);
+        s.zero = a.map(|r| r == 0);
+        s.sign = a.map(|r| r.leading_zeros() == 0);
+    },
+};
+
+const TNZW: Stm8Instruction = Stm8Instruction {
+    mnem: "tnzw",
+    disassemble,
+    operand: Stm8Operands::R16(Register16::X),
+    handler: |insn, s| {
+        let a = insn.operand.get_r16().get_u16(s);
+        s.zero = a.map(|r| r == 0);
+        s.sign = a.map(|r| r.leading_zeros() == 0);
+    },
+};
+
+const XOR: Stm8Instruction = Stm8Instruction {
+    mnem: "xor",
+    disassemble,
+    operand: Stm8Operands::Alu8(Operand8::Imm8(0)),
+    handler: |insn, s| {
+        let val = insn.operand.get_alu8().get_u8(s);
+        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let r = a.zip(m).map(|(a, m)| a ^ m);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.a = r.map(|v| u8::from_ne_bytes(v.to_ne_bytes()));
+    },
+};
+
+const INSTRUCTIONS: [Stm8Instruction; 54] = [
     ADC, ADD, ADDW, AND, BCCM, BCP, BCPL, BRES, BSET, CCF, CLR, CLRW, CP, CPW, CPL, CPLW, DEC,
     DECW, DIV, DIVW, EXG, EXGW, INC, INCW, LD, LDW, MOV, MUL, NEG, NEGW, OR, RCF, RLC, RLCW, RLWA,
-    RRC, RRCW, RRWA, RVF, SBC, SCF, SLL, SLLW, SRA, SRAW, SRL, SRLW,
+    RRC, RRCW, RRWA, RVF, SBC, SCF, SLL, SLLW, SRA, SRAW, SRL, SRLW, SUB, SUBW, SWAP, SWAPW, TNZ,
+    TNZW, XOR,
 ];
 
 impl std::fmt::Display for Operand8 {
