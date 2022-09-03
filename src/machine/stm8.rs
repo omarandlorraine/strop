@@ -12,9 +12,13 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Debug;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Operand8 {
     A,
+    Xl,
+    Yl,
+    Xh,
+    Yh,
     Imm8(u8),
     Abs(u16),
 }
@@ -128,6 +132,10 @@ impl Strop for Operand8 {
         use Operand8::*;
         let e = match self {
             A => A,
+            Xl => Xl,
+            Yl => Yl,
+            Xh => Xh,
+            Yh => Yh,
             Imm8(v) => {
                 let e = v;
                 e.mutate();
@@ -190,6 +198,10 @@ impl Operand8 {
         use Operand8::*;
         match self {
             A => s.a = val,
+            Xl => s.x.low = val,
+            Yl => s.y.low = val,
+            Xh => s.x.high = val,
+            Yh => s.y.high = val,
             Imm8(_) => panic!(),
             Abs(addr) => s.write_mem(addr, val),
         }
@@ -199,6 +211,10 @@ impl Operand8 {
         use Operand8::*;
         match self {
             A => s.a,
+            Xl => s.x.low,
+            Yl => s.y.low,
+            Xh => s.x.high,
+            Yh => s.y.high,
             Imm8(x) => Some(x),
             Abs(addr) => s.read_mem(Some(addr)),
         }
@@ -275,11 +291,13 @@ impl Stm8 {
 #[derive(Clone, Copy)]
 pub enum Stm8Operands {
     None,
+    Ld(Operand8, Operand8),
     Rmw(Operand8),
     Alu8(Operand8),
     Alu16(Register16, Operand16),
     Bits(u16, usize),
     R16(Register16),
+    Exg(Operand8),
 }
 
 impl Stm8Operands {
@@ -290,9 +308,17 @@ impl Stm8Operands {
         }
     }
 
+    fn get_ld(self) -> (Operand8, Operand8) {
+        match self {
+            Stm8Operands::Ld(src, dst) => (src, dst),
+            _ => panic!(),
+        }
+    }
+
     fn get_alu8(self) -> Operand8 {
         match self {
             Stm8Operands::Alu8(operand) => operand,
+            Stm8Operands::Exg(operand) => operand,
             _ => panic!(),
         }
     }
@@ -325,8 +351,24 @@ impl Strop for Stm8Operands {
     }
 
     fn mutate(&mut self) {
+        use rand::prelude::SliceRandom;
+        use Operand8::*;
+
         match self {
             Stm8Operands::None => (),
+            Stm8Operands::Ld(src, dst) => {
+                if *src == Operand8::A {
+                    randomly!(
+                        { dst.mutate() }
+                        {*dst = *vec!(Xl, Xh, Yl, Yh, A).choose(&mut rand::thread_rng()).unwrap() }
+                    );
+                } else {
+                    randomly!(
+                        { src.mutate() }
+                        {*src = *vec!(Xl, Xh, Yl, Yh, A).choose(&mut rand::thread_rng()).unwrap() }
+                    );
+                }
+            }
             Stm8Operands::R16(x) => x.mutate(),
             Stm8Operands::Rmw(v) => v.mutate(),
             Stm8Operands::Alu8(v) => v.mutate(),
@@ -336,6 +378,14 @@ impl Strop for Stm8Operands {
                 {*bit = (*bit + 1) % 8}
                 {*bit = (*bit + 7) % 8}
             ),
+            Stm8Operands::Exg(v) => {
+                randomly!(
+                    {*v = Operand8::Xl}
+                    {*v = Operand8::Yl}
+                    {*v = Operand8::Abs(random())}
+                    {v.mutate()}
+                );
+            }
         }
     }
 }
@@ -363,7 +413,13 @@ fn disassemble(insn: &Stm8Instruction, f: &mut std::fmt::Formatter<'_>) -> std::
         Stm8Operands::R16(r) => {
             write!(f, "\t{} {}", insn.mnem, r)
         }
+        Stm8Operands::Exg(v) => {
+            write!(f, "\t{} a, {}", insn.mnem, v)
+        }
         Stm8Operands::Alu16(r, v) => {
+            write!(f, "\t{} {}, {}", insn.mnem, r, v)
+        }
+        Stm8Operands::Ld(r, v) => {
             write!(f, "\t{} {}, {}", insn.mnem, r, v)
         }
         Stm8Operands::Bits(addr, bit) => {
@@ -567,9 +623,268 @@ const CLRW: Stm8Instruction = Stm8Instruction {
     },
 };
 
-const INSTRUCTIONS: [Stm8Instruction; 12] = [
-    ADC, ADD, ADDW, AND, BCCM, BCP, BCPL, BRES, BSET, CCF, CLR, CLRW,
+const CP: Stm8Instruction = Stm8Instruction {
+    mnem: "cp",
+    disassemble,
+    operand: Stm8Operands::Alu8(Operand8::Imm8(0)),
+    handler: |insn, s| {
+        let val = insn.operand.get_alu8().get_u8(s);
+        let m = val.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let a = s.a.map(|v| i8::from_ne_bytes(v.to_ne_bytes()));
+        let r = a.zip(m).map(|(a, m)| a.wrapping_sub(m));
+        let carrytests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
+        let overflowtests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
+        s.carry = carrytests.map(|t| t.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.overflow = overflowtests.map(|t| t != 0 && t != -64);
+    },
+};
+
+const CPW: Stm8Instruction = Stm8Instruction {
+    mnem: "cpw",
+    disassemble,
+    operand: Stm8Operands::Alu16(Register16::X, Operand16::Imm(0)),
+    handler: |insn, s| {
+        let (dst, src) = insn.operand.get_alu16();
+        let m = src.get_u16(s).map(|v| i16::from_ne_bytes(v.to_ne_bytes()));
+        let a = dst.get_u16(s).map(|v| i16::from_ne_bytes(v.to_ne_bytes()));
+        let r = a.zip(m).map(|(a, m)| a.wrapping_sub(m));
+        let carrytests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| (a & m) | (m & !r) | (!r & a));
+        let overflowtests = a
+            .zip(m)
+            .zip(r)
+            .map(|((a, m), r)| ((a & m) | (m & r) | (r & a)) & -64);
+        s.carry = carrytests.map(|t| t.leading_zeros() == 0);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        s.overflow = overflowtests.map(|t| t != 0 && t != -64);
+    },
+};
+
+const CPL: Stm8Instruction = Stm8Instruction {
+    mnem: "cpl",
+    disassemble,
+    operand: Stm8Operands::Rmw(Operand8::A),
+    handler: |insn, s| {
+        let val = insn.operand.get_rmw().get_u8(s);
+        let r = val.map(|a| a ^ 0xff);
+        s.carry = Some(true);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_rmw().set_u8(s, r);
+    },
+};
+
+const CPLW: Stm8Instruction = Stm8Instruction {
+    mnem: "cplw",
+    disassemble,
+    operand: Stm8Operands::R16(Register16::X),
+    handler: |insn, s| {
+        let val = insn.operand.get_r16();
+        let a = val.get_u16(s);
+        let r = a.map(|a| a ^ 0xffff);
+        s.carry = Some(true);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_r16().set_u16(s, r);
+    },
+};
+
+const DEC: Stm8Instruction = Stm8Instruction {
+    mnem: "dec",
+    disassemble,
+    operand: Stm8Operands::Rmw(Operand8::A),
+    handler: |insn, s| {
+        let val = insn.operand.get_rmw().get_u8(s);
+        let r = val.map(|a| a.wrapping_sub(1));
+        s.carry = Some(true);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_rmw().set_u8(s, r);
+    },
+};
+
+const DECW: Stm8Instruction = Stm8Instruction {
+    mnem: "decw",
+    disassemble,
+    operand: Stm8Operands::R16(Register16::X),
+    handler: |insn, s| {
+        let val = insn.operand.get_r16();
+        let a = val.get_u16(s);
+        let r = a.map(|a| a.wrapping_sub(1));
+        s.carry = Some(true);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_r16().set_u16(s, r);
+    },
+};
+
+const DIV: Stm8Instruction = Stm8Instruction {
+    mnem: "div",
+    disassemble,
+    operand: Stm8Operands::R16(Register16::X),
+    handler: |insn, s| {
+        use std::convert::TryInto;
+        let dividend = insn.operand.get_r16().get_u16(s);
+        let divisor = s.a;
+
+        if dividend.is_none() || divisor.is_none() {
+            s.a = None;
+            insn.operand.get_r16().set_u16(s, None);
+            s.carry = None;
+            return;
+        }
+        if divisor.unwrap() != 0 {
+            let quotient: u16 = dividend.unwrap() / (divisor.unwrap() as u16);
+            let remainder: u8 = (dividend.unwrap() % (divisor.unwrap() as u16))
+                .try_into()
+                .unwrap();
+            s.a = Some(remainder);
+            insn.operand.get_r16().set_u16(s, Some(quotient));
+            s.carry = Some(false);
+            s.zero = Some(quotient == 0);
+        } else {
+            // division by zero; the quotient and remainder are not written to the registers.
+            s.carry = Some(true);
+        }
+    },
+};
+
+const DIVW: Stm8Instruction = Stm8Instruction {
+    mnem: "divw x, y",
+    disassemble,
+    operand: Stm8Operands::None,
+    handler: |_insn, s| {
+        let dividend = s.get_register16(Register16::X);
+        let divisor = s.get_register16(Register16::Y);
+
+        if dividend.is_none() || divisor.is_none() {
+            s.set_register16(Register16::X, None);
+            s.set_register16(Register16::Y, None);
+            s.carry = None;
+            return;
+        }
+        if divisor.unwrap() == 0 {
+            // division by zero; the quotient and remainder are indeterminate
+            s.set_register16(Register16::X, None);
+            s.set_register16(Register16::Y, None);
+            s.carry = Some(false);
+            s.zero = None;
+        } else {
+            let quotient: u16 = dividend.unwrap() / divisor.unwrap();
+            let remainder: u16 = dividend.unwrap() % divisor.unwrap();
+            s.set_register16(Register16::X, Some(quotient));
+            s.set_register16(Register16::Y, Some(remainder));
+            s.zero = Some(quotient == 0);
+            s.carry = Some(true);
+        }
+    },
+};
+
+const EXG: Stm8Instruction = Stm8Instruction {
+    mnem: "exg",
+    disassemble,
+    operand: Stm8Operands::Exg(Operand8::Xl),
+    handler: |insn, s| {
+        let src = insn.operand.get_alu8().get_u8(s);
+        insn.operand.get_alu8().set_u8(s, s.a);
+        s.a = src;
+    },
+};
+
+const EXGW: Stm8Instruction = Stm8Instruction {
+    mnem: "exgw",
+    disassemble,
+    operand: Stm8Operands::Exg(Operand8::Xl),
+    handler: |_insn, s| {
+        let src = s.x.get_u16();
+        s.x.set_u16(s.y.get_u16());
+        s.y.set_u16(src);
+    },
+};
+
+const INC: Stm8Instruction = Stm8Instruction {
+    mnem: "inc",
+    disassemble,
+    operand: Stm8Operands::Rmw(Operand8::A),
+    handler: |insn, s| {
+        let val = insn.operand.get_rmw().get_u8(s);
+        let r = val.map(|a| a.wrapping_add(1));
+        s.carry = Some(true);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_rmw().set_u8(s, r);
+    },
+};
+
+const INCW: Stm8Instruction = Stm8Instruction {
+    mnem: "incw",
+    disassemble,
+    operand: Stm8Operands::R16(Register16::X),
+    handler: |insn, s| {
+        let val = insn.operand.get_r16();
+        let a = val.get_u16(s);
+        let r = a.map(|a| a.wrapping_add(1));
+        s.carry = Some(true);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        insn.operand.get_r16().set_u16(s, r);
+    },
+};
+
+const LD: Stm8Instruction = Stm8Instruction {
+    mnem: "ld",
+    disassemble,
+    operand: Stm8Operands::Ld(Operand8::A, Operand8::Imm8(0)),
+    handler: |insn, s| {
+        let (src, dst) = insn.operand.get_ld();
+        s.zero = src.get_u8(s).map(|r| r == 0);
+        s.sign = src.get_u8(s).map(|r| r.leading_zeros() == 0);
+        dst.set_u8(s, src.get_u8(s));
+    },
+};
+
+const LDW: Stm8Instruction = Stm8Instruction {
+    mnem: "ldw",
+    disassemble,
+    operand: Stm8Operands::Alu16(Register16::X, Operand16::Imm(0)),
+    handler: |insn, s| {
+        let (dst, src) = insn.operand.get_alu16();
+        let r = src.get_u16(s);
+        s.zero = r.map(|r| r == 0);
+        s.sign = r.map(|r| r.leading_zeros() == 0);
+        dst.set_u16(s, r);
+    },
+};
+
+const INSTRUCTIONS: [Stm8Instruction; 26] = [
+    ADC, ADD, ADDW, AND, BCCM, BCP, BCPL, BRES, BSET, CCF, CLR, CLRW, CP, CPW, CPL, CPLW, DEC,
+    DECW, DIV, DIVW, EXG, EXGW, INC, INCW, LD, LDW,
 ];
+
+impl std::fmt::Display for Operand8 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            Operand8::A => write!(f, "a"),
+            Operand8::Xl => write!(f, "xl"),
+            Operand8::Yl => write!(f, "yl"),
+            Operand8::Xh => write!(f, "xh"),
+            Operand8::Yh => write!(f, "yh"),
+            Operand8::Imm8(v) => write!(f, "#${:x}", v),
+            Operand8::Abs(v) => write!(f, "#${:x}", v),
+        }
+    }
+}
 
 impl std::fmt::Display for Stm8Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
