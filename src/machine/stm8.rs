@@ -1031,10 +1031,9 @@ pub mod tests {
         for opcode in vec![
             "adc", "add", "addw", "and", "bccm", "bcp", "bcpl", "bres", "bset", "ccf", "clr",
             "clrw", "cp", "cpw", "cpl", "cplw", "dec", "decw", "div", "divw", "exg", "exgw", "inc",
-            "incw", "ld", "ldw", "mov", "mul", "neg", "negw", "or", "pop", "popw", "push", "pushw",
-            "rcf", "rlc", "rlcw", "rlwa", "rrc", "rrcw", "rrwa", "rvf", "sbc", "scf", "sll",
-            "sllw", "sra", "sraw", "srl", "srlw", "sub", "subw", "swap", "swapw", "tnz", "tnzw",
-            "xor",
+            "incw", "ld", "ldw", "mov", "mul", "neg", "negw", "or", "rcf", "rlc", "rlcw", "rlwa",
+            "rrc", "rrcw", "rrwa", "rvf", "sbc", "scf", "sll", "sllw", "sra", "sraw", "srl",
+            "srlw", "sub", "subw", "swap", "swapw", "tnz", "tnzw", "xor",
         ] {
             find_it(opcode);
         }
