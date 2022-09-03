@@ -2,7 +2,7 @@
 //! STMicroelectronics.
 
 // Just temporarily allow these lints while we're working on a half-baked implementation
-#![allow(missing_debug_implementations, missing_docs, dead_code)]
+#![allow(missing_debug_implementations, missing_docs)]
 
 use crate::machine::Instruction;
 use crate::machine::Strop;
@@ -1131,9 +1131,7 @@ const SLL: Stm8Instruction = Stm8Instruction {
     operand: Stm8Operands::Rmw(Operand8::A),
     handler: |insn, s| {
         let val = insn.operand.get_rmw().get_u8(s);
-        let r = val
-            .map(|v| s.carry.map(|c| (v & 0x7f).rotate_left(1)))
-            .unwrap_or(None);
+        let r = val.map(|v| (v & 0x7f).rotate_left(1));
         s.carry = val.map(|v| v.leading_zeros() == 0);
         s.zero = r.map(|r| r == 0);
         s.sign = r.map(|r| r.leading_zeros() == 0);
@@ -1147,9 +1145,7 @@ const SLLW: Stm8Instruction = Stm8Instruction {
     operand: Stm8Operands::R16(Register16::X),
     handler: |insn, s| {
         let val = insn.operand.get_r16().get_u16(s);
-        let r = val
-            .map(|v| s.carry.map(|c| (v & 0x7fff).rotate_left(1)))
-            .unwrap_or(None);
+        let r = val.map(|v| (v & 0x7fff).rotate_left(1));
         s.carry = val.map(|v| v.leading_zeros() == 0);
         s.zero = r.map(|r| r == 0);
         s.sign = r.map(|r| r.leading_zeros() == 0);
@@ -1163,9 +1159,7 @@ const SRA: Stm8Instruction = Stm8Instruction {
     operand: Stm8Operands::Rmw(Operand8::A),
     handler: |insn, s| {
         let val = insn.operand.get_rmw().get_u8(s);
-        let r = val
-            .map(|v| s.carry.map(|c| (v & 0xfe).signed_shr(1)))
-            .unwrap_or(None);
+        let r = val.map(|v| (v & 0xfe).signed_shr(1));
         s.carry = val.map(|v| v.leading_zeros() == 0);
         s.zero = r.map(|r| r == 0);
         s.sign = r.map(|r| r.leading_zeros() == 0);
@@ -1179,9 +1173,7 @@ const SRAW: Stm8Instruction = Stm8Instruction {
     operand: Stm8Operands::R16(Register16::X),
     handler: |insn, s| {
         let val = insn.operand.get_r16().get_u16(s);
-        let r = val
-            .map(|v| s.carry.map(|c| (v & 0xfffe).signed_shr(1)))
-            .unwrap_or(None);
+        let r = val.map(|v| (v & 0xfffe).signed_shr(1));
         s.carry = val.map(|v| v.leading_zeros() == 0);
         s.zero = r.map(|r| r == 0);
         s.sign = r.map(|r| r.leading_zeros() == 0);
@@ -1195,9 +1187,7 @@ const SRL: Stm8Instruction = Stm8Instruction {
     operand: Stm8Operands::Rmw(Operand8::A),
     handler: |insn, s| {
         let val = insn.operand.get_rmw().get_u8(s);
-        let r = val
-            .map(|v| s.carry.map(|c| (v & 0xfe).rotate_right(1)))
-            .unwrap_or(None);
+        let r = val.map(|v| (v & 0xfe).rotate_right(1));
         s.carry = val.map(|v| v.leading_zeros() == 0);
         s.zero = r.map(|r| r == 0);
         s.sign = r.map(|r| r.leading_zeros() == 0);
@@ -1211,9 +1201,7 @@ const SRLW: Stm8Instruction = Stm8Instruction {
     operand: Stm8Operands::R16(Register16::X),
     handler: |insn, s| {
         let val = insn.operand.get_r16().get_u16(s);
-        let r = val
-            .map(|v| s.carry.map(|c| (v & 0xfffe).rotate_right(1)))
-            .unwrap_or(None);
+        let r = val.map(|v| (v & 0xfffe).rotate_right(1));
         s.carry = val.map(|v| v.leading_zeros() == 0);
         s.zero = r.map(|r| r == 0);
         s.sign = r.map(|r| r.leading_zeros() == 0);
