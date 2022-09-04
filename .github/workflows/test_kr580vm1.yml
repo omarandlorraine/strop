@@ -1,7 +1,9 @@
-name: pic
+name: kr580vm1
 
 on:
   push:
+    branches: [ master ]
+  pull_request:
     branches: [ master ]
 
 env:
@@ -17,4 +19,4 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Run tests
-      run: cargo test --verbose machine::pic
+      run: cargo test --verbose machine::kr580vm1

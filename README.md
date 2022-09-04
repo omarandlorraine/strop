@@ -30,8 +30,6 @@ the badges:
 
  * [![Build Status](https://github.com/omarandlorraine/strop/workflows/stm8/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=stm8) stm8
  * [![Build Status](https://github.com/omarandlorraine/strop/workflows/mos6502/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=mos6502) 6502 65n02 65c02
- * [![Build Status](https://github.com/omarandlorraine/strop/workflows/6800/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=6800) 6800 6801
- * [![Build Status](https://github.com/omarandlorraine/strop/workflows/pic/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=pic) pic12 pic14 pic16
  * [![Build Status](https://github.com/omarandlorraine/strop/workflows/x80/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=x80) kr580vm1
 
 ### Theory of operation
@@ -62,56 +60,3 @@ supplied by the user). The code is mutated and run against the test cases over
 and over again. When the test cases all pass, we know the program is good. As
 the code is run, we can analyse it for characteristics like speed and size, and
 this information can be fed into the way we mutate or select the code sequence.
-
-### Some example runs
-
-What if we want to multiply some number by a constant? For this example, the
-number is in register B, the constant is 15, and the output is in register A.
-So you would run:
-
-    strop --arch 6800 --function mult15 --in b --out a
-
-A couple of seconds later, the program outputs:
-
-    	tba
-    	aba
-    	aba
-    	tab
-    	aba
-    	asla
-    	aba
-
-Since the Motorola 6800 has no multiply instruction, strop's generated some
-shifts and adds and things that implement a multiplication by 15. What about
-another architecture; one that has a multiply instruction? The STM8 is an
-example.
-
-    strop --arch stm8 --function mult15 --in a --out a
-
-(the above command has `stm8` instead of `6800`, and instead of register B
-which the STM8 doesn't have, we specify that the input is in register A).
-Here, strop's output is:
-
-        ldw x, #15
-        mul x, a
-        exg xl, a
-
-This program loads the constant 15 into register X, multiplies A and X, leaving
-the result in X. Then A and the least significant byte of X are swapped over.
-In this way, A is effectively multiplied by 15.
-
-You might need something other than the miscellaneous built-in functions that
-I've decided to put in. You might want to define your own functions. If you can
-generate an appropriate JSON file, you can pass it to strop and have strop
-generate the code that satisfies all test cases in the file. See the
-`examples/` folder for examples. 
-
-    strop --arch 6800 -f examples/decimal_adjust.json
-
-produces the following code,
-
-    	add #0
-    	daa
-
-As to why the `add #0` was generated, my guess is that `daa` depends on the
-state of certain flags, and `add #0` sets these flags right.
