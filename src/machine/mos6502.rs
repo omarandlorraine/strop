@@ -1221,7 +1221,36 @@ impl Strop for Instruction6502 {
 }
 
 #[cfg(test)]
-pub mod tests {
+fn run_strop(
+    instr: Instruction6502,
+    val1: u8,
+    val2: Option<u8>,
+    carry: bool,
+    decimal: bool,
+) -> (u8, bool, bool, bool, bool) {
+    let mut state: Mos6502 = Default::default();
+    state.carry = Some(carry);
+    state.decimal = Some(decimal);
+    state.a = Some(val1);
+    let mut insn = instr;
+    insn.operand = if let Some(v) = val2 {
+        Operand6502::Immediate(v)
+    } else {
+        Operand6502::A
+    };
+
+    insn.operate(&mut state);
+    (
+        state.a.unwrap(),
+        state.zero.unwrap_or(false),
+        state.carry.unwrap_or(false),
+        state.sign.unwrap_or(false),
+        state.overflow.unwrap_or(false),
+    )
+}
+
+#[cfg(test)]
+pub mod fuzz_tests {
     use super::*;
 
     use mos6502;
@@ -1263,34 +1292,6 @@ pub mod tests {
             cpu.registers.status.contains(Status::PS_CARRY),
             cpu.registers.status.contains(Status::PS_NEGATIVE),
             cpu.registers.status.contains(Status::PS_OVERFLOW),
-        )
-    }
-
-    fn run_strop(
-        instr: Instruction6502,
-        val1: u8,
-        val2: Option<u8>,
-        carry: bool,
-        decimal: bool,
-    ) -> (u8, bool, bool, bool, bool) {
-        let mut state: Mos6502 = Default::default();
-        state.carry = Some(carry);
-        state.decimal = Some(decimal);
-        state.a = Some(val1);
-        let mut insn = instr;
-        insn.operand = if let Some(v) = val2 {
-            Operand6502::Immediate(v)
-        } else {
-            Operand6502::A
-        };
-
-        insn.operate(&mut state);
-        (
-            state.a.unwrap(),
-            state.zero.unwrap_or(false),
-            state.carry.unwrap_or(false),
-            state.sign.unwrap_or(false),
-            state.overflow.unwrap_or(false),
         )
     }
 
@@ -1398,6 +1399,11 @@ pub mod tests {
     fn fuzz_ror() {
         fuzz_test_implied(&ROR, 0x6a);
     }
+}
+
+#[cfg(test)]
+pub mod regression_tests {
+    use super::*;
 
     #[test]
     fn regression_decimal_mode() {
