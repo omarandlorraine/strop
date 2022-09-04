@@ -1,4 +1,4 @@
-name: x80
+name: kr580vm1
 
 on:
   push:
@@ -19,4 +19,4 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Run tests
-      run: cargo test --verbose machine::x80
+      run: cargo test --verbose machine::kr580vm1
