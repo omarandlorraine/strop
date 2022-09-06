@@ -6,8 +6,8 @@
 
 use crate::machine::Instruction;
 use crate::machine::Strop;
-use rand::random;
 use crate::randomly;
+use rand::random;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fmt::Formatter;

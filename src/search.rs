@@ -2,8 +2,8 @@
 //! sequence.
 
 use crate::machine::Instruction;
-use rand::{thread_rng, Rng};
 use crate::randomly;
+use rand::{thread_rng, Rng};
 use std::ops::{Index, IndexMut};
 
 /// A [basic block](https://en.wikipedia.org/wiki/Basic_block) is a sequence of
