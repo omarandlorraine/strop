@@ -7,7 +7,7 @@
 use crate::machine::Instruction;
 use crate::machine::Strop;
 use rand::random;
-use randomly::randomly;
+use crate::randomly;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fmt::Formatter;

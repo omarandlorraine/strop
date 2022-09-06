@@ -15,9 +15,5 @@ homepage = "https://github.com/omarandlorraine/strop"
 num-traits = "0.2.15"
 rand = "0.8.5"
 
-[dependencies.randomly]
-version = "0.2.1"
-git = "https://github.com/BartMassey/randomly"
-
 [dev-dependencies]
 mos6502 = "0.2.0"

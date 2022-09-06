@@ -3,7 +3,7 @@
 
 use crate::machine::Instruction;
 use rand::{thread_rng, Rng};
-use randomly::randomly;
+use crate::randomly;
 use std::ops::{Index, IndexMut};
 
 /// A [basic block](https://en.wikipedia.org/wiki/Basic_block) is a sequence of
