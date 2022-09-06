@@ -1,8 +1,0 @@
-{
-	"tests": [
-		{"steps": [{"datum": "bc", "set": 0}, {"datum": "bc", "ham": 0}]},
-		{"steps": [{"datum": "bc", "set": 1}, {"datum": "bc", "ham": 5}]},
-		{"steps": [{"datum": "bc", "set": 2}, {"datum": "bc", "ham": 10}]},
-		{"steps": [{"datum": "bc", "set": 256}, {"datum": "bc", "ham": 1280}]}
-	]
-}
