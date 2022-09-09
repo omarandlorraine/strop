@@ -157,9 +157,35 @@ impl Instruction for KR580VM1Instruction {
     where
         Self: Sized,
     {
-        todo!()
+        use KR580VM1Instruction::*;
+
+        randomly!(
+            { Mvi(R8::random(), random()) }
+            { Mov(R8::random(), R8::random()) }
+            )
     }
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use crate::machine::Instruction;
+    use crate::machine::kr580vm1::KR580VM1Instruction;
+
+    fn find_it(opcode: &'static str) -> KR580VM1Instruction {
+        for _ in 0..5000 {
+            let insn = KR580VM1Instruction::new();
+            let dasm = format!("{}", insn);
+            if dasm.contains(opcode) {
+                return insn;
+            }
+        }
+        panic!("Could not find opcode {}", opcode);
+    }
+
+    #[test]
+    fn instruction_set() {
+        for opcode in vec!["mov", "mvi"] {
+            find_it(opcode);
+        }
+    }
+}
