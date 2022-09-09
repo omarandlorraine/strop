@@ -81,10 +81,46 @@ pub enum KR580VM1Instruction {
     Lxi(R16, u8, u8),
 }
 
+impl std::fmt::Display for R8 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        use R8::*;
+        match self {
+            A => write!(f, "a"),
+            B => write!(f, "b"),
+            C => write!(f, "c"),
+            D => write!(f, "d"),
+            E => write!(f, "e"),
+            H => write!(f, "h"),
+            L => write!(f, "l"),
+            H1 => write!(f, "h1"),
+            L1 => write!(f, "l1"),
+            M => write!(f, "m"),
+            M1 => write!(f, "m1"),
+        }
+    }
+}
+
+impl std::fmt::Display for R16 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        use R16::*;
+        match self {
+            BC => write!(f, "b"),
+            DE => write!(f, "d"),
+            HL => write!(f, "h"),
+            H1L1 => write!(f, "h1"),
+            SP => write!(f, "sp"),
+        }
+    }
+}
+
 impl std::fmt::Display for KR580VM1Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        // TODO
-        write!(f, "{:?}", self)
+        use KR580VM1Instruction::*;
+        match self {
+            Mov(dst, src) => write!(f, "\tmov {}, {}", dst, src),
+            Mvi(dst, src) => write!(f, "\tmvi {}, {}", dst, src),
+            Lxi(dst, h, l) => write!(f, "\tlxi {}, {:02x}{:02x}h", dst, h, l),
+        }
     }
 }
 
