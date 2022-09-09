@@ -160,16 +160,16 @@ impl Instruction for KR580VM1Instruction {
         use KR580VM1Instruction::*;
 
         randomly!(
-            { Mvi(R8::random(), random()) }
-            { Mov(R8::random(), R8::random()) }
-            )
+        { Mvi(R8::random(), random()) }
+        { Mov(R8::random(), R8::random()) }
+        )
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::machine::Instruction;
     use crate::machine::kr580vm1::KR580VM1Instruction;
+    use crate::machine::Instruction;
 
     fn find_it(opcode: &'static str) -> KR580VM1Instruction {
         for _ in 0..5000 {
