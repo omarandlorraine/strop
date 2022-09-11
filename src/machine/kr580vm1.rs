@@ -31,6 +31,59 @@ pub enum R8 {
     M1,
 }
 
+impl R8 {
+    fn prefix(self) -> Prefix {
+        match self {
+            R8::H1 => Prefix::Rs,
+            R8::L1 => Prefix::Rs,
+            R8::M1 => Prefix::Rs,
+            _ => Prefix::None,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Prefix {
+    None,
+    Rs,
+    Mb,
+    MbRs,
+}
+
+impl Prefix {
+    fn length(self) -> usize {
+        match self {
+            Prefix::Rs => 1usize,
+            Prefix::Mb => 1usize,
+            Prefix::MbRs => 2usize,
+            _ => 0usize,
+        }
+    }
+
+    fn mb() -> Prefix {
+        randomly!(
+            { Prefix::None }
+            { Prefix::Mb }
+        )
+    }
+
+    fn rs() -> Prefix {
+        randomly!(
+            { Prefix::None }
+            { Prefix::Rs }
+        )
+    }
+
+    fn mb_rs() -> Prefix {
+        randomly!(
+            { Prefix::None }
+            { Prefix::Mb }
+            { Prefix::Rs }
+            { Prefix::MbRs }
+        )
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub enum R16 {
     BC,
@@ -66,6 +119,13 @@ impl RegisterPair {
 }
 
 impl R16 {
+    fn prefix(self) -> Prefix {
+        match self {
+            R16::H1L1 => Prefix::Rs,
+            _ => Prefix::None,
+        }
+    }
+
     fn pick_one(self) -> R8 {
         use R16::*;
         use R8::*;
@@ -100,6 +160,23 @@ impl KR580VM1 {
     fn set_mf(&mut self, val: bool) {
         self.kr580vm1_extension = true;
         self.mf = val;
+    }
+
+    fn read_mem(&mut self, addr: Option<u16>) -> Option<u8> {
+        if let Some(a) = addr {
+            *self.m.get(&a).unwrap_or(&None)
+        } else {
+            None
+        }
+    }
+
+    fn read_mem1(&mut self, addr: Option<u16>) -> Option<u8> {
+        self.kr580vm1_extension = true;
+        if let Some(a) = addr {
+            *self.m1.get(&a).unwrap_or(&None)
+        } else {
+            None
+        }
     }
 
     fn write_mem(&mut self, addr: Option<u16>, val: Option<u8>) {
@@ -155,26 +232,54 @@ impl KR580VM1 {
             }
         }
     }
+
+    fn get8(&mut self, reg: R8) -> Option<u8> {
+        match reg {
+            R8::A => self.a,
+            R8::B => self.b.high,
+            R8::C => self.b.low,
+            R8::D => self.d.high,
+            R8::E => self.d.low,
+            R8::H => self.h.high,
+            R8::L => self.h.low,
+            R8::H1 => {
+                self.kr580vm1_extension = true;
+                self.h1.high
+            }
+            R8::L1 => {
+                self.kr580vm1_extension = true;
+                self.h1.low
+            }
+            R8::M => {
+                let addr = self.get_addr(R16::HL);
+                self.read_mem(addr)
+            }
+            R8::M1 => {
+                let addr = self.get_addr(R16::HL);
+                self.read_mem1(addr)
+            }
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
 pub enum KR580VM1Instruction {
     /// 6.1.1 Данная команда пересылает содержимое устройства-источника в устройство-приемник.
-    Mov(R8, R8),
+    Mov(Prefix, R8, R8),
 
     /// 6.1.2 Данная команда пересылает байт непосредственных данных в устройство-приемник.
-    Mvi(R8, u8),
+    Mvi(Prefix, R8, u8),
 
     /// 6.1.3 Данная команда пересылает два байта непосредственных данных в регистровую память.
-    Lxi(R16, u8, u8),
+    Lxi(Prefix, R16, u8, u8),
 
     /// 6.1.4 Данная команда пересылает содержимое ячейки памяти в аккумулятор.
     /// Адрес ячейки памяти находится в регистровой паре BC или DE.
-    Ldax(RegisterPairBorD),
+    Ldax(Prefix, RegisterPairBorD),
 
     /// 6.1.5. Данная команда пересылает содержимое аккумулятора в ячейку памяти.
     /// Адрес ячейки памяти находится в регистровой паре BC или DE.
-    Stax(RegisterPairBorD),
+    Stax(Prefix, RegisterPairBorD),
 }
 
 impl std::fmt::Display for R8 {
@@ -223,11 +328,23 @@ impl std::fmt::Display for KR580VM1Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         use KR580VM1Instruction::*;
         match self {
-            Mov(dst, src) => write!(f, "\tmov {}, {}", dst, src),
-            Mvi(dst, src) => write!(f, "\tmvi {}, {}", dst, src),
-            Lxi(dst, h, l) => write!(f, "\tlxi {}, {:02x}{:02x}h", dst, h, l),
-            Ldax(rp) => write!(f, "\tldax {}", rp),
-            Stax(rp) => write!(f, "\tstax {}", rp),
+            Mov(pfx, dst, src) => write!(f, "\t{}mov {}, {}", pfx, dst, src),
+            Mvi(pfx, dst, src) => write!(f, "\t{}mvi {}, {}", pfx, dst, src),
+            Lxi(pfx, dst, h, l) => write!(f, "\t{}lxi {}, {:02x}{:02x}h", pfx, dst, h, l),
+            Ldax(pfx, rp) => write!(f, "\t{}ldax {}", pfx, rp),
+            Stax(pfx, rp) => write!(f, "\t{}stax {}", pfx, rp),
+        }
+    }
+}
+
+impl std::fmt::Display for Prefix {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        use Prefix::*;
+        match self {
+            None => write!(f, ""),
+            Rs => write!(f, "rs "),
+            Mb => write!(f, "mb "),
+            MbRs => write!(f, "rs mb "),
         }
     }
 }
@@ -278,45 +395,62 @@ impl Instruction for KR580VM1Instruction {
     type State = KR580VM1;
     fn randomize(&mut self) {
         match self {
-            KR580VM1Instruction::Mvi(dst, src) => {
+            KR580VM1Instruction::Mvi(pfx, dst, src) => {
                 randomly!(
                 { src.mutate() }
                 { dst.mutate() }
-                { *self = KR580VM1Instruction::Mov(*dst, R8::random()) }
+                { *self = KR580VM1Instruction::Mov(*pfx, *dst, R8::random()) }
                 );
             }
-            KR580VM1Instruction::Mov(dst, src) => {
+            KR580VM1Instruction::Mov(pfx, dst, src) => {
                 randomly!(
                 { src.mutate() }
                 { dst.mutate() }
-                { *self = KR580VM1Instruction::Mvi(*dst, random()) }
+                { *self = KR580VM1Instruction::Mvi(*pfx, *dst, random()) }
                 );
             }
-            KR580VM1Instruction::Lxi(dst, h, l) => {
+            KR580VM1Instruction::Lxi(pfx, dst, h, l) => {
                 randomly!(
                 { l.mutate() }
                 { h.mutate() }
                 { dst.mutate() }
-                { *self = KR580VM1Instruction::Mvi(dst.pick_one(), random()) }
+                { *self = KR580VM1Instruction::Mvi(*pfx, dst.pick_one(), random()) }
                 );
             }
-            KR580VM1Instruction::Ldax(rp) => {
+            KR580VM1Instruction::Ldax(pfx, rp) => {
                 randomly!(
                     { rp.mutate() }
-                    {*self = KR580VM1Instruction::Mvi(R8::A, random())}
-                    {*self = KR580VM1Instruction::Mov(R8::A, R8::random())}
+                    {*self = KR580VM1Instruction::Mvi(*pfx, R8::A, random())}
+                    {*self = KR580VM1Instruction::Mov(*pfx, R8::A, R8::random())}
                 );
             }
-            KR580VM1Instruction::Stax(rp) => rp.mutate(),
+            KR580VM1Instruction::Stax(pfx, rp) => rp.mutate(),
         }
     }
 
     fn length(&self) -> usize {
-        todo!()
+        match self {
+            KR580VM1Instruction::Mov(pfx, dst, src) => pfx.length() + 1,
+            KR580VM1Instruction::Mvi(pfx, dst, src) => pfx.length() + 1,
+            KR580VM1Instruction::Lxi(pfx, dst, _, _) => pfx.length() + 3,
+            KR580VM1Instruction::Ldax(pfx, _) => pfx.length() + 1,
+            KR580VM1Instruction::Stax(pfx, _) => pfx.length() + 1,
+        }
     }
 
     fn operate(&self, s: &mut KR580VM1) {
-        todo!()
+        match self {
+            KR580VM1Instruction::Mov(pfx, dst, src) => {
+                let r = s.get8(*src);
+                s.load8(*dst, r);
+            }
+            KR580VM1Instruction::Mvi(pfx, dst, src) => {
+                s.load8(*dst, Some(*src));
+            }
+            KR580VM1Instruction::Lxi(pfx, dst, _, _) => {}
+            KR580VM1Instruction::Ldax(pfx, _) => {}
+            KR580VM1Instruction::Stax(pfx, _) => {}
+        }
     }
 
     fn new() -> Self
@@ -326,11 +460,11 @@ impl Instruction for KR580VM1Instruction {
         use KR580VM1Instruction::*;
 
         randomly!(
-        { Mvi(R8::random(), random()) }
-        { Mov(R8::random(), R8::random()) }
-        { Lxi(R16::random(), random(), random()) }
-        { Ldax(RegisterPairBorD::random()) }
-        { Stax(RegisterPairBorD::random()) }
+        { Mvi(Prefix::mb_rs(), R8::random(), random()) }
+        { Mov(Prefix::mb_rs(), R8::random(), R8::random()) }
+        { Lxi(Prefix::rs(), R16::random(), random(), random()) }
+        { Ldax(Prefix::mb(), RegisterPairBorD::random()) }
+        { Stax(Prefix::mb(), RegisterPairBorD::random()) }
         )
     }
 }
@@ -362,5 +496,13 @@ mod tests {
         ] {
             find_it(opcode);
         }
+    }
+
+    #[test]
+    fn komanda_mov() {
+        find_it("rs mb mov");
+        find_it("mb mov");
+        find_it("rs mov");
+        find_it("mov");
     }
 }
