@@ -68,6 +68,13 @@ impl Prefix {
         }
     }
 
+    fn requires_kr580vm1(self) -> bool {
+        match self {
+            Prefix::None => false,
+            _ => true,
+        }
+    }
+
     fn mb() -> Prefix {
         randomly!(
             { Prefix::None }
@@ -180,13 +187,10 @@ pub struct KR580VM1 {
     mf: bool,
     m: HashMap<u16, Option<u8>>,
     m1: HashMap<u16, Option<u8>>,
-    /// True if the program ever uses a KR580VM1 extension (i.e. not Intel 8080 compatible)
-    kr580vm1_extension: bool,
 }
 
 impl KR580VM1 {
     fn set_mf(&mut self, val: bool) {
-        self.kr580vm1_extension = true;
         self.mf = val;
     }
 
@@ -199,7 +203,6 @@ impl KR580VM1 {
     }
 
     fn read_mem1(&mut self, addr: Option<u16>) -> Option<u8> {
-        self.kr580vm1_extension = true;
         if let Some(a) = addr {
             *self.m1.get(&a).unwrap_or(&None)
         } else {
@@ -222,7 +225,6 @@ impl KR580VM1 {
     }
 
     fn write_mem1(&mut self, addr: Option<u16>, val: Option<u8>) {
-        self.kr580vm1_extension = true;
         if let Some(a) = addr {
             self.m1.insert(a, val);
         }
@@ -241,10 +243,7 @@ impl KR580VM1 {
             R16::BC => self.b.get_u16(),
             R16::DE => self.d.get_u16(),
             R16::HL => self.h.get_u16(),
-            R16::H1L1 => {
-                self.kr580vm1_extension = true;
-                self.h1.get_u16()
-            }
+            R16::H1L1 => self.h1.get_u16(),
             R16::SP => self.sp,
         }
     }
@@ -258,14 +257,8 @@ impl KR580VM1 {
             R8::E => self.d.low = val,
             R8::H => self.h.high = val,
             R8::L => self.h.low = val,
-            R8::H1 => {
-                self.kr580vm1_extension = true;
-                self.h1.high = val
-            }
-            R8::L1 => {
-                self.kr580vm1_extension = true;
-                self.h1.low = val
-            }
+            R8::H1 => self.h1.high = val,
+            R8::L1 => self.h1.low = val,
             R8::M => {
                 let addr = self.get_addr(R16::HL);
                 self.write_mem(addr, val);
@@ -286,14 +279,8 @@ impl KR580VM1 {
             R8::E => self.d.low,
             R8::H => self.h.high,
             R8::L => self.h.low,
-            R8::H1 => {
-                self.kr580vm1_extension = true;
-                self.h1.high
-            }
-            R8::L1 => {
-                self.kr580vm1_extension = true;
-                self.h1.low
-            }
+            R8::H1 => self.h1.high,
+            R8::L1 => self.h1.low,
             R8::M => {
                 let addr = self.get_addr(R16::HL);
                 self.read_mem(addr)
@@ -324,6 +311,20 @@ pub enum KR580VM1Instruction {
     /// 6.1.5. Данная команда пересылает содержимое аккумулятора в ячейку памяти.
     /// Адрес ячейки памяти находится в регистровой паре BC или DE.
     Stax(Prefix, RegisterPairBorD),
+}
+
+impl KR580VM1Instruction {
+    /// True if the program ever uses a KR580VM1 extension (i.e. not Intel 8080 compatible)
+    fn requires_kr580vm1(self) -> bool {
+        use KR580VM1Instruction::*;
+        match self {
+            Mov(pfx, dst, src) => pfx.requires_kr580vm1(),
+            Mvi(pfx, dst, src) => pfx.requires_kr580vm1(),
+            Lxi(pfx, dst, h, l) => pfx.requires_kr580vm1(),
+            Ldax(pfx, r) => pfx.requires_kr580vm1(),
+            Stax(pfx, r) => pfx.requires_kr580vm1(),
+        }
+    }
 }
 
 impl std::fmt::Display for R8 {
@@ -533,7 +534,7 @@ mod tests {
         for _ in 0..5000 {
             let insn = KR580VM1Instruction::new();
             let dasm = format!("{}", insn);
-            if dasm.contains(opcode) {
+            if dasm.trim().starts_with(opcode) {
                 return insn;
             }
         }
@@ -541,10 +542,11 @@ mod tests {
     }
 
     fn dont_find_it(opcode: &'static str) {
+        // Use this function to assert that an instruction does not exist in the KR580VM1.
         for _ in 0..5000 {
             let insn = KR580VM1Instruction::new();
             let dasm = format!("{}", insn);
-            if dasm.contains(opcode) {
+            if dasm.trim().starts_with(opcode) {
                 panic!("this instruction shouldn't exist {:?}", insn);
             }
         }
@@ -552,42 +554,42 @@ mod tests {
 
     #[test]
     fn mov() {
-        find_it("rs mb mov");
-        find_it("mb mov");
-        find_it("rs mov");
-        find_it("mov");
+        assert!(find_it("rs mb mov").requires_kr580vm1());
+        assert!(find_it("mb mov").requires_kr580vm1());
+        assert!(find_it("rs mov").requires_kr580vm1());
+        assert!(!find_it("mov").requires_kr580vm1());
     }
 
     #[test]
     fn mvi() {
-        find_it("rs mb mvi");
-        find_it("mb mvi");
-        find_it("rs mvi");
-        find_it("mvi");
+        assert!(find_it("rs mb mvi").requires_kr580vm1());
+        assert!(find_it("mb mvi").requires_kr580vm1());
+        assert!(find_it("rs mvi").requires_kr580vm1());
+        assert!(!find_it("mvi").requires_kr580vm1());
     }
 
     #[test]
     fn lxi() {
         dont_find_it("rs mb lxi");
         dont_find_it("mb lxi");
-        find_it("rs lxi");
-        find_it("lxi");
+        assert!(find_it("rs lxi").requires_kr580vm1());
+        assert!(!find_it("lxi").requires_kr580vm1());
     }
 
     #[test]
     fn ldax() {
         dont_find_it("rs mb ldax");
-        find_it("mb ldax");
+        assert!(find_it("mb ldax").requires_kr580vm1());
         dont_find_it("rs ldax");
-        find_it("ldax");
+        assert!(!find_it("ldax").requires_kr580vm1());
     }
 
     #[test]
     fn stax() {
         dont_find_it("rs mb stax");
-        find_it("mb stax");
+        assert!(find_it("mb stax").requires_kr580vm1());
         dont_find_it("rs stax");
-        find_it("stax");
+        assert!(!find_it("stax").requires_kr580vm1());
     }
 
     #[test]
