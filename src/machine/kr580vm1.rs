@@ -60,6 +60,14 @@ impl Prefix {
         }
     }
 
+    fn is_mb(self) -> bool {
+        match self {
+            Prefix::Mb => true,
+            Prefix::MbRs => true,
+            _ => false,
+        }
+    }
+
     fn mb() -> Prefix {
         randomly!(
             { Prefix::None }
@@ -101,8 +109,8 @@ pub enum RegisterPairBorD {
     DE,
 }
 
-impl From<RegisterPairBorD> for R16 {
-    fn from(item: RegisterPairBorD) -> Self {
+impl From<&RegisterPairBorD> for R16 {
+    fn from(item: &RegisterPairBorD) -> Self {
         match item {
             RegisterPairBorD::BC => R16::BC,
             RegisterPairBorD::DE => R16::DE,
@@ -124,6 +132,26 @@ impl R16 {
             R16::H1L1 => Prefix::Rs,
             _ => Prefix::None,
         }
+    }
+
+    fn split(self) -> (R8, R8) {
+        use R16::*;
+        use R8::*;
+        match self {
+            BC => (B, C),
+            DE => (D, E),
+            HL => (H, L),
+            H1L1 => (H1, L1),
+            SP => panic!(),
+        }
+    }
+
+    fn l(self) -> R8 {
+        self.split().1
+    }
+
+    fn h(self) -> R8 {
+        self.split().0
     }
 
     fn pick_one(self) -> R8 {
@@ -179,6 +207,14 @@ impl KR580VM1 {
         }
     }
 
+    fn read_memp(&mut self, pfx: Prefix, addr: Option<u16>) -> Option<u8> {
+        if pfx.is_mb() {
+            self.read_mem1(addr)
+        } else {
+            self.read_mem(addr)
+        }
+    }
+
     fn write_mem(&mut self, addr: Option<u16>, val: Option<u8>) {
         if let Some(a) = addr {
             self.m.insert(a, val);
@@ -189,6 +225,14 @@ impl KR580VM1 {
         self.kr580vm1_extension = true;
         if let Some(a) = addr {
             self.m1.insert(a, val);
+        }
+    }
+
+    fn write_memp(&mut self, pfx: Prefix, addr: Option<u16>, val: Option<u8>) {
+        if pfx.is_mb() {
+            self.write_mem1(addr, val);
+        } else {
+            self.write_mem(addr, val);
         }
     }
 
@@ -447,9 +491,20 @@ impl Instruction for KR580VM1Instruction {
             KR580VM1Instruction::Mvi(pfx, dst, src) => {
                 s.load8(*dst, Some(*src));
             }
-            KR580VM1Instruction::Lxi(pfx, dst, _, _) => {}
-            KR580VM1Instruction::Ldax(pfx, _) => {}
-            KR580VM1Instruction::Stax(pfx, _) => {}
+            KR580VM1Instruction::Lxi(pfx, dst, h, l) => {
+                s.load8(dst.h(), Some(*h));
+                s.load8(dst.l(), Some(*l));
+            }
+            KR580VM1Instruction::Ldax(pfx, r) => {
+                let addr = s.get_addr(r.into());
+                let r = s.read_memp(*pfx, addr);
+                s.load8(R8::A, r);
+            }
+            KR580VM1Instruction::Stax(pfx, r) => {
+                let addr = s.get_addr(r.into());
+                let r = s.get8(R8::A);
+                s.write_memp(*pfx, addr, r);
+            }
         }
     }
 
@@ -485,6 +540,16 @@ mod tests {
         panic!("Could not find opcode {}", opcode);
     }
 
+    fn dont_find_it(opcode: &'static str) {
+        for _ in 0..5000 {
+            let insn = KR580VM1Instruction::new();
+            let dasm = format!("{}", insn);
+            if dasm.contains(opcode) {
+                panic!("this instruction shouldn't exist {:?}", insn);
+            }
+        }
+    }
+
     #[test]
     fn instruction_set() {
         for opcode in vec![
@@ -499,10 +564,42 @@ mod tests {
     }
 
     #[test]
-    fn komanda_mov() {
+    fn mov() {
         find_it("rs mb mov");
         find_it("mb mov");
         find_it("rs mov");
         find_it("mov");
+    }
+
+    #[test]
+    fn mvi() {
+        find_it("rs mb mvi");
+        find_it("mb mvi");
+        find_it("rs mvi");
+        find_it("mvi");
+    }
+
+    #[test]
+    fn lxi() {
+        dont_find_it("rs mb lxi");
+        dont_find_it("mb lxi");
+        find_it("rs lxi");
+        find_it("lxi");
+    }
+
+    #[test]
+    fn ldax() {
+        dont_find_it("rs mb ldax");
+        find_it("mb ldax");
+        dont_find_it("rs ldax");
+        find_it("ldax");
+    }
+
+    #[test]
+    fn stax() {
+        dont_find_it("rs mb stax");
+        find_it("mb stax");
+        dont_find_it("rs stax");
+        find_it("stax");
     }
 }
