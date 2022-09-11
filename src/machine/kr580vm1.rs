@@ -551,19 +551,6 @@ mod tests {
     }
 
     #[test]
-    fn instruction_set() {
-        for opcode in vec![
-            "mov", "mvi", "lxi", "ldax", "stax", "lda", "sta", "lhld", "shld", "lhlx", "shlx",
-            "sphl", "sphl", "xthl", "xchg", "push", "pop", "add", "adc", "sub", "sbb", "inr",
-            "inx", "dcr", "dcx", "adi", "aci", "sui", "sbi", "dad", "dsub", "daa", "ana", "ani",
-            "anx", "xra", "xri", "xrx", "ora", "ori", "orx", "cmp", "cpi", "dcmp", "rlc", "rrc",
-            "rla", "rar", "cma", "cmc",
-        ] {
-            find_it(opcode);
-        }
-    }
-
-    #[test]
     fn mov() {
         find_it("rs mb mov");
         find_it("mb mov");
@@ -601,5 +588,17 @@ mod tests {
         find_it("mb stax");
         dont_find_it("rs stax");
         find_it("stax");
+    }
+
+    #[test]
+    fn instruction_set() {
+        for opcode in vec![
+            "lda", "sta", "lhld", "shld", "lhlx", "shlx", "sphl", "sphl", "xthl", "xchg", "push",
+            "pop", "add", "adc", "sub", "sbb", "inr", "inx", "dcr", "dcx", "adi", "aci", "sui",
+            "sbi", "dad", "dsub", "daa", "ana", "ani", "anx", "xra", "xri", "xrx", "ora", "ori",
+            "orx", "cmp", "cpi", "dcmp", "rlc", "rrc", "rla", "rar", "cma", "cmc",
+        ] {
+            find_it(opcode);
+        }
     }
 }
