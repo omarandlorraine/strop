@@ -51,6 +51,15 @@ pub enum Prefix {
 }
 
 impl Prefix {
+    fn cycles_tacts(self) -> (u8, u8) {
+        match self {
+            Prefix::Rs => (1, 4),
+            Prefix::Mb => (1, 4),
+            Prefix::MbRs => (2, 8),
+            Prefix::None => (0, 0),
+        }
+    }
+
     fn length(self) -> usize {
         match self {
             Prefix::Rs => 1usize,
@@ -187,9 +196,16 @@ pub struct KR580VM1 {
     mf: bool,
     m: HashMap<u16, Option<u8>>,
     m1: HashMap<u16, Option<u8>>,
+    tacts: u64,
+    cycles: u64,
 }
 
 impl KR580VM1 {
+    fn cycles_tacts(&mut self, ct: (u8, u8)) {
+        self.cycles += ct.0 as u64;
+        self.tacts += ct.1 as u64;
+    }
+
     fn set_mf(&mut self, val: bool) {
         self.mf = val;
     }
@@ -488,6 +504,8 @@ impl Instruction for KR580VM1Instruction {
             KR580VM1Instruction::Mov(pfx, dst, src) => {
                 let r = s.get8(*src);
                 s.load8(*dst, r);
+                s.cycles_tacts((1, 5));
+                s.cycles_tacts(pfx.cycles_tacts());
             }
             KR580VM1Instruction::Mvi(pfx, dst, src) => {
                 s.load8(*dst, Some(*src));
@@ -528,6 +546,9 @@ impl Instruction for KR580VM1Instruction {
 #[cfg(test)]
 mod tests {
     use crate::machine::kr580vm1::KR580VM1Instruction;
+    use crate::machine::kr580vm1::Prefix;
+    use crate::machine::kr580vm1::KR580VM1;
+    use crate::machine::kr580vm1::R8;
     use crate::machine::Instruction;
 
     fn find_it(opcode: &'static str) -> KR580VM1Instruction {
@@ -552,12 +573,42 @@ mod tests {
         }
     }
 
+    fn test_insn(insn: KR580VM1Instruction, cycles: u64, tacts: u64, req_kr: bool) {
+        if req_kr {
+            assert!(
+                insn.requires_kr580vm1(),
+                "The instruction '{}' should report as requiring the KR580VM1 extension",
+                insn
+            );
+        } else {
+            assert!(
+                !insn.requires_kr580vm1(),
+                "The instruction '{}' should not report as requiring the KR580VM1 extension",
+                insn
+            );
+        }
+
+        let mut state = KR580VM1::default();
+        insn.operate(&mut state);
+
+        assert_eq!(state.cycles, cycles);
+        assert_eq!(state.tacts, tacts);
+    }
+
     #[test]
     fn mov() {
         assert!(find_it("rs mb mov").requires_kr580vm1());
         assert!(find_it("mb mov").requires_kr580vm1());
         assert!(find_it("rs mov").requires_kr580vm1());
         assert!(!find_it("mov").requires_kr580vm1());
+
+        let mov_a_d = KR580VM1Instruction::Mov(Prefix::None, R8::A, R8::D);
+        assert_eq!(format!("{}", mov_a_d), "\tmov a, d");
+        test_insn(mov_a_d, 1, 5, false);
+
+        let rs_mov_a_d = KR580VM1Instruction::Mov(Prefix::Rs, R8::A, R8::D);
+        assert_eq!(format!("{}", mov_a_d), "\tmov a, d");
+        test_insn(mov_a_d, 2, 9, false);
     }
 
     #[test]
