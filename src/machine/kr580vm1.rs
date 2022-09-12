@@ -405,7 +405,7 @@ impl std::fmt::Display for Prefix {
             None => write!(f, ""),
             Rs => write!(f, "rs "),
             Mb => write!(f, "mb "),
-            MbRs => write!(f, "rs mb "),
+            MbRs => write!(f, "mb rs "),
         }
     }
 }
@@ -597,7 +597,7 @@ mod tests {
 
     #[test]
     fn mov() {
-        assert!(find_it("rs mb mov").requires_kr580vm1());
+        assert!(find_it("mb rs mov").requires_kr580vm1());
         assert!(find_it("mb mov").requires_kr580vm1());
         assert!(find_it("rs mov").requires_kr580vm1());
         assert!(!find_it("mov").requires_kr580vm1());
@@ -613,7 +613,7 @@ mod tests {
 
     #[test]
     fn mvi() {
-        assert!(find_it("rs mb mvi").requires_kr580vm1());
+        assert!(find_it("mb rs mvi").requires_kr580vm1());
         assert!(find_it("mb mvi").requires_kr580vm1());
         assert!(find_it("rs mvi").requires_kr580vm1());
         assert!(!find_it("mvi").requires_kr580vm1());
@@ -621,7 +621,7 @@ mod tests {
 
     #[test]
     fn lxi() {
-        dont_find_it("rs mb lxi");
+        dont_find_it("mb rs lxi");
         dont_find_it("mb lxi");
         assert!(find_it("rs lxi").requires_kr580vm1());
         assert!(!find_it("lxi").requires_kr580vm1());
@@ -629,7 +629,7 @@ mod tests {
 
     #[test]
     fn ldax() {
-        dont_find_it("rs mb ldax");
+        dont_find_it("mb rs ldax");
         assert!(find_it("mb ldax").requires_kr580vm1());
         dont_find_it("rs ldax");
         assert!(!find_it("ldax").requires_kr580vm1());
@@ -637,7 +637,7 @@ mod tests {
 
     #[test]
     fn stax() {
-        dont_find_it("rs mb stax");
+        dont_find_it("mb rs stax");
         assert!(find_it("mb stax").requires_kr580vm1());
         dont_find_it("rs stax");
         assert!(!find_it("stax").requires_kr580vm1());
