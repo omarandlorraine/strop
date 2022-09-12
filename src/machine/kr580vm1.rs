@@ -607,8 +607,8 @@ mod tests {
         test_insn(mov_a_d, 1, 5, false);
 
         let rs_mov_a_d = KR580VM1Instruction::Mov(Prefix::Rs, R8::A, R8::D);
-        assert_eq!(format!("{}", mov_a_d), "\tmov a, d");
-        test_insn(mov_a_d, 2, 9, false);
+        assert_eq!(format!("{}", rs_mov_a_d), "\trs mov a, d");
+        test_insn(rs_mov_a_d, 2, 9, true);
     }
 
     #[test]
