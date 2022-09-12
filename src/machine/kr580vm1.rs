@@ -40,6 +40,16 @@ impl R8 {
             _ => Prefix::None,
         }
     }
+
+    /// Returns true if M. This is used to calculate timing for instructions where M incurs
+    /// a runtime cost.
+    fn is_m(self) -> bool {
+        match self {
+            R8::M => true,
+            R8::M1 => true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -506,6 +516,9 @@ impl Instruction for KR580VM1Instruction {
                 s.load8(*dst, r);
                 s.cycles_tacts((1, 5));
                 s.cycles_tacts(pfx.cycles_tacts());
+                if dst.is_m() || src.is_m() {
+                    s.cycles_tacts((1, 2));
+                }
             }
             KR580VM1Instruction::Mvi(pfx, dst, src) => {
                 s.load8(*dst, Some(*src));
@@ -613,6 +626,10 @@ mod tests {
         let mb_rs_mov_a_d = KR580VM1Instruction::Mov(Prefix::MbRs, R8::A, R8::D);
         assert_eq!(format!("{}", mb_rs_mov_a_d), "\tmb rs mov a, d");
         test_insn(mb_rs_mov_a_d, 3, 13, true);
+
+        let mov_a_mem = KR580VM1Instruction::Mov(Prefix::None, R8::A, R8::M);
+        assert_eq!(format!("{}", mov_a_mem), "\tmov a, m");
+        test_insn(mov_a_mem, 2, 7, false);
     }
 
     #[test]
