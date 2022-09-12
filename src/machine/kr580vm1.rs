@@ -609,6 +609,10 @@ mod tests {
         let rs_mov_a_d = KR580VM1Instruction::Mov(Prefix::Rs, R8::A, R8::D);
         assert_eq!(format!("{}", rs_mov_a_d), "\trs mov a, d");
         test_insn(rs_mov_a_d, 2, 9, true);
+
+        let mb_rs_mov_a_d = KR580VM1Instruction::Mov(Prefix::MbRs, R8::A, R8::D);
+        assert_eq!(format!("{}", mb_rs_mov_a_d), "\tmb rs mov a, d");
+        test_insn(mb_rs_mov_a_d, 3, 13, true);
     }
 
     #[test]
