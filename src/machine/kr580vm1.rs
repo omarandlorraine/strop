@@ -220,7 +220,7 @@ impl KR580VM1 {
         self.mf = val;
     }
 
-    fn read_mem(&mut self, addr: Option<u16>) -> Option<u8> {
+    fn read_mem(&self, addr: Option<u16>) -> Option<u8> {
         if let Some(a) = addr {
             *self.m.get(&a).unwrap_or(&None)
         } else {
@@ -228,7 +228,7 @@ impl KR580VM1 {
         }
     }
 
-    fn read_mem1(&mut self, addr: Option<u16>) -> Option<u8> {
+    fn read_mem1(&self, addr: Option<u16>) -> Option<u8> {
         if let Some(a) = addr {
             *self.m1.get(&a).unwrap_or(&None)
         } else {
@@ -236,7 +236,14 @@ impl KR580VM1 {
         }
     }
 
-    fn read_memp(&mut self, pfx: Prefix, addr: Option<u16>) -> Option<u8> {
+    fn read16(&self, pfx: Prefix, addr: Option<u16>) -> (Option<u8>, Option<u8>) {
+        (
+            self.read_memp(pfx, addr),
+            self.read_memp(pfx, addr.map(|a| a + 1)),
+        )
+    }
+
+    fn read_memp(&self, pfx: Prefix, addr: Option<u16>) -> Option<u8> {
         if pfx.is_mb() {
             self.read_mem1(addr)
         } else {
@@ -337,6 +344,10 @@ pub enum KR580VM1Instruction {
     /// 6.1.5. Данная команда пересылает содержимое аккумулятора в ячейку памяти.
     /// Адрес ячейки памяти находится в регистровой паре BC или DE.
     Stax(Prefix, RegisterPairBorD),
+
+    /// 6.1.8. Данная команда пересылает содержимое слова памяти в регистровую пару-указатель.
+    /// Прямой адрес слова памяти находится в коде команды.
+    Lhld(Prefix, u16),
 }
 
 impl KR580VM1Instruction {
@@ -349,6 +360,7 @@ impl KR580VM1Instruction {
             Lxi(pfx, dst, h, l) => pfx.requires_kr580vm1(),
             Ldax(pfx, r) => pfx.requires_kr580vm1(),
             Stax(pfx, r) => pfx.requires_kr580vm1(),
+            Lhld(pfx, _) => pfx.requires_kr580vm1(),
         }
     }
 }
@@ -404,6 +416,7 @@ impl std::fmt::Display for KR580VM1Instruction {
             Lxi(pfx, dst, h, l) => write!(f, "\t{}lxi {}, {:02x}{:02x}h", pfx, dst, h, l),
             Ldax(pfx, rp) => write!(f, "\t{}ldax {}", pfx, rp),
             Stax(pfx, rp) => write!(f, "\t{}stax {}", pfx, rp),
+            Lhld(pfx, addr) => write!(f, "\t{}lhld {:04x}h", pfx, addr),
         }
     }
 }
@@ -466,6 +479,12 @@ impl Instruction for KR580VM1Instruction {
     type State = KR580VM1;
     fn randomize(&mut self) {
         match self {
+            KR580VM1Instruction::Lhld(pfx, addr) => {
+                randomly!(
+                { *pfx = Prefix::mb_rs(); }
+                { addr.mutate() }
+                );
+            }
             KR580VM1Instruction::Mvi(pfx, dst, src) => {
                 randomly!(
                 { src.mutate() }
@@ -506,11 +525,19 @@ impl Instruction for KR580VM1Instruction {
             KR580VM1Instruction::Lxi(pfx, dst, _, _) => pfx.length() + 3,
             KR580VM1Instruction::Ldax(pfx, _) => pfx.length() + 1,
             KR580VM1Instruction::Stax(pfx, _) => pfx.length() + 1,
+            KR580VM1Instruction::Lhld(pfx, _) => pfx.length() + 3,
         }
     }
 
     fn operate(&self, s: &mut KR580VM1) {
         match self {
+            KR580VM1Instruction::Lhld(pfx, addr) => {
+                let ptr = s.read16(*pfx, Some(*addr));
+                s.h.low = ptr.0;
+                s.h.high = ptr.1;
+                s.cycles_tacts((5, 16));
+                s.cycles_tacts(pfx.cycles_tacts());
+            }
             KR580VM1Instruction::Mov(pfx, dst, src) => {
                 let r = s.get8(*src);
                 s.load8(*dst, r);
@@ -557,6 +584,7 @@ impl Instruction for KR580VM1Instruction {
         { Lxi(Prefix::rs(), R16::random(), random(), random()) }
         { Ldax(Prefix::mb(), RegisterPairBorD::random()) }
         { Stax(Prefix::mb(), RegisterPairBorD::random()) }
+        { Lhld(Prefix::mb_rs(), random()) }
         )
     }
 }
@@ -681,12 +709,24 @@ mod tests {
     }
 
     #[test]
+    fn lhld() {
+        assert!(find_it("mb rs lhld").requires_kr580vm1());
+        assert!(find_it("mb lhld").requires_kr580vm1());
+        assert!(find_it("rs lhld").requires_kr580vm1());
+        assert!(!find_it("lhld").requires_kr580vm1());
+
+        let lhld = KR580VM1Instruction::Lhld(Prefix::None, 0x1234);
+        assert_eq!(format!("{}", lhld), "\tlhld 1234h");
+        test_insn(lhld, 5, 16, false);
+    }
+
+    #[test]
     fn instruction_set() {
         for opcode in vec![
-            "lda", "sta", "lhld", "shld", "lhlx", "shlx", "sphl", "sphl", "xthl", "xchg", "push",
-            "pop", "add", "adc", "sub", "sbb", "inr", "inx", "dcr", "dcx", "adi", "aci", "sui",
-            "sbi", "dad", "dsub", "daa", "ana", "ani", "anx", "xra", "xri", "xrx", "ora", "ori",
-            "orx", "cmp", "cpi", "dcmp", "rlc", "rrc", "rla", "rar", "cma", "cmc",
+            "lda", "sta", "shld", "lhlx", "shlx", "sphl", "sphl", "xthl", "xchg", "push", "pop",
+            "add", "adc", "sub", "sbb", "inr", "inx", "dcr", "dcx", "adi", "aci", "sui", "sbi",
+            "dad", "dsub", "daa", "ana", "ani", "anx", "xra", "xri", "xrx", "ora", "ori", "orx",
+            "cmp", "cpi", "dcmp", "rlc", "rrc", "rla", "rar", "cma", "cmc",
         ] {
             find_it(opcode);
         }
