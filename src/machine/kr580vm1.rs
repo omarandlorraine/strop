@@ -522,6 +522,11 @@ impl Instruction for KR580VM1Instruction {
             }
             KR580VM1Instruction::Mvi(pfx, dst, src) => {
                 s.load8(*dst, Some(*src));
+                s.cycles_tacts((2, 7));
+                s.cycles_tacts(pfx.cycles_tacts());
+                if dst.is_m() {
+                    s.cycles_tacts((1, 2));
+                }
             }
             KR580VM1Instruction::Lxi(pfx, dst, h, l) => {
                 s.load8(dst.h(), Some(*h));
