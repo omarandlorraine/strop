@@ -641,6 +641,14 @@ mod tests {
         assert!(find_it("mb mvi").requires_kr580vm1());
         assert!(find_it("rs mvi").requires_kr580vm1());
         assert!(!find_it("mvi").requires_kr580vm1());
+
+        let mvi_a = KR580VM1Instruction::Mvi(Prefix::None, R8::L, 4);
+        assert_eq!(format!("{}", mvi_a), "\tmvi l, 4");
+        test_insn(mvi_a, 2, 7, false);
+
+        let rs_mvi_a = KR580VM1Instruction::Mvi(Prefix::Rs, R8::L1, 4);
+        assert_eq!(format!("{}", rs_mvi_a), "\trs mvi l1, 4");
+        test_insn(rs_mvi_a, 3, 11, true);
     }
 
     #[test]
