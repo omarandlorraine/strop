@@ -586,6 +586,9 @@ mod tests {
         }
     }
 
+    /// Miscellaneous checks for a KR580VM1Instruction object.
+    /// Asserts that the requires_kr580vm1 method returns the expected result
+    /// Runs the instruction and checks that the correct number of cycles and tacts have been added
     fn test_insn(insn: KR580VM1Instruction, cycles: u64, tacts: u64, req_kr: bool) {
         if req_kr {
             assert!(
