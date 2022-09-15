@@ -355,11 +355,11 @@ impl KR580VM1Instruction {
     fn requires_kr580vm1(self) -> bool {
         use KR580VM1Instruction::*;
         match self {
-            Mov(pfx, dst, src) => pfx.requires_kr580vm1(),
-            Mvi(pfx, dst, src) => pfx.requires_kr580vm1(),
-            Lxi(pfx, dst, h, l) => pfx.requires_kr580vm1(),
-            Ldax(pfx, r) => pfx.requires_kr580vm1(),
-            Stax(pfx, r) => pfx.requires_kr580vm1(),
+            Mov(pfx, _, _) => pfx.requires_kr580vm1(),
+            Mvi(pfx, _, _) => pfx.requires_kr580vm1(),
+            Lxi(pfx, _, _, _) => pfx.requires_kr580vm1(),
+            Ldax(pfx, _) => pfx.requires_kr580vm1(),
+            Stax(pfx, _) => pfx.requires_kr580vm1(),
             Lhld(pfx, _) => pfx.requires_kr580vm1(),
         }
     }
@@ -520,9 +520,9 @@ impl Instruction for KR580VM1Instruction {
 
     fn length(&self) -> usize {
         match self {
-            KR580VM1Instruction::Mov(pfx, dst, src) => pfx.length() + 1,
-            KR580VM1Instruction::Mvi(pfx, dst, src) => pfx.length() + 1,
-            KR580VM1Instruction::Lxi(pfx, dst, _, _) => pfx.length() + 3,
+            KR580VM1Instruction::Mov(pfx, _, _) => pfx.length() + 1,
+            KR580VM1Instruction::Mvi(pfx, _, _) => pfx.length() + 1,
+            KR580VM1Instruction::Lxi(pfx, _, _, _) => pfx.length() + 3,
             KR580VM1Instruction::Ldax(pfx, _) => pfx.length() + 1,
             KR580VM1Instruction::Stax(pfx, _) => pfx.length() + 1,
             KR580VM1Instruction::Lhld(pfx, _) => pfx.length() + 3,
