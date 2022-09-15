@@ -30,7 +30,7 @@ the badges:
 
  * [![Build Status](https://github.com/omarandlorraine/strop/workflows/stm8/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=stm8) stm8
  * [![Build Status](https://github.com/omarandlorraine/strop/workflows/mos6502/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=mos6502) 6502 65n02 65c02
- * [![Build Status](https://github.com/omarandlorraine/strop/workflows/kr580vm1/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=kr580vm1) kr580vm1
+ * [![Build Status](https://github.com/omarandlorraine/strop/workflows/x80/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=x80) kr580vm1
 
 ### Theory of operation
 The basic idea is to generate code better than what traditional optimising
