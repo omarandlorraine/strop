@@ -345,6 +345,14 @@ pub enum KR580VM1Instruction {
     /// Адрес ячейки памяти находится в регистровой паре BC или DE.
     Stax(Prefix, RegisterPairBorD),
 
+    /// 6.1.6. Данная команда пересылает содержимое ячейки памяти в аккумулятор.
+	/// Прямой адрес ячейки памяти находится в коде команды.
+    Lda(Prefix, u16),
+
+    /// 6.1.7. Данная команда пересылает содержимое аккумулятора в ячейку памяти.
+    /// Прямой адрес ячейки памяти находится в коде команды.
+    Sta(Prefix, u16),
+
     /// 6.1.8. Данная команда пересылает содержимое слова памяти в регистровую пару-указатель.
     /// Прямой адрес слова памяти находится в коде команды.
     Lhld(Prefix, u16),
@@ -361,6 +369,8 @@ impl KR580VM1Instruction {
             Ldax(pfx, _) => pfx.requires_kr580vm1(),
             Stax(pfx, _) => pfx.requires_kr580vm1(),
             Lhld(pfx, _) => pfx.requires_kr580vm1(),
+            Lda(pfx, _) => pfx.requires_kr580vm1(),
+            Sta(pfx, _) => pfx.requires_kr580vm1(),
         }
     }
 }
@@ -417,6 +427,8 @@ impl std::fmt::Display for KR580VM1Instruction {
             Ldax(pfx, rp) => write!(f, "\t{}ldax {}", pfx, rp),
             Stax(pfx, rp) => write!(f, "\t{}stax {}", pfx, rp),
             Lhld(pfx, addr) => write!(f, "\t{}lhld {:04x}h", pfx, addr),
+            Sta(pfx, addr) => write!(f, "\t{}sta {:04x}h", pfx, addr),
+            Lda(pfx, addr) => write!(f, "\t{}lda {:04x}h", pfx, addr),
         }
     }
 }
@@ -479,6 +491,18 @@ impl Instruction for KR580VM1Instruction {
     type State = KR580VM1;
     fn randomize(&mut self) {
         match self {
+            KR580VM1Instruction::Sta(pfx, addr) => {
+                randomly!(
+                { *pfx = Prefix::mb(); }
+                { addr.mutate() }
+                );
+            }
+            KR580VM1Instruction::Lda(pfx, addr) => {
+                randomly!(
+                { *pfx = Prefix::mb(); }
+                { addr.mutate() }
+                );
+            }
             KR580VM1Instruction::Lhld(pfx, addr) => {
                 randomly!(
                 { *pfx = Prefix::mb_rs(); }
@@ -526,6 +550,8 @@ impl Instruction for KR580VM1Instruction {
             KR580VM1Instruction::Ldax(pfx, _) => pfx.length() + 1,
             KR580VM1Instruction::Stax(pfx, _) => pfx.length() + 1,
             KR580VM1Instruction::Lhld(pfx, _) => pfx.length() + 3,
+            KR580VM1Instruction::Lda(pfx, _) => pfx.length() + 3,
+            KR580VM1Instruction::Sta(pfx, _) => pfx.length() + 3,
         }
     }
 
@@ -569,6 +595,18 @@ impl Instruction for KR580VM1Instruction {
                 let r = s.get8(R8::A);
                 s.write_memp(*pfx, addr, r);
             }
+            KR580VM1Instruction::Lda(pfx, addr) => {
+                let r = s.read_memp(*pfx, Some(*addr));
+                s.load8(R8::A, r);
+                s.cycles_tacts((4, 13));
+                s.cycles_tacts(pfx.cycles_tacts());
+            }
+            KR580VM1Instruction::Sta(pfx, addr) => {
+                let r = s.get8(R8::A);
+                s.write_memp(*pfx, Some(*addr), r);
+                s.cycles_tacts((4, 13));
+                s.cycles_tacts(pfx.cycles_tacts());
+            }
         }
     }
 
@@ -585,6 +623,8 @@ impl Instruction for KR580VM1Instruction {
         { Ldax(Prefix::mb(), RegisterPairBorD::random()) }
         { Stax(Prefix::mb(), RegisterPairBorD::random()) }
         { Lhld(Prefix::mb_rs(), random()) }
+        { Lda(Prefix::mb(), random()) }
+        { Sta(Prefix::mb(), random()) }
         )
     }
 }
@@ -718,6 +758,31 @@ mod tests {
         let lhld = KR580VM1Instruction::Lhld(Prefix::None, 0x1234);
         assert_eq!(format!("{}", lhld), "\tlhld 1234h");
         test_insn(lhld, 5, 16, false);
+    }
+
+    #[test]
+    fn lda() {
+        dont_find_it("mb rs lda ");
+        assert!(find_it("mb lda ").requires_kr580vm1());
+        dont_find_it("rs lda ");
+        assert!(!find_it("lda ").requires_kr580vm1());
+
+        let lda = KR580VM1Instruction::Lda(Prefix::None, 0x1234);
+        assert_eq!(format!("{}", lda), "\tlda 1234h");
+        test_insn(lda, 4, 13, false);
+
+    }
+
+    #[test]
+    fn sta() {
+        dont_find_it("mb rs sta ");
+        assert!(find_it("mb sta ").requires_kr580vm1());
+        dont_find_it("rs sta ");
+        assert!(!find_it("sta ").requires_kr580vm1());
+
+        let sta = KR580VM1Instruction::Sta(Prefix::None, 0x1234);
+        assert_eq!(format!("{}", sta), "\tsta 1234h");
+        test_insn(sta, 4, 13, false);
     }
 
     #[test]
