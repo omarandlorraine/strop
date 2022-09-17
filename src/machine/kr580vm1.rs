@@ -79,6 +79,14 @@ impl Prefix {
         }
     }
 
+    fn is_rs(self) -> bool {
+        match self {
+            Prefix::Rs => true,
+            Prefix::MbRs => true,
+            _ => false,
+        }
+    }
+
     fn is_mb(self) -> bool {
         match self {
             Prefix::Mb => true,
@@ -346,7 +354,7 @@ pub enum KR580VM1Instruction {
     Stax(Prefix, RegisterPairBorD),
 
     /// 6.1.6. Данная команда пересылает содержимое ячейки памяти в аккумулятор.
-	/// Прямой адрес ячейки памяти находится в коде команды.
+    /// Прямой адрес ячейки памяти находится в коде команды.
     Lda(Prefix, u16),
 
     /// 6.1.7. Данная команда пересылает содержимое аккумулятора в ячейку памяти.
@@ -356,6 +364,10 @@ pub enum KR580VM1Instruction {
     /// 6.1.8. Данная команда пересылает содержимое слова памяти в регистровую пару-указатель.
     /// Прямой адрес слова памяти находится в коде команды.
     Lhld(Prefix, u16),
+
+    /// 6.1.9. Данная команда пересылает содержимое регистровой пары-указателя в слово памяти.
+    /// Прямой адрес слова памяти находится в коде команды.
+    Shld(Prefix, u16),
 }
 
 impl KR580VM1Instruction {
@@ -368,6 +380,7 @@ impl KR580VM1Instruction {
             Lxi(pfx, _, _, _) => pfx.requires_kr580vm1(),
             Ldax(pfx, _) => pfx.requires_kr580vm1(),
             Stax(pfx, _) => pfx.requires_kr580vm1(),
+            Shld(pfx, _) => pfx.requires_kr580vm1(),
             Lhld(pfx, _) => pfx.requires_kr580vm1(),
             Lda(pfx, _) => pfx.requires_kr580vm1(),
             Sta(pfx, _) => pfx.requires_kr580vm1(),
@@ -426,6 +439,7 @@ impl std::fmt::Display for KR580VM1Instruction {
             Lxi(pfx, dst, h, l) => write!(f, "\t{}lxi {}, {:02x}{:02x}h", pfx, dst, h, l),
             Ldax(pfx, rp) => write!(f, "\t{}ldax {}", pfx, rp),
             Stax(pfx, rp) => write!(f, "\t{}stax {}", pfx, rp),
+            Shld(pfx, addr) => write!(f, "\t{}shld {:04x}h", pfx, addr),
             Lhld(pfx, addr) => write!(f, "\t{}lhld {:04x}h", pfx, addr),
             Sta(pfx, addr) => write!(f, "\t{}sta {:04x}h", pfx, addr),
             Lda(pfx, addr) => write!(f, "\t{}lda {:04x}h", pfx, addr),
@@ -503,6 +517,12 @@ impl Instruction for KR580VM1Instruction {
                 { addr.mutate() }
                 );
             }
+            KR580VM1Instruction::Shld(pfx, addr) => {
+                randomly!(
+                { *pfx = Prefix::mb_rs(); }
+                { addr.mutate() }
+                );
+            }
             KR580VM1Instruction::Lhld(pfx, addr) => {
                 randomly!(
                 { *pfx = Prefix::mb_rs(); }
@@ -550,6 +570,7 @@ impl Instruction for KR580VM1Instruction {
             KR580VM1Instruction::Ldax(pfx, _) => pfx.length() + 1,
             KR580VM1Instruction::Stax(pfx, _) => pfx.length() + 1,
             KR580VM1Instruction::Lhld(pfx, _) => pfx.length() + 3,
+            KR580VM1Instruction::Shld(pfx, _) => pfx.length() + 3,
             KR580VM1Instruction::Lda(pfx, _) => pfx.length() + 3,
             KR580VM1Instruction::Sta(pfx, _) => pfx.length() + 3,
         }
@@ -557,6 +578,18 @@ impl Instruction for KR580VM1Instruction {
 
     fn operate(&self, s: &mut KR580VM1) {
         match self {
+            KR580VM1Instruction::Shld(pfx, addr) => {
+                let ptr = s.read16(*pfx, Some(*addr));
+                let (h, l) = if pfx.is_rs() {
+                    (s.get8(R8::H), s.get8(R8::L))
+                } else {
+                    (s.get8(R8::H1), s.get8(R8::L1))
+                };
+                s.write_memp(*pfx, Some(*addr), l);
+                s.write_memp(*pfx, Some(*addr + 1), h);
+                s.cycles_tacts((5, 16));
+                s.cycles_tacts(pfx.cycles_tacts());
+            }
             KR580VM1Instruction::Lhld(pfx, addr) => {
                 let ptr = s.read16(*pfx, Some(*addr));
                 s.h.low = ptr.0;
@@ -623,6 +656,7 @@ impl Instruction for KR580VM1Instruction {
         { Ldax(Prefix::mb(), RegisterPairBorD::random()) }
         { Stax(Prefix::mb(), RegisterPairBorD::random()) }
         { Lhld(Prefix::mb_rs(), random()) }
+        { Shld(Prefix::mb_rs(), random()) }
         { Lda(Prefix::mb(), random()) }
         { Sta(Prefix::mb(), random()) }
         )
@@ -761,6 +795,18 @@ mod tests {
     }
 
     #[test]
+    fn shld() {
+        assert!(find_it("mb rs shld").requires_kr580vm1());
+        assert!(find_it("mb shld").requires_kr580vm1());
+        assert!(find_it("rs shld").requires_kr580vm1());
+        assert!(!find_it("shld").requires_kr580vm1());
+
+        let shld = KR580VM1Instruction::Shld(Prefix::None, 0x1234);
+        assert_eq!(format!("{}", shld), "\tshld 1234h");
+        test_insn(shld, 5, 16, false);
+    }
+
+    #[test]
     fn lda() {
         dont_find_it("mb rs lda ");
         assert!(find_it("mb lda ").requires_kr580vm1());
@@ -770,7 +816,6 @@ mod tests {
         let lda = KR580VM1Instruction::Lda(Prefix::None, 0x1234);
         assert_eq!(format!("{}", lda), "\tlda 1234h");
         test_insn(lda, 4, 13, false);
-
     }
 
     #[test]
