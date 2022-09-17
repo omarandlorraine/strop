@@ -279,7 +279,7 @@ impl KR580VM1 {
         }
     }
 
-    fn get_addr(&mut self, register_pair: R16) -> Option<u16> {
+    fn get_addr(&self, register_pair: R16) -> Option<u16> {
         match register_pair {
             R16::BC => self.b.get_u16(),
             R16::DE => self.d.get_u16(),
@@ -368,6 +368,10 @@ pub enum KR580VM1Instruction {
     /// 6.1.9. Данная команда пересылает содержимое регистровой пары-указателя в слово памяти.
     /// Прямой адрес слова памяти находится в коде команды.
     Shld(Prefix, u16),
+
+    /// 6.1.10. Данная команда пересылает содержимое слова памяти в регистровую пару-указатель.
+    /// Адрес слова памяти находится в регистровой паре DE.
+    Lhlx(Prefix),
 }
 
 impl KR580VM1Instruction {
@@ -382,6 +386,7 @@ impl KR580VM1Instruction {
             Stax(pfx, _) => pfx.requires_kr580vm1(),
             Shld(pfx, _) => pfx.requires_kr580vm1(),
             Lhld(pfx, _) => pfx.requires_kr580vm1(),
+            Lhlx(pfx) => pfx.requires_kr580vm1(),
             Lda(pfx, _) => pfx.requires_kr580vm1(),
             Sta(pfx, _) => pfx.requires_kr580vm1(),
         }
@@ -441,6 +446,7 @@ impl std::fmt::Display for KR580VM1Instruction {
             Stax(pfx, rp) => write!(f, "\t{}stax {}", pfx, rp),
             Shld(pfx, addr) => write!(f, "\t{}shld {:04x}h", pfx, addr),
             Lhld(pfx, addr) => write!(f, "\t{}lhld {:04x}h", pfx, addr),
+            Lhlx(pfx) => write!(f, "\t{}lhlx", pfx),
             Sta(pfx, addr) => write!(f, "\t{}sta {:04x}h", pfx, addr),
             Lda(pfx, addr) => write!(f, "\t{}lda {:04x}h", pfx, addr),
         }
@@ -523,10 +529,17 @@ impl Instruction for KR580VM1Instruction {
                 { addr.mutate() }
                 );
             }
+            KR580VM1Instruction::Lhlx(pfx) => {
+                randomly!(
+                { *pfx = Prefix::mb_rs(); }
+                { *self = KR580VM1Instruction::Lhld(*pfx, random()); }
+                );
+            }
             KR580VM1Instruction::Lhld(pfx, addr) => {
                 randomly!(
                 { *pfx = Prefix::mb_rs(); }
                 { addr.mutate() }
+                { *self = KR580VM1Instruction::Lhlx(*pfx); }
                 );
             }
             KR580VM1Instruction::Mvi(pfx, dst, src) => {
@@ -570,6 +583,7 @@ impl Instruction for KR580VM1Instruction {
             KR580VM1Instruction::Ldax(pfx, _) => pfx.length() + 1,
             KR580VM1Instruction::Stax(pfx, _) => pfx.length() + 1,
             KR580VM1Instruction::Lhld(pfx, _) => pfx.length() + 3,
+            KR580VM1Instruction::Lhlx(pfx) => pfx.length() + 1,
             KR580VM1Instruction::Shld(pfx, _) => pfx.length() + 3,
             KR580VM1Instruction::Lda(pfx, _) => pfx.length() + 3,
             KR580VM1Instruction::Sta(pfx, _) => pfx.length() + 3,
@@ -595,6 +609,13 @@ impl Instruction for KR580VM1Instruction {
                 s.h.low = ptr.0;
                 s.h.high = ptr.1;
                 s.cycles_tacts((5, 16));
+                s.cycles_tacts(pfx.cycles_tacts());
+            }
+            KR580VM1Instruction::Lhlx(pfx) => {
+                let ptr = s.read16(*pfx, s.get_addr(R16::DE));
+                s.h.low = ptr.0;
+                s.h.high = ptr.1;
+                s.cycles_tacts((3, 10));
                 s.cycles_tacts(pfx.cycles_tacts());
             }
             KR580VM1Instruction::Mov(pfx, dst, src) => {
@@ -656,6 +677,7 @@ impl Instruction for KR580VM1Instruction {
         { Ldax(Prefix::mb(), RegisterPairBorD::random()) }
         { Stax(Prefix::mb(), RegisterPairBorD::random()) }
         { Lhld(Prefix::mb_rs(), random()) }
+        { Lhlx(Prefix::mb_rs()) }
         { Shld(Prefix::mb_rs(), random()) }
         { Lda(Prefix::mb(), random()) }
         { Sta(Prefix::mb(), random()) }
@@ -795,6 +817,18 @@ mod tests {
     }
 
     #[test]
+    fn lhlx() {
+        assert!(find_it("mb rs lhlx").requires_kr580vm1());
+        assert!(find_it("mb lhlx").requires_kr580vm1());
+        assert!(find_it("rs lhlx").requires_kr580vm1());
+        assert!(!find_it("lhlx").requires_kr580vm1());
+
+        let lhlx = KR580VM1Instruction::Lhlx(Prefix::None);
+        assert_eq!(format!("{}", lhlx), "\tlhlx");
+        test_insn(lhlx, 3, 10, false);
+    }
+
+    #[test]
     fn shld() {
         assert!(find_it("mb rs shld").requires_kr580vm1());
         assert!(find_it("mb shld").requires_kr580vm1());
@@ -833,10 +867,10 @@ mod tests {
     #[test]
     fn instruction_set() {
         for opcode in vec![
-            "lda ", "sta ", "lhld", "shld", "lhlx", "shlx", "sphl", "sphl", "xthl", "xchg", "push",
-            "pop", "add", "adc", "sub", "sbb", "inr", "inx", "dcr", "dcx", "adi", "aci", "sui",
-            "sbi", "dad", "dsub", "daa", "ana", "ani", "anx", "xra", "xri", "xrx", "ora", "ori",
-            "orx", "cmp", "cpi", "dcmp", "rlc", "rrc", "rla", "rar", "cma", "cmc",
+            "shlx", "sphl", "sphl", "xthl", "xchg", "push", "pop", "add", "adc", "sub", "sbb",
+            "inr", "inx", "dcr", "dcx", "adi", "aci", "sui", "sbi", "dad", "dsub", "daa", "ana",
+            "ani", "anx", "xra", "xri", "xrx", "ora", "ori", "orx", "cmp", "cpi", "dcmp", "rlc",
+            "rrc", "rla", "rar", "cma", "cmc",
         ] {
             find_it(opcode);
         }
