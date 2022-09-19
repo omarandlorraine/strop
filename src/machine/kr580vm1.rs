@@ -357,6 +357,10 @@ pub enum KR580VM1Instruction {
     /// 6.1.10. Данная команда пересылает содержимое слова памяти в регистровую пару-указатель.
     /// Адрес слова памяти находится в регистровой паре DE.
     Lhlx(Prefix),
+
+    /// 6.1.11. Данная команда пересылает содержимое регистровой пары-указателя в слово памяти.
+    /// Адрес слова памяти находится в регистровой паре DE.
+    Shlx(Prefix),
 }
 
 impl KR580VM1Instruction {
@@ -372,6 +376,7 @@ impl KR580VM1Instruction {
             Shld(pfx, _) => pfx.requires_kr580vm1(),
             Lhld(pfx, _) => pfx.requires_kr580vm1(),
             Lhlx(pfx) => pfx.requires_kr580vm1(),
+            Shlx(pfx) => pfx.requires_kr580vm1(),
             Lda(pfx, _) => pfx.requires_kr580vm1(),
             Sta(pfx, _) => pfx.requires_kr580vm1(),
         }
@@ -430,6 +435,7 @@ impl std::fmt::Display for KR580VM1Instruction {
             Ldax(pfx, rp) => write!(f, "\t{}ldax {}", pfx, rp),
             Stax(pfx, rp) => write!(f, "\t{}stax {}", pfx, rp),
             Shld(pfx, addr) => write!(f, "\t{}shld {:04x}h", pfx, addr),
+            Shlx(pfx) => write!(f, "\t{}shlx", pfx),
             Lhld(pfx, addr) => write!(f, "\t{}lhld {:04x}h", pfx, addr),
             Lhlx(pfx) => write!(f, "\t{}lhlx", pfx),
             Sta(pfx, addr) => write!(f, "\t{}sta {:04x}h", pfx, addr),
@@ -514,6 +520,12 @@ impl Instruction for KR580VM1Instruction {
                 { addr.mutate() }
                 );
             }
+            KR580VM1Instruction::Shlx(pfx) => {
+                randomly!(
+                { *pfx = Prefix::mb_rs(); }
+                { *self = KR580VM1Instruction::Shld(*pfx, random()); }
+                );
+            }
             KR580VM1Instruction::Lhlx(pfx) => {
                 randomly!(
                 { *pfx = Prefix::mb_rs(); }
@@ -570,6 +582,7 @@ impl Instruction for KR580VM1Instruction {
             KR580VM1Instruction::Lhld(pfx, _) => pfx.length() + 3,
             KR580VM1Instruction::Lhlx(pfx) => pfx.length() + 1,
             KR580VM1Instruction::Shld(pfx, _) => pfx.length() + 3,
+            KR580VM1Instruction::Shlx(pfx) => pfx.length() + 1,
             KR580VM1Instruction::Lda(pfx, _) => pfx.length() + 3,
             KR580VM1Instruction::Sta(pfx, _) => pfx.length() + 3,
         }
@@ -600,6 +613,18 @@ impl Instruction for KR580VM1Instruction {
                 let ptr = s.read16(*pfx, s.get_addr(R16::DE));
                 s.h.low = ptr.0;
                 s.h.high = ptr.1;
+                s.cycles_tacts((3, 10));
+                s.cycles_tacts(pfx.cycles_tacts());
+            }
+            KR580VM1Instruction::Shlx(pfx) => {
+                let addr = s.get_addr(R16::DE);
+                let (h, l) = if pfx.is_rs() {
+                    (s.get8(R8::H), s.get8(R8::L))
+                } else {
+                    (s.get8(R8::H1), s.get8(R8::L1))
+                };
+                s.write_memp(*pfx, addr, l);
+                s.write_memp(*pfx, addr.map(|a| a + 1), h);
                 s.cycles_tacts((3, 10));
                 s.cycles_tacts(pfx.cycles_tacts());
             }
@@ -663,6 +688,7 @@ impl Instruction for KR580VM1Instruction {
         { Stax(Prefix::mb(), RegisterPairBorD::random()) }
         { Lhld(Prefix::mb_rs(), random()) }
         { Lhlx(Prefix::mb_rs()) }
+        { Shlx(Prefix::mb_rs()) }
         { Shld(Prefix::mb_rs(), random()) }
         { Lda(Prefix::mb(), random()) }
         { Sta(Prefix::mb(), random()) }
@@ -811,6 +837,18 @@ mod tests {
         let lhlx = KR580VM1Instruction::Lhlx(Prefix::None);
         assert_eq!(format!("{}", lhlx), "\tlhlx");
         test_insn(lhlx, 3, 10, false);
+    }
+
+    #[test]
+    fn shlx() {
+        assert!(find_it("mb rs shlx").requires_kr580vm1());
+        assert!(find_it("mb shlx").requires_kr580vm1());
+        assert!(find_it("rs shlx").requires_kr580vm1());
+        assert!(!find_it("shlx").requires_kr580vm1());
+
+        let shlx = KR580VM1Instruction::Shlx(Prefix::None);
+        assert_eq!(format!("{}", shlx), "\tshlx");
+        test_insn(shlx, 3, 10, false);
     }
 
     #[test]
