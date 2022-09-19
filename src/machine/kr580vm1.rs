@@ -44,11 +44,7 @@ impl R8 {
     /// Returns true if M. This is used to calculate timing for instructions where M incurs
     /// a runtime cost.
     fn is_m(self) -> bool {
-        match self {
-            R8::M => true,
-            R8::M1 => true,
-            _ => false,
-        }
+        matches!(self, R8::M | R8::M1)
     }
 }
 
@@ -80,26 +76,15 @@ impl Prefix {
     }
 
     fn is_rs(self) -> bool {
-        match self {
-            Prefix::Rs => true,
-            Prefix::MbRs => true,
-            _ => false,
-        }
+        matches!(self, Prefix::Rs | Prefix::MbRs)
     }
 
     fn is_mb(self) -> bool {
-        match self {
-            Prefix::Mb => true,
-            Prefix::MbRs => true,
-            _ => false,
-        }
+        matches!(self, Prefix::Mb | Prefix::MbRs)
     }
 
     fn requires_kr580vm1(self) -> bool {
-        match self {
-            Prefix::None => false,
-            _ => true,
-        }
+        !matches!(self, Prefix::None)
     }
 
     fn mb() -> Prefix {
