@@ -28,9 +28,7 @@ push/pops, returns from interrupts, and this kind of thing.
 Strop currently supports these instruction sets, as indicated by the status of
 the badges:
 
- * [![Build Status](https://github.com/omarandlorraine/strop/workflows/stm8/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=stm8) stm8
- * [![Build Status](https://github.com/omarandlorraine/strop/workflows/mos6502/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=mos6502) 6502 65n02 65c02
- * [![Build Status](https://github.com/omarandlorraine/strop/workflows/x80/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=x80) kr580vm1
+ * [![Build Status](https://github.com/omarandlorraine/strop/workflows/mos6502/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=mos6502)
 
 ### Theory of operation
 The basic idea is to generate code better than what traditional optimising
