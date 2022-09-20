@@ -14,6 +14,4 @@ homepage = "https://github.com/omarandlorraine/strop"
 [dependencies]
 num-traits = "0.2.15"
 rand = "0.8.5"
-
-[dev-dependencies]
 mos6502 = "0.2.0"
