@@ -159,7 +159,7 @@ struct ByteIterator6502 {
     opcode: u8,
     first: Option<u8>,
     second: Option<u8>,
-    count: usize
+    count: usize,
 }
 
 impl ByteIterator6502 {
@@ -174,8 +174,10 @@ impl ByteIterator6502 {
 
         fn build(opcode: u8, first: Option<u8>, second: Option<u8>) -> ByteIterator6502 {
             ByteIterator6502 {
-                opcode, first, second,
-                count: 0
+                opcode,
+                first,
+                second,
+                count: 0,
             }
         }
 
@@ -198,7 +200,7 @@ impl Iterator for ByteIterator6502 {
             2 => self.first,
             3 => self.second,
             4 => None,
-            _ => panic!()
+            _ => panic!(),
         }
     }
 }
