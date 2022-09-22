@@ -35,4 +35,7 @@ pub trait Instruction: std::fmt::Display + Clone + Sized {
     fn new() -> Self
     where
         Self: Sized;
+
+    /// Returns an iterator over the bytes that encode the instruction
+    fn as_bytes(&self) -> Box<dyn Iterator<Item = u8>>;
 }
