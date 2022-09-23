@@ -4,6 +4,7 @@
 
 #![warn(missing_debug_implementations, missing_docs)]
 
+use mos6502::cpu::CPU;
 use crate::machine::Instruction;
 use crate::randomly;
 use rand::random;
@@ -12,8 +13,9 @@ use std::fmt::Debug;
 use std::fmt::Formatter;
 
 /// The internal state of a 6502
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Mos6502 {
+    cpu: CPU,
     /// The A register
     pub a: Option<u8>,
 
@@ -56,6 +58,15 @@ pub struct Mos6502 {
     /// intend to use such a specimen, then you may want to use this flag in your cost function to
     /// determine if the program will run at all on your device)
     pub requires_ror: bool,
+}
+
+impl Default for Mos6502 {
+    fn default() -> Self {
+        Mos6502 {
+            cpu: CPU::new(),
+            ..Default::default()
+        }
+    }
 }
 
 impl Mos6502 {
