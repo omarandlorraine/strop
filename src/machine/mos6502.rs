@@ -4,11 +4,11 @@
 
 #![warn(missing_debug_implementations, missing_docs)]
 
-use mos6502::cpu::CPU;
-use yaxpeax_6502::Operand;
 use crate::machine::Instruction;
+use mos6502::cpu::CPU;
 use std::fmt::Debug;
 use std::fmt::Formatter;
+use yaxpeax_6502::Operand;
 
 /// The internal state of a 6502
 #[derive(Debug)]
@@ -18,12 +18,9 @@ pub struct Mos6502 {
 
 impl Default for Mos6502 {
     fn default() -> Self {
-        Mos6502 {
-            cpu: CPU::new(),
-        }
+        Mos6502 { cpu: CPU::new() }
     }
 }
-
 
 impl Debug for Instruction6502 {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
@@ -77,11 +74,17 @@ impl ByteIterator6502 {
             Operand::Implied => build(opcode, None, None),
             Operand::Accumulator => build(opcode, None, None),
             Operand::Immediate(val) => build(opcode, Some(val), None),
-            Operand::IndirectYIndexed(addr) | Operand::XIndexedIndirect(addr) => build(opcode, Some(addr), None),
-            Operand::ZeroPage(addr) | Operand::ZeroPageX(addr) | Operand::ZeroPageY(addr) => build(opcode, Some(addr), None),
+            Operand::IndirectYIndexed(addr) | Operand::XIndexedIndirect(addr) => {
+                build(opcode, Some(addr), None)
+            }
+            Operand::ZeroPage(addr) | Operand::ZeroPageX(addr) | Operand::ZeroPageY(addr) => {
+                build(opcode, Some(addr), None)
+            }
             Operand::Relative(offset) => build(opcode, Some(offset), None),
             Operand::Indirect(addr) => build(opcode, low(addr), high(addr)),
-            Operand::Absolute(addr) | Operand::AbsoluteX(addr) | Operand::AbsoluteY(addr) => build(opcode, low(addr), high(addr)),
+            Operand::Absolute(addr) | Operand::AbsoluteX(addr) | Operand::AbsoluteY(addr) => {
+                build(opcode, low(addr), high(addr))
+            }
         }
     }
 }
@@ -126,7 +129,6 @@ impl Instruction for Instruction6502 {
             Operand::AbsoluteY(_) => 3,
             Operand::ZeroPage(_) | Operand::ZeroPageX(_) | Operand::ZeroPageY(_) => 2,
         }
-        
     }
 
     fn new() -> Self
