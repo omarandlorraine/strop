@@ -4,6 +4,7 @@
 #![allow(dead_code)]
 
 use crate::instruction::Instruction;
+use rand::random;
 use rand::prelude::SliceRandom;
 use yaxpeax_6502::Instruction as YaxpeaxInstruction;
 use yaxpeax_6502::{Opcode, Operand};
@@ -29,10 +30,22 @@ fn random_codepoint() -> u8 {
     .unwrap()
 }
 
-fn decode(machine_code: Vec<u8>) -> (Opcode, Operand) {
+fn instruction_length(op: Operand) -> usize {
+    match op {
+        Operand::Accumulator | Operand::Implied => 1,
+        Operand::Relative(_) => 2,
+        Operand::Immediate(_) => 2,
+        Operand::IndirectYIndexed(_) | Operand::XIndexedIndirect(_) => 2,
+        Operand::ZeroPage(_) | Operand::ZeroPageX(_) | Operand::ZeroPageY(_) => 2,
+        Operand::Absolute(_) | Operand::AbsoluteX(_) | Operand::AbsoluteY(_) => 3,
+        Operand::Indirect(_) => 3,
+    }
+}
+
+fn decode(machine_code: &[u8]) -> (Opcode, Operand) {
     let mut inst = YaxpeaxInstruction::default();
     let decoder = yaxpeax_6502::InstDecoder;
-    let mut reader = U8Reader::new(&machine_code);
+    let mut reader = U8Reader::new(machine_code);
     decoder.decode_into(&mut inst, &mut reader).unwrap();
     (inst.opcode, inst.operand)
 }
@@ -43,8 +56,6 @@ pub struct Instruction6502 {
     opcode: u8,
     operand1: Option<u8>,
     operand2: Option<u8>,
-    instruction: YaxpeaxInstruction,
-    operand: Operand,
 }
 
 impl Instruction for Instruction6502 {
@@ -53,18 +64,11 @@ impl Instruction for Instruction6502 {
     }
 
     fn length(&self) -> usize {
-        match self.operand {
-            Operand::Implied => 1,
-            Operand::Accumulator => 1,
-            Operand::IndirectYIndexed(_) => 2,
-            Operand::XIndexedIndirect(_) => 2,
-            Operand::Relative(_) => 2,
-            Operand::Indirect(_) => 3,
-            Operand::Immediate(_) => 2,
-            Operand::Absolute(_) => 3,
-            Operand::AbsoluteX(_) => 3,
-            Operand::AbsoluteY(_) => 3,
-            Operand::ZeroPage(_) | Operand::ZeroPageX(_) | Operand::ZeroPageY(_) => 2,
+        match (self.operand1, self.operand2) {
+            (None, None) => 1,
+            (Some(_), None) => 2,
+            (Some(_), Some(_)) => 3,
+            (None, Some(_)) => panic!(),
         }
     }
 
@@ -72,35 +76,22 @@ impl Instruction for Instruction6502 {
     where
         Self: Sized,
     {
-        panic!();
+        let rand: Vec<u8> = vec![random_codepoint(), random(), random()];
+        let (_insn, operand) = decode(&rand);
+        match instruction_length(operand) {
+            1 => Instruction6502 { opcode: rand[0], operand1: None, operand2: None },
+            _ => panic!(),
+        }
     }
 
     fn as_bytes(&self) -> Box<(dyn Iterator<Item = u8> + 'static)> {
-        fn high(addr: u16) -> u8 {
-            addr.to_le_bytes()[1]
-        }
-
-        fn low(addr: u16) -> u8 {
-            addr.to_le_bytes()[0]
-        }
         Box::new(
-            match self.operand {
-                Operand::Implied => vec![self.opcode],
-                Operand::Accumulator => vec![self.opcode],
-                Operand::Immediate(val) => vec![self.opcode, val],
-                Operand::IndirectYIndexed(addr) | Operand::XIndexedIndirect(addr) => {
-                    vec![self.opcode, addr]
-                }
-                Operand::ZeroPage(addr) | Operand::ZeroPageX(addr) | Operand::ZeroPageY(addr) => {
-                    vec![self.opcode, addr]
-                }
-                Operand::Relative(offset) => vec![self.opcode, offset],
-                Operand::Indirect(addr) => vec![self.opcode, low(addr), high(addr)],
-                Operand::Absolute(addr) | Operand::AbsoluteX(addr) | Operand::AbsoluteY(addr) => {
-                    vec![self.opcode, low(addr), high(addr)]
-                }
-            }
-            .into_iter(),
+        match (self.operand1, self.operand2) {
+            (None, None) => vec!(self.opcode),
+            (Some(op1), None) => vec!(self.opcode, op1),
+            (Some(op1), Some(op2)) => vec!(self.opcode, op1, op2),
+            (None, Some(_)) => panic!(),
+        }.into_iter()
         )
     }
 }
