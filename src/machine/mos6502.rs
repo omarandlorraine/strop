@@ -5,10 +5,8 @@
 #![warn(missing_debug_implementations, missing_docs)]
 
 use mos6502::cpu::CPU;
+use yaxpeax_6502::Operand;
 use crate::machine::Instruction;
-use crate::randomly;
-use rand::random;
-use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fmt::Formatter;
 
@@ -16,132 +14,16 @@ use std::fmt::Formatter;
 #[derive(Debug)]
 pub struct Mos6502 {
     cpu: CPU,
-    /// The A register
-    pub a: Option<u8>,
-
-    /// The X register
-    pub x: Option<u8>,
-
-    /// The Y register
-    pub y: Option<u8>,
-
-    /// Stack pointer
-    pub s: u8,
-
-    /// Memory
-    pub heap: HashMap<u16, Option<u8>>,
-
-    /// Carry flag
-    pub carry: Option<bool>,
-
-    /// Zero flag
-    pub zero: Option<bool>,
-
-    /// Sign flag
-    pub sign: Option<bool>,
-
-    /// Overflow flag
-    pub overflow: Option<bool>,
-
-    /// Decimal flag
-    pub decimal: Option<bool>,
-
-    /// True iff a CMOS-only instruction has been run. (You may want to use this flag in your cost
-    /// function to determine if the program will run at all on your device)
-    pub requires_cmos: bool,
-
-    /// True iff an illegal instruction has been run. (You may want to use this flag in your cost
-    /// function to determine if the program will run reliably on your device)
-    pub illegal: bool,
-
-    /// True iff a ROR instruction has been run. (Very early parts do not have this opcode; if you
-    /// intend to use such a specimen, then you may want to use this flag in your cost function to
-    /// determine if the program will run at all on your device)
-    pub requires_ror: bool,
 }
 
 impl Default for Mos6502 {
     fn default() -> Self {
         Mos6502 {
             cpu: CPU::new(),
-            ..Default::default()
         }
     }
 }
 
-impl Mos6502 {
-    fn read_mem(&self, addr: u16) -> Option<u8> {
-        *self.heap.get(&addr).unwrap_or(&None)
-    }
-
-    fn write_mem(&mut self, addr: u16, val: Option<u8>) {
-        self.heap.insert(addr, val);
-    }
-
-    fn push(&mut self, val: Option<u8>) {
-        let addr: u16 = 0x0100 + self.s as u16;
-        self.write_mem(addr, val);
-        self.s = self.s.wrapping_sub(1);
-    }
-
-    fn pull(&mut self) -> Option<u8> {
-        self.s = self.s.wrapping_add(1);
-        let addr: u16 = 0x0100 + self.s as u16;
-        self.read_mem(addr)
-    }
-}
-
-/// A 6502 instruction's operand
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Operand6502 {
-    /// Used for implicit instructions, which take no operand
-    None,
-
-    /// For RMW instructions operating on the accumulator
-    A,
-
-    /// An immediate value
-    Immediate(u8),
-
-    /// Absolute addressing mode
-    Absolute(u16),
-}
-
-impl Operand6502 {
-    fn get(self, s: &Mos6502) -> Option<u8> {
-        match self {
-            Operand6502::None => panic!(),
-            Operand6502::A => s.a,
-            Operand6502::Immediate(v) => Some(v),
-            Operand6502::Absolute(addr) => s.read_mem(addr),
-        }
-    }
-    fn set(self, s: &mut Mos6502, val: Option<u8>) {
-        match self {
-            Operand6502::None => panic!(),
-            Operand6502::A => s.a = val,
-            Operand6502::Immediate(_) => panic!(),
-            Operand6502::Absolute(addr) => s.write_mem(addr, val),
-        }
-    }
-}
-
-fn disassemble(insn: &Instruction6502, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match insn.operand {
-        Operand6502::None => {
-            write!(f, "\t{}", insn.mnem)
-        }
-        Operand6502::A => {
-            write!(f, "\t{} a", insn.mnem)
-        }
-        Operand6502::Immediate(val) => {
-            write!(f, "\t{} #${:02x}", insn.mnem, val)
-        }
-        Operand6502::Absolute(addr) => {
-            write!(f, "\t{} ${:04x}", insn.mnem, addr)
-        }
-    }
-}
 
 impl Debug for Instruction6502 {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
@@ -150,14 +32,13 @@ impl Debug for Instruction6502 {
 }
 
 /// Represents a 6502 Instruction
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct Instruction6502 {
-    mnem: &'static str,
     randomizer: fn(&mut Instruction6502),
     disassemble: fn(&Instruction6502, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
     handler: fn(&Instruction6502, &mut Mos6502),
     opcode: u8,
-    operand: Operand6502,
+    operand: Operand,
 }
 
 impl std::fmt::Display for Instruction6502 {
@@ -174,7 +55,7 @@ struct ByteIterator6502 {
 }
 
 impl ByteIterator6502 {
-    fn new(opcode: u8, operand: Operand6502) -> ByteIterator6502 {
+    fn new(opcode: u8, operand: Operand) -> ByteIterator6502 {
         fn high(addr: u16) -> Option<u8> {
             Some(addr.to_le_bytes()[1])
         }
@@ -193,10 +74,14 @@ impl ByteIterator6502 {
         }
 
         match operand {
-            Operand6502::None => build(opcode, None, None),
-            Operand6502::A => build(opcode, None, None),
-            Operand6502::Immediate(val) => build(opcode, Some(val), None),
-            Operand6502::Absolute(addr) => build(opcode, low(addr), high(addr)),
+            Operand::Implied => build(opcode, None, None),
+            Operand::Accumulator => build(opcode, None, None),
+            Operand::Immediate(val) => build(opcode, Some(val), None),
+            Operand::IndirectYIndexed(addr) | Operand::XIndexedIndirect(addr) => build(opcode, Some(addr), None),
+            Operand::ZeroPage(addr) | Operand::ZeroPageX(addr) | Operand::ZeroPageY(addr) => build(opcode, Some(addr), None),
+            Operand::Relative(offset) => build(opcode, Some(offset), None),
+            Operand::Indirect(addr) => build(opcode, low(addr), high(addr)),
+            Operand::Absolute(addr) | Operand::AbsoluteX(addr) | Operand::AbsoluteY(addr) => build(opcode, low(addr), high(addr)),
         }
     }
 }
@@ -223,17 +108,25 @@ impl Instruction for Instruction6502 {
         (self.randomizer)(self);
     }
 
-    fn length(&self) -> usize {
-        match self.operand {
-            Operand6502::None => 1usize,
-            Operand6502::A => 1usize,
-            Operand6502::Immediate(_) => 2usize,
-            Operand6502::Absolute(_) => 3usize,
-        }
-    }
-
     fn operate(&self, s: &mut Mos6502) {
         (self.handler)(self, s);
+    }
+
+    fn length(&self) -> usize {
+        match self.operand {
+            Operand::Implied => 1,
+            Operand::Accumulator => 1,
+            Operand::IndirectYIndexed(_) => 2,
+            Operand::XIndexedIndirect(_) => 2,
+            Operand::Relative(_) => 2,
+            Operand::Indirect(_) => 3,
+            Operand::Immediate(_) => 2,
+            Operand::Absolute(_) => 3,
+            Operand::AbsoluteX(_) => 3,
+            Operand::AbsoluteY(_) => 3,
+            Operand::ZeroPage(_) | Operand::ZeroPageX(_) | Operand::ZeroPageY(_) => 2,
+        }
+        
     }
 
     fn new() -> Self

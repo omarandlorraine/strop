@@ -25,11 +25,11 @@ pub trait Instruction: std::fmt::Display + Clone + Sized {
     /// Randomly mutates the instruction
     fn randomize(&mut self);
 
-    /// The length of the instruction in machine words
-    fn length(&self) -> usize;
-
     /// Execute the instruction
     fn operate(&self, s: &mut Self::State);
+
+    /// Length of the instruction, in bytes
+    fn length(&self) -> usize;
 
     /// Returns a random instruction.
     fn new() -> Self
