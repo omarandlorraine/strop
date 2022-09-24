@@ -12,7 +12,6 @@ homepage = "https://github.com/omarandlorraine/strop"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-num-traits = "0.2.15"
 rand = "0.8.5"
-mos6502 = "0.2.0"
+yaxpeax-arch = "0.2.7"
 yaxpeax-6502 = "0.0.2"
