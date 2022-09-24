@@ -3,6 +3,7 @@
 //! present on the NMOS models.
 
 #![warn(missing_debug_implementations, missing_docs)]
+#![allow(dead_code)]
 
 use crate::machine::Instruction;
 use mos6502::cpu::CPU;
