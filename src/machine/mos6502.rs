@@ -45,66 +45,6 @@ impl std::fmt::Display for Instruction6502 {
     }
 }
 
-struct ByteIterator6502 {
-    opcode: u8,
-    first: Option<u8>,
-    second: Option<u8>,
-    count: usize,
-}
-
-impl ByteIterator6502 {
-    fn new(opcode: u8, operand: Operand) -> ByteIterator6502 {
-        fn high(addr: u16) -> Option<u8> {
-            Some(addr.to_le_bytes()[1])
-        }
-
-        fn low(addr: u16) -> Option<u8> {
-            Some(addr.to_le_bytes()[0])
-        }
-
-        fn build(opcode: u8, first: Option<u8>, second: Option<u8>) -> ByteIterator6502 {
-            ByteIterator6502 {
-                opcode,
-                first,
-                second,
-                count: 0,
-            }
-        }
-
-        match operand {
-            Operand::Implied => build(opcode, None, None),
-            Operand::Accumulator => build(opcode, None, None),
-            Operand::Immediate(val) => build(opcode, Some(val), None),
-            Operand::IndirectYIndexed(addr) | Operand::XIndexedIndirect(addr) => {
-                build(opcode, Some(addr), None)
-            }
-            Operand::ZeroPage(addr) | Operand::ZeroPageX(addr) | Operand::ZeroPageY(addr) => {
-                build(opcode, Some(addr), None)
-            }
-            Operand::Relative(offset) => build(opcode, Some(offset), None),
-            Operand::Indirect(addr) => build(opcode, low(addr), high(addr)),
-            Operand::Absolute(addr) | Operand::AbsoluteX(addr) | Operand::AbsoluteY(addr) => {
-                build(opcode, low(addr), high(addr))
-            }
-        }
-    }
-}
-
-impl Iterator for ByteIterator6502 {
-    type Item = u8;
-
-    fn next(&mut self) -> Option<u8> {
-        self.count += 1;
-        match self.count {
-            1 => Some(self.opcode),
-            2 => self.first,
-            3 => self.second,
-            4 => None,
-            _ => panic!(),
-        }
-    }
-}
-
 impl Instruction for Instruction6502 {
     type State = Mos6502;
 
@@ -140,6 +80,30 @@ impl Instruction for Instruction6502 {
     }
 
     fn as_bytes(&self) -> Box<(dyn Iterator<Item = u8> + 'static)> {
-        Box::new(ByteIterator6502::new(self.opcode, self.operand))
+        fn high(addr: u16) -> u8 {
+            addr.to_le_bytes()[1]
+        }
+
+        fn low(addr: u16) -> u8 {
+            addr.to_le_bytes()[0]
+        }
+        Box::new(
+            match self.operand {
+                Operand::Implied => vec!(self.opcode),
+                Operand::Accumulator => vec!(self.opcode),
+                Operand::Immediate(val) => vec!(self.opcode, val),
+                Operand::IndirectYIndexed(addr) | Operand::XIndexedIndirect(addr) => {
+                    vec!(self.opcode, addr)
+                }
+                Operand::ZeroPage(addr) | Operand::ZeroPageX(addr) | Operand::ZeroPageY(addr) => {
+                    vec!(self.opcode, addr)
+                }
+                Operand::Relative(offset) => vec!(self.opcode, offset),
+                Operand::Indirect(addr) => vec!(self.opcode, low(addr), high(addr)),
+                Operand::Absolute(addr) | Operand::AbsoluteX(addr) | Operand::AbsoluteY(addr) => {
+                    vec!(self.opcode, low(addr), high(addr))
+                }
+            }
+            .into_iter())
     }
 }
