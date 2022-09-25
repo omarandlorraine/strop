@@ -12,19 +12,24 @@ use crate::instruction::Instruction;
 pub struct Snippet<I> {
     /// The list of instructions in the snippet
     pub instructions: Vec<I>,
+
+    /// Start address
+    org: usize,
 }
 
 impl<I: Instruction> Default for Snippet<I> {
     fn default() -> Self {
         Snippet {
+            org: 0x0200,
             instructions: vec![],
         }
     }
 }
 
-impl<I: Instruction> Snippet<I> {
-    fn new(&self) -> Self {
+impl<I: Instruction + std::fmt::Display> Snippet<I> {
+    pub fn new() -> Self {
         Self {
+            org: 0x0200,
             instructions: (1..10).map(|_| I::new()).collect()
         }
     }
