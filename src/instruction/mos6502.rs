@@ -80,6 +80,8 @@ impl Instruction for Instruction6502 {
         let (_insn, operand) = decode(&rand);
         match instruction_length(operand) {
             1 => Instruction6502 { opcode: rand[0], operand1: None, operand2: None },
+            2 => Instruction6502 { opcode: rand[0], operand1: Some(rand[1]), operand2: None },
+            3 => Instruction6502 { opcode: rand[0], operand1: Some(rand[1]), operand2: Some(rand[2]) },
             _ => panic!(),
         }
     }
