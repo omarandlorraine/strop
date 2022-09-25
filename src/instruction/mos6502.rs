@@ -97,3 +97,19 @@ impl Instruction for Instruction6502 {
         )
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::instruction::Instruction;
+    use crate::instruction::mos6502::Instruction6502;
+
+    #[test]
+    fn new_instructions() {
+        for _i in 0..50000 {
+            let mut insn = Instruction6502::new();
+            for _j in 0..5000 {
+                let mutated = insn.randomize();
+            }
+        }
+    }
+}
