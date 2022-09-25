@@ -112,6 +112,33 @@ impl Instruction6502 {
     }
 }
 
+impl std::fmt::Display for Instruction6502 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        let (opcode, operand) = decode(&self.to_bytes());
+        let b1 = format!("${:02x}", self.opcode);
+        let b2 = if let Some(v) = self.operand1 { format!("${:02x}", v) } else { "   ".to_string() };
+        let b3 = if let Some(v) = self.operand2 { format!("${:02x}", v) } else { "   ".to_string() };
+
+        let st = format!("{} {} {}   {}", b1, b2, b3, format!("{}", opcode).to_lowercase());
+
+        match operand {
+            Operand::Implied => write!(f, "{}", st),
+            Operand::Accumulator => write!(f, "{} a", st),
+            Operand::Immediate(val) => write!(f, "{} ${:02x}", st, val),
+            Operand::ZeroPage(addr) => write!(f, "{} ${:02x}", st, addr),
+            Operand::ZeroPageX(addr) => write!(f, "{} ${:02x},x", st, addr),
+            Operand::ZeroPageY(addr) => write!(f, "{} ${:02x},y", st, addr),
+            Operand::Absolute(addr) => write!(f, "{} ${:04x}", st, addr),
+            Operand::AbsoluteX(addr) => write!(f, "{} ${:04x},x", st, addr),
+            Operand::AbsoluteY(addr) => write!(f, "{} ${:04x},y", st, addr),
+            Operand::Indirect(addr) => write!(f, "{} (${:04x})", st, addr),
+            Operand::IndirectYIndexed(addr) => write!(f, "{} (${:02x}),y", st, addr),
+            Operand::XIndexedIndirect(addr) => write!(f, "{} (${:02x},x)", st, addr),
+            Operand::Relative(offs) => write!(f, "{} ${:02x}", st, offs), // todo
+        }
+    }
+}
+
 impl Instruction for Instruction6502 {
     fn length(&self) -> usize {
         match (self.operand1, self.operand2) {
