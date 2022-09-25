@@ -13,5 +13,5 @@ homepage = "https://github.com/omarandlorraine/strop"
 
 [dependencies]
 rand = "0.8.5"
-yaxpeax-arch = "0.2.7"
+yaxpeax-arch = {version="0.2.7", default-features=false}
 yaxpeax-6502 = "0.0.2"
