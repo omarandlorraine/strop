@@ -11,6 +11,7 @@
 #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 pub mod instruction;
 pub mod search;
+pub mod snippets;
 
 pub use rand;
 
