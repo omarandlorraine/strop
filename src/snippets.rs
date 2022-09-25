@@ -23,6 +23,12 @@ impl<I: Instruction> Default for Snippet<I> {
 }
 
 impl<I: Instruction> Snippet<I> {
+    fn new(&self) -> Self {
+        Self {
+            instructions: (1..10).map(|_| I::new()).collect()
+        }
+    }
+
     fn to_bytes(&self) -> Vec<u8> {
         self.instructions
             .iter()
