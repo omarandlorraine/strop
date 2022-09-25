@@ -4,8 +4,8 @@
 #![allow(dead_code)]
 
 use crate::instruction::Instruction;
-use rand::random;
 use rand::prelude::SliceRandom;
+use rand::random;
 use yaxpeax_6502::Instruction as YaxpeaxInstruction;
 use yaxpeax_6502::{Opcode, Operand};
 use yaxpeax_arch::Decoder;
@@ -129,18 +129,30 @@ impl Instruction for Instruction6502 {
         let rand: Vec<u8> = vec![random_codepoint(), random(), random()];
         let (_insn, operand) = decode(&rand);
         match instruction_length(operand) {
-            1 => Instruction6502 { opcode: rand[0], operand1: None, operand2: None },
-            2 => Instruction6502 { opcode: rand[0], operand1: Some(rand[1]), operand2: None },
-            3 => Instruction6502 { opcode: rand[0], operand1: Some(rand[1]), operand2: Some(rand[2]) },
+            1 => Instruction6502 {
+                opcode: rand[0],
+                operand1: None,
+                operand2: None,
+            },
+            2 => Instruction6502 {
+                opcode: rand[0],
+                operand1: Some(rand[1]),
+                operand2: None,
+            },
+            3 => Instruction6502 {
+                opcode: rand[0],
+                operand1: Some(rand[1]),
+                operand2: Some(rand[2]),
+            },
             _ => panic!(),
         }
     }
 
     fn to_bytes(&self) -> Vec<u8> {
         match (self.operand1, self.operand2) {
-            (None, None) => vec!(self.opcode),
-            (Some(op1), None) => vec!(self.opcode, op1),
-            (Some(op1), Some(op2)) => vec!(self.opcode, op1, op2),
+            (None, None) => vec![self.opcode],
+            (Some(op1), None) => vec![self.opcode, op1],
+            (Some(op1), Some(op2)) => vec![self.opcode, op1, op2],
             (None, Some(_)) => panic!(),
         }
     }
@@ -152,8 +164,8 @@ impl Instruction for Instruction6502 {
 
 #[cfg(test)]
 mod test {
-    use crate::instruction::Instruction;
     use crate::instruction::mos6502::Instruction6502;
+    use crate::instruction::Instruction;
 
     #[test]
     fn new_instructions() {
