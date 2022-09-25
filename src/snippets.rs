@@ -30,7 +30,7 @@ impl<I: Instruction + std::fmt::Display> Snippet<I> {
     pub fn new() -> Self {
         Self {
             org: 0x0200,
-            instructions: (1..10).map(|_| I::new()).collect()
+            instructions: (1..10).map(|_| I::new()).collect(),
         }
     }
 
@@ -45,8 +45,12 @@ impl<I: Instruction + std::fmt::Display> Snippet<I> {
     pub fn check_use(&self, sets: fn(&I) -> bool, requires: fn(&I) -> bool) -> bool {
         /// Check that the snippet does not use a register without first initializing it.
         for i in &self.instructions {
-            if sets(&i) { return true };
-            if requires(&i) { return false };
+            if sets(&i) {
+                return true;
+            };
+            if requires(&i) {
+                return false;
+            };
         }
         return true;
     }

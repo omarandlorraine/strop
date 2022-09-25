@@ -116,10 +116,24 @@ impl std::fmt::Display for Instruction6502 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         let (opcode, operand) = decode(&self.to_bytes());
         let b1 = format!("${:02x}", self.opcode);
-        let b2 = if let Some(v) = self.operand1 { format!("${:02x}", v) } else { "   ".to_string() };
-        let b3 = if let Some(v) = self.operand2 { format!("${:02x}", v) } else { "   ".to_string() };
+        let b2 = if let Some(v) = self.operand1 {
+            format!("${:02x}", v)
+        } else {
+            "   ".to_string()
+        };
+        let b3 = if let Some(v) = self.operand2 {
+            format!("${:02x}", v)
+        } else {
+            "   ".to_string()
+        };
 
-        let st = format!("{} {} {}   {}", b1, b2, b3, format!("{}", opcode).to_lowercase());
+        let st = format!(
+            "{} {} {}   {}",
+            b1,
+            b2,
+            b3,
+            format!("{}", opcode).to_lowercase()
+        );
 
         match operand {
             Operand::Implied => write!(f, "{}", st),
