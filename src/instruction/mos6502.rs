@@ -58,6 +58,60 @@ pub struct Instruction6502 {
     operand2: Option<u8>,
 }
 
+impl Instruction6502 {
+    /// returns true iff the instruction reads the X register
+    fn reads_x(&self) -> bool {
+        match decode(&self.to_bytes()) {
+            (_, Operand::XIndexedIndirect(_)) => true,
+            (_, Operand::ZeroPageX(_)) => true,
+            (_, Operand::AbsoluteX(_)) => true,
+            (Opcode::TXA, _) => true,
+            (Opcode::STX, _) => true,
+            (Opcode::CPX, _) => true,
+            (Opcode::DEX, _) => true,
+            (Opcode::INX, _) => true,
+            (Opcode::TXS, _) => true,
+            (_, _) => false,
+        }
+    }
+
+    /// returns true if the instruction sets the X register
+    fn sets_x(&self) -> bool {
+        match decode(&self.to_bytes()) {
+            (Opcode::TAX, _) => true,
+            (Opcode::LDX, _) => true,
+            (_, _) => false,
+        }
+    }
+
+    /// returns true iff the instruction is a conditional branch
+    fn is_branch(&self) -> bool {
+        match decode(&self.to_bytes()) {
+            (Opcode::BCC, _) => true,
+            (Opcode::BCS, _) => true,
+            (Opcode::BEQ, _) => true,
+            (Opcode::BMI, _) => true,
+            (Opcode::BNE, _) => true,
+            (Opcode::BPL, _) => true,
+            (Opcode::BVC, _) => true,
+            (Opcode::BVS, _) => true,
+            (_, _) => false,
+        }
+    }
+
+    /// returns true iff the instruction is a forward branch
+    fn is_forward_branch(&self) -> bool {
+        // If this unwrap panics, it's because generation of branch
+        // instructions doesn't set self.operand1, as it should
+        self.is_branch() && !(self.operand1.unwrap() & 0x80 == 0x80)
+    }
+
+    /// returns true iff the instruction is a backward branch
+    fn is_backward_branch(&self) -> bool {
+        self.is_branch() && !self.is_forward_branch()
+    }
+}
+
 impl Instruction for Instruction6502 {
     fn length(&self) -> usize {
         match (self.operand1, self.operand2) {
@@ -82,15 +136,17 @@ impl Instruction for Instruction6502 {
         }
     }
 
-    fn as_bytes(&self) -> Box<(dyn Iterator<Item = u8> + 'static)> {
-        Box::new(
+    fn to_bytes(&self) -> Vec<u8> {
         match (self.operand1, self.operand2) {
             (None, None) => vec!(self.opcode),
             (Some(op1), None) => vec!(self.opcode, op1),
             (Some(op1), Some(op2)) => vec!(self.opcode, op1, op2),
             (None, Some(_)) => panic!(),
-        }.into_iter()
-        )
+        }
+    }
+
+    fn as_bytes(&self) -> Box<(dyn Iterator<Item = u8> + 'static)> {
+        Box::new(self.to_bytes().into_iter())
     }
 }
 

@@ -15,6 +15,9 @@ pub trait Instruction: Clone + Sized {
     where
         Self: Sized;
 
+    /// Returns an vector containing the bytes that encode the instruction
+    fn to_bytes(&self) -> Vec<u8>;
+
     /// Returns an iterator over the bytes that encode the instruction
     fn as_bytes(&self) -> Box<dyn Iterator<Item = u8>>;
 }
