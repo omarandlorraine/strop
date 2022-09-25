@@ -37,11 +37,11 @@ impl<I: Instruction> Snippet<I> {
             .collect()
     }
 
-    fn check_use(&self, sets: fn(&I) -> bool, requires: fn(&I) -> bool) {
+    pub fn check_use(&self, sets: fn(&I) -> bool, requires: fn(&I) -> bool) -> bool {
         /// Check that the snippet does not use a register without first initializing it.
-        for i in self.instructions {
-            if sets(i) { return true };
-            if requires(i) { return false };
+        for i in &self.instructions {
+            if sets(&i) { return true };
+            if requires(&i) { return false };
         }
         return true;
     }

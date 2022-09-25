@@ -60,7 +60,7 @@ pub struct Instruction6502 {
 
 impl Instruction6502 {
     /// returns true iff the instruction reads the X register
-    fn reads_x(&self) -> bool {
+    pub fn reads_x(&self) -> bool {
         match decode(&self.to_bytes()) {
             (_, Operand::XIndexedIndirect(_)) => true,
             (_, Operand::ZeroPageX(_)) => true,
@@ -76,7 +76,7 @@ impl Instruction6502 {
     }
 
     /// returns true if the instruction sets the X register
-    fn sets_x(&self) -> bool {
+    pub fn sets_x(&self) -> bool {
         match decode(&self.to_bytes()) {
             (Opcode::TAX, _) => true,
             (Opcode::LDX, _) => true,
