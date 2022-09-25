@@ -59,10 +59,6 @@ pub struct Instruction6502 {
 }
 
 impl Instruction for Instruction6502 {
-    fn randomize(&mut self) {
-        panic!()
-    }
-
     fn length(&self) -> usize {
         match (self.operand1, self.operand2) {
             (None, None) => 1,
@@ -107,9 +103,6 @@ mod test {
     fn new_instructions() {
         for _i in 0..50000 {
             let mut insn = Instruction6502::new();
-            for _j in 0..5000 {
-                let mutated = insn.randomize();
-            }
         }
     }
 }

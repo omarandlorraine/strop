@@ -7,9 +7,6 @@ pub mod mos6502;
 /// used by the BasicBlock type, since a basic block is a sequence of
 /// instructions.
 pub trait Instruction: Clone + Sized {
-    /// Randomly mutates the instruction
-    fn randomize(&mut self);
-
     /// Length of the instruction, in bytes
     fn length(&self) -> usize;
 
