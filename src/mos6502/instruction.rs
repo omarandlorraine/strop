@@ -205,8 +205,8 @@ impl Instruction for Instruction6502 {
 
 #[cfg(test)]
 mod test {
-    use crate::instruction::mos6502::Instruction6502;
     use crate::instruction::Instruction;
+    use crate::mos6502::Instruction6502;
 
     #[test]
     fn new_instructions() {
