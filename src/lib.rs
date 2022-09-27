@@ -13,6 +13,8 @@ pub mod instruction;
 pub mod search;
 pub mod snippets;
 
+pub mod mos6502;
+
 pub use rand;
 
 /// Randomly select a block to be executed. Blocks have

@@ -1,7 +1,4 @@
-//! This module defines the `Instruction` trait and pulls in the architecture-
-//! specific instruction types.
-
-pub mod mos6502;
+//! This module defines the `Instruction` trait.
 
 /// The `Instruction` trait defines the behaviour of an instruction. It is
 /// used by the BasicBlock type, since a basic block is a sequence of

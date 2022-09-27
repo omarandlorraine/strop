@@ -1,4 +1,4 @@
-use strop::instruction::mos6502::Instruction6502;
+use strop::mos6502::Instruction6502;
 use strop::snippets::Snippet;
 
 fn main() {
