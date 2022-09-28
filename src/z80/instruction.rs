@@ -4,7 +4,6 @@
 #![allow(dead_code)]
 
 use crate::instruction::Instruction;
-use dez80::instruction::DecodingState;
 use dez80::Instruction as DeZ80Instruction;
 use rand::random;
 
@@ -35,8 +34,8 @@ impl Instruction for InstructionZ80 {
     {
         loop {
             let encoding: [u8; 5] = [random(), random(), random(), random(), random()];
-            if let Ok(instr) = DeZ80Instruction::decode_one(&mut encoding.as_slice()) {
-                return Self { encoding: encoding };
+            if DeZ80Instruction::decode_one(&mut encoding.as_slice()).is_ok() {
+                return Self { encoding };
             }
         }
     }

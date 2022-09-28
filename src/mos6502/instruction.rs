@@ -103,7 +103,7 @@ impl Instruction6502 {
     fn is_forward_branch(&self) -> bool {
         // If this unwrap panics, it's because generation of branch
         // instructions doesn't set self.operand1, as it should
-        self.is_branch() && !(self.operand1.unwrap() & 0x80 == 0x80)
+        self.is_branch() && (self.operand1.unwrap() & 0x80 != 0x80)
     }
 
     /// returns true iff the instruction is a backward branch

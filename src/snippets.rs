@@ -9,6 +9,7 @@
 ///
 use crate::instruction::Instruction;
 
+#[derive(Debug)]
 pub struct Snippet<I> {
     /// The list of instructions in the snippet
     pub instructions: Vec<I>,
@@ -37,22 +38,21 @@ impl<I: Instruction + std::fmt::Display> Snippet<I> {
     fn to_bytes(&self) -> Vec<u8> {
         self.instructions
             .iter()
-            .map(|insn| insn.as_bytes())
-            .flatten()
+            .flat_map(|insn| insn.as_bytes())
             .collect()
     }
 
     pub fn check_use(&self, sets: fn(&I) -> bool, requires: fn(&I) -> bool) -> bool {
         //! Check that the snippet does not use a register without first initializing it.
         for i in &self.instructions {
-            if sets(&i) {
+            if sets(i) {
                 return true;
             };
-            if requires(&i) {
+            if requires(i) {
                 return false;
             };
         }
-        return true;
+        true
     }
 
     pub fn disassemble(&self) {
