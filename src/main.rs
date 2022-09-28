@@ -1,5 +1,6 @@
 use strop::mos6502::Instruction6502;
 use strop::snippets::Snippet;
+use strop::z80::InstructionZ80;
 
 fn main() {
     loop {
@@ -8,5 +9,7 @@ fn main() {
             sn.disassemble();
             break;
         }
+        let sn = Snippet::<InstructionZ80>::new();
+        sn.disassemble();
     }
 }

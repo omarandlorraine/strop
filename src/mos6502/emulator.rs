@@ -1,7 +1,7 @@
-/// Module implementing the 
+use crate::emulator::Emulator;
+/// Module implementing the
 use mos6502::address::Address;
 use mos6502::cpu::CPU;
-use crate::emulator::Emulator;
 
 pub struct Emulator6502 {
     cpu: CPU,
@@ -18,6 +18,8 @@ impl Emulator for Emulator6502 {
     }
 
     fn load(&mut self, org: usize, bytes: &mut dyn Iterator<Item = u8>) {
-        self.cpu.memory.set_bytes(Address(org as u16), &bytes.collect::<Vec<_>>());
+        self.cpu
+            .memory
+            .set_bytes(Address(org as u16), &bytes.collect::<Vec<_>>());
     }
 }
