@@ -52,9 +52,9 @@ impl Instruction for InstructionZ80 {
 
 #[cfg(test)]
 mod test {
-    use crate::z80::InstructionZ80;
-    use crate::z80::instruction::DeZ80Instruction;
     use crate::instruction::Instruction;
+    use crate::z80::instruction::DeZ80Instruction;
+    use crate::z80::InstructionZ80;
 
     #[test]
     fn new_instructions() {
@@ -64,10 +64,13 @@ mod test {
             // Make sure the instruction can be disassembled (i. e., the diassembler doesn't bail
             // out and comment out the hex)
             let disasm = format!("{}", insn);
-            assert!(disasm.chars().next().unwrap() != ';', "generated {} which has no encoding", disasm)
+            assert!(
+                disasm.chars().next().unwrap() != ';',
+                "generated {} which has no encoding",
+                disasm
+            )
         }
     }
-
 
     #[test]
     fn illegal_instructions() {
