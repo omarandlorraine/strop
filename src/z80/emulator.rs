@@ -1,10 +1,10 @@
 use crate::emulator::Emulator;
 /// Module implementing the
-use rustzx_z80::{Z80, Z80Bus};
+use rustzx_z80::{Z80Bus, Z80};
 use std::convert::TryInto;
 
 pub struct BusZ80 {
-    memory: [u8; 65536]
+    memory: [u8; 65536],
 }
 
 impl Z80Bus for BusZ80 {
@@ -16,14 +16,11 @@ impl Z80Bus for BusZ80 {
         self.memory[addr as usize] = data;
     }
 
-    fn wait_mreq(&mut self, _addr: u16, _clk: usize) {
-    }
+    fn wait_mreq(&mut self, _addr: u16, _clk: usize) {}
 
-    fn wait_no_mreq(&mut self, _addr: u16, _clk: usize) {
-    }
+    fn wait_no_mreq(&mut self, _addr: u16, _clk: usize) {}
 
-    fn wait_internal(&mut self, _clk: usize) {
-    }
+    fn wait_internal(&mut self, _clk: usize) {}
 
     fn read_io(&mut self, _port: u16) -> u8 {
         panic!()
@@ -37,11 +34,9 @@ impl Z80Bus for BusZ80 {
         0
     }
 
-    fn reti(&mut self) {
-    }
+    fn reti(&mut self) {}
 
-    fn halt(&mut self, _halted: bool) {
-    }
+    fn halt(&mut self, _halted: bool) {}
 
     fn int_active(&self) -> bool {
         false
@@ -51,8 +46,7 @@ impl Z80Bus for BusZ80 {
         false
     }
 
-    fn pc_callback(&mut self, _addr: u16) {
-    }
+    fn pc_callback(&mut self, _addr: u16) {}
 }
 
 pub struct EmulatorZ80 {
