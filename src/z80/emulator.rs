@@ -16,20 +16,20 @@ impl Z80Bus for BusZ80 {
         self.memory[addr as usize] = data;
     }
 
-    fn wait_mreq(&mut self, addr: u16, clk: usize) {
+    fn wait_mreq(&mut self, _addr: u16, _clk: usize) {
     }
 
-    fn wait_no_mreq(&mut self, addr: u16, clk: usize) {
+    fn wait_no_mreq(&mut self, _addr: u16, _clk: usize) {
     }
 
-    fn wait_internal(&mut self, clk: usize) {
+    fn wait_internal(&mut self, _clk: usize) {
     }
 
-    fn read_io(&mut self, port: u16) -> u8 {
+    fn read_io(&mut self, _port: u16) -> u8 {
         panic!()
     }
 
-    fn write_io(&mut self, port: u16, data: u8) {
+    fn write_io(&mut self, _port: u16, _data: u8) {
         panic!()
     }
 
@@ -40,7 +40,7 @@ impl Z80Bus for BusZ80 {
     fn reti(&mut self) {
     }
 
-    fn halt(&mut self, halted: bool) {
+    fn halt(&mut self, _halted: bool) {
     }
 
     fn int_active(&self) -> bool {
@@ -51,7 +51,7 @@ impl Z80Bus for BusZ80 {
         false
     }
 
-    fn pc_callback(&mut self, addr: u16) {
+    fn pc_callback(&mut self, _addr: u16) {
     }
 }
 

@@ -15,3 +15,4 @@ yaxpeax-arch = {version="0.2.7", default-features=false}
 yaxpeax-6502 = "0.0.2"
 dez80 = "3.0.0"
 rustzx-z80 = "0.15.0"
+lr35902 = "0.1.1"
