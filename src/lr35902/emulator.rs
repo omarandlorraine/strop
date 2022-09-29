@@ -2,8 +2,6 @@ use crate::emulator::Emulator;
 use lr35902::cpu::cpu::Cpu;
 use std::convert::TryInto;
 
-extern crate lr35902;
-
 pub struct EmulatorLR35902 {
     cpu: Cpu,
 }
