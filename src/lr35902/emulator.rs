@@ -1,5 +1,6 @@
 use crate::emulator::Emulator;
 use lr35902::cpu::cpu::Cpu;
+use std::convert::TryInto;
 
 extern crate lr35902;
 
@@ -15,5 +16,10 @@ impl Emulator for EmulatorLR35902 {
     }
 
     fn load(&mut self, org: usize, bytes: &mut dyn Iterator<Item = u8>) {
+        let mut addr: u16 = org.try_into().unwrap();
+        for byte in bytes {
+            self.cpu.memory.wb(addr, byte);
+            addr += 1;
+        }
     }
 }
