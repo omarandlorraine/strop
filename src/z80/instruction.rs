@@ -52,14 +52,19 @@ impl Instruction for InstructionZ80 {
 
 #[cfg(test)]
 mod test {
+    use crate::z80::InstructionZ80;
     use crate::z80::instruction::DeZ80Instruction;
     use crate::instruction::Instruction;
-    use crate::mos6502::Instruction6502;
 
     #[test]
     fn new_instructions() {
         for _i in 0..50000 {
-            let mut insn = Instruction6502::new();
+            let mut insn = InstructionZ80::new();
+
+            // Make sure the instruction can be disassembled (i. e., the diassembler doesn't bail
+            // out and comment out the hex)
+            let disasm = format!("{}", insn);
+            assert!(disasm.chars().next().unwrap() != ';', "generated {} which has no encoding", disasm)
         }
     }
 
