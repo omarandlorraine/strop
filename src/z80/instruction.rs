@@ -52,6 +52,7 @@ impl Instruction for InstructionZ80 {
 
 #[cfg(test)]
 mod test {
+    use crate::z80::instruction::DeZ80Instruction;
     use crate::instruction::Instruction;
     use crate::mos6502::Instruction6502;
 
@@ -60,5 +61,12 @@ mod test {
         for _i in 0..50000 {
             let mut insn = Instruction6502::new();
         }
+    }
+
+
+    #[test]
+    fn illegal_instructions() {
+        // Invalid instruction; semantically equivalent to NOP NOP
+        assert!(DeZ80Instruction::decode_one(&mut vec![0xed, 0x0e].as_slice()).is_err())
     }
 }
