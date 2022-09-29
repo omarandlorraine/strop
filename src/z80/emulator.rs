@@ -61,10 +61,13 @@ pub struct EmulatorZ80 {
 }
 
 impl Emulator for EmulatorZ80 {
-    fn run(&mut self, org: usize, _budget: u32, bytes: &mut dyn Iterator<Item = u8>) {
+    fn run(&mut self, org: usize, budget: u32, bytes: &mut dyn Iterator<Item = u8>) {
         // the emulator uses 0xff as a sentinel to end the currently running program.
-        let prog = &bytes.chain(vec![0xff]).collect::<Vec<_>>();
         self.load(org, bytes);
+        self.cpu.regs.set_pc(org.try_into().unwrap());
+        for _ in 0..budget {
+            self.cpu.emulate(&mut self.bus);
+        }
     }
 
     fn load(&mut self, org: usize, bytes: &mut dyn Iterator<Item = u8>) {
