@@ -1,4 +1,4 @@
-name: mos6502
+name: z80
 
 on:
   push:
