@@ -20,6 +20,7 @@ Strop currently supports these instruction sets, as indicated by the status of
 the badges:
 
  * [![Build Status](https://github.com/omarandlorraine/strop/workflows/mos6502/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=mos6502)
+ * [![Build Status](https://github.com/omarandlorraine/strop/workflows/z80/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=z80)
 
 A few of the reasons why it's possible to generate better code than a compiler
 does:
