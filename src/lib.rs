@@ -14,6 +14,7 @@ pub mod instruction;
 pub mod search;
 pub mod snippets;
 
+pub mod lr35902;
 pub mod mos6502;
 pub mod z80;
 
