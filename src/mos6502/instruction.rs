@@ -212,7 +212,7 @@ mod test {
     fn new_instructions() {
         for _i in 0..50000 {
             let mut insn = Instruction6502::new();
-            
+
             insn.length();
             insn.as_bytes();
 
