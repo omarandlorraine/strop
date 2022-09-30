@@ -1,9 +1,15 @@
 use crate::instruction::Instruction;
 use crate::snippets::Snippet;
 
+/// VarState keeps track of the state of a Use Before Initialization lint.
+#[derive(PartialEq)]
 pub enum VarState {
+    /// The variable has neither been used nor initialized
     Nothing,
+    /// The variable has been initialized
     Initialized,
+    /// The variable has neither been used but not initialized. This is normally the state we want
+    /// to avoid.
     UseBeforeInit,
 }
 
