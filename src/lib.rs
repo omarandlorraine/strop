@@ -13,6 +13,7 @@ pub mod emulator;
 pub mod instruction;
 pub mod search;
 pub mod snippets;
+pub mod static_analysis;
 
 pub mod lr35902;
 pub mod mos6502;

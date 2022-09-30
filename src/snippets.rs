@@ -35,6 +35,10 @@ impl<I: Instruction + std::fmt::Display> Snippet<I> {
         }
     }
 
+    pub fn vec(&self) -> Vec<I> {
+        self.instructions.clone()
+    }
+
     fn to_bytes(&self) -> Vec<u8> {
         self.instructions
             .iter()
