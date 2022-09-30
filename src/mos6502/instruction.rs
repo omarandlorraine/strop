@@ -42,7 +42,7 @@ fn instruction_length(op: Operand) -> usize {
     }
 }
 
-fn decode(machine_code: &[u8]) -> (Opcode, Operand) {
+pub fn decode(machine_code: &[u8]) -> (Opcode, Operand) {
     let mut inst = YaxpeaxInstruction::default();
     let decoder = yaxpeax_6502::InstDecoder;
     let mut reader = U8Reader::new(machine_code);
