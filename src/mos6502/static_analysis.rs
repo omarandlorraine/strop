@@ -52,6 +52,17 @@ pub fn check_use_c(state: VarState, insn: Instruction6502) -> VarState {
     }
 }
 
+/// Check for the Decimal flag
+pub fn check_use_d(state: VarState, insn: Instruction6502) -> VarState {
+    match decode(&insn.to_bytes()) {
+        (Opcode::ADC, _) => state.used(),
+        (Opcode::SED, _) => state.init(),
+        (Opcode::SBC, _) => state.used(),
+        (Opcode::SED, _) => state.init(),
+        (_, _) => state,
+    }
+}
+
 /// returns true iff the instruction is a conditional branch
 fn is_branch(insn: Instruction6502) -> bool {
     match decode(&insn.to_bytes()) {
