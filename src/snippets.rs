@@ -46,19 +46,6 @@ impl<I: Instruction + std::fmt::Display> Snippet<I> {
             .collect()
     }
 
-    pub fn check_use(&self, sets: fn(&I) -> bool, requires: fn(&I) -> bool) -> bool {
-        //! Check that the snippet does not use a register without first initializing it.
-        for i in &self.instructions {
-            if sets(i) {
-                return true;
-            };
-            if requires(i) {
-                return false;
-            };
-        }
-        true
-    }
-
     pub fn disassemble(&self) {
         // todo: Can this use yaxpeax-dis somehow instead?
         let mut address = self.org;
