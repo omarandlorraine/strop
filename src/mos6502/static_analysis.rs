@@ -15,7 +15,7 @@ use crate::mos6502::Instruction6502;
 use crate::mos6502::instruction::decode;
 
 /// Check for the X register
-pub fn check_use_x(state: VarState, insn: Instruction6502) -> VarState {
+pub fn check_use_x(state: VarState, insn: &Instruction6502) -> VarState {
     match decode(&insn.to_bytes()) {
         (_, Operand::XIndexedIndirect(_)) => state.used(),
         (_, Operand::ZeroPageX(_)) => state.used(),
@@ -33,7 +33,7 @@ pub fn check_use_x(state: VarState, insn: Instruction6502) -> VarState {
 }
 
 /// Check for the Carry flag
-pub fn check_use_c(state: VarState, insn: Instruction6502) -> VarState {
+pub fn check_use_c(state: VarState, insn: &Instruction6502) -> VarState {
     match decode(&insn.to_bytes()) {
         (Opcode::ADC, _) => state.used(),
         (Opcode::ASL, _) => state.init(),
@@ -53,7 +53,7 @@ pub fn check_use_c(state: VarState, insn: Instruction6502) -> VarState {
 }
 
 /// Check for the Decimal flag
-pub fn check_use_d(state: VarState, insn: Instruction6502) -> VarState {
+pub fn check_use_d(state: VarState, insn: &Instruction6502) -> VarState {
     match decode(&insn.to_bytes()) {
         (Opcode::ADC, _) => state.used(),
         (Opcode::SED, _) => state.init(),

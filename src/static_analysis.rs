@@ -36,7 +36,7 @@ impl VarState {
 }
 
 pub fn check_use<I: Instruction + std::fmt::Display>(
-    snippet: Snippet<I>,
+    snippet: &Snippet<I>,
     lint: fn(VarState, &I) -> VarState,
 ) -> bool {
     //! Check that the snippet does not use a register (or flag, or variable, or whatever) without first initializing it.
