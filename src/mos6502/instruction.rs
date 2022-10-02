@@ -1,6 +1,5 @@
 //! The `Instruction6502` type, for representing a MOS 6502 instruction.
 
-#![warn(missing_debug_implementations, missing_docs)]
 #![allow(dead_code)]
 
 use crate::instruction::Instruction;

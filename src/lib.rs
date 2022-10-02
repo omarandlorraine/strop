@@ -8,7 +8,6 @@
 //! mainstream compilers such as LLVM. These have included architectures common in low-end
 //! embedded, and hobbyist retrocomputing.
 
-#![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 pub mod emulator;
 pub mod instruction;
 pub mod search;
