@@ -11,6 +11,23 @@ use yaxpeax_6502::{Opcode, Operand};
 use yaxpeax_arch::Decoder;
 use yaxpeax_arch::U8Reader;
 
+use phf::{phf_set, Set};
+
+static ACC_OPCODES: Set<u8> = phf_set! { };
+static IMP_OPCODES: Set<u8> = phf_set! { };
+static IMM_OPCODES: Set<u8> = phf_set! { };
+static ZP_OPCODES: Set<u8> = phf_set! { };
+static ZPX_OPCODES: Set<u8> = phf_set! { };
+static ZPY_OPCODES: Set<u8> = phf_set! { };
+static ABS_OPCODES: Set<u8> = phf_set! { };
+static ABSX_OPCODES: Set<u8> = phf_set! { };
+static ABSY_OPCODES: Set<u8> = phf_set! { };
+static IND_OPCODES: Set<u8> = phf_set! { };
+static INDX_OPCODES: Set<u8> = phf_set! { };
+static INDY_OPCODES: Set<u8> = phf_set! { };
+static REL_OPCODES: Set<u8> = phf_set! { };
+
+
 fn random_codepoint() -> u8 {
     // returns one random, valid opcode
     *vec![
@@ -205,8 +222,24 @@ impl Instruction for Instruction6502 {
 
 #[cfg(test)]
 mod test {
+    use yaxpeax_6502::{Opcode, Operand};
     use crate::instruction::Instruction;
     use crate::mos6502::Instruction6502;
+    use crate::mos6502::instruction::decode;
+    use crate::mos6502::instruction::IMP_OPCODES;
+    use crate::mos6502::instruction::ACC_OPCODES;
+    use crate::mos6502::instruction::IMM_OPCODES;
+    use crate::mos6502::instruction::ABS_OPCODES;
+    use crate::mos6502::instruction::ABSX_OPCODES;
+    use crate::mos6502::instruction::ABSY_OPCODES;
+    use crate::mos6502::instruction::IND_OPCODES;
+    use crate::mos6502::instruction::INDX_OPCODES;
+    use crate::mos6502::instruction::INDY_OPCODES;
+    use crate::mos6502::instruction::ZP_OPCODES;
+    use crate::mos6502::instruction::ZPX_OPCODES;
+    use crate::mos6502::instruction::ZPY_OPCODES;
+    use crate::mos6502::instruction::REL_OPCODES;
+
 
     #[test]
     fn new_instructions() {
@@ -216,7 +249,23 @@ mod test {
             insn.length();
             insn.as_bytes();
 
-            let disasm = format!("{}", insn);
+            let _disasm = format!("{}", insn);
+
+            match decode(&insn.to_bytes()) {
+                (_, Operand::Implied) => assert!(IMP_OPCODES.contains(&insn.opcode)),
+                (_, Operand::Accumulator) => assert!(ACC_OPCODES.contains(&insn.opcode)),
+                (_, Operand::Immediate(_)) => assert!(IMM_OPCODES.contains(&insn.opcode)),
+                (_, Operand::Absolute(_)) => assert!(ABS_OPCODES.contains(&insn.opcode)),
+                (_, Operand::AbsoluteX(_)) => assert!(ABSX_OPCODES.contains(&insn.opcode)),
+                (_, Operand::AbsoluteY(_)) => assert!(ABSY_OPCODES.contains(&insn.opcode)),
+                (_, Operand::Indirect(_)) => assert!(IND_OPCODES.contains(&insn.opcode)),
+                (_, Operand::XIndexedIndirect(_)) => assert!(INDX_OPCODES.contains(&insn.opcode)),
+                (_, Operand::IndirectYIndexed(_)) => assert!(INDY_OPCODES.contains(&insn.opcode)),
+                (_, Operand::ZeroPage(_)) => assert!(ZP_OPCODES.contains(&insn.opcode)),
+                (_, Operand::ZeroPageX(_)) => assert!(ZPX_OPCODES.contains(&insn.opcode)),
+                (_, Operand::ZeroPageY(_)) => assert!(ZPY_OPCODES.contains(&insn.opcode)),
+                (_, Operand::Relative(_)) => assert!(REL_OPCODES.contains(&insn.opcode)),
+            }
         }
     }
 }
