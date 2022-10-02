@@ -32,9 +32,11 @@ impl Instruction for InstructionZ80 {
     where
         Self: Sized,
     {
+        // Known issue: because of a bug in the dez80 crate, this does not generate any ED-prefixed
+        // opcodes
         loop {
             let encoding: [u8; 5] = [random(), random(), random(), random(), random()];
-            if DeZ80Instruction::decode_one(&mut encoding.as_slice()).is_ok() {
+            if encoding[0] != 0xed && ((encoding[0], encoding[1]) != (0xdd, 0xed)) && DeZ80Instruction::decode_one(&mut encoding.as_slice()).is_ok() {
                 return Self { encoding };
             }
         }
