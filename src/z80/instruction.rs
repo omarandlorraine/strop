@@ -59,7 +59,7 @@ mod test {
     #[test]
     fn new_instructions() {
         for _i in 0..50000 {
-            let mut insn = InstructionZ80::new();
+            let insn = InstructionZ80::new();
 
             // Make sure the instruction can be disassembled (i. e., the diassembler doesn't bail
             // out and comment out the hex)
