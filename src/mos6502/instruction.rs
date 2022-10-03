@@ -14,13 +14,15 @@ use phf::{phf_set, Set};
 
 static ACC_OPCODES: Set<u8> = phf_set! {0x4au8,0x6au8,0x2au8,0x0au8};
 static IMP_OPCODES: Set<u8> = phf_set! { 0x60u8,0xa8u8,0xc8u8,0x8au8,0x98u8,0x08u8,0x00u8,0x68u8,0xeau8,0xcau8,0xf8u8,0x38u8,0x40u8,0x48u8,0x18u8,0xe8u8,0xd8u8,0x58u8,0x78u8,0x28u8,0xbau8,0xaau8,0x88u8,0xb8u8,0x9au8};
-static IMM_OPCODES: Set<u8> = phf_set! { 0xa2u8,0xe9u8,0xc9u8,0x09u8,0x49u8,0x29u8,0xe0u8,0xa9u8,0xc0u8,0xa0u8,0x69u8 };
+static IMM_OPCODES: Set<u8> =
+    phf_set! { 0xa2u8,0xe9u8,0xc9u8,0x09u8,0x49u8,0x29u8,0xe0u8,0xa9u8,0xc0u8,0xa0u8,0x69u8 };
 static ZP_OPCODES: Set<u8> = phf_set! { 0x86u8,0x24u8,0xc6u8,0x84u8,0x66u8,0xe5u8,0xa6u8,0x85u8,0xa5u8,0x65u8,0x05u8,0xc4u8,0xe6u8,0x06u8,0x26u8,0xa4u8,0x25u8,0xe4u8,0x46u8,0xc5u8,0x45u8 };
 static ZPX_OPCODES: Set<u8> = phf_set! { 0xd6u8,0xb4u8,0x35u8,0xd5u8,0xb5u8,0x76u8,0x36u8,0x95u8,0xf6u8,0x94u8,0xf5u8,0x16u8,0x55u8,0x75u8,0x15u8,0x56u8};
 static ZPY_OPCODES: Set<u8> = phf_set! { 0x96u8,0xb6u8 };
 static ABS_OPCODES: Set<u8> = phf_set! { 0x20u8,0x8du8,0xedu8,0x4eu8,0xcdu8,0xaeu8,0x2eu8,0x6eu8,0xceu8,0xacu8,0x8cu8,0xccu8,0xecu8,0x2cu8,0x4cu8,0x4du8,0x2du8,0x0eu8,0xeeu8,0x6du8,0x8eu8,0x0du8,0xadu8};
 static ABSX_OPCODES: Set<u8> = phf_set! { 0x9du8,0xfeu8,0x7eu8,0x3eu8,0x5du8,0xfdu8,0x5eu8,0x7du8,0xdeu8,0x3du8,0x1eu8,0xbdu8,0x1du8,0xddu8,0xbcu8 };
-static ABSY_OPCODES: Set<u8> = phf_set! { 0xbeu8,0x79u8,0xf9u8,0xb9u8,0xd9u8,0x39u8,0x99u8,0x19u8,0x59u8 };
+static ABSY_OPCODES: Set<u8> =
+    phf_set! { 0xbeu8,0x79u8,0xf9u8,0xb9u8,0xd9u8,0x39u8,0x99u8,0x19u8,0x59u8 };
 static IND_OPCODES: Set<u8> = phf_set! { 0x6cu8 };
 static INDX_OPCODES: Set<u8> = phf_set! { 0x81u8,0x41u8,0xc1u8,0x21u8,0xe1u8,0x61u8,0xa1u8,0x01u8 };
 static INDY_OPCODES: Set<u8> = phf_set! { 0xd1u8,0x11u8,0xb1u8,0x51u8,0xf1u8,0x31u8,0x91u8,0x71u8 };
@@ -251,19 +253,71 @@ mod test {
             let opcode = insn.opcode;
 
             match decode(&insn.to_bytes()) {
-                (_, Operand::Implied) => assert!( IMP_OPCODES.contains(&insn.opcode), "{:#04x} should be in IMP_OPCODES", opcode),
-                (_, Operand::Accumulator) => assert!( ACC_OPCODES.contains(&insn.opcode), "{:#04x} should be in ACC_OPCODES", opcode),
-                (_, Operand::Immediate(_)) => assert!( IMM_OPCODES.contains(&insn.opcode), "{:#04x} should be in IMM_OPCODES", opcode),
-                (_, Operand::Absolute(_)) => assert!( ABS_OPCODES.contains(&insn.opcode), "{:#04x} should be in ABS_OPCODES", opcode),
-                (_, Operand::AbsoluteX(_)) => assert!( ABSX_OPCODES.contains(&insn.opcode), "{:#04x} should be in ABSX_OPCODES", opcode),
-                (_, Operand::AbsoluteY(_)) => assert!( ABSY_OPCODES.contains(&insn.opcode), "{:#04x} should be in ABSY_OPCODES", opcode),
-                (_, Operand::Indirect(_)) => assert!( IND_OPCODES.contains(&insn.opcode), "{:#04x} should be in IND_OPCODES", opcode),
-                (_, Operand::XIndexedIndirect(_)) => assert!( INDX_OPCODES.contains(&insn.opcode), "{:#04x} should be in INDX_OPCODES", opcode),
-                (_, Operand::IndirectYIndexed(_)) => assert!( INDY_OPCODES.contains(&insn.opcode), "{:#04x} should be in INDY_OPCODES", opcode),
-                (_, Operand::ZeroPage(_)) => assert!( ZP_OPCODES.contains(&insn.opcode), "{:#04x} should be in ZP_OPCODES", opcode),
-                (_, Operand::ZeroPageX(_)) => assert!( ZPX_OPCODES.contains(&insn.opcode), "{:#04x} should be in ZPX_OPCODES", opcode),
-                (_, Operand::ZeroPageY(_)) => assert!( ZPY_OPCODES.contains(&insn.opcode), "{:#04x} should be in ZPY_OPCODES", opcode),
-                (_, Operand::Relative(_)) => assert!( REL_OPCODES.contains(&insn.opcode), "{:#04x} should be in REL_OPCODES", opcode),
+                (_, Operand::Implied) => assert!(
+                    IMP_OPCODES.contains(&insn.opcode),
+                    "{:#04x} should be in IMP_OPCODES",
+                    opcode
+                ),
+                (_, Operand::Accumulator) => assert!(
+                    ACC_OPCODES.contains(&insn.opcode),
+                    "{:#04x} should be in ACC_OPCODES",
+                    opcode
+                ),
+                (_, Operand::Immediate(_)) => assert!(
+                    IMM_OPCODES.contains(&insn.opcode),
+                    "{:#04x} should be in IMM_OPCODES",
+                    opcode
+                ),
+                (_, Operand::Absolute(_)) => assert!(
+                    ABS_OPCODES.contains(&insn.opcode),
+                    "{:#04x} should be in ABS_OPCODES",
+                    opcode
+                ),
+                (_, Operand::AbsoluteX(_)) => assert!(
+                    ABSX_OPCODES.contains(&insn.opcode),
+                    "{:#04x} should be in ABSX_OPCODES",
+                    opcode
+                ),
+                (_, Operand::AbsoluteY(_)) => assert!(
+                    ABSY_OPCODES.contains(&insn.opcode),
+                    "{:#04x} should be in ABSY_OPCODES",
+                    opcode
+                ),
+                (_, Operand::Indirect(_)) => assert!(
+                    IND_OPCODES.contains(&insn.opcode),
+                    "{:#04x} should be in IND_OPCODES",
+                    opcode
+                ),
+                (_, Operand::XIndexedIndirect(_)) => assert!(
+                    INDX_OPCODES.contains(&insn.opcode),
+                    "{:#04x} should be in INDX_OPCODES",
+                    opcode
+                ),
+                (_, Operand::IndirectYIndexed(_)) => assert!(
+                    INDY_OPCODES.contains(&insn.opcode),
+                    "{:#04x} should be in INDY_OPCODES",
+                    opcode
+                ),
+                (_, Operand::ZeroPage(_)) => assert!(
+                    ZP_OPCODES.contains(&insn.opcode),
+                    "{:#04x} should be in ZP_OPCODES",
+                    opcode
+                ),
+                (_, Operand::ZeroPageX(_)) => assert!(
+                    ZPX_OPCODES.contains(&insn.opcode),
+                    "{:#04x} should be in ZPX_OPCODES",
+                    opcode
+                ),
+                (_, Operand::ZeroPageY(_)) => assert!(
+                    ZPY_OPCODES.contains(&insn.opcode),
+                    "{:#04x} should be in ZPY_OPCODES",
+                    opcode
+                ),
+                (_, Operand::Relative(_)) => assert!(
+                    REL_OPCODES.contains(&insn.opcode),
+                    "{:#04x} should be in REL_OPCODES",
+                    opcode
+                ),
             }
         }
     }
