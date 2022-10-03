@@ -4,15 +4,15 @@
 #![allow(dead_code)]
 
 use crate::instruction::Instruction;
+use crate::mos6502::instruction::decode;
+use crate::mos6502::Instruction6502;
+use crate::static_analysis::VarState;
 use rand::prelude::SliceRandom;
 use rand::random;
 use yaxpeax_6502::Instruction as YaxpeaxInstruction;
 use yaxpeax_6502::{Opcode, Operand};
 use yaxpeax_arch::Decoder;
 use yaxpeax_arch::U8Reader;
-use crate::static_analysis::VarState;
-use crate::mos6502::Instruction6502;
-use crate::mos6502::instruction::decode;
 
 /// Check for the X register
 pub fn check_use_x(state: VarState, insn: &Instruction6502) -> VarState {

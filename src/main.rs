@@ -1,7 +1,7 @@
+use strop::mos6502::static_analysis::*;
 use strop::mos6502::Instruction6502;
 use strop::snippets::Snippet;
 use strop::static_analysis::check_use;
-use strop::mos6502::static_analysis::*;
 
 fn main() {
     loop {

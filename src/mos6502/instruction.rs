@@ -220,24 +220,23 @@ impl Instruction for Instruction6502 {
 
 #[cfg(test)]
 mod test {
-    use yaxpeax_6502::{Opcode, Operand};
     use crate::instruction::Instruction;
-    use crate::mos6502::Instruction6502;
     use crate::mos6502::instruction::decode;
-    use crate::mos6502::instruction::IMP_OPCODES;
-    use crate::mos6502::instruction::ACC_OPCODES;
-    use crate::mos6502::instruction::IMM_OPCODES;
-    use crate::mos6502::instruction::ABS_OPCODES;
     use crate::mos6502::instruction::ABSX_OPCODES;
     use crate::mos6502::instruction::ABSY_OPCODES;
-    use crate::mos6502::instruction::IND_OPCODES;
+    use crate::mos6502::instruction::ABS_OPCODES;
+    use crate::mos6502::instruction::ACC_OPCODES;
+    use crate::mos6502::instruction::IMM_OPCODES;
+    use crate::mos6502::instruction::IMP_OPCODES;
     use crate::mos6502::instruction::INDX_OPCODES;
     use crate::mos6502::instruction::INDY_OPCODES;
-    use crate::mos6502::instruction::ZP_OPCODES;
+    use crate::mos6502::instruction::IND_OPCODES;
+    use crate::mos6502::instruction::REL_OPCODES;
     use crate::mos6502::instruction::ZPX_OPCODES;
     use crate::mos6502::instruction::ZPY_OPCODES;
-    use crate::mos6502::instruction::REL_OPCODES;
-
+    use crate::mos6502::instruction::ZP_OPCODES;
+    use crate::mos6502::Instruction6502;
+    use yaxpeax_6502::{Opcode, Operand};
 
     #[test]
     fn new_instructions() {
