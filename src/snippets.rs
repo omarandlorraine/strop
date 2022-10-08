@@ -53,4 +53,15 @@ impl<I: Instruction + std::fmt::Display> Snippet<I> {
             address += i.to_bytes().len();
         }
     }
+
+    /// Makes sure that the snippet is a basic block. (i.e., if you call this method, it will
+    /// mutate the snippet in such a way, that it will not contain any branches, jumps, subroutine
+    /// calls, returns, or other flow control operations).
+    pub fn make_bb(&mut self) {
+        for insn in &mut self.instructions {
+            while !insn.perm_bb() {
+                *insn = I::new();
+            }
+        }
+    }
 }
