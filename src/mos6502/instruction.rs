@@ -10,8 +10,6 @@ use yaxpeax_6502::{Opcode, Operand};
 use yaxpeax_arch::Decoder;
 use yaxpeax_arch::U8Reader;
 
-use phf::{phf_set, Set};
-
 fn random_codepoint() -> u8 {
     // returns one random, valid opcode
     *crate::mos6502::data::ALL_OPCODES.choose(&mut rand::thread_rng()).unwrap()

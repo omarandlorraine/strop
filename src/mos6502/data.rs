@@ -2,15 +2,7 @@
 
 #![allow(dead_code)]
 
-use crate::instruction::Instruction;
 use rand::prelude::SliceRandom;
-use rand::random;
-use yaxpeax_6502::Instruction as YaxpeaxInstruction;
-use yaxpeax_6502::{Opcode, Operand};
-use yaxpeax_arch::Decoder;
-use yaxpeax_arch::U8Reader;
-
-use phf::{phf_set, Set};
 
 pub const ACC_OPCODES: [u8; 4] = [0x4a, 0x6a, 0x2a, 0x0a];
 
