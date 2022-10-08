@@ -47,7 +47,6 @@ impl<I: Instruction + std::fmt::Display> Snippet<I> {
     }
 
     pub fn disassemble(&self) {
-        // todo: Can this use yaxpeax-dis somehow instead?
         let mut address = self.org;
         for i in &self.instructions {
             println!("  ${:04x}  {}", address, i);
