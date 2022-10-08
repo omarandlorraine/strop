@@ -1,6 +1,6 @@
 /// the Snippets module
 ///
-/// A snippet is a (possible short) list of assembly instructions, all intended to be executed one
+/// A snippet is a (possibly short) list of assembly instructions, all intended to be executed one
 /// after another.
 ///
 /// In earlier versions of Strop, this was called BasicBlock, but as we're lifting some
