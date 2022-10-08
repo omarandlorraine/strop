@@ -186,6 +186,24 @@ impl Instruction for Instruction6502 {
     fn as_bytes(&self) -> Box<(dyn Iterator<Item = u8> + 'static)> {
         Box::new(self.to_bytes().into_iter())
     }
+    
+    fn perm_bb(&self) -> bool {
+        match decode(&self.to_bytes()) {
+            (Opcode::BCC, _) => false,
+            (Opcode::BCS, _) => false,
+            (Opcode::BEQ, _) => false,
+            (Opcode::BMI, _) => false,
+            (Opcode::BNE, _) => false,
+            (Opcode::BPL, _) => false,
+            (Opcode::BVC, _) => false,
+            (Opcode::BVS, _) => false,
+            (Opcode::JMP, _) => false,
+            (Opcode::JSR, _) => false,
+            (Opcode::RTS, _) => false,
+            (Opcode::RTI, _) => false,
+            _ => true,
+        }
+    }
 }
 
 #[cfg(test)]

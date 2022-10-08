@@ -22,6 +22,12 @@ impl std::fmt::Display for InstructionZ80 {
     }
 }
 
+impl InstructionZ80 {
+    fn decode(&self) -> DeZ80Instruction{
+        DeZ80Instruction::decode_one(&mut self.encoding.as_slice()).unwrap()
+    }
+}
+
 impl Instruction for InstructionZ80 {
     fn length(&self) -> usize {
         let instr = DeZ80Instruction::decode_one(&mut self.encoding.as_slice()).unwrap();
@@ -52,6 +58,22 @@ impl Instruction for InstructionZ80 {
 
     fn as_bytes(&self) -> Box<(dyn Iterator<Item = u8> + 'static)> {
         Box::new(self.to_bytes().into_iter())
+    }
+
+    fn perm_bb(&self) -> bool {
+        use dez80::instruction::InstructionType::*;
+        match self.decode().r#type {
+            Call(_) => false,
+            Djnz => false,
+            Halt => false,
+            Jp(_) => false,
+            Jr(_) => false,
+            Ret(_) => false,
+            Reti => false,
+            Retn => false,
+            Rst(_) => false,
+            _ => true,
+        }
     }
 }
 

@@ -17,4 +17,8 @@ pub trait Instruction: Clone + Sized {
 
     /// Returns an iterator over the bytes that encode the instruction
     fn as_bytes(&self) -> Box<dyn Iterator<Item = u8>>;
+
+    /// Returns true if the instruction may appear in a basic block
+    fn perm_bb(&self) -> bool;
+
 }
