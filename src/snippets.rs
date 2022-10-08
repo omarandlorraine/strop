@@ -35,6 +35,16 @@ impl<I: Instruction + std::fmt::Display> Snippet<I> {
         }
     }
 
+    pub fn new_with_org_and_length(org: usize, max_length: usize) -> Self {
+        use crate::rand::{thread_rng, Rng};
+        let i = thread_rng().gen_range(0..max_length);
+
+        Self {
+            org,
+            instructions: (1..i).map(|_| I::new()).collect(),
+        }
+    }
+
     pub fn vec(&self) -> Vec<I> {
         self.instructions.clone()
     }

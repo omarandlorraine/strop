@@ -9,6 +9,7 @@
 //! embedded, and hobbyist retrocomputing.
 
 pub mod emulator;
+pub mod generate;
 pub mod instruction;
 pub mod search;
 pub mod snippets;
