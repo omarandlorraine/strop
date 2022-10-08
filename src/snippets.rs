@@ -64,4 +64,8 @@ impl<I: Instruction + std::fmt::Display> Snippet<I> {
             }
         }
     }
+
+    pub fn retain(&mut self, filterfn: fn(&I) -> bool) {
+        self.instructions.retain(filterfn);
+    }
 }

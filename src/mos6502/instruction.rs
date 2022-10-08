@@ -97,6 +97,15 @@ impl Instruction6502 {
     fn is_backward_branch(&self) -> bool {
         self.is_branch() && !self.is_forward_branch()
     }
+
+    pub fn avoid_rorbug(&self) -> bool {
+        //! Returns false if the instruction exercises the ROR bug.
+        //! Early revisions of the MOS 6502 do not have this instruction
+        match decode(&self.to_bytes()) {
+            (Opcode::ROR, _) => false,
+            _ => true,
+        }
+    }
 }
 
 impl std::fmt::Display for Instruction6502 {
