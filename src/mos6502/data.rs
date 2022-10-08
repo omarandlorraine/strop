@@ -66,11 +66,11 @@ fn random_codepoint() -> u8 {
 #[cfg(test)]
 mod test {
     use crate::instruction::Instruction;
-    use crate::mos6502::data::ALL_OPCODES;
     use crate::mos6502::data::ABSX_OPCODES;
     use crate::mos6502::data::ABSY_OPCODES;
     use crate::mos6502::data::ABS_OPCODES;
     use crate::mos6502::data::ACC_OPCODES;
+    use crate::mos6502::data::ALL_OPCODES;
     use crate::mos6502::data::IMM_OPCODES;
     use crate::mos6502::data::IMP_OPCODES;
     use crate::mos6502::data::INDX_OPCODES;
@@ -94,19 +94,45 @@ mod test {
             found.append(&mut vec![op]);
         }
 
-        for op in ABS_OPCODES { check(op, &mut found) }
-        for op in ABSX_OPCODES { check(op, &mut found) }
-        for op in ABSY_OPCODES { check(op, &mut found) }
-        for op in ACC_OPCODES { check(op, &mut found) }
-        for op in IMM_OPCODES { check(op, &mut found) }
-        for op in IMP_OPCODES { check(op, &mut found) }
-        for op in INDX_OPCODES { check(op, &mut found) }
-        for op in INDY_OPCODES { check(op, &mut found) }
-        for op in IND_OPCODES { check(op, &mut found) }
-        for op in REL_OPCODES { check(op, &mut found) }
-        for op in ZPX_OPCODES { check(op, &mut found) }
-        for op in ZPY_OPCODES { check(op, &mut found) }
-        for op in ZP_OPCODES { check(op, &mut found) }
+        for op in ABS_OPCODES {
+            check(op, &mut found)
+        }
+        for op in ABSX_OPCODES {
+            check(op, &mut found)
+        }
+        for op in ABSY_OPCODES {
+            check(op, &mut found)
+        }
+        for op in ACC_OPCODES {
+            check(op, &mut found)
+        }
+        for op in IMM_OPCODES {
+            check(op, &mut found)
+        }
+        for op in IMP_OPCODES {
+            check(op, &mut found)
+        }
+        for op in INDX_OPCODES {
+            check(op, &mut found)
+        }
+        for op in INDY_OPCODES {
+            check(op, &mut found)
+        }
+        for op in IND_OPCODES {
+            check(op, &mut found)
+        }
+        for op in REL_OPCODES {
+            check(op, &mut found)
+        }
+        for op in ZPX_OPCODES {
+            check(op, &mut found)
+        }
+        for op in ZPY_OPCODES {
+            check(op, &mut found)
+        }
+        for op in ZP_OPCODES {
+            check(op, &mut found)
+        }
 
         for op in ALL_OPCODES {
             if !found.contains(&op) {

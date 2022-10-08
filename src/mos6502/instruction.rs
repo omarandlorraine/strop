@@ -12,7 +12,9 @@ use yaxpeax_arch::U8Reader;
 
 fn random_codepoint() -> u8 {
     // returns one random, valid opcode
-    *crate::mos6502::data::ALL_OPCODES.choose(&mut rand::thread_rng()).unwrap()
+    *crate::mos6502::data::ALL_OPCODES
+        .choose(&mut rand::thread_rng())
+        .unwrap()
 }
 
 fn instruction_length(op: Operand) -> usize {
@@ -186,7 +188,7 @@ impl Instruction for Instruction6502 {
     fn as_bytes(&self) -> Box<(dyn Iterator<Item = u8> + 'static)> {
         Box::new(self.to_bytes().into_iter())
     }
-    
+
     fn perm_bb(&self) -> bool {
         match decode(&self.to_bytes()) {
             (Opcode::BCC, _) => false,
@@ -209,7 +211,6 @@ impl Instruction for Instruction6502 {
 #[cfg(test)]
 mod test {
     use crate::instruction::Instruction;
-    use crate::mos6502::instruction::decode;
     use crate::mos6502::data::ABSX_OPCODES;
     use crate::mos6502::data::ABSY_OPCODES;
     use crate::mos6502::data::ABS_OPCODES;
@@ -223,6 +224,7 @@ mod test {
     use crate::mos6502::data::ZPX_OPCODES;
     use crate::mos6502::data::ZPY_OPCODES;
     use crate::mos6502::data::ZP_OPCODES;
+    use crate::mos6502::instruction::decode;
     use crate::mos6502::Instruction6502;
     use yaxpeax_6502::{Opcode, Operand};
 

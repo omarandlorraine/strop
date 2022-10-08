@@ -23,7 +23,7 @@ impl std::fmt::Display for InstructionZ80 {
 }
 
 impl InstructionZ80 {
-    fn decode(&self) -> DeZ80Instruction{
+    fn decode(&self) -> DeZ80Instruction {
         DeZ80Instruction::decode_one(&mut self.encoding.as_slice()).unwrap()
     }
 }

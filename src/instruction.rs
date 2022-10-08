@@ -20,5 +20,4 @@ pub trait Instruction: Clone + Sized {
 
     /// Returns true if the instruction may appear in a basic block
     fn perm_bb(&self) -> bool;
-
 }
