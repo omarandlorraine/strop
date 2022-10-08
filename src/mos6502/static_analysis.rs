@@ -51,8 +51,8 @@ pub fn check_use_c(state: VarState, insn: &Instruction6502) -> VarState {
 pub fn check_use_d(state: VarState, insn: &Instruction6502) -> VarState {
     match decode(&insn.to_bytes()) {
         (Opcode::ADC, _) => state.used(),
-        (Opcode::SED, _) => state.init(),
         (Opcode::SBC, _) => state.used(),
+        (Opcode::CLD, _) => state.init(),
         (Opcode::SED, _) => state.init(),
         (_, _) => state,
     }
