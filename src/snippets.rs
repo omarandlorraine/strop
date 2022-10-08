@@ -8,8 +8,10 @@
 ///
 ///
 use crate::instruction::Instruction;
+use rand::Rng;
+use rand::thread_rng;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Snippet<I> {
     /// The list of instructions in the snippet
     pub instructions: Vec<I>,
@@ -36,7 +38,6 @@ impl<I: Instruction + std::fmt::Display> Snippet<I> {
     }
 
     pub fn new_with_org_and_length(org: usize, max_length: usize) -> Self {
-        use crate::rand::{thread_rng, Rng};
         let i = thread_rng().gen_range(0..max_length);
 
         Self {
@@ -77,5 +78,16 @@ impl<I: Instruction + std::fmt::Display> Snippet<I> {
 
     pub fn retain(&mut self, filterfn: fn(&I) -> bool) {
         self.instructions.retain(filterfn);
+    }
+
+    pub fn mutate(&mut self) {
+        if self.instructions.len() == 0 {
+            // The only mutation we can do here is to insert random instructions
+            self.instructions.push(I::new());
+            return;
+        }
+        let offset = thread_rng().gen_range(0..self.instructions.len());
+        todo!()
+        // the miscellaneous mutations should go here
     }
 }
