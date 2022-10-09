@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 
 use crate::instruction::Instruction;
+use crate::randomly;
 use rand::prelude::SliceRandom;
 use rand::random;
 use yaxpeax_6502::Instruction as YaxpeaxInstruction;
@@ -214,6 +215,60 @@ impl Instruction for Instruction6502 {
             (Opcode::RTI, _) => false,
             _ => true,
         }
+    }
+
+    fn mutate_operand(&mut self) {
+        // Pick another opcode having the same addressing mode
+        match decode(&self.to_bytes()).1 {
+            Operand::Implied | Operand::Accumulator => (),
+            Operand::Immediate(_) => {
+                // try incrementing the value, decrementing it, or flipping a random bit
+                randomly!(
+                    { self.operand1 = self.operand1.map(|v| v.wrapping_add(1)) }
+                    { self.operand1 = self.operand1.map(|v| v.wrapping_sub(1)) }
+                    { let random_bit = *vec![0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80].choose(&mut rand::thread_rng()).unwrap();
+                      self.operand1 = self.operand1.map(|v| v ^ random_bit);
+                    }
+                );
+            }
+            Operand::ZeroPage(_) | Operand::ZeroPageX(_) | Operand::ZeroPageY(_) => {
+                self.operand1 = random();
+            }
+            Operand::Absolute(_)
+            | Operand::AbsoluteX(_)
+            | Operand::AbsoluteY(_)
+            | Operand::Indirect(_) => {
+                self.operand1 = random();
+                self.operand2 = random();
+            }
+            Operand::IndirectYIndexed(_) | Operand::XIndexedIndirect(_) => {
+                self.operand1 = random();
+            }
+            Operand::Relative(_) => {
+                self.operand1 = random();
+            }
+        }
+    }
+
+    fn mutate_opcode(&mut self) {
+        // Pick another opcode having the same addressing mode
+        use crate::mos6502::data::*;
+
+        self.opcode = match decode(&self.to_bytes()).1 {
+            Operand::Implied => *IMP_OPCODES.choose(&mut rand::thread_rng()).unwrap(),
+            Operand::Accumulator => *ACC_OPCODES.choose(&mut rand::thread_rng()).unwrap(),
+            Operand::Immediate(_) => *IMM_OPCODES.choose(&mut rand::thread_rng()).unwrap(),
+            Operand::ZeroPage(_) => *ZP_OPCODES.choose(&mut rand::thread_rng()).unwrap(),
+            Operand::ZeroPageX(_) => *ZPX_OPCODES.choose(&mut rand::thread_rng()).unwrap(),
+            Operand::ZeroPageY(_) => *ZPY_OPCODES.choose(&mut rand::thread_rng()).unwrap(),
+            Operand::Absolute(_) => *ABS_OPCODES.choose(&mut rand::thread_rng()).unwrap(),
+            Operand::AbsoluteX(_) => *ABSX_OPCODES.choose(&mut rand::thread_rng()).unwrap(),
+            Operand::AbsoluteY(_) => *ABSY_OPCODES.choose(&mut rand::thread_rng()).unwrap(),
+            Operand::Indirect(_) => *IND_OPCODES.choose(&mut rand::thread_rng()).unwrap(),
+            Operand::IndirectYIndexed(_) => *INDX_OPCODES.choose(&mut rand::thread_rng()).unwrap(),
+            Operand::XIndexedIndirect(_) => *INDY_OPCODES.choose(&mut rand::thread_rng()).unwrap(),
+            Operand::Relative(_) => *REL_OPCODES.choose(&mut rand::thread_rng()).unwrap(),
+        };
     }
 }
 

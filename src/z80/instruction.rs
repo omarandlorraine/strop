@@ -4,7 +4,9 @@
 #![allow(dead_code)]
 
 use crate::instruction::Instruction;
+use crate::randomly;
 use dez80::Instruction as DeZ80Instruction;
+use rand::prelude::SliceRandom;
 use rand::random;
 
 //    DeZ80Instruction::decode_one(&mut data)
@@ -23,6 +25,13 @@ impl std::fmt::Display for InstructionZ80 {
 }
 
 impl InstructionZ80 {
+    fn encode(&mut self, insn: dez80::instruction::Instruction) {
+        let istream: Vec<_> = insn.to_bytes();
+        for i in 0..istream.len() {
+            self.encoding[i] = istream[i];
+        }
+    }
+
     fn decode(&self) -> DeZ80Instruction {
         DeZ80Instruction::decode_one(&mut self.encoding.as_slice()).unwrap()
     }
@@ -151,6 +160,133 @@ impl Instruction for InstructionZ80 {
             Rst(_) => false,
             _ => true,
         }
+    }
+
+    fn mutate_operand(&mut self) {
+        use dez80::instruction::Operand::*;
+        use dez80::RegisterPairType;
+        use dez80::SingleRegisterType;
+
+        let mut insn = self.decode();
+
+        fn r() -> SingleRegisterType {
+            use dez80::SingleRegisterType::*;
+            *vec![A, F, B, C, D, E, H, L, IXH, IXL, IYH, IYL]
+                .choose(&mut rand::thread_rng())
+                .unwrap()
+        }
+
+        fn rp() -> RegisterPairType {
+            use dez80::RegisterPairType::*;
+            *vec![AF, BC, DE, HL, IX, IY, PC, SP]
+                .choose(&mut rand::thread_rng())
+                .unwrap()
+        }
+
+        let operand = *vec![
+            OctetImmediate(random()),
+            DoubletImmediate(random()),
+            OctetImplied(random()),
+            RegisterImplied(r()),
+            RegisterPairImplied(rp()),
+            RegisterImpliedBit(r(), random()),
+            MemoryDirect(random()),
+            MemoryIndirect(rp()),
+            MemoryIndexed(rp(), random()),
+            MemoryIndexedAndRegister(rp(), random(), r()),
+            MemoryIndirectBit(rp(), random()),
+            MemoryIndexedBit(rp(), random(), random()),
+            MemoryIndexedBitAndRegister(rp(), random(), random(), r()),
+            ProgramCounterRelative(random()),
+            PortDirect(random()),
+            PortIndirect(r()),
+        ]
+        .choose(&mut rand::thread_rng())
+        .unwrap();
+
+        randomly!({insn.source = Some(operand)} {insn.destination = Some(operand)});
+    }
+
+    fn mutate_opcode(&mut self) {
+        use dez80::instruction::InstructionType::*;
+
+        // TODO: Add conditional instructions here, like jr nz, something
+        // TODO: Add im instructions here, im 0, im 1, im 2
+        // TODO: Add the RSTs here
+
+        let mut insn = self.decode();
+        insn.r#type = *vec![
+            Adc,
+            Add,
+            And,
+            Bit,
+            Call(None),
+            Ccf,
+            Cp,
+            Cpd,
+            Cpdr,
+            Cpi,
+            Cpir,
+            Cpl,
+            Daa,
+            Dec,
+            Di,
+            Djnz,
+            Ei,
+            Ex,
+            Exx,
+            Halt,
+            In,
+            Inc,
+            Ind,
+            Indr,
+            Ini,
+            Inir,
+            Jp(None),
+            Jr(None),
+            Ld,
+            Ldd,
+            Lddr,
+            Ldi,
+            Ldir,
+            Neg,
+            Nop,
+            Or,
+            Otdr,
+            Otir,
+            Out,
+            Outd,
+            Outi,
+            Pop,
+            Push,
+            Res,
+            Ret(None),
+            Reti,
+            Retn,
+            Rl,
+            Rla,
+            Rlc,
+            Rlca,
+            Rld,
+            Rr,
+            Rra,
+            Rrc,
+            Rrca,
+            Rrd,
+            Sbc,
+            Scf,
+            Set,
+            Sla,
+            Sll,
+            Sra,
+            Srl,
+            Sub,
+            Xor,
+        ]
+        .choose(&mut rand::thread_rng())
+        .unwrap();
+
+        self.encode(insn);
     }
 }
 
