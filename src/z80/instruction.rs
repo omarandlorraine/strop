@@ -301,7 +301,7 @@ mod test {
         for _i in 0..50000 {
             let insn = InstructionZ80::new();
 
-            // Make sure the instruction can be disassembled (i. e., the diassembler doesn't bail
+            // Make sure the instruction can be disassembled (i. e., the disassembler doesn't bail
             // out and comment out the hex)
             let disasm = format!("{}", insn);
             assert!(
