@@ -24,7 +24,7 @@ impl<I: Instruction> Random<I> {
     }
 }
 
-impl<I: Instruction + std::fmt::Display> Iterator for Random<I> {
+impl<I: Instruction + std::fmt::Display + Copy> Iterator for Random<I> {
     type Item = Snippet<I>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -57,7 +57,7 @@ impl<'a, I: Instruction> McmcSynth<'a, I> {
     }
 }
 
-impl<I: Instruction + std::fmt::Display> Iterator for McmcSynth<'_, I> {
+impl<I: Instruction + std::fmt::Display + Copy> Iterator for McmcSynth<'_, I> {
     type Item = Snippet<I>;
 
     fn next(&mut self) -> Option<Self::Item> {

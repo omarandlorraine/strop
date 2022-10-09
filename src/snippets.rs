@@ -8,6 +8,7 @@
 ///
 ///
 use crate::instruction::Instruction;
+use crate::randomly;
 use rand::Rng;
 use rand::thread_rng;
 
@@ -29,7 +30,7 @@ impl<I: Instruction> Default for Snippet<I> {
     }
 }
 
-impl<I: Instruction + std::fmt::Display> Snippet<I> {
+impl<I: Instruction + std::fmt::Display + Copy> Snippet<I> {
     pub fn new() -> Self {
         Self {
             org: 0x0200,
@@ -87,6 +88,38 @@ impl<I: Instruction + std::fmt::Display> Snippet<I> {
             return;
         }
         let offset = thread_rng().gen_range(0..self.instructions.len());
+        randomly!(
+        {
+            // remove a random instruction
+            self.instructions.remove(offset);
+        }
+        {
+            // insert a randomly generated instruction somewhere in the program
+            self.instructions.insert(offset, I::new());
+        }
+        {
+            // replace one instruction with a randomly generated one
+            self.instructions[offset] = I::new();
+        }
+        {
+            // pick an instruction at random, and modify its operand
+            todo!();
+            // self.instructions[offset].mutate_operand();
+        }
+        {
+            // pick an instruction at random, and modify its opcode
+            todo!();
+            // self.instructions[offset].mutate_opcode();
+        }
+        {
+            // pick two instructions at random, and swap them over
+            let offs2 = thread_rng().gen_range(0..self.instructions.len());
+            let tmp = self.instructions[offs2];
+            self.instructions[offs2] = self.instructions[offset];
+            self.instructions[offset] = tmp;
+        }
+        );
+
         todo!()
         // the miscellaneous mutations should go here
     }

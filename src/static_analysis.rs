@@ -35,7 +35,7 @@ impl VarState {
     }
 }
 
-pub fn check_use<I: Instruction + std::fmt::Display>(
+pub fn check_use<I: Instruction + std::fmt::Display + Copy>(
     snippet: &Snippet<I>,
     lint: fn(VarState, &I) -> VarState,
 ) -> bool {

@@ -38,7 +38,7 @@ pub fn decode(machine_code: &[u8]) -> (Opcode, Operand) {
 }
 
 /// Represents a 6502 Instruction
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Instruction6502 {
     opcode: u8,
     operand1: Option<u8>,
