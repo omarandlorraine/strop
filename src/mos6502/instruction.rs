@@ -102,10 +102,7 @@ impl Instruction6502 {
     pub fn avoid_rorbug(&self) -> bool {
         //! Returns false if the instruction exercises the ROR bug.
         //! Early revisions of the MOS 6502 do not have this instruction
-        match decode(&self.to_bytes()) {
-            (Opcode::ROR, _) => false,
-            _ => true,
-        }
+        !matches!(decode(&self.to_bytes()).0, Opcode::ROR)
     }
 }
 
@@ -200,21 +197,21 @@ impl Instruction for Instruction6502 {
     }
 
     fn perm_bb(&self) -> bool {
-        match decode(&self.to_bytes()) {
-            (Opcode::BCC, _) => false,
-            (Opcode::BCS, _) => false,
-            (Opcode::BEQ, _) => false,
-            (Opcode::BMI, _) => false,
-            (Opcode::BNE, _) => false,
-            (Opcode::BPL, _) => false,
-            (Opcode::BVC, _) => false,
-            (Opcode::BVS, _) => false,
-            (Opcode::JMP, _) => false,
-            (Opcode::JSR, _) => false,
-            (Opcode::RTS, _) => false,
-            (Opcode::RTI, _) => false,
-            _ => true,
-        }
+        !matches!(
+            decode(&self.to_bytes()).0,
+            Opcode::BCC
+                | Opcode::BCS
+                | Opcode::BEQ
+                | Opcode::BMI
+                | Opcode::BNE
+                | Opcode::BPL
+                | Opcode::BVC
+                | Opcode::BVS
+                | Opcode::JMP
+                | Opcode::JSR
+                | Opcode::RTS
+                | Opcode::RTI
+        )
     }
 
     fn mutate_operand(&mut self) {

@@ -82,7 +82,7 @@ impl<I: Instruction + std::fmt::Display + Copy> Snippet<I> {
     }
 
     pub fn mutate(&mut self) {
-        if self.instructions.len() == 0 {
+        if self.instructions.is_empty() {
             // The only mutation we can do here is to insert random instructions
             self.instructions.push(I::new());
             return;
@@ -114,9 +114,7 @@ impl<I: Instruction + std::fmt::Display + Copy> Snippet<I> {
         {
             // pick two instructions at random, and swap them over
             let offs2 = thread_rng().gen_range(0..self.instructions.len());
-            let tmp = self.instructions[offs2];
-            self.instructions[offs2] = self.instructions[offset];
-            self.instructions[offset] = tmp;
+            self.instructions.swap(offset, offs2);
         }
         );
 

@@ -27,9 +27,7 @@ impl std::fmt::Display for InstructionZ80 {
 impl InstructionZ80 {
     fn encode(&mut self, insn: dez80::instruction::Instruction) {
         let istream: Vec<_> = insn.to_bytes();
-        for i in 0..istream.len() {
-            self.encoding[i] = istream[i];
-        }
+        self.encoding[..istream.len()].copy_from_slice(&istream[..]);
     }
 
     fn decode(&self) -> DeZ80Instruction {
@@ -51,25 +49,23 @@ impl InstructionZ80 {
             return prefixed & 0xf0 != 0x30;
         }
 
-        return match opcode {
-            //                     SM83 instruction   Z80 instruction
-            0xf2 => false, //      ld   a,(c)         jp  p,nn
-            0xe2 => false, //      ld   (c),a         jp  nv,nn
-            0xea => false, //      ld   (nn),a        jp  v,nn
-            0xfa => false, //      ld   a,(nn)        jp  m,nn
-            0x3a => false, //      ldd  a,(hl)        ld  a,(nn)
-            0x32 => false, //      ldd  (hl),a        ld  (nn),a
-            0x2a => false, //      ldi  a,(hl)        ld  hl,(nn)
-            0x22 => false, //      ldi  (hl),a        ld  (nn),hL
-            0x08 => false, //      ld   (nn),sp       ex  af,af'
-            0xe0 => false, //      ldh  (n),a         ret nv
-            0xf0 => false, //      ldh  a,(n)         ret P
-            0xf8 => false, //      ld   hl,(sp+e)     ret m
-            0xe8 => false, //      add  sp,e          ret v
-            0x10 => false, //      stop               djnz
-            0xd9 => false, //      reti               exx
-            _ => true,
-        };
+        !matches!(
+            opcode,
+            0xf2 | 0xe2
+                | 0xea
+                | 0xfa
+                | 0x3a
+                | 0x32
+                | 0x2a
+                | 0x22
+                | 0x08
+                | 0xe0
+                | 0xf0
+                | 0xf8
+                | 0xe8
+                | 0x10
+                | 0xd9
+        )
     }
 
     fn compatible_with_8080(&self) -> bool {
@@ -110,7 +106,7 @@ impl InstructionZ80 {
             return false;
         }
 
-        return true;
+        true
     }
 }
 
@@ -148,18 +144,10 @@ impl Instruction for InstructionZ80 {
 
     fn perm_bb(&self) -> bool {
         use dez80::instruction::InstructionType::*;
-        match self.decode().r#type {
-            Call(_) => false,
-            Djnz => false,
-            Halt => false,
-            Jp(_) => false,
-            Jr(_) => false,
-            Ret(_) => false,
-            Reti => false,
-            Retn => false,
-            Rst(_) => false,
-            _ => true,
-        }
+        !matches!(
+            self.decode().r#type,
+            Call(_) | Djnz | Halt | Jp(_) | Jr(_) | Ret(_) | Reti | Retn | Rst(_)
+        )
     }
 
     fn mutate_operand(&mut self) {
