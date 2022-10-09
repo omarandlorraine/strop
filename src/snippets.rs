@@ -9,8 +9,8 @@
 ///
 use crate::instruction::Instruction;
 use crate::randomly;
-use rand::Rng;
 use rand::thread_rng;
+use rand::Rng;
 
 #[derive(Clone, Debug)]
 pub struct Snippet<I> {

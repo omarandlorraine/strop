@@ -1,8 +1,8 @@
 use crate::instruction::Instruction;
 use crate::snippets::Snippet;
 use rand::random;
-use rand::Rng;
 use rand::thread_rng;
+use rand::Rng;
 
 pub struct Random<I: Instruction> {
     /// Iterator yielding random snippets of the given instruction type, and having any number of
@@ -52,7 +52,10 @@ impl<'a, I: Instruction> McmcSynth<'a, I> {
         let cost = fitness(parent);
         let child = parent.clone();
         Self {
-            parent, child, fitness, cost
+            parent,
+            child,
+            fitness,
+            cost,
         }
     }
 }
