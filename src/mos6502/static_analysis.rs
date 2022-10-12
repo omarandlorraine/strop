@@ -27,6 +27,23 @@ pub fn check_use_x(state: VarState, insn: &Instruction6502) -> VarState {
     }
 }
 
+/// Check for the Y register
+pub fn check_use_y(state: VarState, insn: &Instruction6502) -> VarState {
+    match decode(&insn.to_bytes()) {
+        (_, Operand::IndirectYIndexed(_)) => state.used(),
+        (_, Operand::ZeroPageY(_)) => state.used(),
+        (_, Operand::AbsoluteY(_)) => state.used(),
+        (Opcode::TYA, _) => state.used(),
+        (Opcode::STY, _) => state.used(),
+        (Opcode::CPY, _) => state.used(),
+        (Opcode::DEY, _) => state.used(),
+        (Opcode::INY, _) => state.used(),
+        (Opcode::TAY, _) => state.init(),
+        (Opcode::LDY, _) => state.init(),
+        (_, _) => state,
+    }
+}
+
 /// Check for the Carry flag
 pub fn check_use_c(state: VarState, insn: &Instruction6502) -> VarState {
     match decode(&insn.to_bytes()) {
