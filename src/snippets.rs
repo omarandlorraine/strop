@@ -103,13 +103,11 @@ impl<I: Instruction + std::fmt::Display + Copy> Snippet<I> {
         }
         {
             // pick an instruction at random, and modify its operand
-            todo!();
-            // self.instructions[offset].mutate_operand();
+            self.instructions[offset].mutate_operand();
         }
         {
             // pick an instruction at random, and modify its opcode
-            todo!();
-            // self.instructions[offset].mutate_opcode();
+            self.instructions[offset].mutate_opcode();
         }
         {
             // pick two instructions at random, and swap them over
