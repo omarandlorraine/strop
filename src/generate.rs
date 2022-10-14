@@ -9,29 +9,29 @@ pub struct Random<I: Instruction> {
     /// instructions up to the specified length.
     org: usize,
     max_length: usize,
+    fitness: fn(&Snippet<I>) -> f64,
 
     // for some reason I need this because an unused type parameter is a type error
     dummy: I,
 }
 
 impl<I: Instruction> Random<I> {
-    pub fn new(org: usize, max_length: usize) -> Self {
+    pub fn new(org: usize, max_length: usize, fitness: fn(&Snippet<I>) -> f64) -> Self {
         Self {
             org,
             max_length,
+            fitness,
             dummy: I::new(),
         }
     }
 }
 
 impl<I: Instruction + std::fmt::Display + Copy> Iterator for Random<I> {
-    type Item = Snippet<I>;
+    type Item = (f64, Snippet<I>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        Some(Snippet::<I>::new_with_org_and_length(
-            self.org,
-            self.max_length,
-        ))
+        let sn = Snippet::<I>::new_with_org_and_length(self.org, self.max_length);
+        Some(((self.fitness)(&sn), sn))
     }
 }
 
@@ -61,7 +61,7 @@ impl<'a, I: Instruction> McmcSynth<'a, I> {
 }
 
 impl<I: Instruction + std::fmt::Display + Copy> Iterator for McmcSynth<'_, I> {
-    type Item = Snippet<I>;
+    type Item = (f64, Snippet<I>);
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -71,14 +71,14 @@ impl<I: Instruction + std::fmt::Display + Copy> Iterator for McmcSynth<'_, I> {
 
             // if the random mutation was an improvement, return the child
             if cost < self.cost {
-                return Some(self.child.clone());
+                return Some((cost, self.child.clone()));
             }
 
             // otherwise, with some probability depending on how much worse it was, return it
             // anyway
             let m: f64 = thread_rng().gen_range(0.0..cost);
             if m > self.cost {
-                return Some(self.child.clone());
+                return Some((cost, self.child.clone()));
             }
 
             // still not returned? Then maybe replace the child with the parent. We might have
