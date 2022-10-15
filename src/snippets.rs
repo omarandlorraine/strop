@@ -6,7 +6,8 @@
 /// In earlier versions of Strop, this was called BasicBlock, but as we're lifting some
 /// restrictions this no longer needs to be a basic block.
 ///
-///
+
+#[allow(dead_code)]
 use crate::instruction::Instruction;
 use crate::randomly;
 use rand::thread_rng;
@@ -51,7 +52,7 @@ impl<I: Instruction + std::fmt::Display + Copy> Snippet<I> {
         self.instructions.clone()
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         self.instructions
             .iter()
             .flat_map(|insn| insn.as_bytes())

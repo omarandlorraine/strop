@@ -12,6 +12,7 @@ pub struct Random<I: Instruction> {
     fitness: fn(&Snippet<I>) -> f64,
 
     // for some reason I need this because an unused type parameter is a type error
+    #[allow(dead_code)]
     dummy: I,
 }
 
