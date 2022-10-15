@@ -118,8 +118,5 @@ impl<I: Instruction + std::fmt::Display + Copy> Snippet<I> {
             self.instructions.swap(offset, offs2);
         }
         );
-
-        todo!()
-        // the miscellaneous mutations should go here
     }
 }
