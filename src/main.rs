@@ -5,7 +5,7 @@ use strop::snippets::Snippet;
 use strop::static_analysis::check_use;
 
 fn mult(_sn: &Snippet<Instruction6502>) -> f64 {
-    1.0
+    0.0
 }
 
 fn main() {

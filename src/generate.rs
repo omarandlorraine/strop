@@ -71,7 +71,7 @@ impl<I: Instruction + std::fmt::Display + Copy> Iterator for McmcSynth<'_, I> {
             let cost = (self.fitness)(&self.child);
 
             // if the random mutation was an improvement, return the child
-            if cost < self.cost {
+            if cost <= self.cost {
                 return Some((cost, self.child.clone()));
             }
 
