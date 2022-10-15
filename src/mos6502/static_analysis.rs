@@ -11,7 +11,7 @@ use yaxpeax_6502::{Opcode, Operand};
 
 /// Check for the X register
 pub fn check_use_x(state: VarState, insn: &Instruction6502) -> VarState {
-    match decode(&insn.to_bytes()) {
+    match (insn.opcode, insn.operand) {
         (_, Operand::XIndexedIndirect(_)) => state.used(),
         (_, Operand::ZeroPageX(_)) => state.used(),
         (_, Operand::AbsoluteX(_)) => state.used(),
@@ -29,7 +29,7 @@ pub fn check_use_x(state: VarState, insn: &Instruction6502) -> VarState {
 
 /// Check for the Y register
 pub fn check_use_y(state: VarState, insn: &Instruction6502) -> VarState {
-    match decode(&insn.to_bytes()) {
+    match (insn.opcode, insn.operand) {
         (_, Operand::IndirectYIndexed(_)) => state.used(),
         (_, Operand::ZeroPageY(_)) => state.used(),
         (_, Operand::AbsoluteY(_)) => state.used(),
@@ -46,7 +46,7 @@ pub fn check_use_y(state: VarState, insn: &Instruction6502) -> VarState {
 
 /// Check for the Carry flag
 pub fn check_use_c(state: VarState, insn: &Instruction6502) -> VarState {
-    match decode(&insn.to_bytes()) {
+    match (insn.opcode, insn.operand) {
         (Opcode::ADC, _) => state.used(),
         (Opcode::ASL, _) => state.init(),
         (Opcode::BCC, _) => state.used(),
@@ -66,7 +66,7 @@ pub fn check_use_c(state: VarState, insn: &Instruction6502) -> VarState {
 
 /// Check for the Decimal flag
 pub fn check_use_d(state: VarState, insn: &Instruction6502) -> VarState {
-    match decode(&insn.to_bytes()) {
+    match (insn.opcode, insn.operand) {
         (Opcode::ADC, _) => state.used(),
         (Opcode::SBC, _) => state.used(),
         (Opcode::CLD, _) => state.init(),
@@ -77,7 +77,7 @@ pub fn check_use_d(state: VarState, insn: &Instruction6502) -> VarState {
 
 /// returns true iff the instruction is a conditional branch
 fn is_branch(insn: Instruction6502) -> bool {
-    match decode(&insn.to_bytes()) {
+    match (insn.opcode, insn.operand) {
         (Opcode::BCC, _) => true,
         (Opcode::BCS, _) => true,
         (Opcode::BEQ, _) => true,
