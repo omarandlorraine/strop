@@ -1,17 +1,16 @@
+use strop::emulator::Emulator;
+use strop::generate::Constraints;
 use strop::generate::{McmcSynth, Random};
 use strop::mos6502::static_analysis::*;
+use strop::mos6502::Emulator6502;
 use strop::mos6502::Instruction6502;
 use strop::snippets::Snippet;
 use strop::static_analysis::check_use;
-use strop::mos6502::Emulator6502;
-use strop::emulator::Emulator;
-use strop::generate::Constraints;
 
 fn mult(sn: &Snippet<Instruction6502>) -> f64 {
     let mut emu: Emulator6502 = Default::default();
 
     emu.run(0x200, 3000, &mut sn.to_bytes().into_iter());
-
 
     println!();
     println!();
@@ -41,7 +40,9 @@ fn main() {
         let mut next_generation: Vec<_> = population
             .iter()
             .take(100)
-            .flat_map(|p| McmcSynth::new(&p.1, Constraints::<Instruction6502>::default(), mult).take(50))
+            .flat_map(|p| {
+                McmcSynth::new(&p.1, Constraints::<Instruction6502>::default(), mult).take(50)
+            })
             .map(|(score, p)| (score, p.make_bb()))
             .collect();
 

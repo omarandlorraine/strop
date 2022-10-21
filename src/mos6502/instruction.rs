@@ -521,9 +521,9 @@ mod test {
     use crate::mos6502::data::ZPX_OPCODES;
     use crate::mos6502::data::ZPY_OPCODES;
     use crate::mos6502::data::ZP_OPCODES;
-    
+
     use crate::mos6502::Instruction6502;
-    use yaxpeax_6502::{Operand};
+    use yaxpeax_6502::Operand;
 
     #[test]
     fn new_instructions() {

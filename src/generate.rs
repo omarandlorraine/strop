@@ -1,6 +1,6 @@
 use crate::instruction::Instruction;
-use crate::static_analysis::VarState;
 use crate::snippets::Snippet;
+use crate::static_analysis::VarState;
 use rand::random;
 use rand::thread_rng;
 use rand::Rng;
@@ -42,7 +42,7 @@ pub struct Constraints<I: Instruction> {
     /// instructions touching this or that register, etc. etc., you can add them to this struct.
     /// This has the effect of constraining the search space to programs you want to permit.
     constraints: Vec<fn(&I) -> bool>,
-    statics: Vec<fn(VarState, &I) -> VarState>
+    statics: Vec<fn(VarState, &I) -> VarState>,
 }
 
 impl<I: Instruction> Default for Constraints<I> {
@@ -68,7 +68,11 @@ pub struct McmcSynth<'a, I: Instruction> {
 }
 
 impl<'a, I: Instruction> McmcSynth<'a, I> {
-    pub fn new(parent: &'a Snippet<I>, constraints: Constraints<I>, fitness: fn(&Snippet<I>) -> f64) -> Self {
+    pub fn new(
+        parent: &'a Snippet<I>,
+        constraints: Constraints<I>,
+        fitness: fn(&Snippet<I>) -> f64,
+    ) -> Self {
         let cost = fitness(parent);
         let child = parent.clone();
         Self {
