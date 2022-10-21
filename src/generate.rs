@@ -1,4 +1,5 @@
 use crate::instruction::Instruction;
+use crate::static_analysis::VarState;
 use crate::snippets::Snippet;
 use rand::random;
 use rand::thread_rng;
@@ -36,6 +37,23 @@ impl<I: Instruction + std::fmt::Display + Copy> Iterator for Random<I> {
     }
 }
 
+pub struct Constraints<I: Instruction> {
+    /// In case there's something or other you want to exclude from a search, such as branches, or
+    /// instructions touching this or that register, etc. etc., you can add them to this struct.
+    /// This has the effect of constraining the search space to programs you want to permit.
+    constraints: Vec<fn(&I) -> bool>,
+    statics: Vec<fn(VarState, &I) -> VarState>
+}
+
+impl<I: Instruction> Default for Constraints<I> {
+    fn default() -> Self {
+        Self {
+            constraints: vec![],
+            statics: vec![],
+        }
+    }
+}
+
 pub struct McmcSynth<'a, I: Instruction> {
     /// Iterator yielding mutations (children) of a given snippet, depending on their relative
     /// scores. If the child snippet has a better (i.e. lower) score, then it's yielded. But if the
@@ -46,10 +64,11 @@ pub struct McmcSynth<'a, I: Instruction> {
     child: Snippet<I>,
     fitness: fn(&Snippet<I>) -> f64,
     cost: f64,
+    constraints: Constraints<I>,
 }
 
 impl<'a, I: Instruction> McmcSynth<'a, I> {
-    pub fn new(parent: &'a Snippet<I>, fitness: fn(&Snippet<I>) -> f64) -> Self {
+    pub fn new(parent: &'a Snippet<I>, constraints: Constraints<I>, fitness: fn(&Snippet<I>) -> f64) -> Self {
         let cost = fitness(parent);
         let child = parent.clone();
         Self {
@@ -57,6 +76,7 @@ impl<'a, I: Instruction> McmcSynth<'a, I> {
             child,
             fitness,
             cost,
+            constraints,
         }
     }
 }

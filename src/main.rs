@@ -27,7 +27,9 @@ fn main() {
     while population.iter().any(|(score, _sn)| *score == 0.0) {
         let mut next_generation: Vec<_> = population
             .iter()
-            .flat_map(|p| McmcSynth::new(&p.1, mult).take(50))
+            .take(100)
+            .flat_map(|p| McmcSynth::new(&p.1, Constraints::<Instruction6502>::default(), mult).take(50))
+            .map(|(score, p)| (score, p.make_bb()))
             .collect();
 
         next_generation.sort_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"));
