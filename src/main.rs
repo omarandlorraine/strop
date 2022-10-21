@@ -18,7 +18,7 @@ fn mult(sn: &Snippet<Instruction6502>) -> f64 {
     println!();
     sn.disassemble();
 
-    return (emu.get_a().wrapping_sub(45)).into();
+    (emu.get_a().wrapping_sub(45)).into()
 }
 
 fn main() {

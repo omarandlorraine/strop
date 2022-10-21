@@ -293,7 +293,7 @@ mod test {
             // out and comment out the hex)
             let disasm = format!("{}", insn);
             assert!(
-                disasm.chars().next().unwrap() != ';',
+                !disasm.starts_with(';'),
                 "generated {} which has no encoding",
                 disasm
             )

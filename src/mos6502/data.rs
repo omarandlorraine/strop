@@ -2,9 +2,9 @@
 use yaxpeax_6502::Opcode;
 use yaxpeax_6502::Opcode::*;
 
-use yaxpeax_6502::Instruction;
 
-use rand::prelude::SliceRandom;
+
+
 
 pub const ABS_OPCODES: [Opcode; 23] = [
     JMP, ADC, SBC, INC, DEC, STA, STX, STY, LDA, LDX, LDY, AND, ASL, BIT, CMP, CPX, CPY, EOR, JSR,

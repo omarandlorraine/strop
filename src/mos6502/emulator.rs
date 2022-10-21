@@ -28,7 +28,7 @@ impl Emulator for Emulator6502 {
         let prog = &bytes.chain(vec![0xff]).collect::<Vec<_>>();
         self.cpu.memory.set_bytes(org as u16, prog);
 
-        self.cpu.registers.program_counter = (org as u16);
+        self.cpu.registers.program_counter = org as u16;
         self.cpu.run();
     }
 

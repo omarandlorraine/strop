@@ -3,8 +3,8 @@
 #![warn(missing_debug_implementations, missing_docs)]
 #![allow(dead_code)]
 
-use crate::instruction::Instruction;
-use crate::mos6502::instruction::decode;
+
+
 use crate::mos6502::Instruction6502;
 use crate::static_analysis::VarState;
 use yaxpeax_6502::{Opcode, Operand};

@@ -9,7 +9,7 @@ use rand::random;
 use yaxpeax_6502::Instruction as YaxpeaxInstruction;
 use yaxpeax_6502::{Opcode, Operand};
 use yaxpeax_arch::Decoder;
-use yaxpeax_arch::Instruction as YaxpeaxInstructionTrait;
+
 use yaxpeax_arch::U8Reader;
 
 fn instruction_length(op: Operand) -> usize {
@@ -92,7 +92,7 @@ impl Instruction6502 {
         }
 
         match self.operand {
-            Relative(offset) => return offset & 0x80 != 0x00,
+            Relative(offset) => offset & 0x80 != 0x00,
             _ => panic!(),
         }
     }
@@ -106,7 +106,7 @@ impl Instruction6502 {
         }
 
         match self.operand {
-            Relative(offset) => return offset & 0x80 == 0x00,
+            Relative(offset) => offset & 0x80 == 0x00,
             _ => panic!(),
         }
     }
@@ -521,9 +521,9 @@ mod test {
     use crate::mos6502::data::ZPX_OPCODES;
     use crate::mos6502::data::ZPY_OPCODES;
     use crate::mos6502::data::ZP_OPCODES;
-    use crate::mos6502::instruction::decode;
+    
     use crate::mos6502::Instruction6502;
-    use yaxpeax_6502::{Opcode, Operand};
+    use yaxpeax_6502::{Operand};
 
     #[test]
     fn new_instructions() {
