@@ -25,18 +25,15 @@ fn main() {
     let mut mc = McmcSynth::new(&parent, constraint, mult);
 
     // loop until we find at least one candidate program that at least computes the right result
+    let mut correct = Snippet::<Instruction6502>::default();
     loop {
         let (score, sn) = mc.next().unwrap();
 
-        println!("one loop iteration, score {}", score);
-        sn.disassemble();
-
-        println!();
-        println!();
-
         if score == 0.0 {
+            correct = sn;
             break;
         }
     }
+    correct.disassemble();
     println!("afterloop");
 }
