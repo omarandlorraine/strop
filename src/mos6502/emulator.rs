@@ -23,13 +23,23 @@ impl Default for Emulator6502 {
 }
 
 impl Emulator for Emulator6502 {
-    fn run(&mut self, org: usize, _budget: u32, bytes: &mut dyn Iterator<Item = u8>) {
-        // the emulator uses 0xff as a sentinel to end the currently running program.
-        let prog = &bytes.chain(vec![0xff]).collect::<Vec<_>>();
+    fn run(&mut self, org: usize, budget: u32, bytes: &mut dyn Iterator<Item = u8>) {
+        let prog = &bytes.collect::<Vec<_>>();
+        let target_pc = (org + prog.len()) as u16;
         self.cpu.memory.set_bytes(org as u16, prog);
 
         self.cpu.registers.program_counter = org as u16;
-        self.cpu.run();
+        for _ in 0..budget {
+            let opcode = self.cpu.memory.get_byte(self.cpu.registers.program_counter);
+            if let Some(insn) = self.cpu.fetch_next_and_decode() {
+                self.cpu.execute_instruction(insn);
+                if self.cpu.registers.program_counter == target_pc {
+                    return;
+                }
+            } else {
+                panic!("ran into opcode ${:02x}", opcode);
+            }
+        }
     }
 
     fn load(&mut self, org: usize, bytes: &mut dyn Iterator<Item = u8>) {
