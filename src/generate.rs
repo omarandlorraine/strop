@@ -4,8 +4,9 @@ use crate::static_analysis::VarState;
 use rand::random;
 use rand::thread_rng;
 use rand::Rng;
+use std::marker::PhantomData;
 
-pub struct Random<I: Instruction> {
+pub struct Random<'a, I: Instruction> {
     /// Iterator yielding random snippets of the given instruction type, and having any number of
     /// instructions up to the specified length.
     org: usize,
@@ -14,22 +15,23 @@ pub struct Random<I: Instruction> {
 
     // for some reason I need this because an unused type parameter is a type error
     #[allow(dead_code)]
-    dummy: I,
+    _marker: PhantomData<&'a I>,
 }
 
-impl<I: Instruction> Random<I> {
+impl<I: Instruction> Random<'_, I> {
     pub fn new(org: usize, max_length: usize, fitness: fn(&Snippet<I>) -> f64) -> Self {
         Self {
             org,
             max_length,
             fitness,
-            dummy: I::new(),
+            _marker: PhantomData
         }
     }
 }
 
-impl<I: Instruction + std::fmt::Display + Copy> Iterator for Random<I> {
-    type Item = (f64, Snippet<I>);
+impl<'a, I: Instruction + std::fmt::Display + Copy> Iterator for Random<'a, I> {
+    type Item = (f64, Snippet<'a, I>);
+
 
     fn next(&mut self) -> Option<Self::Item> {
         let sn = Snippet::<I>::new_with_org_and_length(self.org, self.max_length);
@@ -88,8 +90,8 @@ pub struct McmcSynth<'a, I: Instruction> {
     /// child snippet has a worse score, then with some probability depending on how much worse it
     /// is, it's discarded.
     /// Use this together with a cost function which evaluates the program's fitness
-    parent: &'a Snippet<I>,
-    child: Snippet<I>,
+    parent: Snippet<'a, I>,
+    child: Snippet<'a, I>,
     fitness: fn(&Snippet<I>) -> f64,
     cost: f64,
     constraints: Constraints<I>,
@@ -97,11 +99,11 @@ pub struct McmcSynth<'a, I: Instruction> {
 
 impl<'a, I: Instruction> McmcSynth<'a, I> {
     pub fn new(
-        parent: &'a Snippet<I>,
+        parent: Snippet<'a, I>,
         constraints: Constraints<I>,
         fitness: fn(&Snippet<I>) -> f64,
     ) -> Self {
-        let cost = fitness(parent);
+        let cost = fitness(&parent);
         let child = parent.clone();
         Self {
             parent,
@@ -113,8 +115,9 @@ impl<'a, I: Instruction> McmcSynth<'a, I> {
     }
 }
 
-impl<I: Instruction + std::fmt::Display + Copy> Iterator for McmcSynth<'_, I> {
-    type Item = (f64, Snippet<I>);
+impl<'a, I: Instruction + std::fmt::Display + Copy> Iterator for McmcSynth<'a, I> {
+    type Item = (f64, Snippet<'a, I>);
+
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -142,3 +145,40 @@ impl<I: Instruction + std::fmt::Display + Copy> Iterator for McmcSynth<'_, I> {
         }
     }
 }
+
+pub struct CorrectPrograms<'a, I: Instruction> {
+    /// Iterator yielding programs for which the supplied cost function returns 0.
+    parent: Snippet<'a, I>,
+    synth: McmcSynth<'a, I>
+}
+
+impl<'a, I: Instruction> CorrectPrograms<'a, I> {
+    pub fn new(
+        constraints: Constraints<I>,
+        fitness: fn(&Snippet<I>) -> f64,
+    ) -> Self {
+        let parent = Snippet::<I>::default();
+        Self {
+            parent: parent.clone(),
+            synth: McmcSynth::new(Snippet::<I>::default(), constraints, fitness)
+        }
+    }
+}
+
+impl<'a, I: Instruction + std::fmt::Display + Copy> Iterator for CorrectPrograms<'a, I> {
+    type Item = (f64, Snippet<'a, I>);
+
+
+    fn next(&mut self) -> Option<Self::Item> {
+
+        // loop until we find at least one candidate program that at least computes the right result
+        loop {
+            let (score, sn) = self.synth.next().unwrap();
+
+            if score == 0.0 {
+                return Some((score, sn));
+            }
+        }
+    }
+}
+
