@@ -33,11 +33,14 @@ impl Emulator for Emulator6502 {
             let opcode = self.cpu.memory.get_byte(self.cpu.registers.program_counter);
             if let Some(insn) = self.cpu.fetch_next_and_decode() {
                 self.cpu.execute_instruction(insn);
-                if self.cpu.registers.program_counter == target_pc {
+                if self.cpu.registers.program_counter < org as u16 {
+                    return;
+                }
+                if self.cpu.registers.program_counter >= target_pc {
                     return;
                 }
             } else {
-                panic!("ran into opcode ${:02x}", opcode);
+                return;
             }
         }
     }
