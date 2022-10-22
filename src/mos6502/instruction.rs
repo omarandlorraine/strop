@@ -126,7 +126,7 @@ impl std::fmt::Display for Instruction6502 {
         match operand {
             Operand::Implied => write!(f, "{}", st),
             Operand::Accumulator => write!(f, "{} a", st),
-            Operand::Immediate(val) => write!(f, "{} ${:02x}", st, val),
+            Operand::Immediate(val) => write!(f, "{} #${:02x}", st, val),
             Operand::ZeroPage(addr) => write!(f, "{} ${:02x}", st, addr),
             Operand::ZeroPageX(addr) => write!(f, "{} ${:02x},x", st, addr),
             Operand::ZeroPageY(addr) => write!(f, "{} ${:02x},y", st, addr),
