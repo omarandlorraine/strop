@@ -8,6 +8,7 @@
 ///
 
 #[allow(dead_code)]
+use crate::generate::Constraints;
 use crate::instruction::Instruction;
 use crate::randomly;
 use rand::thread_rng;
@@ -84,7 +85,7 @@ impl<I: Instruction + std::fmt::Display + Copy> Snippet<I> {
         self.instructions.retain(filterfn);
     }
 
-    pub fn mutate(&mut self) {
+    pub fn mutate(&mut self, constraint: &Constraints<I>) {
         if self.instructions.is_empty() {
             // The only mutation we can do here is to insert random instructions
             self.instructions.push(I::new());
@@ -98,19 +99,37 @@ impl<I: Instruction + std::fmt::Display + Copy> Snippet<I> {
         }
         {
             // insert a randomly generated instruction somewhere in the program
-            self.instructions.insert(offset, I::new());
+            if let Some(insn) = constraint.new_instruction() {
+                self.instructions.insert(offset, insn);
+            }
         }
         {
             // replace one instruction with a randomly generated one
-            self.instructions[offset] = I::new();
+            if let Some(insn) = constraint.new_instruction() {
+                self.instructions[offset] = insn;
+            }
         }
         {
             // pick an instruction at random, and modify its operand
-            self.instructions[offset].mutate_operand();
+            for _ in 0..5 {
+                let mut insn = self.instructions[offset];
+                insn.mutate_operand();
+                if constraint.allow(&insn) {
+                    self.instructions[offset] = insn;
+                    break;
+                }
+            }
         }
         {
             // pick an instruction at random, and modify its opcode
-            self.instructions[offset].mutate_opcode();
+            for _ in 0..5 {
+                let mut insn = self.instructions[offset];
+                insn.mutate_opcode();
+                if constraint.allow(&insn) {
+                    self.instructions[offset] = insn;
+                    break;
+                }
+            }
         }
         {
             // pick two instructions at random, and swap them over

@@ -54,6 +54,34 @@ impl<I: Instruction> Default for Constraints<I> {
     }
 }
 
+impl<I: Instruction> Constraints<I> {
+    pub fn new(exclude: Vec<fn(&I) -> bool>) -> Self {
+        Self {
+            constraints: exclude,
+            statics: vec![]
+        }
+    }
+
+    pub fn allow(&self, insn: &I) -> bool {
+        for f in &self.constraints {
+            if !f(&insn) {
+                return false;
+            }
+        }
+        true
+    }
+
+    pub fn new_instruction(&self) -> Option<I> {
+        for _ in 0..5 {
+            let insn = I::new();
+            if self.allow(&insn) {
+                return Some(insn);
+            }
+        }
+        None
+    }
+}
+
 pub struct McmcSynth<'a, I: Instruction> {
     /// Iterator yielding mutations (children) of a given snippet, depending on their relative
     /// scores. If the child snippet has a better (i.e. lower) score, then it's yielded. But if the
@@ -91,7 +119,7 @@ impl<I: Instruction + std::fmt::Display + Copy> Iterator for McmcSynth<'_, I> {
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             // mutate the child randomly
-            self.child.mutate();
+            self.child.mutate(&self.constraints);
             let cost = (self.fitness)(&self.child);
 
             // if the random mutation was an improvement, return the child
