@@ -61,26 +61,12 @@ impl Instruction6502 {
 
     /// returns true if the instruction sets the X register
     pub fn sets_x(&self) -> bool {
-        match self.opcode {
-            Opcode::TAX => true,
-            Opcode::LDX => true,
-            _ => false,
-        }
+        matches!(self.opcode, Opcode::TAX | Opcode::LDX)
     }
 
     /// returns true iff the instruction is a conditional branch
     fn is_branch(&self) -> bool {
-        match self.opcode {
-            Opcode::BCC => true,
-            Opcode::BCS => true,
-            Opcode::BEQ => true,
-            Opcode::BMI => true,
-            Opcode::BNE => true,
-            Opcode::BPL => true,
-            Opcode::BVC => true,
-            Opcode::BVS => true,
-            _ => false,
-        }
+        matches!(self.opcode, Opcode::BCC | Opcode::BCS | Opcode::BEQ | Opcode::BMI | Opcode::BNE | Opcode::BPL | Opcode::BVC | Opcode::BVS)
     }
 
     /// returns true iff the instruction is a forward branch

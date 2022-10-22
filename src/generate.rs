@@ -64,7 +64,7 @@ impl<I: Instruction> Constraints<I> {
 
     pub fn allow(&self, insn: &I) -> bool {
         for f in &self.constraints {
-            if !f(&insn) {
+            if !f(insn) {
                 return false;
             }
         }
