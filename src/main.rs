@@ -19,7 +19,6 @@ fn mult(sn: &Snippet<Instruction6502>) -> f64 {
 }
 
 fn main() {
-
     let parent = Snippet::<Instruction6502>::default();
     let mut mc = McmcSynth::new(&parent, Constraints::<Instruction6502>::default(), mult);
 
@@ -38,5 +37,4 @@ fn main() {
         }
     }
     println!("afterloop");
-
 }
