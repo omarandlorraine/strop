@@ -7,16 +7,25 @@ use strop::instruction::Instruction;
 use strop::mos6502::Instruction6502;
 use strop::snippets::Snippet;
 use strop::static_analysis::check_use;
+use rand::random;
 
 fn mult(sn: &Snippet<Instruction6502>) -> f64 {
     let mut emu: Emulator6502 = Default::default();
+    let mut distance: f64 = 0.0;
 
-    println!("About to run this");
-    sn.disassemble();
+    // For reasons, doing this loop and setting the accumulator to a random number each time, it
+    // decreases the chance of an erroneous program being generated, such as:
+    //     adc #$2d
+    // We need to apply static analysis instead, and then get rid of the loop. Should yield an
+    // almost hundredfold speedup.
+    for _ in 0..100 {
+        emu.set_a(random());
 
-    emu.run(0x200, 3000, &mut sn.to_bytes().into_iter());
+        emu.run(0x200, 3000, &mut sn.to_bytes().into_iter());
 
-    (emu.get_a().wrapping_sub(45)).into()
+        distance += f64::from((emu.get_a().wrapping_sub(45)));
+    }
+    distance
 }
 
 fn main() {
