@@ -30,7 +30,7 @@ impl Emulator for Emulator6502 {
 
         self.cpu.registers.program_counter = org as u16;
         for _ in 0..budget {
-            let opcode = self.cpu.memory.get_byte(self.cpu.registers.program_counter);
+            let _opcode = self.cpu.memory.get_byte(self.cpu.registers.program_counter);
             if let Some(insn) = self.cpu.fetch_next_and_decode() {
                 self.cpu.execute_instruction(insn);
                 if self.cpu.registers.program_counter < org as u16 {
