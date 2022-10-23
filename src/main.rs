@@ -9,29 +9,28 @@ use strop::snippets::Snippet;
 
 use rand::random;
 
-fn mult(sn: &Snippet<Instruction6502>) -> f64 {
+fn set45(sn: &Snippet<Instruction6502>) -> f64 {
+    // Checks if the snippet loads the number 45 into the accumulator
     let mut emu: Emulator6502 = Default::default();
     let mut distance: f64 = 0.0;
 
-    // For reasons, doing this loop and setting the accumulator to a random number each time, it
-    // decreases the chance of an erroneous program being generated, such as:
-    //     adc #$2d
-    // We need to apply static analysis instead, and then get rid of the loop. Should yield an
-    // almost hundredfold speedup.
-    for _ in 0..100 {
+    // Set the accumulator to a random number (not 45), so we can check that the accumulator gets
+    // set to 45 after the putative program has run.
+    emu.set_a(random());
+    while emu.get_a() == 45 {
         emu.set_a(random());
-
-        emu.run(0x200, 3000, &mut sn.to_bytes().into_iter());
-
-        distance += f64::from(emu.get_a().wrapping_sub(45));
     }
+
+    emu.run(0x200, 3000, &mut sn.to_bytes().into_iter());
+
+    distance += f64::from(emu.get_a().wrapping_sub(45));
     distance
 }
 
 fn main() {
     let constraint = Constraints::<Instruction6502>::new(vec![Instruction6502::perm_bb]);
     let _parent = Snippet::<Instruction6502>::default();
-    let mut cp = CorrectPrograms::new(constraint, mult);
+    let mut cp = CorrectPrograms::new(constraint, set45);
 
     let prog = cp.next().unwrap().1;
     prog.disassemble();
