@@ -10,7 +10,7 @@ homepage = "https://github.com/omarandlorraine/strop"
 
 [dependencies]
 phf = { version = "0.11", features = ["macros"] }
-mos6502 = { git = "https://github.com/mre/mos6502", branch = "overflow_panic" }
+mos6502 = { git = "https://github.com/mre/mos6502" }
 rand = "0.8.5"
 yaxpeax-arch = {version="0.2.7", default-features=false}
 yaxpeax-6502 = "0.0.2"
