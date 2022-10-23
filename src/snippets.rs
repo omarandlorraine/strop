@@ -6,7 +6,6 @@
 /// In earlier versions of Strop, this was called BasicBlock, but as we're lifting some
 /// restrictions this no longer needs to be a basic block.
 ///
-
 use crate::generate::Constraints;
 use crate::instruction::Instruction;
 use crate::randomly;
