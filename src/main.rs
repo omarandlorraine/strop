@@ -2,9 +2,8 @@ use strop::emulator::Emulator;
 use strop::generate::Constraints;
 use strop::generate::CorrectPrograms;
 
-
-use strop::mos6502::Emulator6502;
 use strop::instruction::Instruction;
+use strop::mos6502::Emulator6502;
 use strop::mos6502::Instruction6502;
 use strop::snippets::Snippet;
 

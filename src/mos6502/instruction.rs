@@ -66,7 +66,17 @@ impl Instruction6502 {
 
     /// returns true iff the instruction is a conditional branch
     fn is_branch(&self) -> bool {
-        matches!(self.opcode, Opcode::BCC | Opcode::BCS | Opcode::BEQ | Opcode::BMI | Opcode::BNE | Opcode::BPL | Opcode::BVC | Opcode::BVS)
+        matches!(
+            self.opcode,
+            Opcode::BCC
+                | Opcode::BCS
+                | Opcode::BEQ
+                | Opcode::BMI
+                | Opcode::BNE
+                | Opcode::BPL
+                | Opcode::BVC
+                | Opcode::BVS
+        )
     }
 
     /// returns true iff the instruction is a forward branch

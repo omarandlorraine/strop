@@ -24,14 +24,13 @@ impl<I: Instruction> Random<'_, I> {
             org,
             max_length,
             fitness,
-            _marker: PhantomData
+            _marker: PhantomData,
         }
     }
 }
 
 impl<'a, I: Instruction + std::fmt::Display + Copy> Iterator for Random<'a, I> {
     type Item = (f64, Snippet<'a, I>);
-
 
     fn next(&mut self) -> Option<Self::Item> {
         let sn = Snippet::<I>::new_with_org_and_length(self.org, self.max_length);
@@ -60,7 +59,7 @@ impl<I: Instruction> Constraints<I> {
     pub fn new(exclude: Vec<fn(&I) -> bool>) -> Self {
         Self {
             constraints: exclude,
-            statics: vec![]
+            statics: vec![],
         }
     }
 
@@ -118,7 +117,6 @@ impl<'a, I: Instruction> McmcSynth<'a, I> {
 impl<'a, I: Instruction + std::fmt::Display + Copy> Iterator for McmcSynth<'a, I> {
     type Item = (f64, Snippet<'a, I>);
 
-
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             // mutate the child randomly
@@ -149,18 +147,15 @@ impl<'a, I: Instruction + std::fmt::Display + Copy> Iterator for McmcSynth<'a, I
 pub struct CorrectPrograms<'a, I: Instruction> {
     /// Iterator yielding programs for which the supplied cost function returns 0.
     parent: Snippet<'a, I>,
-    synth: McmcSynth<'a, I>
+    synth: McmcSynth<'a, I>,
 }
 
 impl<'a, I: Instruction> CorrectPrograms<'a, I> {
-    pub fn new(
-        constraints: Constraints<I>,
-        fitness: fn(&Snippet<I>) -> f64,
-    ) -> Self {
+    pub fn new(constraints: Constraints<I>, fitness: fn(&Snippet<I>) -> f64) -> Self {
         let parent = Snippet::<I>::default();
         Self {
             parent: parent.clone(),
-            synth: McmcSynth::new(Snippet::<I>::default(), constraints, fitness)
+            synth: McmcSynth::new(Snippet::<I>::default(), constraints, fitness),
         }
     }
 }
@@ -168,9 +163,7 @@ impl<'a, I: Instruction> CorrectPrograms<'a, I> {
 impl<'a, I: Instruction + std::fmt::Display + Copy> Iterator for CorrectPrograms<'a, I> {
     type Item = (f64, Snippet<'a, I>);
 
-
     fn next(&mut self) -> Option<Self::Item> {
-
         // loop until we find at least one candidate program that at least computes the right result
         loop {
             let (score, sn) = self.synth.next().unwrap();
@@ -181,4 +174,3 @@ impl<'a, I: Instruction + std::fmt::Display + Copy> Iterator for CorrectPrograms
         }
     }
 }
-

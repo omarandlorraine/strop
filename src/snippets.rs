@@ -15,7 +15,6 @@ use rand::thread_rng;
 use rand::Rng;
 use std::marker::PhantomData;
 
-
 #[derive(Clone, Debug)]
 pub struct Snippet<'a, I> {
     /// The list of instructions in the snippet
@@ -33,7 +32,7 @@ impl<'a, I: Instruction> Default for Snippet<'a, I> {
         Snippet {
             org: 0x0200,
             instructions: vec![],
-            _marker: PhantomData
+            _marker: PhantomData,
         }
     }
 }
@@ -43,7 +42,7 @@ impl<'a, I: Instruction + std::fmt::Display + Copy> Snippet<'a, I> {
         Self {
             org: 0x0200,
             instructions: (1..10).map(|_| I::new()).collect(),
-            _marker: PhantomData
+            _marker: PhantomData,
         }
     }
 
@@ -53,7 +52,7 @@ impl<'a, I: Instruction + std::fmt::Display + Copy> Snippet<'a, I> {
         Self {
             org,
             instructions: (1..i).map(|_| I::new()).collect(),
-            _marker: PhantomData
+            _marker: PhantomData,
         }
     }
 
