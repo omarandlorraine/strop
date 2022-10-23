@@ -1,6 +1,5 @@
 use crate::instruction::Instruction;
 use crate::snippets::Snippet;
-use crate::static_analysis::VarState;
 use rand::random;
 use rand::thread_rng;
 use rand::Rng;
@@ -43,14 +42,12 @@ pub struct Constraints<I: Instruction> {
     /// instructions touching this or that register, etc. etc., you can add them to this struct.
     /// This has the effect of constraining the search space to programs you want to permit.
     constraints: Vec<fn(&I) -> bool>,
-    statics: Vec<fn(VarState, &I) -> VarState>,
 }
 
 impl<I: Instruction> Default for Constraints<I> {
     fn default() -> Self {
         Self {
             constraints: vec![],
-            statics: vec![],
         }
     }
 }
@@ -59,7 +56,6 @@ impl<I: Instruction> Constraints<I> {
     pub fn new(exclude: Vec<fn(&I) -> bool>) -> Self {
         Self {
             constraints: exclude,
-            statics: vec![],
         }
     }
 
@@ -146,15 +142,12 @@ impl<'a, I: Instruction + std::fmt::Display + Copy> Iterator for McmcSynth<'a, I
 
 pub struct CorrectPrograms<'a, I: Instruction> {
     /// Iterator yielding programs for which the supplied cost function returns 0.
-    parent: Snippet<'a, I>,
     synth: McmcSynth<'a, I>,
 }
 
 impl<'a, I: Instruction> CorrectPrograms<'a, I> {
     pub fn new(constraints: Constraints<I>, fitness: fn(&Snippet<I>) -> f64) -> Self {
-        let parent = Snippet::<I>::default();
         Self {
-            parent: parent.clone(),
             synth: McmcSynth::new(Snippet::<I>::default(), constraints, fitness),
         }
     }

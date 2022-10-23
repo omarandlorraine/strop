@@ -7,7 +7,6 @@
 /// restrictions this no longer needs to be a basic block.
 ///
 
-#[allow(dead_code)]
 use crate::generate::Constraints;
 use crate::instruction::Instruction;
 use crate::randomly;
