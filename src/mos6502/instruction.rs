@@ -42,6 +42,12 @@ pub struct Instruction6502 {
     pub operand: Operand,
 }
 
+fn random_address() -> u8 {
+    *vec![0x02, 0x03, 0x04, 0x05]
+        .choose(&mut rand::thread_rng())
+        .unwrap()
+}
+
 impl Instruction6502 {
     /// returns true iff the instruction reads the X register
     pub fn reads_x(&self) -> bool {
@@ -155,9 +161,11 @@ impl Instruction for Instruction6502 {
         Self: Sized,
     {
         loop {
-            let rand: Vec<u8> = vec![random(), random(), random()];
+            let rand: Vec<u8> = vec![random(), random_address(), 0];
             if let Some((opcode, operand)) = decode(&rand) {
-                return Instruction6502 { opcode, operand };
+                let mut insn = Instruction6502 { opcode, operand };
+                insn.mutate_opcode();
+                return insn;
             }
         }
     }
@@ -451,6 +459,7 @@ impl Instruction for Instruction6502 {
     }
 
     fn mutate_operand(&mut self) {
+
         // Pick another opcode having the same addressing mode
         self.operand = match self.operand {
             Operand::Implied => Operand::Implied,
@@ -466,15 +475,15 @@ impl Instruction for Instruction6502 {
                     { v ^ random_bit }
                 ))
             }
-            Operand::ZeroPage(_) => Operand::ZeroPage(random()),
-            Operand::ZeroPageX(_) => Operand::ZeroPageX(random()),
-            Operand::ZeroPageY(_) => Operand::ZeroPageY(random()),
-            Operand::Absolute(_) => Operand::Absolute(random()),
-            Operand::AbsoluteX(_) => Operand::AbsoluteX(random()),
-            Operand::AbsoluteY(_) => Operand::AbsoluteY(random()),
-            Operand::Indirect(_) => Operand::Indirect(random()),
-            Operand::IndirectYIndexed(_) => Operand::IndirectYIndexed(random()),
-            Operand::XIndexedIndirect(_) => Operand::XIndexedIndirect(random()),
+            Operand::ZeroPage(_) => Operand::ZeroPage(random_address().into()),
+            Operand::ZeroPageX(_) => Operand::ZeroPageX(random_address().into()),
+            Operand::ZeroPageY(_) => Operand::ZeroPageY(random_address().into()),
+            Operand::Absolute(_) => Operand::Absolute(random_address().into()),
+            Operand::AbsoluteX(_) => Operand::AbsoluteX(random_address().into()),
+            Operand::AbsoluteY(_) => Operand::AbsoluteY(random_address().into()),
+            Operand::Indirect(_) => Operand::Indirect(random_address().into()),
+            Operand::IndirectYIndexed(_) => Operand::IndirectYIndexed(random_address().into()),
+            Operand::XIndexedIndirect(_) => Operand::XIndexedIndirect(random_address().into()),
             Operand::Relative(_) => Operand::Relative(random()),
         }
     }
