@@ -8,8 +8,7 @@ pub enum VarState {
     Nothing,
     /// The variable has been initialized
     Initialized,
-    /// The variable has neither been used but not initialized. This is normally the state we want
-    /// to avoid.
+    /// The variable has been read before the first initialization.
     UseBeforeInit,
 }
 
