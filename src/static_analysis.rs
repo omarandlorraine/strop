@@ -6,30 +6,34 @@ use crate::snippets::Snippet;
 pub enum VarState {
     /// The variable has neither been used nor initialized
     Nothing,
-    /// The variable has been initialized
-    Initialized,
-    /// The variable has been read before the first initialization.
-    UseBeforeInit,
+    /// The variable has been read from
+    Read,
+    /// The variable has been written to
+    Written,
+    /// The variable has been read and then written to, as would be the case for a RMW operation
+    ReadThenWritten,
+    /// The variable has been written to and then read from
+    WrittenThenRead,
 }
 
 impl VarState {
     /// the iterator finds a use of the variable
-    pub fn used(&self) -> VarState {
+    pub fn used(self) -> VarState {
         use crate::static_analysis::VarState::*;
         match self {
-            Nothing => UseBeforeInit,
-            UseBeforeInit => UseBeforeInit,
-            Initialized => Initialized,
+            Nothing => Read,
+            Written => WrittenThenRead,
+            x => x,
         }
     }
 
     /// the iterator finds an initialization of the variable
-    pub fn init(&self) -> VarState {
+    pub fn init(self) -> VarState {
         use crate::static_analysis::VarState::*;
         match self {
-            Nothing => UseBeforeInit,
-            UseBeforeInit => UseBeforeInit,
-            Initialized => Initialized,
+            Nothing => Written,
+            Read => ReadThenWritten,
+            x => x,
         }
     }
 }
@@ -37,7 +41,7 @@ impl VarState {
 pub fn check_use<I: Instruction + std::fmt::Display + Copy>(
     snippet: &Snippet<I>,
     lint: fn(VarState, &I) -> VarState,
-) -> bool {
+) -> VarState {
     //! Check that the snippet does not use a register (or flag, or variable, or whatever) without first initializing it.
-    snippet.vec().iter().fold(VarState::Nothing, lint) != VarState::UseBeforeInit
+    snippet.vec().iter().fold(VarState::Nothing, lint)
 }
