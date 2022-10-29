@@ -6,6 +6,8 @@ use strop::instruction::Instruction;
 use strop::mos6502::Emulator6502;
 use strop::mos6502::Instruction6502;
 use strop::snippets::Snippet;
+use strop::static_analysis::check_use;
+use strop::static_analysis::VarState;
 
 use rand::random;
 
@@ -28,9 +30,14 @@ fn set45(sn: &Snippet<Instruction6502>) -> f64 {
 }
 
 fn mul10(sn: &Snippet<Instruction6502>) -> f64 {
+    use strop::mos6502::static_analysis::check_use_a;
     // Checks if the snippet loads the number 45 into the accumulator
     let mut emu: Emulator6502 = Default::default();
     let mut distance: f64 = 0.0;
+
+    if check_use(&sn, check_use_a) != VarState::ReadThenWritten {
+        return f64::MAX;
+    }
 
     // Set the accumulator to a random number, and if the number times 10 still fits in a byte,
     // check that the program multiplies the number correctly.
