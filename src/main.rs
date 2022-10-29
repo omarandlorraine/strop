@@ -41,9 +41,8 @@ fn mul10(sn: &Snippet<Instruction6502>) -> f64 {
 
     // Set the accumulator to a random number, and if the number times 10 still fits in a byte,
     // check that the program multiplies the number correctly.
-    let mut count = 50;
-    loop {
-        let before: u8 = random();
+    for i in 0u8..255 {
+        let before: u8 = i;
         emu.set_a(before);
 
         if let Some(result) = before.checked_mul(10) {
@@ -51,10 +50,6 @@ fn mul10(sn: &Snippet<Instruction6502>) -> f64 {
 
             distance += f64::from(emu.get_a().wrapping_sub(result));
 
-            count -= 1;
-            if count == 0 {
-                break;
-            }
         }
     }
     distance
