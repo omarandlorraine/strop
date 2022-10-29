@@ -7,6 +7,27 @@ use crate::mos6502::Instruction6502;
 use crate::static_analysis::VarState;
 use yaxpeax_6502::{Opcode, Operand};
 
+/// Check for the Y register
+pub fn check_use_a(state: VarState, insn: &Instruction6502) -> VarState {
+    match (insn.opcode, insn.operand) {
+        (Opcode::TAY, _) => state.used(),
+        (Opcode::TAX, _) => state.used(),
+        (Opcode::CMP, _) => state.used(),
+        (Opcode::ADC, _) => state.used().init(),
+        (Opcode::SBC, _) => state.used().init(),
+        (Opcode::EOR, _) => state.used().init(),
+        (Opcode::ORA, _) => state.used().init(),
+        (Opcode::AND, _) => state.used().init(),
+        (Opcode::LSR, Operand::Accumulator) => state.used().init(),
+        (Opcode::ROL, Operand::Accumulator) => state.used().init(),
+        (Opcode::ASL, Operand::Accumulator) => state.used().init(),
+        (Opcode::ROR, Operand::Accumulator) => state.used().init(),
+        (Opcode::LDA, _) => state.init(),
+        (Opcode::STA, _) => state.used(),
+        (_, _) => state,
+    }
+}
+
 /// Check for the X register
 pub fn check_use_x(state: VarState, insn: &Instruction6502) -> VarState {
     match (insn.opcode, insn.operand) {
