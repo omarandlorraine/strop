@@ -48,7 +48,7 @@ fn mul10(sn: &Snippet<Instruction6502>) -> f64 {
         if let Some(result) = before.checked_mul(10) {
             emu.run(0x200, 3000, &mut sn.to_bytes().into_iter());
 
-            distance += f64::from(emu.get_a().wrapping_sub(result));
+            distance += f64::from((emu.get_a() ^ result).count_ones());
 
         }
     }
