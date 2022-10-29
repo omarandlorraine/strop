@@ -459,7 +459,6 @@ impl Instruction for Instruction6502 {
     }
 
     fn mutate_operand(&mut self) {
-
         // Pick another opcode having the same addressing mode
         self.operand = match self.operand {
             Operand::Implied => Operand::Implied,

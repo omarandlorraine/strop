@@ -49,7 +49,6 @@ fn mul10(sn: &Snippet<Instruction6502>) -> f64 {
             emu.run(0x200, 3000, &mut sn.to_bytes().into_iter());
 
             distance += f64::from((emu.get_a() ^ result).count_ones());
-
         }
     }
 
