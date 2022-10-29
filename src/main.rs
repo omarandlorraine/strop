@@ -52,6 +52,12 @@ fn mul10(sn: &Snippet<Instruction6502>) -> f64 {
 
         }
     }
+
+    println!();
+    println!();
+    println!();
+    sn.disassemble();
+    println!("{:.}", distance);
     distance
 }
 
