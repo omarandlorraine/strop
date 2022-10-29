@@ -10,20 +10,20 @@ use yaxpeax_6502::{Opcode, Operand};
 /// Check for the Y register
 pub fn check_use_a(state: VarState, insn: &Instruction6502) -> VarState {
     match (insn.opcode, insn.operand) {
-        (Opcode::TAY, _) => state.used(),
-        (Opcode::TAX, _) => state.used(),
-        (Opcode::CMP, _) => state.used(),
-        (Opcode::ADC, _) => state.used().init(),
-        (Opcode::SBC, _) => state.used().init(),
-        (Opcode::EOR, _) => state.used().init(),
-        (Opcode::ORA, _) => state.used().init(),
-        (Opcode::AND, _) => state.used().init(),
-        (Opcode::LSR, Operand::Accumulator) => state.used().init(),
-        (Opcode::ROL, Operand::Accumulator) => state.used().init(),
-        (Opcode::ASL, Operand::Accumulator) => state.used().init(),
-        (Opcode::ROR, Operand::Accumulator) => state.used().init(),
-        (Opcode::LDA, _) => state.init(),
-        (Opcode::STA, _) => state.used(),
+        (Opcode::TAY, _) => state.r(),
+        (Opcode::TAX, _) => state.r(),
+        (Opcode::CMP, _) => state.r(),
+        (Opcode::ADC, _) => state.r().w(),
+        (Opcode::SBC, _) => state.r().w(),
+        (Opcode::EOR, _) => state.r().w(),
+        (Opcode::ORA, _) => state.r().w(),
+        (Opcode::AND, _) => state.r().w(),
+        (Opcode::LSR, Operand::Accumulator) => state.r().w(),
+        (Opcode::ROL, Operand::Accumulator) => state.r().w(),
+        (Opcode::ASL, Operand::Accumulator) => state.r().w(),
+        (Opcode::ROR, Operand::Accumulator) => state.r().w(),
+        (Opcode::LDA, _) => state.w(),
+        (Opcode::STA, _) => state.r(),
         (_, _) => state,
     }
 }
@@ -31,17 +31,17 @@ pub fn check_use_a(state: VarState, insn: &Instruction6502) -> VarState {
 /// Check for the X register
 pub fn check_use_x(state: VarState, insn: &Instruction6502) -> VarState {
     match (insn.opcode, insn.operand) {
-        (_, Operand::XIndexedIndirect(_)) => state.used(),
-        (_, Operand::ZeroPageX(_)) => state.used(),
-        (_, Operand::AbsoluteX(_)) => state.used(),
-        (Opcode::TXA, _) => state.used(),
-        (Opcode::STX, _) => state.used(),
-        (Opcode::CPX, _) => state.used(),
-        (Opcode::DEX, _) => state.used(),
-        (Opcode::INX, _) => state.used(),
-        (Opcode::TXS, _) => state.used(),
-        (Opcode::TAX, _) => state.init(),
-        (Opcode::LDX, _) => state.init(),
+        (_, Operand::XIndexedIndirect(_)) => state.r(),
+        (_, Operand::ZeroPageX(_)) => state.r(),
+        (_, Operand::AbsoluteX(_)) => state.r(),
+        (Opcode::TXA, _) => state.r(),
+        (Opcode::STX, _) => state.r(),
+        (Opcode::CPX, _) => state.r(),
+        (Opcode::DEX, _) => state.r(),
+        (Opcode::INX, _) => state.r(),
+        (Opcode::TXS, _) => state.r(),
+        (Opcode::TAX, _) => state.w(),
+        (Opcode::LDX, _) => state.w(),
         (_, _) => state,
     }
 }
@@ -49,16 +49,16 @@ pub fn check_use_x(state: VarState, insn: &Instruction6502) -> VarState {
 /// Check for the Y register
 pub fn check_use_y(state: VarState, insn: &Instruction6502) -> VarState {
     match (insn.opcode, insn.operand) {
-        (_, Operand::IndirectYIndexed(_)) => state.used(),
-        (_, Operand::ZeroPageY(_)) => state.used(),
-        (_, Operand::AbsoluteY(_)) => state.used(),
-        (Opcode::TYA, _) => state.used(),
-        (Opcode::STY, _) => state.used(),
-        (Opcode::CPY, _) => state.used(),
-        (Opcode::DEY, _) => state.used(),
-        (Opcode::INY, _) => state.used(),
-        (Opcode::TAY, _) => state.init(),
-        (Opcode::LDY, _) => state.init(),
+        (_, Operand::IndirectYIndexed(_)) => state.r(),
+        (_, Operand::ZeroPageY(_)) => state.r(),
+        (_, Operand::AbsoluteY(_)) => state.r(),
+        (Opcode::TYA, _) => state.r(),
+        (Opcode::STY, _) => state.r(),
+        (Opcode::CPY, _) => state.r(),
+        (Opcode::DEY, _) => state.r(),
+        (Opcode::INY, _) => state.r(),
+        (Opcode::TAY, _) => state.w(),
+        (Opcode::LDY, _) => state.w(),
         (_, _) => state,
     }
 }
@@ -66,19 +66,19 @@ pub fn check_use_y(state: VarState, insn: &Instruction6502) -> VarState {
 /// Check for the Carry flag
 pub fn check_use_c(state: VarState, insn: &Instruction6502) -> VarState {
     match (insn.opcode, insn.operand) {
-        (Opcode::ADC, _) => state.used(),
-        (Opcode::ASL, _) => state.init(),
-        (Opcode::BCC, _) => state.used(),
-        (Opcode::BCS, _) => state.used(),
-        (Opcode::CLC, _) => state.init(),
-        (Opcode::CMP, _) => state.init(),
-        (Opcode::CPX, _) => state.init(),
-        (Opcode::CPY, _) => state.init(),
-        (Opcode::LSR, _) => state.init(),
-        (Opcode::ROL, _) => state.used(),
-        (Opcode::ROR, _) => state.used(),
-        (Opcode::SBC, _) => state.used(),
-        (Opcode::SEC, _) => state.init(),
+        (Opcode::ADC, _) => state.r(),
+        (Opcode::ASL, _) => state.w(),
+        (Opcode::BCC, _) => state.r(),
+        (Opcode::BCS, _) => state.r(),
+        (Opcode::CLC, _) => state.w(),
+        (Opcode::CMP, _) => state.w(),
+        (Opcode::CPX, _) => state.w(),
+        (Opcode::CPY, _) => state.w(),
+        (Opcode::LSR, _) => state.w(),
+        (Opcode::ROL, _) => state.r(),
+        (Opcode::ROR, _) => state.r(),
+        (Opcode::SBC, _) => state.r(),
+        (Opcode::SEC, _) => state.w(),
         (_, _) => state,
     }
 }
@@ -86,10 +86,10 @@ pub fn check_use_c(state: VarState, insn: &Instruction6502) -> VarState {
 /// Check for the Decimal flag
 pub fn check_use_d(state: VarState, insn: &Instruction6502) -> VarState {
     match (insn.opcode, insn.operand) {
-        (Opcode::ADC, _) => state.used(),
-        (Opcode::SBC, _) => state.used(),
-        (Opcode::CLD, _) => state.init(),
-        (Opcode::SED, _) => state.init(),
+        (Opcode::ADC, _) => state.r(),
+        (Opcode::SBC, _) => state.r(),
+        (Opcode::CLD, _) => state.w(),
+        (Opcode::SED, _) => state.w(),
         (_, _) => state,
     }
 }

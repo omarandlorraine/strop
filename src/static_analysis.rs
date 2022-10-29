@@ -17,8 +17,8 @@ pub enum VarState {
 }
 
 impl VarState {
-    /// the iterator finds a use of the variable
-    pub fn used(self) -> VarState {
+    /// the iterator finds an instruction that reads the variable
+    pub fn r(self) -> VarState {
         use crate::static_analysis::VarState::*;
         match self {
             Nothing => Read,
@@ -27,8 +27,8 @@ impl VarState {
         }
     }
 
-    /// the iterator finds an initialization of the variable
-    pub fn init(self) -> VarState {
+    /// the iterator finds an instruction that writes the variable
+    pub fn w(self) -> VarState {
         use crate::static_analysis::VarState::*;
         match self {
             Nothing => Written,
