@@ -2,7 +2,7 @@
 //! CPU from 1975. It also supports the later CMOS opcodes and known illegal opcodes
 //! present on the NMOS models.
 
-#![warn(missing_debug_implementations, missing_docs)]
+#![warn(missing_debug_implementations)]
 
 use crate::machine::Instruction;
 use crate::machine::Strop;

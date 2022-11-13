@@ -14,26 +14,40 @@ use std::fmt::Debug;
 
 use num_traits::int::PrimInt;
 
+/// represents an eight-bit operand.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Operand8 {
+    /// The A register, a.k.a. the accumulator.
     A,
+    /// The least significant byte of X
     Xl,
+    /// The least significant byte of Y
     Yl,
+    /// The most significant byte of X
     Xh,
+    /// The most significant byte of Y
     Yh,
+    /// An immediate value (that is, a byte taken from the instruction stream)
     Imm8(u8),
+    /// An absolute value (that is, a byte taken from a constant address)
     Abs(u16),
 }
 
+/// represents a sixteen-bit operand.
 #[derive(Clone, Copy)]
 pub enum Operand16 {
+    /// An immediate value (that is, two bytes taken from the instruction stream)
     Imm(u16),
+    /// An absolute value (that is, two bytes taken from a constant address)
     Abs(u16),
 }
 
+/// represents the sixteen-bit register.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Register16 {
+    /// The X register
     X,
+    /// The Y register
     Y,
 }
 
@@ -223,6 +237,8 @@ impl Operand8 {
     }
 }
 
+/// Because the high and low bytes of a sixteen bit register are individually
+/// accessible on the STM8, I define them in this struct.
 #[derive(Default)]
 pub struct IndexRegister {
     high: Option<u8>,
@@ -249,6 +265,7 @@ impl IndexRegister {
     }
 }
 
+/// Represents the internal state of an STM8 and 64K of memory
 #[derive(Default)]
 pub struct Stm8 {
     a: Option<u8>,
