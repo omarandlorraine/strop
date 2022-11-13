@@ -19,7 +19,7 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Build example
-      run: cd examples/multiply_accumulator_by_constant_6502 && cargo build --verbose
+      run: cd examples/multiply_accumulator_by_constant && cargo build --verbose
     - name: Test randomly! macro
       run: cargo test --verbose test_randomly
     - name: Test search module
