@@ -2,7 +2,7 @@
 //! STMicroelectronics.
 
 // Just temporarily allow these lints while we're working on a half-baked implementation
-#![allow(missing_debug_implementations)]
+#![allow(missing_debug_implementations, missing_docs)]
 
 use crate::machine::Instruction;
 use crate::machine::Strop;
