@@ -14,7 +14,7 @@ use std::fmt::Debug;
 
 use num_traits::int::PrimInt;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Operand8 {
     A,
     Xl,
@@ -31,7 +31,7 @@ pub enum Operand16 {
     Abs(u16),
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Register16 {
     X,
     Y,
