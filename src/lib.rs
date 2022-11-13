@@ -14,6 +14,9 @@ pub mod search;
 
 pub use rand;
 
+// The reason I can't pull in randomly! as a dependency is that crates.io seems to require all my
+// dependencies to also be on crates.io.
+
 /// Randomly select a block to be executed. Blocks have
 /// equal probability of being selected (that is, selection
 /// is uniform random).
