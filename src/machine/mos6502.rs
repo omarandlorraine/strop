@@ -82,7 +82,7 @@ impl Mos6502 {
 }
 
 /// A 6502 instruction's operand
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Operand6502 {
     /// Used for implicit instructions, which take no operand
     None,
@@ -1413,21 +1413,21 @@ pub mod regression_tests {
 
     #[test]
     fn regression_asl() {
-        assert!(run_strop(ASL, 0xc3, None, false, false).2 == true);
+        assert!(run_strop(ASL, 0xc3, None, false, false).2);
         assert!(run_strop(ASL, 0x63, None, false, false).0 == 0xc6);
     }
 
     #[test]
     fn regression_cmp() {
-        assert!(run_strop(CMP, 0x1a, Some(0xbf), true, true).2 == false);
-        assert!(run_strop(CMP, 0x45, Some(0xe7), true, false).2 == false);
-        assert!(run_strop(CMP, 0x63, Some(0xd1), false, false).2 == false);
+        assert!(!run_strop(CMP, 0x1a, Some(0xbf), true, true).2);
+        assert!(!run_strop(CMP, 0x45, Some(0xe7), true, false).2);
+        assert!(!run_strop(CMP, 0x63, Some(0xd1), false, false).2);
     }
 
     #[test]
     fn regression_lsr() {
         assert!(run_strop(LSR, 0xa6, None, true, false).0 == 0x53);
-        assert!(run_strop(LSR, 0x01, None, true, true).1 == true);
+        assert!(run_strop(LSR, 0x01, None, true, true).1);
     }
 
     fn find_it(opcode: &'static str) -> Instruction6502 {

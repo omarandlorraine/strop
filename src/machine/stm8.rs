@@ -15,7 +15,7 @@ use std::fmt::Debug;
 use num_traits::int::PrimInt;
 
 /// represents an eight-bit operand.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Operand8 {
     /// The A register, a.k.a. the accumulator.
     A,
@@ -43,7 +43,7 @@ pub enum Operand16 {
 }
 
 /// represents the sixteen-bit register.
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Register16 {
     /// The X register
     X,
