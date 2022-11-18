@@ -883,7 +883,7 @@ const ROR: Instruction6502 = Instruction6502 {
 
 const RRA: Instruction6502 = Instruction6502 {
     mnem: "rra",
-    randomizer: rmwop_randomizer,
+    randomizer: store_randomizer,
     disassemble,
     operand: Operand6502::A,
     handler: |insn, s| {
@@ -969,7 +969,7 @@ const SED: Instruction6502 = Instruction6502 {
 
 const SLO: Instruction6502 = Instruction6502 {
     mnem: "slo",
-    randomizer: rmwop_randomizer,
+    randomizer: store_randomizer,
     disassemble,
     operand: Operand6502::A,
     handler: |insn, s| {
@@ -991,7 +991,7 @@ const SLO: Instruction6502 = Instruction6502 {
 
 const SRE: Instruction6502 = Instruction6502 {
     mnem: "sre",
-    randomizer: rmwop_randomizer,
+    randomizer: store_randomizer,
     disassemble,
     operand: Operand6502::A,
     handler: |insn, s| {
