@@ -997,10 +997,7 @@ const RLC: Stm8Instruction = Stm8Instruction {
     handler: |insn, s| {
         let val = insn.operand.get_rmw().get_u8(s);
         let r = val
-            .map(|v| {
-                s.carry
-                    .map(|c| (v & 0x7f).rotate_left(1) | u8::from(c))
-            })
+            .map(|v| s.carry.map(|c| (v & 0x7f).rotate_left(1) | u8::from(c)))
             .unwrap_or(None);
         s.carry = val.map(|v| v.leading_zeros() == 0);
         s.zero = r.map(|r| r == 0);
@@ -1016,10 +1013,7 @@ const RLCW: Stm8Instruction = Stm8Instruction {
     handler: |insn, s| {
         let val = insn.operand.get_r16().get_u16(s);
         let r = val
-            .map(|v| {
-                s.carry
-                    .map(|c| (v & 0x7fff).rotate_left(1) | u16::from(c))
-            })
+            .map(|v| s.carry.map(|c| (v & 0x7fff).rotate_left(1) | u16::from(c)))
             .unwrap_or(None);
         s.carry = val.map(|v| v.leading_zeros() == 0);
         s.zero = r.map(|r| r == 0);

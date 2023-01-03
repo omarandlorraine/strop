@@ -1,9 +1,9 @@
 //! The `search` module provides conveniences for searching for the target
 //! sequence.
 
-use crate::Search;
 use crate::machine::Instruction;
 use crate::randomly;
+use crate::Search;
 use rand::{thread_rng, Rng};
 use std::ops::{Index, IndexMut};
 
@@ -137,8 +137,7 @@ fn mutate<I: Instruction>(prog: &mut BasicBlock<I>) {
 
 /// Search for a basic block. Supply this function with a cost function; `stochastic_search` will
 /// halt when the cost function returns zero.
-pub fn stochastic_search<I: Instruction + Clone>(search: impl Search<I>) -> BasicBlock<I>
-{
+pub fn stochastic_search<I: Instruction + Clone>(search: impl Search<I>) -> BasicBlock<I> {
     let mut population: Vec<(f64, BasicBlock<I>)> = vec![];
     let mut winners: Vec<BasicBlock<I>> = vec![];
 
