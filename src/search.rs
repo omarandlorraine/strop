@@ -1,6 +1,7 @@
 //! The `search` module provides conveniences for searching for the target
 //! sequence.
 
+use crate::Search;
 use crate::machine::Instruction;
 use crate::randomly;
 use rand::{thread_rng, Rng};
@@ -136,15 +137,13 @@ fn mutate<I: Instruction>(prog: &mut BasicBlock<I>) {
 
 /// Search for a basic block. Supply this function with a cost function; `stochastic_search` will
 /// halt when the cost function returns zero.
-pub fn stochastic_search<I: Instruction + Clone, F>(cost: F) -> BasicBlock<I>
-where
-    F: Fn(&BasicBlock<I>) -> f64,
+pub fn stochastic_search<I: Instruction + Clone>(search: impl Search<I>) -> BasicBlock<I>
 {
     let mut population: Vec<(f64, BasicBlock<I>)> = vec![];
     let mut winners: Vec<BasicBlock<I>> = vec![];
 
     let default = BasicBlock::<I>::default();
-    population.push((cost(&default), default));
+    population.push((search.correctitude(&default), default));
 
     while winners.is_empty() {
         let best_score = population[0].0;
@@ -154,7 +153,7 @@ where
         let mut ng: Vec<(f64, BasicBlock<I>)> = population
             .iter()
             .map(|s| s.1.mutation())
-            .map(|s| (cost(&s), s))
+            .map(|s| (search.correctitude(&s), s))
             .collect();
 
         // concatenate the current generation to the next

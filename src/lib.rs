@@ -12,7 +12,14 @@
 pub mod machine;
 pub mod search;
 
+use search::BasicBlock;
+
 pub use rand;
+
+pub trait Search<I: machine::Instruction> {
+    fn correctitude(&self, prog: &BasicBlock<I>) -> f64;
+    fn optimize(&self, prog: &BasicBlock<I>) -> f64;
+}
 
 // The reason I can't pull in randomly! as a dependency is that crates.io seems to require all my
 // dependencies to also be on crates.io.

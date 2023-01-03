@@ -1,4 +1,5 @@
 use argh::FromArgs;
+use strop::Search;
 use strop::search::BasicBlock;
 use strop::search::stochastic_search;
 use strop::machine::mos6502::{Mos6502, Instruction6502};
@@ -15,7 +16,16 @@ struct Cli {
     multiply_by: u8,
 }
 
-fn cost(bb: &BasicBlock<Instruction6502>, factor: &u8) -> f64 {
+struct MultiplyByConstant {
+    constant: u8
+}
+
+impl Search<Instruction6502> for MultiplyByConstant {
+
+    fn optimize(&self, bb: &BasicBlock<Instruction6502>) -> f64 { bb.len() as f64 }
+
+fn correctitude(&self, bb: &BasicBlock<Instruction6502>) -> f64 {
+    let factor = self.constant;
     use strop::machine::Instruction;
 
     let mut state: Mos6502 = Default::default();
@@ -23,7 +33,7 @@ fn cost(bb: &BasicBlock<Instruction6502>, factor: &u8) -> f64 {
 
     for _i in 0..1000 {
         let input: u8 = random();
-        if let Some(result) = input.checked_mul(*factor) {
+        if let Some(result) = input.checked_mul(factor) {
             state.carry = Some(false);
             state.decimal = Some(false);
             state.a = Some(input);
@@ -42,6 +52,7 @@ fn cost(bb: &BasicBlock<Instruction6502>, factor: &u8) -> f64 {
 
     error
 }
+}
 
 fn main() {
     let cli: Cli = argh::from_env();
@@ -50,9 +61,9 @@ fn main() {
         println!("A program to multiply by {}", cli.multiply_by);
     }
 
-    let mul = cli.multiply_by;
+    let mul = MultiplyByConstant { constant: cli.multiply_by };
 
-    let prog = stochastic_search(|bb| cost(bb, &mul));
+    let prog = stochastic_search(mul);
 
     for insn in &prog.instructions {
         println!("{}", insn);
