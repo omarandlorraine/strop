@@ -21,9 +21,6 @@ struct MultiplyByConstant {
 }
 
 impl Search<Instruction6502> for MultiplyByConstant {
-    fn optimize(&self, bb: &BasicBlock<Instruction6502>) -> f64 {
-        bb.len() as f64
-    }
 
     fn correctitude(&self, bb: &BasicBlock<Instruction6502>) -> f64 {
         let factor = self.constant;

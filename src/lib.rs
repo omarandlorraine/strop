@@ -18,7 +18,14 @@ pub use rand;
 
 pub trait Search<I: machine::Instruction> {
     fn correctitude(&self, prog: &BasicBlock<I>) -> f64;
-    fn optimize(&self, prog: &BasicBlock<I>) -> f64;
+
+    fn optimize(&self, prog: &BasicBlock<I>) -> f64 {
+        prog.instructions
+            .iter()
+            .map(|i| i.length() as u32)
+            .sum::<u32>()
+            .into()
+    }
 }
 
 // The reason I can't pull in randomly! as a dependency is that crates.io seems to require all my
