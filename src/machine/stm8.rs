@@ -470,7 +470,7 @@ const ADC: Stm8Instruction = Stm8Instruction {
         let r = a
             .zip(m)
             .zip(s.carry)
-            .map(|((a, m), c)| a.wrapping_add(m).wrapping_add(if c { 1 } else { 0 }));
+            .map(|((a, m), c)| a.wrapping_add(m).wrapping_add(i8::from(c)));
         let carrytests = a
             .zip(m)
             .zip(r)
@@ -999,7 +999,7 @@ const RLC: Stm8Instruction = Stm8Instruction {
         let r = val
             .map(|v| {
                 s.carry
-                    .map(|c| (v & 0x7f).rotate_left(1) | if c { 1 } else { 0 })
+                    .map(|c| (v & 0x7f).rotate_left(1) | u8::from(c))
             })
             .unwrap_or(None);
         s.carry = val.map(|v| v.leading_zeros() == 0);
@@ -1018,7 +1018,7 @@ const RLCW: Stm8Instruction = Stm8Instruction {
         let r = val
             .map(|v| {
                 s.carry
-                    .map(|c| (v & 0x7fff).rotate_left(1) | if c { 1 } else { 0 })
+                    .map(|c| (v & 0x7fff).rotate_left(1) | u16::from(c))
             })
             .unwrap_or(None);
         s.carry = val.map(|v| v.leading_zeros() == 0);
@@ -1124,7 +1124,7 @@ const SBC: Stm8Instruction = Stm8Instruction {
         let r = a
             .zip(m)
             .zip(s.carry)
-            .map(|((a, m), c)| a.wrapping_sub(m).wrapping_sub(if c { 1 } else { 0 }));
+            .map(|((a, m), c)| a.wrapping_sub(m).wrapping_sub(i8::from(c)));
         let carrytests = a
             .zip(m)
             .zip(r)

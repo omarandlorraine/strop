@@ -294,7 +294,7 @@ fn add_with_carry(val: Option<u8>, s: &mut Mos6502) -> Option<u8> {
     let addition = a
         .zip(m)
         .zip(s.carry)
-        .map(|((a, m), c)| a.wrapping_add(m).wrapping_add(if c { 1 } else { 0 }));
+        .map(|((a, m), c)| a.wrapping_add(m).wrapping_add(i8::from(c)));
 
     let decimal_adjust = s.decimal.zip(addition).map(|(d, q)| {
         let r = u8::from_ne_bytes(q.to_ne_bytes());
@@ -836,7 +836,7 @@ const ROL: Instruction6502 = Instruction6502 {
     handler: |insn, s| {
         let m = insn.operand.get(s);
         let p = m.map(|a| (a & 0x7f) << 1);
-        let r = p.zip(s.carry).map(|(r, c)| r + if c { 1 } else { 0 });
+        let r = p.zip(s.carry).map(|(r, c)| r + u8::from(c));
         s.zero = r.map(|r| r == 0);
         s.sign = r.map(|r| r.leading_zeros() == 0);
         s.carry = m.map(|m| m.leading_zeros() == 0);
@@ -852,7 +852,7 @@ const RLA: Instruction6502 = Instruction6502 {
     handler: |insn, s| {
         let m = insn.operand.get(s);
         let p = m.map(|a| (a & 0x7f) << 1);
-        let r = p.zip(s.carry).map(|(r, c)| r + if c { 1 } else { 0 });
+        let r = p.zip(s.carry).map(|(r, c)| r + u8::from(c));
         s.zero = r.map(|r| r == 0);
         s.sign = r.map(|r| r.leading_zeros() == 0);
         s.carry = m.map(|m| m.leading_zeros() == 0);
