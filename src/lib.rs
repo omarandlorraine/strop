@@ -16,9 +16,15 @@ use search::BasicBlock;
 
 pub use rand;
 
+/// Implement this trait to define and constrain the search space.
 pub trait Search<I: machine::Instruction> {
+    /// Used to determine how "correct" a proposed program is (the return value 0 means, the
+    /// program is correct, and the higher the return value, the more wrong the program is.)
+    /// `stochastic_search` will halt when this function returns zero.
     fn correctitude(&self, prog: &BasicBlock<I>) -> f64;
 
+    /// Default implementation of `optimize`. This implementation biases the search toward shorter
+    /// programs, and so optimizes for size.
     fn optimize(&self, prog: &BasicBlock<I>) -> f64 {
         prog.instructions
             .iter()
