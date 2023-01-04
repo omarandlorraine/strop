@@ -32,6 +32,14 @@ pub trait Search<I: machine::Instruction> {
             .sum::<u32>()
             .into()
     }
+
+    /// Default implementation of `okay`. This implementation just returns True, which enables all
+    /// instructions. I would expect end-users will want to use this to disqualify certain classes
+    /// of instructions, such as those requiring specific hardware, or perhaps conditional
+    /// branches, return-from-interrupt and the like.
+    fn okay(&self, _: &I) -> bool {
+        true
+    }
 }
 
 // The reason I can't pull in randomly! as a dependency is that crates.io seems to require all my

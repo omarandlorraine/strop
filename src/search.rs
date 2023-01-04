@@ -29,30 +29,10 @@ impl<I: Instruction> Default for BasicBlock<I> {
     }
 }
 
-struct BasicBlockSpawn<I: Instruction> {
-    parent: BasicBlock<I>,
-    mutant: BasicBlock<I>,
-    ncount: usize,
-}
-
-impl<I: Instruction> Iterator for BasicBlockSpawn<I> {
-    type Item = BasicBlock<I>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.ncount == 0 {
-            self.mutant = self.parent.clone();
-            self.ncount = 100;
-        }
-        self.ncount -= 1;
-        mutate(&mut self.mutant);
-        Some(self.mutant.clone())
-    }
-}
-
 impl<I: Instruction + Clone> BasicBlock<I> {
-    fn mutation(&self) -> BasicBlock<I> {
+    fn mutation(&self, search: &impl Search<I>) -> BasicBlock<I> {
         let mut r = self.clone();
-        mutate(&mut r);
+        mutate(&mut r, search);
         r
     }
 
@@ -102,18 +82,7 @@ fn mutate_delete<I: Instruction>(prog: &mut BasicBlock<I>) {
     }
 }
 
-fn mutate_insert<I: Instruction>(prog: &mut BasicBlock<I>) {
-    let instr_count = prog.instructions.len();
-    let offset: usize = if instr_count > 0 {
-        prog.random_offset()
-    } else {
-        0
-    };
-    let instruction = I::new();
-    prog.insert(offset, instruction);
-}
-
-fn mutate<I: Instruction>(prog: &mut BasicBlock<I>) {
+fn mutate<I: Instruction>(prog: &mut BasicBlock<I>, search: &impl Search<I>) {
     randomly!(
     {
         /* randomize an instruction
@@ -130,7 +99,19 @@ fn mutate<I: Instruction>(prog: &mut BasicBlock<I>) {
     }
     {
         /* insert a new instruction */
-        mutate_insert(prog);
+        let instr_count = prog.instructions.len();
+        let offset: usize = if instr_count > 0 {
+            prog.random_offset()
+        } else {
+            0
+        };
+        loop {
+            let instruction = I::new();
+            if search.okay(&instruction) {
+                prog.insert(offset, instruction);
+                break;
+            }
+        }
     }
     )
 }
@@ -151,7 +132,7 @@ pub fn stochastic_search<I: Instruction + Clone>(search: impl Search<I>) -> Basi
         let population_size = if best_score < 500.0 { 10 } else { 50 };
         let mut ng: Vec<(f64, BasicBlock<I>)> = population
             .iter()
-            .map(|s| s.1.mutation())
+            .map(|s| s.1.mutation(&search))
             .map(|s| (search.correctitude(&s), s))
             .collect();
 
