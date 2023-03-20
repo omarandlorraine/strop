@@ -1,0 +1,183 @@
+use crate::Instruction;
+use asm::Decode;
+use rand::random;
+use rand::seq::SliceRandom;
+
+fn random_opcode() -> u8 {
+    // All the opcodes.
+    let opcodes = vec![
+        0x00, 0x08, 0x10, 0x18, 0x20, 0x24, 0x28, 0x2c, 0x30, 0x38, 0x40, 0x48, 0x4c, 0x50, 0x58,
+        0x60, 0x68, 0x6c, 0x70, 0x78, 0x84, 0x88, 0x8c, 0x90, 0x94, 0x98, 0xa0, 0xa4, 0xa8, 0xac,
+        0xb0, 0xb4, 0xb8, 0xbc, 0xc0, 0xc4, 0xc8, 0xcc, 0xd0, 0xd8, 0xe0, 0xe4, 0xe8, 0xec, 0xf0,
+        0xf8, 0x01, 0x05, 0x09, 0x0d, 0x11, 0x15, 0x19, 0x1d, 0x21, 0x25, 0x29, 0x2d, 0x31, 0x35,
+        0x39, 0x3d, 0x41, 0x45, 0x49, 0x4d, 0x51, 0x55, 0x59, 0x5d, 0x61, 0x65, 0x69, 0x6d, 0x71,
+        0x75, 0x79, 0x7d, 0x81, 0x85, 0x8d, 0x91, 0x95, 0x99, 0x9d, 0xa1, 0xa5, 0xa9, 0xad, 0xb1,
+        0xb5, 0xb9, 0xbd, 0xc1, 0xc5, 0xc9, 0xcd, 0xd1, 0xd5, 0xd9, 0xdd, 0xe1, 0xe5, 0xe9, 0xed,
+        0xf1, 0xf5, 0xf9, 0xfd, 0x06, 0x0a, 0x0e, 0x16, 0x1e, 0x26, 0x2a, 0x2e, 0x36, 0x3e, 0x46,
+        0x4a, 0x4e, 0x56, 0x5e, 0x66, 0x6a, 0x6e, 0x76, 0x7e, 0x86, 0x8a, 0x8e, 0x96, 0x9a, 0xa2,
+        0xa6, 0xaa, 0xae, 0xb6, 0xba, 0xbe, 0xc6, 0xca, 0xce, 0xd6, 0xde, 0xe6, 0xea, 0xee, 0xf6,
+        0xfe,
+    ];
+    *opcodes.choose(&mut rand::thread_rng()).unwrap()
+}
+
+fn random_accumulator_opcode() -> u8 {
+    // All the opcodes which have the Accumulator addressing mode.
+    let opcodes = vec![0x0a, 0x4a, 0x2a, 0x6a];
+    *opcodes.choose(&mut rand::thread_rng()).unwrap()
+}
+
+fn random_implied_opcode() -> u8 {
+    // All the opcodes which have the Implied addressing mode.
+    let opcodes = vec![
+        0x18, 0x18, 0xd8, 0x58, 0xb8, 0xca, 0x88, 0xe8, 0xc8, 0xea, 0x48, 0x08, 0x68, 0x28, 0x60,
+        0x38, 0xf8, 0x78, 0xaa, 0xa8, 0xba, 0x8a, 0x9a, 0x98, 0x40,
+    ];
+    *opcodes.choose(&mut rand::thread_rng()).unwrap()
+}
+
+fn random_immediate_opcode() -> u8 {
+    // All the opcodes which have the Immediate addressing mode.
+    let opcodes = vec![
+        0x69, 0x29, 0xc9, 0xe0, 0xc0, 0x49, 0xa9, 0xa2, 0xa0, 0x09, 0xe9,
+    ];
+    *opcodes.choose(&mut rand::thread_rng()).unwrap()
+}
+
+fn random_zeropage_opcode() -> u8 {
+    // All the opcodes which have the ZeroPage addressing mode.
+    let opcodes = vec![
+        0x65, 0x25, 0x06, 0x24, 0xC5, 0xE4, 0xC4, 0xC6, 0x45, 0xE6, 0xA5, 0xA6, 0xA4, 0x46, 0x05,
+        0x26, 0x66, 0xE5, 0x85, 0x86, 0x84,
+    ];
+    *opcodes.choose(&mut rand::thread_rng()).unwrap()
+}
+
+fn random_zeropagex_opcode() -> u8 {
+    // All the opcodes which have the ZeroPage,X addressing mode.
+    let opcodes = vec![
+        0x75, 0x35, 0x16, 0xd5, 0xd6, 0x55, 0xf6, 0xb5, 0xb4, 0x56, 0x15, 0x36, 0x76, 0xf5, 0x95,
+        0x94,
+    ];
+    *opcodes.choose(&mut rand::thread_rng()).unwrap()
+}
+
+fn random_zeropagey_opcode() -> u8 {
+    // All the opcodes which have the ZeroPage,Y addressing mode.
+    let opcodes = vec![0xB6, 0x96];
+    *opcodes.choose(&mut rand::thread_rng()).unwrap()
+}
+
+fn random_relative_opcode() -> u8 {
+    // All the opcodes which have the Relative addressing mode.
+    let opcodes = vec![0x90, 0xB0, 0xF0, 0x30, 0xD0, 0x10, 0x50, 0x70];
+    *opcodes.choose(&mut rand::thread_rng()).unwrap()
+}
+
+fn random_absolute_opcode() -> u8 {
+    // All the opcodes which have the Absolute addressing mode.
+    let opcodes = vec![
+        0x6D, 0x2D, 0x0E, 0x2C, 0xCD, 0xEC, 0xCC, 0xCE, 0x4D, 0xEE, 0x4C, 0x20, 0xAD, 0xAE, 0xAC,
+        0x4E, 0x0D, 0x2E, 0x6E, 0xED, 0x8D, 0x8E, 0x8C,
+    ];
+    *opcodes.choose(&mut rand::thread_rng()).unwrap()
+}
+
+fn random_absolutex_opcode() -> u8 {
+    // All the opcodes which have the Absolute,X addressing mode.
+    let opcodes = vec![
+        0x7D, 0x3D, 0x1E, 0xDD, 0xDE, 0x5D, 0xFE, 0xBD, 0xBC, 0x5E, 0x1D, 0x3E, 0x7E, 0xFD, 0x9D,
+    ];
+    *opcodes.choose(&mut rand::thread_rng()).unwrap()
+}
+
+fn random_absolutey_opcode() -> u8 {
+    // All the opcodes which have the Absolute,Y addressing mode.
+    let opcodes = vec![0x79, 0x39, 0xD9, 0x59, 0xB9, 0xBE, 0x19, 0xF9, 0x99];
+    *opcodes.choose(&mut rand::thread_rng()).unwrap()
+}
+
+fn random_indirect_opcode() -> u8 {
+    // All the opcodes which have the Indirect addressing mode.
+    0x6c
+}
+
+fn random_indirectx_opcode() -> u8 {
+    // All the opcodes which have the Indirect,X addressing mode.
+    let opcodes = vec![0x61, 0x21, 0xC1, 0x41, 0xA1, 0x01, 0xE1, 0x81];
+    *opcodes.choose(&mut rand::thread_rng()).unwrap()
+}
+
+fn random_indirecty_opcode() -> u8 {
+    // All the opcodes which have the Indirect,Y addressing mode.
+    let opcodes = vec![0x71, 0x31, 0xD1, 0x51, 0xB1, 0x11, 0xF1, 0x91];
+    *opcodes.choose(&mut rand::thread_rng()).unwrap()
+}
+
+pub struct Mos6502Instruction {
+    internal: asm::_6502::Instruction,
+}
+
+impl Mos6502Instruction {
+    fn set_opcode(&mut self, op: u8) {
+        use asm::Encode;
+        use asm::_6502::{Decoder, Encoder};
+        let mut dasm = [0u8; 3];
+        let mut encoder = Encoder::new(&mut dasm[..]);
+        encoder.encode(self.internal).unwrap();
+        dasm[0] = op;
+        let mut decoder = Decoder::new(&dasm[..]);
+        self.internal = decoder.decode().unwrap();
+    }
+
+    fn mutate_opcode(&mut self) {
+        match self.internal.addressing() {
+            asm::_6502::Addressing::Accumulator => self.set_opcode(random_accumulator_opcode()),
+            asm::_6502::Addressing::Implied => self.set_opcode(random_implied_opcode()),
+            asm::_6502::Addressing::Immediate(_) => self.set_opcode(random_immediate_opcode()),
+            asm::_6502::Addressing::ZeroPage(_) => self.set_opcode(random_zeropage_opcode()),
+            asm::_6502::Addressing::ZeroPageX(_) => self.set_opcode(random_zeropagex_opcode()),
+            asm::_6502::Addressing::ZeroPageY(_) => self.set_opcode(random_zeropagey_opcode()),
+            asm::_6502::Addressing::Relative(_) => self.set_opcode(random_relative_opcode()),
+            asm::_6502::Addressing::Absolute(_) => self.set_opcode(random_absolute_opcode()),
+            asm::_6502::Addressing::AbsoluteX(_) => self.set_opcode(random_absolutex_opcode()),
+            asm::_6502::Addressing::AbsoluteY(_) => self.set_opcode(random_absolutey_opcode()),
+            asm::_6502::Addressing::Indirect(_) => self.set_opcode(random_indirect_opcode()),
+            asm::_6502::Addressing::IndexedIndirect(_) => {
+                self.set_opcode(random_indirectx_opcode())
+            }
+            asm::_6502::Addressing::IndirectIndexed(_) => {
+                self.set_opcode(random_indirecty_opcode())
+            }
+        }
+    }
+
+    fn mutate_operand(&self) {
+        todo!()
+    }
+}
+
+impl Instruction for Mos6502Instruction {
+    fn new() -> Self {
+        let istream = [random_opcode(), random(), random()];
+        let mut decoder = asm::_6502::Decoder::new(&istream[..]);
+        let internal = decoder.decode().unwrap();
+        Self { internal }
+    }
+
+    fn mutate(&mut self) {
+        if random() {
+            self.mutate_operand()
+        } else {
+            self.mutate_opcode()
+        }
+    }
+
+    fn length(&self) -> usize {
+        self.internal.length()
+    }
+
+    fn disassemble(&self) -> String {
+        format!("{:?}", self.internal)
+    }
+}

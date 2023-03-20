@@ -1,2 +1,8 @@
-//!
-#![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
+mod backends;
+
+trait Instruction {
+    fn new() -> Self;
+    fn mutate(&mut self);
+    fn length(&self) -> usize;
+    fn disassemble(&self) -> String;
+}
