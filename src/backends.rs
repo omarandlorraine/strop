@@ -1,3 +1,3 @@
-pub mod mos6502;
+pub mod m6502;
 
-pub use mos6502::Mos6502Instruction;
+pub use m6502::Mos6502Instruction;
