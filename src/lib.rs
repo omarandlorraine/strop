@@ -19,6 +19,13 @@ macro_rules! randomly {
     };
 }
 
+trait Emulator {
+    type Addr;
+    type Insn;
+
+    fn run(&mut self, org: Self::Addr, prog: Vec<Self::Insn>);
+}
+
 trait Instruction {
     fn new() -> Self;
     fn mutate(&mut self);
