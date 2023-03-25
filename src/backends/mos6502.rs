@@ -1,3 +1,4 @@
+use crate::randomly;
 use crate::Instruction;
 use asm::Decode;
 use rand::random;
@@ -152,8 +153,25 @@ impl Mos6502Instruction {
         }
     }
 
-    fn mutate_operand(&self) {
-        todo!()
+    fn mutate_operand(&mut self) {
+        // This method picks one of the two bytes of the instruction's opcode, and then either
+        // increments it, decrements it, or flips a random bit.
+        use asm::Encode;
+        use asm::_6502::{Decoder, Encoder};
+        let mut dasm = [0u8; 3];
+        let mut encoder = Encoder::new(&mut dasm[..]);
+        encoder.encode(self.internal).unwrap();
+
+        let offs = if random() {1} else {2};
+        let bitsel = randomly!({0x01} {0x02} {0x04} {0x08} {0x10} {0x20} {0x40} {0x80});
+        randomly!(
+            {dasm[offs] += 1}
+            {dasm[offs] -= 1}
+            {dasm[offs] ^= bitsel}
+        );
+
+        let mut decoder = Decoder::new(&dasm[..]);
+        self.internal = decoder.decode().unwrap();
     }
 }
 
@@ -166,11 +184,10 @@ impl Instruction for Mos6502Instruction {
     }
 
     fn mutate(&mut self) {
-        if random() {
-            self.mutate_operand()
-        } else {
-            self.mutate_opcode()
-        }
+        randomly!(
+            { self.mutate_operand() }
+            { self.mutate_opcode() }
+        )
     }
 
     fn length(&self) -> usize {
