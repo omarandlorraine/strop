@@ -44,7 +44,7 @@ macro_rules! randomly {
     };
     (@ $n:expr, (), ($(($m:expr, $action:block),)*)) => {{
         use $crate::rand::{thread_rng, Rng};
-        let i = thread_rng().gen_range(0..$n);
+        let i = thread_rng().gen_range(0, $n);
         match i {
             $(x if x == $m => $action)*
             _ => panic!(),
