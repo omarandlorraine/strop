@@ -162,7 +162,7 @@ impl Mos6502Instruction {
         let mut encoder = Encoder::new(&mut dasm[..]);
         encoder.encode(self.internal).unwrap();
 
-        let offs = if random() {1} else {2};
+        let offs = if random() { 1 } else { 2 };
         let bitsel = randomly!({0x01} {0x02} {0x04} {0x08} {0x10} {0x20} {0x40} {0x80});
         randomly!(
             {dasm[offs] += 1}
