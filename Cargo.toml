@@ -1,10 +1,12 @@
 [package]
 name = "strop"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Sam M W <you@example.com>"]
 edition = "2018"
 description = "stochastically generates machine code"
 license = "MIT"
+repository = "https://github.com/omarandlorraine/strop"
+homepage = "https://github.com/omarandlorraine/strop"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

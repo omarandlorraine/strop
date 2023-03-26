@@ -1,1 +1,4 @@
 /target
+examples/multiply_accumulator_by_constant/target/
+src/.*.swp
+Cargo.lock
