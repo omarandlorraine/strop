@@ -10,12 +10,13 @@
 
 pub use rand;
 mod backends;
+mod search;
 
 trait Emulator {
     type Addr;
     type Insn;
 
-    fn run(&mut self, org: Self::Addr, prog: Vec<Self::Insn>);
+    fn run(&mut self, org: Self::Addr, prog: &[Self::Insn]);
 }
 
 trait Instruction {
