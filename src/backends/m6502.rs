@@ -1,6 +1,8 @@
 use crate::randomly;
 use crate::Instruction;
+use crate::Emulator;
 use asm::Decode;
+use mos6502::cpu;
 use rand::random;
 use rand::seq::SliceRandom;
 
@@ -197,4 +199,28 @@ impl Instruction for Mos6502Instruction {
     fn disassemble(&self) -> String {
         format!("{:?}", self.internal)
     }
+}
+
+pub struct Mos6502Emulator {
+    internal: cpu::CPU,
+}
+
+impl Default for Mos6502Emulator {
+    fn default() -> Self {
+        Self {
+            internal: cpu::CPU::new()
+        }
+    }
+}
+
+impl Emulator for Mos6502Emulator {
+    type Addr = u16;
+    type Insn = u8;
+
+    fn run(&mut self, org: Self::Addr, prog: &[Self::Insn]) {
+        use mos6502::address::Address;
+        self.internal.memory.set_bytes(Address(org), prog);
+        todo!("We need to actually run the program");
+    }
+
 }
