@@ -1,6 +1,6 @@
 use crate::randomly;
-use crate::Instruction;
 use crate::Emulator;
+use crate::Instruction;
 use asm::Decode;
 use mos6502::cpu;
 use rand::random;
@@ -208,7 +208,7 @@ pub struct Mos6502Emulator {
 impl Default for Mos6502Emulator {
     fn default() -> Self {
         Self {
-            internal: cpu::CPU::new()
+            internal: cpu::CPU::new(),
         }
     }
 }
@@ -222,5 +222,4 @@ impl Emulator for Mos6502Emulator {
         self.internal.memory.set_bytes(Address(org), prog);
         todo!("We need to actually run the program");
     }
-
 }

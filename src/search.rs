@@ -15,7 +15,6 @@ trait Parameter<T> {
     /// If the instruction T reads from the parameter's location, return true. Otherwise, ask the
     /// next parameter. But if there are no more parameters in the list, then return false.
     fn permit(t: T) -> bool;
-
 }
 
 struct StochasticSearch<T> {
@@ -27,7 +26,7 @@ impl<T> Default for StochasticSearch<T> {
     fn default() -> Self {
         Self {
             a: vec![],
-            b: vec![]
+            b: vec![],
         }
     }
 }
@@ -38,8 +37,6 @@ struct ExhaustiveSearch<T> {
 
 impl<T> Default for ExhaustiveSearch<T> {
     fn default() -> Self {
-        Self {
-            current: vec![]
-        }
+        Self { current: vec![] }
     }
 }
