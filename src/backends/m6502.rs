@@ -290,11 +290,11 @@ impl SearchConstraint6502 {
 }
 
 impl SearchConstraint<Mos6502Instruction> for SearchConstraint6502 {
-    fn mutate(&self, t: Mos6502Instruction) -> Mos6502Instruction {
+    fn reject(&self, t: Mos6502Instruction) -> bool {
         if (self.accept)(t) {
-            self.parent.mutate(t)
+            self.parent.reject(t)
         } else {
-            self.mutate(Mos6502Instruction::new())
+            false
         }
     }
 }
