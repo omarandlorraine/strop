@@ -229,13 +229,13 @@ impl Emulator for Mos6502Emulator {
 
 pub struct SearchConstraint6502 {
     accept: fn(Mos6502Instruction) -> bool,
-    parent: Box<Self>
+    parent: Box<Self>,
 }
 
 fn no_decimal_mode(insn: Mos6502Instruction) -> bool {
     /// returns false for instructions that manipulate the decimal flag (and which will not appear
     /// in programs behaving sensibly on the Ricoh 2A03)
-    use  asm::_6502::Instruction;
+    use asm::_6502::Instruction;
     match insn.internal {
         Instruction::CLD(_) => false,
         Instruction::SED(_) => false,
@@ -246,7 +246,7 @@ fn no_decimal_mode(insn: Mos6502Instruction) -> bool {
 fn no_ror(insn: Mos6502Instruction) -> bool {
     /// returns false for the ROR instruction, which on very early specimens are not present due to
     /// a hardware bug
-    use  asm::_6502::Instruction;
+    use asm::_6502::Instruction;
     match insn.internal {
         Instruction::ROR(_) => false,
         _ => true,
@@ -255,7 +255,7 @@ fn no_ror(insn: Mos6502Instruction) -> bool {
 
 fn basic_block(insn: Mos6502Instruction) -> bool {
     /// returns true only for instructions that are allowed inside a basic block
-    use  asm::_6502::Instruction;
+    use asm::_6502::Instruction;
     match insn.internal {
         Instruction::BCC(_) => false,
         Instruction::BCS(_) => false,
@@ -277,15 +277,24 @@ fn basic_block(insn: Mos6502Instruction) -> bool {
 
 impl SearchConstraint6502 {
     fn basic_block(self) -> Self {
-        Self {parent: Box::new(self), accept: basic_block }
+        Self {
+            parent: Box::new(self),
+            accept: basic_block,
+        }
     }
 
     fn no_decimal_mode(self) -> Self {
-        Self {parent: Box::new(self), accept: no_decimal_mode }
+        Self {
+            parent: Box::new(self),
+            accept: no_decimal_mode,
+        }
     }
 
     fn no_ror(self) -> Self {
-        Self {parent: Box::new(self), accept: no_ror }
+        Self {
+            parent: Box::new(self),
+            accept: no_ror,
+        }
     }
 }
 

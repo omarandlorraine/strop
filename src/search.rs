@@ -1,11 +1,17 @@
 pub trait SearchConstraint<T> {
     /// Stochastic search over the constrained search space
-    fn stochastic_search(self) -> StochasticSearch<T> where Self: Sized {
+    fn stochastic_search(self) -> StochasticSearch<T>
+    where
+        Self: Sized,
+    {
         StochasticSearch::<T>::default()
     }
 
     /// Exhaustive search over the constrained search space
-    fn exhaustive_search(self) -> ExhaustiveSearch<T> where Self: Sized {
+    fn exhaustive_search(self) -> ExhaustiveSearch<T>
+    where
+        Self: Sized,
+    {
         ExhaustiveSearch::<T>::default()
     }
 
@@ -17,7 +23,6 @@ pub trait SearchConstraint<T> {
     /// affecting control flow. Such a SearchConstraint would return `true` if `t` is such an
     /// instruction.
     fn reject(&self, t: T) -> bool;
-
 }
 
 trait Search<T> {
