@@ -1,3 +1,5 @@
+use crate::search::SearchConstraint;
+
 use crate::randomly;
 use crate::Emulator;
 use crate::Instruction;
@@ -117,6 +119,7 @@ fn random_indirecty_opcode() -> u8 {
     *opcodes.choose(&mut rand::thread_rng()).unwrap()
 }
 
+#[derive(Clone, Copy)]
 pub struct Mos6502Instruction {
     internal: asm::_6502::Instruction,
 }
@@ -221,5 +224,77 @@ impl Emulator for Mos6502Emulator {
         use mos6502::address::Address;
         self.internal.memory.set_bytes(Address(org), prog);
         todo!("We need to actually run the program");
+    }
+}
+
+pub struct SearchConstraint6502 {
+    accept: fn(Mos6502Instruction) -> bool,
+    parent: Box<Self>
+}
+
+fn no_decimal_mode(insn: Mos6502Instruction) -> bool {
+    /// returns false for instructions that manipulate the decimal flag (and which will not appear
+    /// in programs behaving sensibly on the Ricoh 2A03)
+    use  asm::_6502::Instruction;
+    match insn.internal {
+        Instruction::CLD(_) => false,
+        Instruction::SED(_) => false,
+        _ => true,
+    }
+}
+
+fn no_ror(insn: Mos6502Instruction) -> bool {
+    /// returns false for the ROR instruction, which on very early specimens are not present due to
+    /// a hardware bug
+    use  asm::_6502::Instruction;
+    match insn.internal {
+        Instruction::ROR(_) => false,
+        _ => true,
+    }
+}
+
+fn basic_block(insn: Mos6502Instruction) -> bool {
+    /// returns true only for instructions that are allowed inside a basic block
+    use  asm::_6502::Instruction;
+    match insn.internal {
+        Instruction::BCC(_) => false,
+        Instruction::BCS(_) => false,
+        Instruction::BEQ(_) => false,
+        Instruction::BMI(_) => false,
+        Instruction::BNE(_) => false,
+        Instruction::BRK(_) => false,
+        Instruction::BPL(_) => false,
+        Instruction::BRK(_) => false,
+        Instruction::BVC(_) => false,
+        Instruction::BVS(_) => false,
+        Instruction::JMP(_) => false,
+        Instruction::JSR(_) => false,
+        Instruction::RTI(_) => false,
+        Instruction::RTS(_) => false,
+        _ => true,
+    }
+}
+
+impl SearchConstraint6502 {
+    fn basic_block(self) -> Self {
+        Self {parent: Box::new(self), accept: basic_block }
+    }
+
+    fn no_decimal_mode(self) -> Self {
+        Self {parent: Box::new(self), accept: no_decimal_mode }
+    }
+
+    fn no_ror(self) -> Self {
+        Self {parent: Box::new(self), accept: no_ror }
+    }
+}
+
+impl SearchConstraint<Mos6502Instruction> for SearchConstraint6502 {
+    fn mutate(&self, t: Mos6502Instruction) -> Mos6502Instruction {
+        if (self.accept)(t) {
+            self.parent.mutate(t)
+        } else {
+            self.mutate(Mos6502Instruction::new())
+        }
     }
 }

@@ -1,14 +1,34 @@
-trait Search<T> {
-    fn search(&mut self) -> Option<T>;
+pub trait SearchConstraint<T> {
+    /// Stochastic search over the constrained search space
+    fn stochastic_search(self) -> StochasticSearch<T> where Self: Sized {
+        StochasticSearch::<T>::default()
+    }
+
+    /// Exhaustive search over the constrained search space
+    fn exhaustive_search(self) -> ExhaustiveSearch<T> where Self: Sized {
+        ExhaustiveSearch::<T>::default()
+    }
+
+    /// Given an instruction of type `T`, return either `true`, or if the search constraint
+    /// disallows this particular T, return `false`. This is used by objects of type `Search<T>` to
+    /// constrain the search space.
+    /// For example, a `SearchConstraint<T>` could be used to yield only programs that do not have
+    /// any conditional branches (i.e., basic blocks), jumps, returns or other instructions
+    /// affecting control flow. Such a SearchConstraint would return `true` if `t` is such an
+    /// instruction.
+    fn reject(&self, t: T) -> bool;
+
 }
 
-trait ConstrainedSearch<T>: Search<T> {
-    /// Given an instruction type T, return either the very same one, or if the search constraint
-    /// disallows this particular T, mutate it to another one that *is* allowed.
-    /// For example, a ConstrainedSearch could be used to yield only programs that do not have any
-    /// conditional branches (i.e., basic blocks). Such a ConstrainedSearch would return some other
-    /// instruction if T is a conditional branch instruction.
-    fn mutate(t: T) -> T;
+trait Search<T> {
+    /// Return one putative program
+    fn search(&mut self) -> Vec<T>;
+
+    /// Given a program (that is, a sequence of type T), return a value to optimize for. The
+    /// exhaustive search strategy stops when this function returns zero. The stochastic search
+    /// strategy also stope when this function returns zero, but also uses information about *how
+    /// wrong* a program is to inform its next move.
+    fn cost(p: &[T]) -> f32;
 }
 
 trait Parameter<T> {
