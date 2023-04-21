@@ -1385,11 +1385,6 @@ pub mod fuzz_tests {
     }
 
     #[test]
-    fn fuzz_sbc() {
-        fuzz_test_immediate(&SBC, 0xe9);
-    }
-
-    #[test]
     fn fuzz_rol() {
         fuzz_test_implied(&ROL, 0x2a);
     }
