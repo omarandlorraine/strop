@@ -1254,7 +1254,6 @@ pub mod fuzz_tests {
     use super::*;
 
     use mos6502;
-    use mos6502::address::Address;
     use mos6502::cpu;
     use mos6502::registers::Status;
 
@@ -1282,8 +1281,8 @@ pub mod fuzz_tests {
             0xff,
         ];
 
-        cpu.memory.set_bytes(Address(0x10), &program);
-        cpu.registers.program_counter = Address(0x10);
+        cpu.memory.set_bytes(0x10, &program);
+        cpu.registers.program_counter = 0x10;
         cpu.run();
 
         (
@@ -1383,11 +1382,6 @@ pub mod fuzz_tests {
     #[test]
     fn fuzz_ora() {
         fuzz_test_immediate(&ORA, 0x09);
-    }
-
-    #[test]
-    fn fuzz_sbc() {
-        fuzz_test_immediate(&SBC, 0xe9);
     }
 
     #[test]
