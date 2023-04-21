@@ -1254,7 +1254,6 @@ pub mod fuzz_tests {
     use super::*;
 
     use mos6502;
-    use mos6502::address::Address;
     use mos6502::cpu;
     use mos6502::registers::Status;
 
@@ -1282,8 +1281,8 @@ pub mod fuzz_tests {
             0xff,
         ];
 
-        cpu.memory.set_bytes(Address(0x10), &program);
-        cpu.registers.program_counter = Address(0x10);
+        cpu.memory.set_bytes(0x10, &program);
+        cpu.registers.program_counter = 0x10;
         cpu.run();
 
         (
