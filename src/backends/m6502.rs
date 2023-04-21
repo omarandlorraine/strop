@@ -221,8 +221,7 @@ impl Emulator for Mos6502Emulator {
     type Insn = u8;
 
     fn run(&mut self, org: Self::Addr, prog: &[Self::Insn]) {
-        use mos6502::address::Address;
-        self.internal.memory.set_bytes(Address(org), prog);
+        self.internal.memory.set_bytes(org, prog);
         todo!("We need to actually run the program");
     }
 }
