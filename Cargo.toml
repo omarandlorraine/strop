@@ -12,5 +12,5 @@ homepage = "https://github.com/omarandlorraine/strop"
 
 [dependencies]
 asm = {version = "0.3.0", features = [ "6502" ] }
-mos6502 = "0.2.0"
+mos6502 = "0.4.0"
 rand = "0.7.3"
