@@ -43,12 +43,12 @@ can be fed into the way we mutate or select the code sequence.
 
 Prior work I have taken inspiration from:
 
-- (Superoptimizer - A Look at the Smallest
-  Program)[https://web.stanford.edu/class/cs343/resources/superoptimizer.pdf],
+- [Superoptimizer - A Look at the Smallest
+  Program](https://web.stanford.edu/class/cs343/resources/superoptimizer.pdf),
   an exhaustive search for Motorola 68020 programs.
-- (GNU superopt)[https://github.com/embecosm/gnu-superopt], an exhaustive
+- [GNU superopt](https://github.com/embecosm/gnu-superopt), an exhaustive
   search over programs for many different architectures.
-- (STOKE)[https://github.com/StanfordPL/stoke], a stochastic superoptimizer
+- [STOKE](https://github.com/StanfordPL/stoke), a stochastic superoptimizer
   written in C++. It targets and runs on 64-bit x86 processors.
 
 From what I have seen, both exhaustive search and stochastic search strategies
