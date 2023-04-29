@@ -49,21 +49,6 @@ struct StochasticSearch<T> {
     b: Vec<T>,
 }
 
-impl<T> Default for StochasticSearch<T> {
-    fn default() -> Self {
-        Self {
-            a: vec![],
-            b: vec![],
-        }
-    }
-}
-
 struct ExhaustiveSearch<T> {
     current: Vec<T>,
-}
-
-impl<T> Default for ExhaustiveSearch<T> {
-    fn default() -> Self {
-        Self { current: vec![] }
-    }
 }
