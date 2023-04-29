@@ -28,10 +28,12 @@ pub trait SearchConstraint<T> {
 trait Search<T> {
     /// Return one putative program
     fn search(&mut self) -> Vec<T>;
+}
 
+trait Cost<T> {
     /// Given a program (that is, a sequence of type T), return a value to optimize for. The
     /// exhaustive search strategy stops when this function returns zero. The stochastic search
-    /// strategy also stope when this function returns zero, but also uses information about *how
+    /// strategy also stops when this function returns zero, but also uses information about *how
     /// wrong* a program is to inform its next move.
     fn cost(p: &[T]) -> f32;
 }
