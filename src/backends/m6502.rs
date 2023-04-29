@@ -263,7 +263,6 @@ fn basic_block(insn: Mos6502Instruction) -> bool {
         Instruction::BNE(_) => false,
         Instruction::BRK(_) => false,
         Instruction::BPL(_) => false,
-        Instruction::BRK(_) => false,
         Instruction::BVC(_) => false,
         Instruction::BVS(_) => false,
         Instruction::JMP(_) => false,
