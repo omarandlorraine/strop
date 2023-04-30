@@ -227,8 +227,15 @@ impl Emulator for Mos6502Emulator {
 }
 
 pub struct SearchConstraint6502 {
-    accept: fn(Mos6502Instruction) -> bool,
-    parent: Box<Self>,
+    accept: Vec<fn(Mos6502Instruction) -> bool>,
+}
+
+impl Default for SearchConstraint6502 {
+    fn default() -> Self {
+        Self {
+            accept: vec![],
+        }
+    }
 }
 
 fn no_decimal_mode(insn: Mos6502Instruction) -> bool {
@@ -274,34 +281,30 @@ fn basic_block(insn: Mos6502Instruction) -> bool {
 }
 
 impl SearchConstraint6502 {
-    fn basic_block(self) -> Self {
-        Self {
-            parent: Box::new(self),
-            accept: basic_block,
+    fn add_constraint(&self, func: fn(Mos6502Instruction) -> bool) -> Self {
+        let mut accept: Vec<fn(Mos6502Instruction) -> bool> = vec![];
+        for t in self.accept.iter() {
+            accept.push(*t);
         }
+        accept.push(func);
+        Self { accept }
     }
 
-    fn no_decimal_mode(self) -> Self {
-        Self {
-            parent: Box::new(self),
-            accept: no_decimal_mode,
-        }
+    fn basic_block(&self) -> Self {
+        self.add_constraint(basic_block)
     }
 
-    fn no_ror(self) -> Self {
-        Self {
-            parent: Box::new(self),
-            accept: no_ror,
-        }
+    fn no_decimal_mode(&self) -> Self {
+        self.add_constraint(no_decimal_mode)
+    }
+
+    fn no_ror(&self) -> Self {
+        self.add_constraint(no_ror)
     }
 }
 
 impl SearchConstraint<Mos6502Instruction> for SearchConstraint6502 {
     fn reject(&self, t: Mos6502Instruction) -> bool {
-        if (self.accept)(t) {
-            self.parent.reject(t)
-        } else {
-            false
-        }
+        self.accept.iter().any(|constraint| ! (constraint)(t))
     }
 }
