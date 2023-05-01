@@ -30,18 +30,16 @@ trait Parameter<T> {
 
 pub struct ExhaustiveSearch<'a, T> {
     current: Vec<T>,
-    constraint: &'a dyn SearchConstraint<T>
+    constraint: &'a dyn SearchConstraint<T>,
 }
 
 impl<'a, T> ExhaustiveSearch<'a, T> {
     pub fn new(constraint: &'a dyn SearchConstraint<T>) -> Self {
         Self {
             current: vec![],
-            constraint
+            constraint,
         }
     }
 }
 
-impl<T> Search<T> for ExhaustiveSearch<'_, T> {
-
-}
+impl<T> Search<T> for ExhaustiveSearch<'_, T> {}
