@@ -227,84 +227,100 @@ impl Emulator for Mos6502Emulator {
 }
 
 pub struct SearchConstraint6502 {
-    accept: Vec<fn(Mos6502Instruction) -> bool>,
+    en_decimal: bool,
+    en_ror: bool,
+    en_basic_block: bool,
 }
 
 impl Default for SearchConstraint6502 {
     fn default() -> Self {
         Self {
-            accept: vec![],
+            en_decimal: false,
+            en_ror: false,
+            en_basic_block: false,
         }
-    }
-}
-
-fn no_decimal_mode(insn: Mos6502Instruction) -> bool {
-    /// returns false for instructions that manipulate the decimal flag (and which will not appear
-    /// in programs behaving sensibly on the Ricoh 2A03)
-    use asm::_6502::Instruction;
-    match insn.internal {
-        Instruction::CLD(_) => false,
-        Instruction::SED(_) => false,
-        _ => true,
-    }
-}
-
-fn no_ror(insn: Mos6502Instruction) -> bool {
-    /// returns false for the ROR instruction, which on very early specimens are not present due to
-    /// a hardware bug
-    use asm::_6502::Instruction;
-    match insn.internal {
-        Instruction::ROR(_) => false,
-        _ => true,
-    }
-}
-
-fn basic_block(insn: Mos6502Instruction) -> bool {
-    /// returns true only for instructions that are allowed inside a basic block
-    use asm::_6502::Instruction;
-    match insn.internal {
-        Instruction::BCC(_) => false,
-        Instruction::BCS(_) => false,
-        Instruction::BEQ(_) => false,
-        Instruction::BMI(_) => false,
-        Instruction::BNE(_) => false,
-        Instruction::BRK(_) => false,
-        Instruction::BPL(_) => false,
-        Instruction::BVC(_) => false,
-        Instruction::BVS(_) => false,
-        Instruction::JMP(_) => false,
-        Instruction::JSR(_) => false,
-        Instruction::RTI(_) => false,
-        Instruction::RTS(_) => false,
-        _ => true,
     }
 }
 
 impl SearchConstraint6502 {
-    fn add_constraint(&self, func: fn(Mos6502Instruction) -> bool) -> Self {
-        let mut accept: Vec<fn(Mos6502Instruction) -> bool> = vec![];
-        for t in self.accept.iter() {
-            accept.push(*t);
+    fn chk_decimal(insn: Mos6502Instruction) -> bool {
+        /// returns false for instructions that manipulate the decimal flag (and which will not appear
+        /// in programs behaving sensibly on the Ricoh 2A03)
+        use asm::_6502::Instruction;
+        match insn.internal {
+            Instruction::CLD(_) => false,
+            Instruction::SED(_) => false,
+            _ => true,
         }
-        accept.push(func);
-        Self { accept }
     }
 
-    fn basic_block(&self) -> Self {
-        self.add_constraint(basic_block)
+    fn chk_ror(insn: Mos6502Instruction) -> bool {
+        /// returns false for the ROR instruction, which on very early specimens are not present due to
+        /// a hardware bug
+        use asm::_6502::Instruction;
+        match insn.internal {
+            Instruction::ROR(_) => false,
+            _ => true,
+        }
     }
 
-    fn no_decimal_mode(&self) -> Self {
-        self.add_constraint(no_decimal_mode)
+    fn chk_basic_block(insn: Mos6502Instruction) -> bool {
+        /// returns true only for instructions that are allowed inside a basic block
+        use asm::_6502::Instruction;
+        match insn.internal {
+            Instruction::BCC(_) => false,
+            Instruction::BCS(_) => false,
+            Instruction::BEQ(_) => false,
+            Instruction::BMI(_) => false,
+            Instruction::BNE(_) => false,
+            Instruction::BRK(_) => false,
+            Instruction::BPL(_) => false,
+            Instruction::BVC(_) => false,
+            Instruction::BVS(_) => false,
+            Instruction::JMP(_) => false,
+            Instruction::JSR(_) => false,
+            Instruction::RTI(_) => false,
+            Instruction::RTS(_) => false,
+            _ => true,
+        }
     }
 
-    fn no_ror(&self) -> Self {
-        self.add_constraint(no_ror)
+    pub fn basic_block(&self) -> Self {
+        Self {
+            en_decimal: self.en_decimal,
+            en_ror: self.en_ror,
+            en_basic_block: true,
+        }
+    }
+
+    pub fn no_decimal_mode(&self) -> Self {
+        Self {
+            en_decimal: true,
+            en_ror: self.en_ror,
+            en_basic_block: self.en_basic_block,
+        }
+    }
+
+    pub fn no_ror(&self) -> Self {
+        Self {
+            en_decimal: self.en_decimal,
+            en_ror: true,
+            en_basic_block: self.en_basic_block,
+        }
     }
 }
 
 impl SearchConstraint<Mos6502Instruction> for SearchConstraint6502 {
     fn reject(&self, t: Mos6502Instruction) -> bool {
-        self.accept.iter().any(|constraint| ! (constraint)(t))
+        if self.en_decimal && Self::chk_decimal(t) {
+            return true;
+        }
+        if self.en_ror && Self::chk_ror(t) {
+            return true;
+        }
+        if self.en_basic_block && Self::chk_basic_block(t) {
+            return true;
+        }
+        return false;
     }
 }

@@ -9,8 +9,8 @@
 //! embedded, and hobbyist retrocomputing.
 
 pub use rand;
-mod backends;
-mod search;
+pub mod backends;
+pub mod search;
 
 trait Emulator {
     type Addr;

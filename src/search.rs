@@ -44,7 +44,7 @@ trait Parameter<T> {
     fn permit(t: T) -> bool;
 }
 
-struct StochasticSearch<T> {
+pub struct StochasticSearch<T> {
     a: Vec<T>,
     b: Vec<T>,
 }
@@ -58,7 +58,7 @@ impl<T> Default for StochasticSearch<T> {
     }
 }
 
-struct ExhaustiveSearch<T> {
+pub struct ExhaustiveSearch<T> {
     current: Vec<T>,
 }
 
