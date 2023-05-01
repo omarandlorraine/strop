@@ -1,20 +1,4 @@
 pub trait SearchConstraint<T> {
-    /// Stochastic search over the constrained search space
-    fn stochastic_search(self) -> StochasticSearch<T>
-    where
-        Self: Sized,
-    {
-        StochasticSearch::<T>::default()
-    }
-
-    /// Exhaustive search over the constrained search space
-    fn exhaustive_search(self) -> ExhaustiveSearch<T>
-    where
-        Self: Sized,
-    {
-        ExhaustiveSearch::<T>::default()
-    }
-
     /// Given an instruction of type `T`, return either `true`, or if the search constraint
     /// disallows this particular T, return `false`. This is used by objects of type `Search<T>` to
     /// constrain the search space.
@@ -44,26 +28,20 @@ trait Parameter<T> {
     fn permit(t: T) -> bool;
 }
 
-pub struct StochasticSearch<T> {
-    a: Vec<T>,
-    b: Vec<T>,
+pub struct ExhaustiveSearch<'a, T> {
+    current: Vec<T>,
+    constraint: &'a dyn SearchConstraint<T>
 }
 
-impl<T> Default for StochasticSearch<T> {
-    fn default() -> Self {
+impl<'a, T> ExhaustiveSearch<'a, T> {
+    pub fn new(constraint: &'a dyn SearchConstraint<T>) -> Self {
         Self {
-            a: vec![],
-            b: vec![],
+            current: vec![],
+            constraint
         }
     }
 }
 
-pub struct ExhaustiveSearch<T> {
-    current: Vec<T>,
-}
+impl<T> Search<T> for ExhaustiveSearch<'_, T> {
 
-impl<T> Default for ExhaustiveSearch<T> {
-    fn default() -> Self {
-        Self { current: vec![] }
-    }
 }
