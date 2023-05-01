@@ -226,20 +226,11 @@ impl Emulator for Mos6502Emulator {
     }
 }
 
+#[derive(Default)]
 pub struct SearchConstraint6502 {
     en_decimal: bool,
     en_ror: bool,
     en_basic_block: bool,
-}
-
-impl Default for SearchConstraint6502 {
-    fn default() -> Self {
-        Self {
-            en_decimal: false,
-            en_ror: false,
-            en_basic_block: false,
-        }
-    }
 }
 
 impl SearchConstraint6502 {
@@ -247,42 +238,35 @@ impl SearchConstraint6502 {
         /// returns false for instructions that manipulate the decimal flag (and which will not appear
         /// in programs behaving sensibly on the Ricoh 2A03)
         use asm::_6502::Instruction;
-        match insn.internal {
-            Instruction::CLD(_) => false,
-            Instruction::SED(_) => false,
-            _ => true,
-        }
+        !matches!(insn.internal, Instruction::CLD(_) | Instruction::SED(_))
     }
 
     fn chk_ror(insn: Mos6502Instruction) -> bool {
         /// returns false for the ROR instruction, which on very early specimens are not present due to
         /// a hardware bug
         use asm::_6502::Instruction;
-        match insn.internal {
-            Instruction::ROR(_) => false,
-            _ => true,
-        }
+        !matches!(insn.internal, Instruction::ROR(_))
     }
 
     fn chk_basic_block(insn: Mos6502Instruction) -> bool {
         /// returns true only for instructions that are allowed inside a basic block
         use asm::_6502::Instruction;
-        match insn.internal {
-            Instruction::BCC(_) => false,
-            Instruction::BCS(_) => false,
-            Instruction::BEQ(_) => false,
-            Instruction::BMI(_) => false,
-            Instruction::BNE(_) => false,
-            Instruction::BRK(_) => false,
-            Instruction::BPL(_) => false,
-            Instruction::BVC(_) => false,
-            Instruction::BVS(_) => false,
-            Instruction::JMP(_) => false,
-            Instruction::JSR(_) => false,
-            Instruction::RTI(_) => false,
-            Instruction::RTS(_) => false,
-            _ => true,
-        }
+        !matches!(
+            insn.internal,
+            Instruction::BCC(_)
+                | Instruction::BCS(_)
+                | Instruction::BEQ(_)
+                | Instruction::BMI(_)
+                | Instruction::BNE(_)
+                | Instruction::BRK(_)
+                | Instruction::BPL(_)
+                | Instruction::BVC(_)
+                | Instruction::BVS(_)
+                | Instruction::JMP(_)
+                | Instruction::JSR(_)
+                | Instruction::RTI(_)
+                | Instruction::RTS(_)
+        )
     }
 
     pub fn basic_block(&self) -> Self {
@@ -321,6 +305,6 @@ impl SearchConstraint<Mos6502Instruction> for SearchConstraint6502 {
         if self.en_basic_block && Self::chk_basic_block(t) {
             return true;
         }
-        return false;
+        false
     }
 }
