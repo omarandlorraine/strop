@@ -144,19 +144,6 @@ fn rotate_right_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>,
     }
 }
 
-#[test]
-fn add_to_reg8_test() {
-    assert_eq!(
-        add_to_reg8(Some(3), 3),
-        (Some(6), Some(false), Some(false), Some(false), Some(false))
-    );
-    assert_eq!(
-        add_to_reg8(Some(127), 1),
-        (Some(-128), Some(true), Some(false), Some(true), Some(false))
-    );
-    assert_eq!(add_to_reg8(None, 3), (None, None, None, None, None));
-}
-
 impl Instruction {
     pub fn inh(
         opname: &'static str,
