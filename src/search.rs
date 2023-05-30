@@ -2,7 +2,6 @@ use crate::machine::Instruction;
 use crate::{State, Test, TestRun};
 use rand::prelude::SliceRandom;
 use rand::Rng;
-use rayon::prelude::*;
 use std::ops::{Index, IndexMut};
 
 #[derive(Clone)]
@@ -56,8 +55,8 @@ impl BasicBlock {
         };
         for _i in 0..max_size {
             let instruction = instructions.choose(&mut rand::thread_rng()).unwrap();
-            let mut i = instruction.clone();
-            i.randomize(&constants, &vars);
+            let mut i = *instruction;
+            i.randomize(constants, vars);
             bb.push(i);
         }
         bb
@@ -126,7 +125,7 @@ fn run_program(prog: &BasicBlock, test_run: &TestRun, test: &Test) -> Option<Sta
     if prog
         .instructions
         .iter()
-        .fold(true, |valid: bool, i| valid && (i.operation)(i, &mut s))
+        .all(|i| (i.operation)(i, &mut s))
     {
         Some(s)
     } else {
@@ -136,7 +135,7 @@ fn run_program(prog: &BasicBlock, test_run: &TestRun, test: &Test) -> Option<Sta
 
 pub fn equivalence(prog: BasicBlock, test_run: &TestRun) -> bool {
     for tc in test_run.tests.iter() {
-        if let Some(state) = run_program(&prog, test_run, &tc) {
+        if let Some(state) = run_program(&prog, test_run, tc) {
             for param in test_run.outs.iter().zip(tc.outs.iter()) {
                 let result = (param.0.getter)(&state);
                 if result != Some(*param.1) {
@@ -153,7 +152,7 @@ pub fn equivalence(prog: BasicBlock, test_run: &TestRun) -> bool {
 pub fn differance(prog: &BasicBlock, test_run: &TestRun) -> f64 {
     let mut ret: f64 = 0.0;
     for tc in test_run.tests.iter() {
-        if let Some(state) = run_program(&prog, test_run, &tc) {
+        if let Some(state) = run_program(prog, test_run, tc) {
             for param in test_run.outs.iter().zip(tc.outs.iter()) {
                 if let Some(v) = (param.0.getter)(&state) {
                     let d: f64 = v.into();
@@ -198,7 +197,7 @@ fn mutate_insert(
     };
     let instruction = instructions.choose(&mut rand::thread_rng()).unwrap();
     prog.insert(offset, *instruction);
-    prog[offset].randomize(&constants, &vars);
+    prog[offset].randomize(constants, vars);
 }
 
 fn mutate(
@@ -215,7 +214,7 @@ fn mutate(
         0 => {
             if prog.len() > 1 {
                 let offset: usize = rand::thread_rng().gen_range(0, prog.len());
-                prog[offset].randomize(&constants, &vars);
+                prog[offset].randomize(constants, vars);
             }
         }
         /* delete an instruction */
@@ -289,17 +288,17 @@ pub fn optimize(
 ) -> BasicBlock {
     let mut population: Vec<(f64, BasicBlock)> = vec![];
 
-    let fitness = convergence(&prog);
-    let ccost = cost(&prog);
+    let fitness = convergence(prog);
+    let ccost = cost(prog);
     population.push((cost(prog), prog.clone()));
 
     let best = prog;
 
     // if we find a better version, try to optimize that as well.
-    for s in best
+    if let Some(s) = best
         .spawn(instructions.to_vec(), constants.to_vec(), vars.to_vec())
         .take(1000000)
-        .filter(|s| convergence(&s) <= fitness)
+        .filter(|s| convergence(s) <= fitness)
         .map(|s| (cost(&s), s))
         .min_by(|a, b| a.0.partial_cmp(&b.0).expect("Tried to compare a NaN"))
     {
@@ -367,8 +366,7 @@ pub fn exhaustive_search(
 ) {
     let instrs = instructions
         .iter()
-        .map(|i| i.vectorize(&constants, &vars))
-        .flatten()
+        .flat_map(|i| i.vectorize(&constants, &vars))
         .collect();
 
     fn try_all(
@@ -382,7 +380,7 @@ pub fn exhaustive_search(
         } else {
             for ins in instrs {
                 prog.push(*ins);
-                if try_all(term, prog, &instrs, len - 1) {
+                if try_all(term, prog, instrs, len - 1) {
                     return true;
                 }
                 prog.pop();

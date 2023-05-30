@@ -25,7 +25,7 @@ pub fn bitwise_and(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>)
             return (Some(r & operand), Some(r & operand == 0));
         }
     }
-    return (None, None);
+    (None, None)
 }
 
 pub fn bitwise_xor(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>) {
@@ -34,7 +34,7 @@ pub fn bitwise_xor(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>)
             return (Some(r ^ operand), Some(r ^ operand == 0));
         }
     }
-    return (None, None);
+    (None, None)
 }
 
 #[allow(clippy::many_single_char_names)]
@@ -92,7 +92,7 @@ fn decimal_adjust(
     if let Some(a) = accumulator {
         if let Some(right) = nybble(a, halfcarry) {
             let ar = a.wrapping_add(right);
-            nybble(ar >> 4, carry).map(|left| ar.wrapping_add((left << 4)))
+            nybble(ar >> 4, carry).map(|left| ar.wrapping_add(left << 4))
         } else {
             None
         }
@@ -102,32 +102,32 @@ fn decimal_adjust(
 }
 
 fn rotate_left_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>, Option<bool>) {
-    if val.is_none() || carry.is_none() {
-        (None, None)
-    } else {
-        let c = carry.unwrap();
-        let v = val.unwrap();
+    if let Some((carry, val)) = carry.zip(val) {
+        let c = carry;
+        let v = val;
         let high_bit_set = v & -128 != 0;
         let shifted = (v & 0x7f).rotate_left(1);
         (
             Some(if c { shifted + 1 } else { shifted }),
             Some(high_bit_set),
         )
+    } else {
+        (None, None)
     }
 }
 
 fn rotate_right_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>, Option<bool>) {
-    if val.is_none() || carry.is_none() {
-        (None, None)
-    } else {
-        let c = carry.unwrap();
-        let v = val.unwrap();
+    if let Some((carry, val)) = carry.zip(val) {
+        let c = carry;
+        let v = val;
         let low_bit_set = v & 1 != 0;
         let shifted = (v & 0x7f).rotate_right(1);
         (
             Some(if c { shifted | -128i8 } else { shifted }),
             Some(low_bit_set),
         )
+    } else {
+        (None, None)
     }
 }
 
@@ -210,7 +210,7 @@ impl Instruction {
         }
     }
 
-    pub fn vectorize(&self, constants: &Vec<i8>, vars: &Vec<u16>) -> Vec<Instruction> {
+    pub fn vectorize(&self, constants: &[i8], vars: &[u16]) -> Vec<Instruction> {
         match self.src {
             AddressingMode::Implicit => {
                 vec![*self]
@@ -572,7 +572,6 @@ pub struct State {
     zero: Option<bool>,
     carry: Option<bool>,
     sign: Option<bool>,
-    decimal: Option<bool>,
     overflow: Option<bool>,
     halfcarry: Option<bool>,
     heap: HashMap<u16, Option<i8>>,
@@ -588,7 +587,6 @@ impl State {
             zero: None,
             carry: None,
             sign: None,
-            decimal: None,
             overflow: None,
             halfcarry: None,
             heap: HashMap::new(),

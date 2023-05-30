@@ -277,7 +277,7 @@ fn mach(m: String) -> (Vec<Instruction>, fn(&DeParameter) -> Parameter) {
     }
     println!("You didn't pick a valid arch, so here's the ones I know:");
     for m_opt in &M_OPTS {
-        println!("\t{}  {}", format!("{:>12}", m_opt.name), m_opt.help);
+        println!("\t{:>12}  {}", m_opt.name, m_opt.help);
     }
     process::exit(1);
 }
@@ -398,7 +398,7 @@ fn testrun_from_args(opts: &Opts, pinj: fn(&DeParameter) -> Parameter) -> TestRu
                     register: Some(reg.clone()),
                     cost: Some(0.0),
                     address: None,
-                    name: Some(reg.clone()),
+                    name: Some(reg),
                 })
             })
             .collect(),
@@ -411,7 +411,7 @@ fn testrun_from_args(opts: &Opts, pinj: fn(&DeParameter) -> Parameter) -> TestRu
                     register: Some(reg.clone()),
                     cost: Some(0.0),
                     address: None,
-                    name: Some(reg.clone()),
+                    name: Some(reg),
                 })
             })
             .collect(),
