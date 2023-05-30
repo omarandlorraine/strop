@@ -1,6 +1,4 @@
-use crate::machine::rand::Rng;
 use rand::seq::SliceRandom;
-use rand::thread_rng;
 use std::collections::HashMap;
 extern crate rand;
 
@@ -9,7 +7,6 @@ pub enum AddressingMode {
     Implicit,
     Immediate(i8),
     Absolute(u16),
-    PicWF(bool, u16),
 }
 
 #[derive(Clone, Copy)]
@@ -23,15 +20,6 @@ pub fn bitwise_and(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>)
     if let Some(operand) = a {
         if let Some(r) = reg {
             return (Some(r & operand), Some(r & operand == 0));
-        }
-    }
-    (None, None)
-}
-
-pub fn bitwise_xor(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>) {
-    if let Some(operand) = a {
-        if let Some(r) = reg {
-            return (Some(r ^ operand), Some(r ^ operand == 0));
         }
     }
     (None, None)
@@ -165,17 +153,6 @@ impl Instruction {
         }
     }
 
-    pub fn pic_wf(
-        opname: &'static str,
-        operation: for<'r, 's> fn(&'r Instruction, &'s mut State) -> bool,
-    ) -> Instruction {
-        Instruction {
-            opname,
-            operation,
-            src: AddressingMode::PicWF(false, 0),
-        }
-    }
-
     pub fn randomize(&mut self, constants: &Vec<i8>, vars: &Vec<u16>) {
         fn address(vars: &Vec<u16>) -> u16 {
             if let Some(r) = vars.choose(&mut rand::thread_rng()) {
@@ -203,10 +180,6 @@ impl Instruction {
             AddressingMode::Absolute(_) => {
                 self.src = AddressingMode::Absolute(address(vars));
             }
-            AddressingMode::PicWF(_, _) => {
-                let mut rng = thread_rng();
-                self.src = AddressingMode::PicWF(rng.gen_bool(0.5), address(vars));
-            }
         }
     }
 
@@ -233,15 +206,6 @@ impl Instruction {
                 })
                 .collect::<Vec<Instruction>>())
             .to_vec(),
-            AddressingMode::PicWF(_, _) => (*vars
-                .iter()
-                .map(|c| Instruction {
-                    opname: self.opname,
-                    operation: self.operation,
-                    src: AddressingMode::Absolute(*c),
-                })
-                .collect::<Vec<Instruction>>())
-            .to_vec(),
         }
     }
 
@@ -252,13 +216,6 @@ impl Instruction {
             }
             AddressingMode::Immediate(constant) => Some(constant),
             AddressingMode::Absolute(address) => {
-                if let Some(x) = m.heap.get(&address) {
-                    *x
-                } else {
-                    None
-                }
-            }
-            AddressingMode::PicWF(_d, address) => {
                 if let Some(x) = m.heap.get(&address) {
                     *x
                 } else {
@@ -278,13 +235,6 @@ impl Instruction {
             }
             AddressingMode::Absolute(address) => {
                 m.heap.insert(address, val);
-            }
-            AddressingMode::PicWF(f, address) => {
-                if f {
-                    m.heap.insert(address, val);
-                } else {
-                    m.accumulator = val;
-                }
             }
         }
     }
@@ -353,14 +303,6 @@ impl Instruction {
         true
     }
 
-    #[allow(clippy::many_single_char_names)]
-    fn op_com(&self, s: &mut State) -> bool {
-        let (result, z) = bitwise_xor(s.accumulator, Some(-1));
-        s.accumulator = result;
-        s.zero = z;
-        true
-    }
-
     fn op_clc(&self, s: &mut State) -> bool {
         s.carry = Some(false);
         true
@@ -374,14 +316,6 @@ impl Instruction {
     fn op_dea(&self, s: &mut State) -> bool {
         let (result, _c, z, n, _o, _h) = add_to_reg8(s.accumulator, Some(-1), Some(false));
         s.accumulator = result;
-        s.zero = z;
-        s.sign = n;
-        true
-    }
-
-    fn op_dec(&self, s: &mut State) -> bool {
-        let (result, _c, z, n, _o, _h) = add_to_reg8(self.get_datum(s), Some(-1), Some(false));
-        s.x8 = result;
         s.zero = z;
         s.sign = n;
         true
@@ -406,14 +340,6 @@ impl Instruction {
     fn op_ina(&self, s: &mut State) -> bool {
         let (result, _c, z, n, _o, _h) = add_to_reg8(s.accumulator, Some(1), Some(false));
         s.accumulator = result;
-        s.zero = z;
-        s.sign = n;
-        true
-    }
-
-    fn op_inc(&self, s: &mut State) -> bool {
-        let (result, _c, z, n, _o, _h) = add_to_reg8(self.get_datum(s), Some(1), Some(false));
-        self.write_datum(s, result);
         s.zero = z;
         s.sign = n;
         true
@@ -454,11 +380,6 @@ impl Instruction {
         let (val, c) = rotate_right_thru_carry(s.accumulator, Some(false));
         s.accumulator = val;
         s.carry = c;
-        true
-    }
-
-    fn op_mov(&self, s: &mut State) -> bool {
-        self.write_datum(s, self.get_datum(s));
         true
     }
 
@@ -551,13 +472,6 @@ impl std::fmt::Display for Instruction {
             }
             AddressingMode::Absolute(address) => {
                 write!(f, "\t{} {}", self.opname, address)
-            }
-            AddressingMode::PicWF(d, address) => {
-                if d {
-                    write!(f, "\t{} {},d", self.opname, address)
-                } else {
-                    write!(f, "\t{} {}", self.opname, address)
-                }
             }
         }
     }
@@ -657,6 +571,7 @@ pub fn mos6502() -> Vec<Instruction> {
         Instruction::inh("clc", Instruction::op_clc),
         Instruction::inh("sec", Instruction::op_sec),
         Instruction::imm("adc", Instruction::op_adc_dp),
+        Instruction::imm("and", Instruction::op_and),
         Instruction::abs("adc", Instruction::op_adc_dp),
         Instruction::abs("lda", Instruction::op_lda),
         Instruction::abs("sta", Instruction::op_sta),
@@ -692,48 +607,4 @@ pub fn i8085() -> Vec<Instruction> {
 
 pub fn iz80() -> Vec<Instruction> {
     Vec::new()
-}
-
-pub fn pic12() -> Vec<Instruction> {
-    vec![
-        Instruction::pic_wf("addwf", Instruction::op_add),
-        Instruction::imm("andlw", Instruction::op_and),
-        Instruction::pic_wf("andwf", Instruction::op_and),
-        // TODO: bcf bsf btfsc btfss (call)
-        Instruction::pic_wf("clr  ", Instruction::op_stz),
-        // TODO: (clrwdt)
-        Instruction::abs("comf ", Instruction::op_com),
-        Instruction::abs("decf ", Instruction::op_dec),
-        // TODO: decfsz (goto)
-        Instruction::abs("incf ", Instruction::op_inc),
-        // TODO: incfsz iorlw iorwf
-        Instruction::abs("movf ", Instruction::op_mov),
-        Instruction::imm("movlw", Instruction::op_lda),
-        Instruction::pic_wf("movwf", Instruction::op_sta),
-        // TODO (nop) (option) (retlw)
-        Instruction::abs("rlf  ", Instruction::op_rol),
-        Instruction::abs("rrf  ", Instruction::op_ror),
-        // TODO: (sleep) subwf swapf (tris) xorlw xorwf
-    ]
-}
-
-pub fn pic14() -> Vec<Instruction> {
-    // From what I can tell from reading datasheets 41291D.pdf and 41239a.pdf,
-    // these four instructions are the ones that exist in PIC14 and not in
-    // PIC12.
-    // There also are instructions that exist in PIC12 and not in PIC14. They
-    // write to registers which are memory mapped in PIC14. The instructions
-    // include tris and option.
-    vec![
-        Instruction::imm("addlw", Instruction::op_add),
-        // TODO: (retfie) (return)
-        // TODO: sublw
-    ]
-    .into_iter()
-    .chain(pic12())
-    .collect()
-}
-
-pub fn pic16() -> Vec<Instruction> {
-    pic14()
 }

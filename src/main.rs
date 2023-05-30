@@ -11,7 +11,6 @@ mod test;
 use crate::machine::motorola6800;
 use crate::machine::{i8080, i8085, iz80, z80};
 use crate::machine::{mos6502, mos65c02};
-use crate::machine::{pic12, pic14, pic16};
 
 use crate::machine::Instruction;
 use crate::machine::State;
@@ -112,24 +111,6 @@ fn registers6800(regname: &Option<String>) -> Option<Parameter> {
     }
 }
 
-fn registers_pic(regname: &Option<String>) -> Option<Parameter> {
-    if let Some(r) = regname {
-        match r.as_str() {
-            // just use the stter & getter for the A register
-            "w" => Some(Parameter {
-                name: "w".to_string(),
-                address: None,
-                cost: None,
-                getter: get_a,
-                setter: set_a,
-            }),
-            _ => None,
-        }
-    } else {
-        None
-    }
-}
-
 fn sanity_i8080(dp: &DeParameter) -> Parameter {
     if let Some(dp) = registers8080(&dp.register) {
         dp
@@ -163,18 +144,7 @@ fn sanity_6800(dp: &DeParameter) -> Parameter {
     }
 }
 
-fn sanity_pic(dp: &DeParameter) -> Parameter {
-    if let Some(dp) = registers_pic(&dp.register) {
-        dp
-    } else {
-        panic!(
-            "No such register as {} for the specified architecture.",
-            dp.register.as_ref().unwrap()
-        );
-    }
-}
-
-const M_OPTS: [MOpt; 10] = [
+const M_OPTS: [MOpt; 7] = [
     MOpt {
         name: "i8080",
         func: i8080,
@@ -210,24 +180,6 @@ const M_OPTS: [MOpt; 10] = [
         func: motorola6800,
         sanity: sanity_6800,
         help: "Motorola 6800",
-    },
-    MOpt {
-        name: "pic12",
-        func: pic12,
-        sanity: sanity_pic,
-        help: "PIC12",
-    },
-    MOpt {
-        name: "pic14",
-        func: pic14,
-        sanity: sanity_pic,
-        help: "PIC14",
-    },
-    MOpt {
-        name: "pic16",
-        func: pic16,
-        sanity: sanity_pic,
-        help: "PIC16",
     },
     MOpt {
         name: "z80",
