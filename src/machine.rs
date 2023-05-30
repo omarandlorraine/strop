@@ -1,6 +1,6 @@
-use rand::thread_rng;
-use rand::seq::SliceRandom;
 use crate::machine::rand::Rng;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use std::collections::HashMap;
 extern crate rand;
 
@@ -19,13 +19,7 @@ pub struct Instruction {
     src: AddressingMode,
 }
 
-pub fn bitwise_and(
-    reg: Option<i8>,
-    a: Option<i8>
-) -> (
-    Option<i8>,
-    Option<bool>
-) {
+pub fn bitwise_and(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>) {
     if let Some(operand) = a {
         if let Some(r) = reg {
             return (Some(r & operand), Some(r & operand == 0));
@@ -34,13 +28,7 @@ pub fn bitwise_and(
     return (None, None);
 }
 
-pub fn bitwise_xor(
-    reg: Option<i8>,
-    a: Option<i8>
-) -> (
-    Option<i8>,
-    Option<bool>
-) {
+pub fn bitwise_xor(reg: Option<i8>, a: Option<i8>) -> (Option<i8>, Option<bool>) {
     if let Some(operand) = a {
         if let Some(r) = reg {
             return (Some(r ^ operand), Some(r ^ operand == 0));
@@ -48,7 +36,6 @@ pub fn bitwise_xor(
     }
     return (None, None);
 }
-
 
 #[allow(clippy::many_single_char_names)]
 pub fn add_to_reg8(
@@ -190,7 +177,6 @@ impl Instruction {
     }
 
     pub fn randomize(&mut self, constants: &Vec<i8>, vars: &Vec<u16>) {
-
         fn address(vars: &Vec<u16>) -> u16 {
             if let Some(r) = vars.choose(&mut rand::thread_rng()) {
                 // If there's any variables, then pick one.
@@ -237,7 +223,7 @@ impl Instruction {
                     src: AddressingMode::Immediate(*c),
                 })
                 .collect::<Vec<Instruction>>())
-                .to_vec(),
+            .to_vec(),
             AddressingMode::Absolute(_) => (*vars
                 .iter()
                 .map(|c| Instruction {
@@ -246,7 +232,7 @@ impl Instruction {
                     src: AddressingMode::Absolute(*c),
                 })
                 .collect::<Vec<Instruction>>())
-                .to_vec(),
+            .to_vec(),
             AddressingMode::PicWF(_, _) => (*vars
                 .iter()
                 .map(|c| Instruction {
@@ -255,7 +241,7 @@ impl Instruction {
                     src: AddressingMode::Absolute(*c),
                 })
                 .collect::<Vec<Instruction>>())
-                .to_vec(),
+            .to_vec(),
         }
     }
 
@@ -296,8 +282,7 @@ impl Instruction {
             AddressingMode::PicWF(f, address) => {
                 if f {
                     m.heap.insert(address, val);
-                }
-                else {
+                } else {
                     m.accumulator = val;
                 }
             }
@@ -716,7 +701,7 @@ pub fn pic12() -> Vec<Instruction> {
         Instruction::pic_wf("addwf", Instruction::op_add),
         Instruction::imm("andlw", Instruction::op_and),
         Instruction::pic_wf("andwf", Instruction::op_and),
-        // TODO: bcf bsf btfsc btfss (call) 
+        // TODO: bcf bsf btfsc btfss (call)
         Instruction::pic_wf("clr  ", Instruction::op_stz),
         // TODO: (clrwdt)
         Instruction::abs("comf ", Instruction::op_com),
@@ -730,7 +715,7 @@ pub fn pic12() -> Vec<Instruction> {
         // TODO (nop) (option) (retlw)
         Instruction::abs("rlf  ", Instruction::op_rol),
         Instruction::abs("rrf  ", Instruction::op_ror),
-        // TODO: (sleep) subwf swapf (tris) xorlw xorwf 
+        // TODO: (sleep) subwf swapf (tris) xorlw xorwf
     ]
 }
 

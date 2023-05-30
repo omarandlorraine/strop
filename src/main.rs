@@ -393,13 +393,27 @@ fn testrun_from_args(opts: &Opts, pinj: fn(&DeParameter) -> Parameter) -> TestRu
             .r#in
             .clone()
             .into_iter()
-            .map(|reg| pinj(&DeParameter{register: Some(reg.clone()), cost: Some(0.0), address: None, name: Some(reg.clone())}))
+            .map(|reg| {
+                pinj(&DeParameter {
+                    register: Some(reg.clone()),
+                    cost: Some(0.0),
+                    address: None,
+                    name: Some(reg.clone()),
+                })
+            })
             .collect(),
         outs: opts
             .out
             .clone()
             .into_iter()
-            .map(|reg| pinj(&DeParameter{register: Some(reg.clone()), cost: Some(0.0), address: None, name: Some(reg.clone())}))
+            .map(|reg| {
+                pinj(&DeParameter {
+                    register: Some(reg.clone()),
+                    cost: Some(0.0),
+                    address: None,
+                    name: Some(reg.clone()),
+                })
+            })
             .collect(),
         tests: function(opts.function.clone().unwrap()),
     }
