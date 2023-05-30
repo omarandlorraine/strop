@@ -61,34 +61,6 @@ pub fn add_to_reg8(
     }
 }
 
-fn decimal_adjust(
-    accumulator: Option<i8>,
-    carry: Option<bool>,
-    halfcarry: Option<bool>,
-) -> Option<i8> {
-    fn nybble(val: i8, flag: Option<bool>) -> Option<i8> {
-        if val & 0x0f > 0x09 {
-            return Some(0x06);
-        }
-        flag?;
-        if flag.unwrap_or(false) {
-            return Some(0x06);
-        }
-        Some(0)
-    }
-
-    if let Some(a) = accumulator {
-        if let Some(right) = nybble(a, halfcarry) {
-            let ar = a.wrapping_add(right);
-            nybble(ar >> 4, carry).map(|left| ar.wrapping_add(left << 4))
-        } else {
-            None
-        }
-    } else {
-        None
-    }
-}
-
 fn rotate_left_thru_carry(val: Option<i8>, carry: Option<bool>) -> (Option<i8>, Option<bool>) {
     if let Some((carry, val)) = carry.zip(val) {
         let c = carry;
@@ -240,30 +212,6 @@ impl Instruction {
     }
 
     #[allow(clippy::many_single_char_names)]
-    fn op_aba(&self, s: &mut State) -> bool {
-        // It looks like the ABA instruction of the 6800 doesn't use the carry flag.
-        let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, s.reg_b, Some(false));
-        s.accumulator = result;
-        s.sign = n;
-        s.carry = c;
-        s.zero = z;
-        s.overflow = o;
-        s.halfcarry = h;
-        true
-    }
-
-    #[allow(clippy::many_single_char_names)]
-    fn op_add(&self, s: &mut State) -> bool {
-        let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s), Some(false));
-        s.accumulator = result;
-        s.sign = n;
-        s.carry = c;
-        s.zero = z;
-        s.overflow = o;
-        s.halfcarry = h;
-        true
-    }
-    #[allow(clippy::many_single_char_names)]
     fn op_and(&self, s: &mut State) -> bool {
         let (result, z) = bitwise_and(s.accumulator, self.get_datum(s));
         s.accumulator = result;
@@ -275,18 +223,6 @@ impl Instruction {
         let (val, c) = rotate_left_thru_carry(s.accumulator, Some(false));
         s.accumulator = val;
         s.carry = c;
-        true
-    }
-
-    #[allow(clippy::many_single_char_names)]
-    fn op_adc(&self, s: &mut State) -> bool {
-        let (result, c, z, n, o, h) = add_to_reg8(s.accumulator, self.get_datum(s), s.carry);
-        s.accumulator = result;
-        s.sign = n;
-        s.carry = c;
-        s.zero = z;
-        s.overflow = o;
-        s.halfcarry = h;
         true
     }
 
@@ -305,11 +241,6 @@ impl Instruction {
 
     fn op_clc(&self, s: &mut State) -> bool {
         s.carry = Some(false);
-        true
-    }
-
-    fn op_daa(&self, s: &mut State) -> bool {
-        s.accumulator = decimal_adjust(s.accumulator, s.carry, s.halfcarry);
         true
     }
 
@@ -422,13 +353,6 @@ impl Instruction {
         true
     }
 
-    fn op_tab(&self, s: &mut State) -> bool {
-        // TODO: We need to check if this instruction affects flags or not,
-        // I feel like this is an oversight
-        s.reg_b = s.accumulator;
-        true
-    }
-
     fn op_tax(&self, s: &mut State) -> bool {
         // TODO: This one definitely needs flags.
         s.x8 = s.accumulator;
@@ -438,13 +362,6 @@ impl Instruction {
     fn op_tay(&self, s: &mut State) -> bool {
         // TODO: This one definitely needs flags.
         s.y8 = s.accumulator;
-        true
-    }
-
-    fn op_tba(&self, s: &mut State) -> bool {
-        // TODO: We need to check if this instruction affects flags or not,
-        // I feel like this is an oversight
-        s.accumulator = s.reg_b;
         true
     }
 
@@ -534,22 +451,6 @@ pub fn set_y(state: &mut State, y: i8) {
 }
 pub fn get_y(state: &State) -> Option<i8> {
     state.y8
-}
-
-pub fn motorola6800() -> Vec<Instruction> {
-    vec![
-        Instruction::inh("aba", Instruction::op_aba),
-        Instruction::imm("add", Instruction::op_add),
-        Instruction::imm("adc", Instruction::op_adc),
-        Instruction::inh("asla", Instruction::op_asl),
-        Instruction::inh("daa", Instruction::op_daa),
-        Instruction::inh("tab", Instruction::op_tab),
-        Instruction::inh("tba", Instruction::op_tba),
-        Instruction::inh("rol", Instruction::op_rol),
-        Instruction::inh("ror", Instruction::op_ror),
-        Instruction::inh("clc", Instruction::op_clc),
-        Instruction::inh("sec", Instruction::op_sec),
-    ]
 }
 
 pub fn mos6502() -> Vec<Instruction> {

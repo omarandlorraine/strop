@@ -8,7 +8,6 @@ mod machine;
 mod search;
 mod test;
 
-use crate::machine::motorola6800;
 use crate::machine::{i8080, i8085, iz80, z80};
 use crate::machine::{mos6502, mos65c02};
 
@@ -86,31 +85,6 @@ fn registers6502(regname: &Option<String>) -> Option<Parameter> {
     }
 }
 
-fn registers6800(regname: &Option<String>) -> Option<Parameter> {
-    if let Some(r) = regname {
-        match r.as_str() {
-            "a" => Some(Parameter {
-                name: "a".to_string(),
-                address: None,
-                cost: None,
-                getter: get_a,
-                setter: set_a,
-            }),
-            "b" => Some(Parameter {
-                name: "b".to_string(),
-                address: None,
-                cost: None,
-                getter: get_b,
-                setter: set_b,
-            }),
-            // TODO: The rest of the registers for this architecture
-            _ => None,
-        }
-    } else {
-        None
-    }
-}
-
 fn sanity_i8080(dp: &DeParameter) -> Parameter {
     if let Some(dp) = registers8080(&dp.register) {
         dp
@@ -133,18 +107,7 @@ fn sanity_mos6502(dp: &DeParameter) -> Parameter {
     }
 }
 
-fn sanity_6800(dp: &DeParameter) -> Parameter {
-    if let Some(dp) = registers6800(&dp.register) {
-        dp
-    } else {
-        panic!(
-            "No such register as {} for the specified architecture.",
-            dp.register.as_ref().unwrap()
-        );
-    }
-}
-
-const M_OPTS: [MOpt; 7] = [
+const M_OPTS: [MOpt; 6] = [
     MOpt {
         name: "i8080",
         func: i8080,
@@ -174,12 +137,6 @@ const M_OPTS: [MOpt; 7] = [
         func: mos65c02,
         sanity: sanity_mos6502,
         help: "CMOS 6502, including new instructions like phx and stz",
-    },
-    MOpt {
-        name: "motorola6800",
-        func: motorola6800,
-        sanity: sanity_6800,
-        help: "Motorola 6800",
     },
     MOpt {
         name: "z80",
