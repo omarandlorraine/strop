@@ -397,7 +397,6 @@ impl std::fmt::Display for Instruction {
 //#[derive(Copy, Clone)]
 pub struct State {
     accumulator: Option<i8>,
-    reg_b: Option<i8>,
     x8: Option<i8>,
     y8: Option<i8>,
     zero: Option<bool>,
@@ -412,7 +411,6 @@ impl State {
     pub fn new() -> State {
         State {
             accumulator: None,
-            reg_b: None,
             x8: None,
             y8: None,
             zero: None,
@@ -430,13 +428,6 @@ pub fn set_a(state: &mut State, a: i8) {
 }
 pub fn get_a(state: &State) -> Option<i8> {
     state.accumulator
-}
-
-pub fn set_b(state: &mut State, b: i8) {
-    state.reg_b = Some(b);
-}
-pub fn get_b(state: &State) -> Option<i8> {
-    state.reg_b
 }
 
 pub fn set_x(state: &mut State, x: i8) {
@@ -492,20 +483,4 @@ pub fn mos65c02() -> Vec<Instruction> {
     .into_iter()
     .chain(mos6502())
     .collect()
-}
-
-pub fn z80() -> Vec<Instruction> {
-    Vec::new()
-}
-
-pub fn i8080() -> Vec<Instruction> {
-    Vec::new()
-}
-
-pub fn i8085() -> Vec<Instruction> {
-    Vec::new()
-}
-
-pub fn iz80() -> Vec<Instruction> {
-    Vec::new()
 }

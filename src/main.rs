@@ -8,12 +8,11 @@ mod machine;
 mod search;
 mod test;
 
-use crate::machine::{i8080, i8085, iz80, z80};
 use crate::machine::{mos6502, mos65c02};
 
 use crate::machine::Instruction;
 use crate::machine::State;
-use crate::machine::{get_a, get_b, get_x, get_y, set_a, set_b, set_x, set_y};
+use crate::machine::{get_a, get_x, get_y, set_a, set_x, set_y};
 
 use crate::search::BasicBlock;
 use crate::search::{differance, equivalence};
@@ -26,31 +25,6 @@ struct MOpt {
     func: fn() -> Vec<Instruction>,
     sanity: fn(&DeParameter) -> Parameter,
     help: &'static str,
-}
-
-fn registers8080(regname: &Option<String>) -> Option<Parameter> {
-    if let Some(r) = regname {
-        match r.as_str() {
-            "a" => Some(Parameter {
-                name: "a".to_string(),
-                address: None,
-                cost: None,
-                getter: get_a,
-                setter: set_a,
-            }),
-            "b" => Some(Parameter {
-                name: "b".to_string(),
-                address: None,
-                cost: None,
-                getter: get_b,
-                setter: set_b,
-            }),
-            // TODO: The rest of the registers for this architecture
-            _ => None,
-        }
-    } else {
-        None
-    }
 }
 
 fn registers6502(regname: &Option<String>) -> Option<Parameter> {
@@ -85,17 +59,6 @@ fn registers6502(regname: &Option<String>) -> Option<Parameter> {
     }
 }
 
-fn sanity_i8080(dp: &DeParameter) -> Parameter {
-    if let Some(dp) = registers8080(&dp.register) {
-        dp
-    } else {
-        panic!(
-            "No such register as {} for the specified architecture.",
-            dp.register.as_ref().unwrap()
-        );
-    }
-}
-
 fn sanity_mos6502(dp: &DeParameter) -> Parameter {
     if let Some(dp) = registers6502(&dp.register) {
         dp
@@ -107,25 +70,7 @@ fn sanity_mos6502(dp: &DeParameter) -> Parameter {
     }
 }
 
-const M_OPTS: [MOpt; 6] = [
-    MOpt {
-        name: "i8080",
-        func: i8080,
-        sanity: sanity_i8080,
-        help: "Intel 8080",
-    },
-    MOpt {
-        name: "i8085",
-        func: i8085,
-        sanity: sanity_i8080,
-        help: "Intel 8085",
-    },
-    MOpt {
-        name: "iz80",
-        func: iz80,
-        sanity: sanity_i8080,
-        help: "for compatibility with both z80 and i8080",
-    },
+const M_OPTS: [MOpt; 2] = [
     MOpt {
         name: "mos6502",
         func: mos6502,
@@ -137,12 +82,6 @@ const M_OPTS: [MOpt; 6] = [
         func: mos65c02,
         sanity: sanity_mos6502,
         help: "CMOS 6502, including new instructions like phx and stz",
-    },
-    MOpt {
-        name: "z80",
-        func: z80,
-        sanity: sanity_i8080, // TODO: needs a different sanity checker.
-        help: "Zilog Z80",
     },
 ];
 
