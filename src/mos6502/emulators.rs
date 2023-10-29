@@ -7,9 +7,19 @@ use std::convert::TryInto;
 
 /// This emulates a basic MOS 6502. Extras like the illegal instructions, CMOS instructions, etc, are
 /// not supported.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Mos6502 {
     cpu: mos6502::cpu::CPU,
+}
+
+impl Default for Mos6502 {
+    fn default() -> Self {
+        let mut cpu = mos6502::cpu::CPU::default();
+        cpu.registers.accumulator = 0;
+        cpu.registers.index_x = 0;
+        cpu.registers.index_y = 0;
+        Self { cpu }
+    }
 }
 
 impl Mos6502 {
