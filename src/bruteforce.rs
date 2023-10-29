@@ -18,7 +18,7 @@ impl<I: InstructionSet> BruteForceSearch<I> {
         BruteForceSearch {
             instruction_set,
             curr: vec![],
-            maximum_length
+            maximum_length,
         }
     }
 }
@@ -59,7 +59,7 @@ where
         self.iterate(0);
         if self.curr.len() <= self.maximum_length {
             Some(self.candidate())
-        }else {
+        } else {
             None
         }
     }

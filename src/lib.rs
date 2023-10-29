@@ -113,7 +113,6 @@ pub trait InstructionSet: Clone + std::marker::Send {
     fn bruteforce_with_maximum_length(&mut self, n: usize) -> BruteForceSearch<Self> {
         BruteForceSearch::new(self.clone(), n)
     }
-
 }
 
 pub trait Emulator<T: Instruction> {

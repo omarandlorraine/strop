@@ -13,7 +13,10 @@ fn main() {
 
     //let bruteforce = strop::mos6502::nmos().no_indirect_jump_bug().basic_block().branch_target().bruteforce();
     // let bruteforce = strop::mos6502::nmos().cmos_compatible().bruteforce();
-    let bruteforce = strop::mos6502::nmos().cmos_compatible().basic_block().bruteforce_with_maximum_length(1);
+    let bruteforce = strop::mos6502::nmos()
+        .cmos_compatible()
+        .basic_block()
+        .bruteforce_with_maximum_length(1);
     for candidate in bruteforce {
         let mut mos6502 = strop::mos6502::emulators::Mos6502::default();
         let mut nmos6502 = strop::robo6502::emulators::Nmos6502::default();
@@ -34,7 +37,7 @@ fn main() {
             println!("robo6502 (nmos): ${:02x}", nm);
             println!("robo6502 (cmos): ${:02x}", cm);
             println!("*************");
-//            break;
+            //            break;
         }
     }
 }
