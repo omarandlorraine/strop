@@ -37,7 +37,6 @@ fn main() {
             println!("robo6502 (nmos): ${:02x}", nm);
             println!("robo6502 (cmos): ${:02x}", cm);
             println!("*************");
-            //            break;
         }
     }
 }
