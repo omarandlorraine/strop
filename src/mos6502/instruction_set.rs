@@ -152,7 +152,7 @@ impl Mos6502 {
             false
         } else if self.reva_compatible && !insn.reva_compatible() {
             false
-        } else if self.basic_block && !insn.is_control_flow() {
+        } else if self.basic_block && insn.is_control_flow() {
             false
         } else if self.readable_addresses.is_empty() && insn.reads_from().is_some() {
             false
