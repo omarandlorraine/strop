@@ -490,6 +490,13 @@ impl Nmos6502Instruction {
         } else if matches!(self.encoding[0], 0x87 | 0x97 | 0x8f | 0x83) {
             // SAX instruction is not what we're looking for
             None
+        } else if matches!(
+            self.encoding[0],
+            0x69 | 0x29 | 0xc9 | 0xe0 | 0xc0 | 0x49 | 0xa9 | 0xa2 | 0xa0 | 0x09 | 0xe9
+        ) {
+            // immediate addressing mode is not what we're looking for
+            // TODO: Make sure I haven't forgotten any immediate-mode illegal instructions.
+            None
         } else if self.length() == 1 {
             // It's an instruction that reads from zero-page
             Some(self.encoding[1].into())
