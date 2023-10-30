@@ -16,7 +16,7 @@ fn main() {
     let bruteforce = strop::mos6502::nmos()
         .cmos_compatible()
         .basic_block()
-        .bruteforce_with_maximum_length(20);
+        .bruteforce_with_maximum_length(5);
     for candidate in bruteforce {
         let mut mos6502 = strop::mos6502::emulators::Mos6502::default();
         let mut nmos6502 = strop::robo6502::emulators::Nmos6502::default();
