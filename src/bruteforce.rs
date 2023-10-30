@@ -1,7 +1,7 @@
 //! Module implementing a brute-force search
 
 use crate::Candidate;
-use crate::{Instruction, InstructionSet};
+use crate::InstructionSet;
 
 /// Iterates across the entire search space, shortest programs first.
 #[derive(Debug, Default)]
@@ -28,7 +28,7 @@ impl<I: InstructionSet> BruteForceSearch<I> {
         if offset >= self.curr.len() {
             // We've run off the current length of the vector, so append a new instruction iterator
             // and its first instruction.
-            self.curr.push(I::Instruction::first());
+            self.curr.push(self.instruction_set.first());
             return;
         }
 
@@ -40,7 +40,7 @@ impl<I: InstructionSet> BruteForceSearch<I> {
         }
 
         // We've exhausted all possibilities for this offset; try the next offset
-        self.curr[offset] = I::Instruction::first();
+        self.curr[offset] = self.instruction_set.first();
         self.iterate(offset + 1);
     }
 

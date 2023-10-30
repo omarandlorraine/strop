@@ -180,6 +180,19 @@ impl Mos6502 {
 impl InstructionSet for Mos6502 {
     type Instruction = Nmos6502Instruction;
 
+    fn first(&self) -> Self::Instruction {
+        let mut insn = Self::Instruction::first();
+
+        while !self.check_opcode(&mut insn) {
+            // If this in an opcode that's not under consideration due to static analysis, then
+            // skip this opcode.
+            insn.encoding[0] = next_nmos_opcode(insn.encoding[0]).unwrap();
+        }
+
+        self.address_fixup(&mut insn);
+        insn
+    }
+
     fn next(&self, insn: &mut Self::Instruction) -> Option<()> {
         insn.increment();
         while !self.check_opcode(insn) {

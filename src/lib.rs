@@ -100,6 +100,9 @@ pub trait InstructionSet: Clone + std::marker::Send {
     /// returns true if the lint fires, and false otherwise. Useful for Iterator::filter
     fn filter(&self, _cand: &Candidate<Self::Instruction>) -> bool;
 
+    /// gets the first instruction
+    fn first(&self) -> Self::Instruction;
+
     /// gets the next instruction
     fn next(&self, instruction: &mut Self::Instruction) -> Option<()>;
 
