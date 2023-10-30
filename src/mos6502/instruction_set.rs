@@ -1652,6 +1652,15 @@ mod test {
     }
 
     #[test]
+    fn brk_is_a_control_flow_instruction() {
+        use super::Nmos6502Instruction;
+        use super::NMOS_OPCODES;
+
+        let instruction = Nmos6502Instruction::new([0, 0, 0]);
+        assert!(instruction.is_control_flow());
+    }
+
+    #[test]
     fn variables_in_memory() {
         use super::Nmos6502Instruction;
         use super::VariablesInMemory;
