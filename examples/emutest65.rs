@@ -11,8 +11,6 @@ fn main() {
     println!("emulators. This is intended to find bugs in the third-party emulators and in");
     println!("the static analysis passes that strop also includes.");
 
-    //let bruteforce = strop::mos6502::nmos().no_indirect_jump_bug().basic_block().branch_target().bruteforce();
-    // let bruteforce = strop::mos6502::nmos().cmos_compatible().bruteforce();
     let bruteforce = strop::mos6502::nmos()
         .cmos_compatible()
         .basic_block()
