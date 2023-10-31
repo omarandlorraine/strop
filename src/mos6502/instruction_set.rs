@@ -63,14 +63,8 @@ pub struct Cmos6502Instruction {
 
 #[derive(Clone, Debug)]
 enum Mos6502StaticAnalysisTypes {
-    ReadOnly(Vec<u16>),
-    Writeable(Vec<u16>),
-    Readable(Vec<u16>),
-    NoConditionalBranches,
-    NoIllegalInstructions,
     NoIndirectJumpBug,
     SensibleBranchTargets,
-    NoRor,
 }
 
 /// The instruction set known by NMOS 6502s, including the ROR instruction.
@@ -461,22 +455,8 @@ impl Nmos6502Instruction {
     }
 
     fn is_control_flow(&self) -> bool {
-        matches!(
-            self.encoding[0],
-            0x00 | 0x10
-                | 0x20
-                | 0x30
-                | 0x40
-                | 0x4c
-                | 0x50
-                | 0x60
-                | 0x6c
-                | 0x70
-                | 0x90
-                | 0xB0
-                | 0xD0
-                | 0xF0
-        )
+        self.is_relative_branch()
+            | matches!(self.encoding[0], 0x00 | 0x20 | 0x40 | 0x4c | 0x60 | 0x6c)
     }
 
     /// If the instruction reads from a memory location, then return that memory location
