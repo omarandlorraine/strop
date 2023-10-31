@@ -15,6 +15,11 @@ an excuse to learn Rust, plus I wanted a superoptimizer that could target
 things other than the 6502, So, strop was born, the *st*ochastic *op*timizer,
 written in *R*ust.
 
+### Examples
+
+* [emutest65](examples/emutest65.md), which searches for programs behaving
+  differently on different emulators, exposing bugs
+
 ### Supported instruction sets:
 
 Strop currently has a relatively small number of backends:
