@@ -17,6 +17,8 @@ written in *R*ust.
 
 ### Examples
 
+If you're wondering what this could be used for, here are some examples:
+
 * [emutest65](examples/emutest65.md), which searches for programs behaving
   differently on different emulators, exposing bugs
 
@@ -24,9 +26,9 @@ written in *R*ust.
 
 Strop currently has a relatively small number of backends:
 
- * **robo6502**, which targets the NMOS and CMOS varieties of the 
-[6502](https://en.wikipedia.org/wiki/MOS_Technology_6502).
- * **mos6502** which targets the NMOS variety of the 6502.
+ * **mos6502** which targets the
+   [6502](https://en.wikipedia.org/wiki/MOS_Technology_6502). This backend is
+accompanied by emulators for some of the different variant 6502s.
  * **armv4t**, which targets the Thumb instruction set as found on the ARM7TDMI.
 
 The first two backends, which both target the same physical hardware, are tested
