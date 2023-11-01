@@ -2,41 +2,10 @@
 
 use crate::Instruction;
 
-pub enum InstructionSet {
-    ArmV4,
-    Thumb,
-}
-
-pub enum StaticAnalysisTypes {
-    /// Static analysis pass for excluding instructions marked as "unpredictable". Even though the
-    /// emulator handles these instructions (and perhaps gracefully, and perhaps correctly), they
-    /// are not defined by ARM and so cannot be trusted to behave.
-    NoUnpredictables,
-}
-
 #[derive(Clone, Copy)]
 pub struct Thumb(pub u16);
 #[derive(Clone, Copy)]
 pub struct Arm(pub u32);
-
-pub struct ArmInstruction<I> {
-    sa: Vec<StaticAnalysisTypes>,
-    marker: std::marker::PhantomData<I>,
-}
-
-impl<I> ArmInstruction<I> {
-    fn new() -> Self {
-        Self {
-            sa: vec![],
-            marker: std::marker::PhantomData,
-        }
-    }
-
-    fn no_unpredictables(&mut self) -> &mut Self {
-        self.sa.push(StaticAnalysisTypes::NoUnpredictables);
-        self
-    }
-}
 
 impl Instruction for Thumb {
     fn random() -> Self {

@@ -85,7 +85,6 @@ pub struct Mos6502 {
 /// `stz`, etc.
 #[derive(Clone, Debug, Default)]
 pub struct Cmos6502 {
-    sa: Vec<Mos6502StaticAnalysisTypes>,
 }
 
 impl Mos6502 {
@@ -450,10 +449,6 @@ impl Nmos6502Instruction {
         )
     }
 
-    fn jmp_indirect_bug(&self) -> bool {
-        (self.encoding[0], self.encoding[1]) == (0x6c, 0xff)
-    }
-
     fn is_control_flow(&self) -> bool {
         self.is_relative_branch()
             | matches!(self.encoding[0], 0x00 | 0x20 | 0x40 | 0x4c | 0x60 | 0x6c)
@@ -584,27 +579,6 @@ pub struct BasicBlock;
 /// Static analysis pass for excluding "illegal opcodes"
 #[derive(Debug, Default)]
 pub struct ExcludeIllegalInstructions;
-
-/// Static analysis pass for excluding conditional branches that target the middle of some other
-/// instruction. For example, `beq -1` ends up executing `$ff`, which is the displacement byte
-/// itself, not normally considered a valid opcode. That kind of shenanigan is excluded by this
-/// static analysis pass.
-#[derive(Debug, Default)]
-pub struct BranchTarget;
-
-impl BranchTarget {
-    fn permissible_targets(
-        cand: &Candidate<Nmos6502Instruction>,
-    ) -> Vec<(u16, Nmos6502Instruction)> {
-        let mut instructions: Vec<(u16, Nmos6502Instruction)> = vec![];
-        let mut offs: u16 = 0;
-        for insn in &cand.instructions {
-            offs += insn.length() as u16;
-            instructions.push((offs, *insn));
-        }
-        instructions
-    }
-}
 
 /// A static analysis pass for checking that any memory accesses only happen to/from the correct
 /// memory locations. This might be good for, for example, generating a subroutine which reads its

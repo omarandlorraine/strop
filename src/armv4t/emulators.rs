@@ -14,11 +14,6 @@ pub struct ArmV4T {
 struct ArmMemory(BTreeMap<u32, u8>);
 
 impl ArmMemory {
-    /// Constructs a new, empty ArmMemory.
-    pub fn new() -> ArmMemory {
-        ArmMemory(BTreeMap::new())
-    }
-
     /// Constructs a new ArmMemory from the provided slice. Data is copied
     /// contiguously from the slice into address [0..data.len()]
     pub fn insert(&mut self, address: u32, data: &[u8]) {
