@@ -112,6 +112,15 @@ fn unpredictable_instruction(insn: &Thumb) -> Option<Thumb> {
     }
 }
 
+#[derive(Clone)]
+pub struct ThumbInstructionSet {
+    unpredictables: bool,
+}
+
+impl crate::InstructionSet for ThumbInstructionSet {
+    type Instruction = Thumb;
+}
+
 mod disassembly {
     use super::Thumb;
 
