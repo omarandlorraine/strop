@@ -1,13 +1,9 @@
-//! Module containing emulators for the 6502, with the necessary additions making them suitable for
-//! use with strop.
 use crate::Candidate;
 use crate::Emulator;
 use crate::Instruction;
 use std::collections::BTreeMap;
 use std::convert::TryInto;
 
-/// This emulates a basic MOS 6502. Extras like the illegal instructions, CMOS instructions, etc, are
-/// not supported.
 #[derive(Debug, Default)]
 pub struct ArmV4T {
     cpu: armv4t_emu::Cpu,
