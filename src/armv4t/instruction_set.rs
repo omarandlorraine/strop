@@ -112,13 +112,29 @@ fn unpredictable_instruction(insn: &Thumb) -> Option<Thumb> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct ThumbInstructionSet {
     unpredictables: bool,
 }
 
+impl ThumbInstructionSet {
+    pub fn allow_unpredictable_instructions(&mut self) -> &mut Self {
+        self.unpredictables = true;
+        self
+    }
+}
+
 impl crate::InstructionSet for ThumbInstructionSet {
     type Instruction = Thumb;
+
+    fn next(&self, thumb: &mut Self::Instruction) -> Option<()> {
+        if !self.unpredictables {
+            if let Some(new_instruction) = unpredictable_instruction(thumb) {
+                *thumb = new_instruction;
+            }
+        }
+        Some(())
+    }
 }
 
 mod disassembly {
