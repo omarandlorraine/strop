@@ -123,7 +123,6 @@ pub struct ThumbInstructionSet {
 }
 
 impl ThumbInstructionSet {
-
     /// Configures the `ThumbInstructionSet` to consider valid encodings which are so-called
     /// "Unpredictable". I have no idea how the third-party emulator emulates these.
     pub fn allow_unpredictable_instructions(&mut self) -> &mut Self {

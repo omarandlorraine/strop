@@ -84,8 +84,7 @@ pub struct Mos6502 {
 /// The instruction set known by CMOS 6502s. This includes such instructions as `phx`, `ply`,
 /// `stz`, etc.
 #[derive(Clone, Debug, Default)]
-pub struct Cmos6502 {
-}
+pub struct Cmos6502 {}
 
 impl Mos6502 {
     /// Configures the `InstructionSet` to include only those instructions that are compatible with
