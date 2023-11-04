@@ -2,9 +2,13 @@
 
 use crate::Instruction;
 
-#[derive(Clone, Copy)]
+/// Type representing the Thumb instruction (no Thumb2 instructions are present here. It's just the
+/// first, fixed-width version).
+#[derive(Clone, Copy, Debug)]
 pub struct Thumb(pub u16);
-#[derive(Clone, Copy)]
+
+/// Type representing the full-width ARM instruction.
+#[derive(Clone, Copy, Debug)]
 pub struct Arm(pub u32);
 
 impl Instruction for Thumb {
@@ -112,12 +116,16 @@ fn unpredictable_instruction(insn: &Thumb) -> Option<Thumb> {
     }
 }
 
-#[derive(Clone, Default)]
+/// The instruction set known by the ARMv4T in Thumb mode
+#[derive(Clone, Default, Debug)]
 pub struct ThumbInstructionSet {
     unpredictables: bool,
 }
 
 impl ThumbInstructionSet {
+
+    /// Configures the `ThumbInstructionSet` to consider valid encodings which are so-called
+    /// "Unpredictable". I have no idea how the third-party emulator emulates these.
     pub fn allow_unpredictable_instructions(&mut self) -> &mut Self {
         self.unpredictables = true;
         self

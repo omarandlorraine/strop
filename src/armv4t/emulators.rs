@@ -1,9 +1,12 @@
+//! Module containing ways to emulate the Arm processor, in a way that's suitable for use with
+//! strop.
 use crate::Candidate;
 use crate::Emulator;
 use crate::Instruction;
 use std::collections::BTreeMap;
 use std::convert::TryInto;
 
+/// This emulates an ArmV4T type processor.
 #[derive(Debug, Default)]
 pub struct ArmV4T {
     cpu: armv4t_emu::Cpu,
