@@ -9,7 +9,7 @@ use std::convert::TryInto;
 /// This emulates an ArmV4T type processor.
 #[derive(Debug, Default)]
 pub struct ArmV4T {
-    cpu: armv4t_emu::Cpu,
+    pub cpu: armv4t_emu::Cpu,
     mem: ArmMemory,
 }
 

@@ -1,5 +1,6 @@
 //!  Two instruction sets supported by the ARMv4T.
 
+use crate::Candidate;
 use crate::Instruction;
 
 /// Type representing the Thumb instruction (no Thumb2 instructions are present here. It's just the
@@ -34,50 +35,8 @@ impl Instruction for Thumb {
     }
 
     fn increment(&mut self) -> Option<Self> {
-        let mut encoding = self.0.checked_add(1)?;
-
-        // Skip the instructions that can access High Registers, but don't.
-        // Although the emulator handles them gracefully,  they are explicitly marked as
-        // "Unpredictable" by Arm
-        if encoding & 0xfcc0 == 0x4400 {
-            encoding += 0x0040;
-        }
-
-        // From what I understand, the three lowest bits of a BX instruction all have to be zero
-        if encoding & 0xff07 == 0x4701 {
-            encoding += 0x07;
-        }
-
-        if encoding & 0xff80 == 0xb000 {
-            encoding |= 0x0080;
-        }
-
-        // Skip undecodable instructions in range 0xb100..0xb3ff
-        if encoding == 0xb100 {
-            encoding = 0xb400;
-        }
-
-        // Skip undecodable instructions in range 0xb600..0xb7ff
-        if encoding == 0xb600 {
-            encoding = 0xbc00;
-        }
-
-        // Skip undecodable instructions in range 0xbe00..0xbfff
-        if encoding == 0xbe00 {
-            encoding = 0xc000;
-        }
-
-        // Skip pointless conditional branches where the condition is ALWAYS or NEVER
-        if encoding == 0xd600 {
-            encoding = 0xd700;
-        }
-
-        // Skip undecodable instructions in range 0xe800..0xefff
-        if encoding == 0xe800 {
-            encoding = 0xf000;
-        }
-        self.0 = encoding;
-        Some(Thumb(encoding))
+        self.0 = self.0.checked_add(1)?;
+        Some(*self)
     }
 }
 
@@ -105,9 +64,9 @@ fn unpredictable_instruction(insn: &Thumb) -> Option<Thumb> {
     } else if insn.0 & 0xff00 == 0xb100 {
         // No instructions in this range; the next one is `push {<nothing>}`
         Some(Thumb(0xb400))
-    } else if insn.0 & 0xfa00 == 0xb200 {
-        // No instructions in this range; the next one is `pop {<nothing>}`
-        Some(Thumb(0xb600))
+    //} else if insn.0 & 0xfa00 == 0xb200 {
+    // No instructions in this range; the next one is `pop {<nothing>}`
+    //Some(Thumb(0xb600))
     } else if insn.0 & 0xfc00 == 0xb800 {
         // No instructions in this range; the next one is `bkpt #0`
         Some(Thumb(0xbe00))
@@ -135,12 +94,17 @@ impl crate::InstructionSet for ThumbInstructionSet {
     type Instruction = Thumb;
 
     fn next(&self, thumb: &mut Self::Instruction) -> Option<()> {
+        thumb.increment()?;
         if !self.unpredictables {
             if let Some(new_instruction) = unpredictable_instruction(thumb) {
                 *thumb = new_instruction;
             }
         }
         Some(())
+    }
+
+    fn filter(&self, _cand: &Candidate<Self::Instruction>) -> bool {
+        true
     }
 }
 
