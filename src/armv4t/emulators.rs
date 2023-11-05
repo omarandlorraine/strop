@@ -9,8 +9,31 @@ use std::convert::TryInto;
 /// This emulates an ArmV4T type processor.
 #[derive(Debug, Default)]
 pub struct ArmV4T {
-    pub cpu: armv4t_emu::Cpu,
+    cpu: armv4t_emu::Cpu,
     mem: ArmMemory,
+}
+
+impl ArmV4T {
+    pub fn set_r0(&mut self, a: i32) {
+        use armv4t_emu::Mode;
+        self.cpu.reg_set(Mode::User, 0, a as u32)
+    }
+
+    pub fn get_r0(&mut self) -> i32 {
+        use armv4t_emu::Mode;
+        self.cpu.reg_get(Mode::User, 0) as i32
+    }
+
+    pub fn set_r1(&mut self, a: i32) {
+        use armv4t_emu::Mode;
+        self.cpu.reg_set(Mode::User, 1, a as u32)
+    }
+
+    pub fn get_r1(&mut self) -> i32 {
+        use armv4t_emu::Mode;
+        self.cpu.reg_get(Mode::User, 1) as i32
+    }
+
 }
 
 #[derive(Debug, Default)]
