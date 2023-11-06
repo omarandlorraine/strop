@@ -31,12 +31,22 @@ impl robo6502::Sys for Ram64K {
 
 /// This emulates the original 6502, as found in the Commodore 64. Illegal instructions are
 /// supported as well.
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Nmos6502 {
     /// The CPU's internal state
     pub cpu: robo6502::Nmos,
     /// The memory
     pub mem: Ram64K,
+}
+
+impl Default for Nmos6502 {
+    fn default() -> Self {
+        use robo6502::Cpu;
+        let mut cpu: robo6502::Nmos = Default::default();
+        cpu.set_flag(robo6502::Status::Z, false);
+        cpu.set_flag(robo6502::Status::I, true);
+        Self { cpu, mem: Default::default() }
+    }
 }
 
 trait Interface6502 {
@@ -126,12 +136,22 @@ impl Nmos6502 {
 
 /// This emulates the original 6502, as found in the Commodore 64. Illegal instructions are
 /// supported as well.
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Cmos6502 {
     /// The CPU's internal state
     pub cpu: robo6502::Cmos,
     /// The memory
     pub mem: Ram64K,
+}
+
+impl Default for Cmos6502 {
+    fn default() -> Self {
+        use robo6502::Cpu;
+        let mut cpu: robo6502::Cmos = Default::default();
+        cpu.set_flag(robo6502::Status::Z, false);
+        cpu.set_flag(robo6502::Status::I, true);
+        Self { cpu, mem: Default::default() }
+    }
 }
 
 impl<T: Instruction> Emulator<T> for Cmos6502 {
