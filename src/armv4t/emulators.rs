@@ -37,7 +37,6 @@ impl ArmV4T {
         use armv4t_emu::Mode;
         self.cpu.reg_get(Mode::User, 1) as i32
     }
-
 }
 
 #[derive(Debug, Default)]
