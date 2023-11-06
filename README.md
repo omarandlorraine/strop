@@ -21,6 +21,8 @@ If you're wondering what this could be used for, here are some examples:
 
 * [emutest65](examples/emutest65.md), which searches for programs behaving
   differently on different emulators, exposing bugs
+* [library](examples/library.md), which produces a small library of
+  miscellaneous functions, in Thumb assembly, all callable from C.
 
 ### Supported instruction sets:
 

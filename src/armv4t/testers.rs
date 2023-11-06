@@ -46,10 +46,24 @@ impl Aapcs32 {
 
     fn test(&mut self, candidate: &Candidate<Thumb>) -> bool {
         use rand::random;
+        use rand::Rng;
 
         // Try the values that have returned false before
         for inputs in &self.inputs {
+            let a = inputs.0;
+            let b = inputs.1;
             if !self.test1(candidate, inputs.0, inputs.1) {
+                return false;
+            }
+        }
+
+        // Try ten more random value pairs across a small range to see if we discover any other values where the
+        // function returns something different from the generated program
+        for _ in 0..10 {
+            let a: i32 = rand::thread_rng().gen_range(-100..100);
+            let b: i32 = rand::thread_rng().gen_range(-100..100);
+            if !self.test1(candidate, a, b) {
+                self.inputs.push((a, b));
                 return false;
             }
         }
