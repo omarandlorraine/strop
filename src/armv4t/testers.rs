@@ -32,7 +32,6 @@ impl Aapcs32 {
 
     fn test1(&self, candidate: &Candidate<Thumb>, a: i32, b: i32) -> bool {
         use crate::Emulator;
-        use armv4t_emu::Mode;
         let mut emu = ArmV4T::default();
 
         if let Some(result) = (self.func)(a, b) {

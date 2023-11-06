@@ -14,21 +14,25 @@ pub struct ArmV4T {
 }
 
 impl ArmV4T {
+    /// sets R0 to the given value
     pub fn set_r0(&mut self, a: i32) {
         use armv4t_emu::Mode;
         self.cpu.reg_set(Mode::User, 0, a as u32)
     }
 
+    /// returns the value of R0
     pub fn get_r0(&mut self) -> i32 {
         use armv4t_emu::Mode;
         self.cpu.reg_get(Mode::User, 0) as i32
     }
 
+    /// sets R0 to the given value
     pub fn set_r1(&mut self, a: i32) {
         use armv4t_emu::Mode;
         self.cpu.reg_set(Mode::User, 1, a as u32)
     }
 
+    /// returns the value of R1
     pub fn get_r1(&mut self) -> i32 {
         use armv4t_emu::Mode;
         self.cpu.reg_get(Mode::User, 1) as i32
