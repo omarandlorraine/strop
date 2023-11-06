@@ -50,8 +50,6 @@ impl Aapcs32 {
 
         // Try the values that have returned false before
         for inputs in &self.inputs {
-            let a = inputs.0;
-            let b = inputs.1;
             if !self.test1(candidate, inputs.0, inputs.1) {
                 return false;
             }
