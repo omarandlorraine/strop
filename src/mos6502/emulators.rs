@@ -5,8 +5,8 @@ use crate::Emulator;
 use crate::Instruction;
 use std::convert::TryInto;
 
-use mos6502::memory::Memory;
 use mos6502::instruction::Nmos6502;
+use mos6502::memory::Memory;
 
 /// This emulates a basic MOS 6502. Extras like the illegal instructions, CMOS instructions, etc, are
 /// not supported.
@@ -28,7 +28,7 @@ impl Default for Mos6502 {
 impl Mos6502 {
     /// return value of accumulator
     pub fn a(&self) -> u8 {
-        self.cpu.registers.accumulator as u8
+        self.cpu.registers.accumulator
     }
 }
 

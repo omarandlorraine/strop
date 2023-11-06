@@ -45,7 +45,10 @@ impl Default for Nmos6502 {
         let mut cpu: robo6502::Nmos = Default::default();
         cpu.set_flag(robo6502::Status::Z, false);
         cpu.set_flag(robo6502::Status::I, true);
-        Self { cpu, mem: Default::default() }
+        Self {
+            cpu,
+            mem: Default::default(),
+        }
     }
 }
 
@@ -150,7 +153,10 @@ impl Default for Cmos6502 {
         let mut cpu: robo6502::Cmos = Default::default();
         cpu.set_flag(robo6502::Status::Z, false);
         cpu.set_flag(robo6502::Status::I, true);
-        Self { cpu, mem: Default::default() }
+        Self {
+            cpu,
+            mem: Default::default(),
+        }
     }
 }
 
