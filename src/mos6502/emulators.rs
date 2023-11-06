@@ -5,16 +5,19 @@ use crate::Emulator;
 use crate::Instruction;
 use std::convert::TryInto;
 
+use mos6502::memory::Memory;
+use mos6502::instruction::Nmos6502;
+
 /// This emulates a basic MOS 6502. Extras like the illegal instructions, CMOS instructions, etc, are
 /// not supported.
 #[derive(Debug)]
 pub struct Mos6502 {
-    cpu: mos6502::cpu::CPU,
+    cpu: mos6502::cpu::CPU<Memory, Nmos6502>,
 }
 
 impl Default for Mos6502 {
     fn default() -> Self {
-        let mut cpu = mos6502::cpu::CPU::default();
+        let mut cpu = mos6502::cpu::CPU::new(Memory::new(), Nmos6502);
         cpu.registers.accumulator = 0;
         cpu.registers.index_x = 0;
         cpu.registers.index_y = 0;
@@ -31,6 +34,7 @@ impl Mos6502 {
 
 impl<T: Instruction> Emulator<T> for Mos6502 {
     fn run(&mut self, addr: usize, candidate: &Candidate<T>) {
+        use mos6502::memory::Bus;
         let org: u16 = addr.try_into().unwrap();
         let encoding = candidate.encode();
         let end: u16 = (addr + encoding.len()).try_into().unwrap();
