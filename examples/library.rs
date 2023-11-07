@@ -5,8 +5,8 @@ use strop::InstructionSet;
 // but this has not been tested.
 
 fn pepper(a: i32, _b: i32) -> Option<i32> {
-    /// Increments the lower 4 bits of a
-    let inc = a & 0x0f + 1;
+    // Increments the lower 4 bits of a
+    let inc = a & (0x0f + 1);
     Some((a & !0x0f) | (inc & 0x0f))
 }
 

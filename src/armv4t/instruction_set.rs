@@ -121,12 +121,12 @@ impl crate::InstructionSet for ThumbInstructionSet {
 mod test {
     #[test]
     fn all_thumb_instructions_have_disassembly() {
-        use crate::Instruction;
-        use crate::armv4t::instruction_set::ThumbInstructionSet;
         use crate::armv4t::instruction_set::Thumb;
+        use crate::armv4t::instruction_set::ThumbInstructionSet;
+        use crate::Instruction;
         use crate::InstructionSet;
 
-        let mut isa = ThumbInstructionSet::default();
+        let isa = ThumbInstructionSet::default();
         let mut thumb = Thumb::first();
         while isa.next(&mut thumb).is_some() {
             let dasm = format!("{}", thumb);
