@@ -36,7 +36,29 @@ impl Instruction for Thumb {
 
     fn increment(&mut self) -> Option<Self> {
         self.0 = self.0.checked_add(1)?;
+        if let Some(next) = undefined_instruction(self) {
+            *self = next;
+        }
         Some(*self)
+    }
+}
+
+fn undefined_instruction(insn: &Thumb) -> Option<Thumb> {
+    // If it's an undefined instruction, then return the next instruction which is actually
+    // a defined instruction. (Next instruction here means, the one who's encoding is next
+    // in increasing numerical order)
+    if insn.0 & 0xff04 == 0x4700 {
+        // encodings for `bl rm` and `blx rm`. These need zeroes in the bottom three bits, so
+        // some of the non-zero values are marked as unpredictable
+        Some(Thumb((insn.0 | 0x0007) + 1))
+    } else if insn.0 & 0xff00 == 0xb100 {
+        // No instructions in this range; the next one is `push {<nothing>}`
+        Some(Thumb(0xb400))
+    } else if insn.0 & 0xfe00 == 0xb600 {
+        // for push instructions, bit 10 (0x0200) needs to be zero.
+        Some(Thumb(0xfc00))
+    } else {
+        None
     }
 }
 
@@ -57,19 +79,6 @@ fn unpredictable_instruction(insn: &Thumb) -> Option<Thumb> {
         // equivalent instruction, but is still marked as unpredictable. Set the high-bit
         // for Rm.
         Some(Thumb(0x4640))
-    } else if insn.0 & 0xff04 == 0x4704 {
-        // encodings for `bl rm` and `blx rm`. These need zeroes in the bottom three bits, so
-        // some of the non-zero values are marked as unpredictable
-        Some(Thumb((insn.0 | 0x0007) + 1))
-    } else if insn.0 & 0xff00 == 0xb100 {
-        // No instructions in this range; the next one is `push {<nothing>}`
-        Some(Thumb(0xb400))
-    //} else if insn.0 & 0xfa00 == 0xb200 {
-    // No instructions in this range; the next one is `pop {<nothing>}`
-    //Some(Thumb(0xb600))
-    } else if insn.0 & 0xfc00 == 0xb800 {
-        // No instructions in this range; the next one is `bkpt #0`
-        Some(Thumb(0xbe00))
     } else {
         None
     }
@@ -280,6 +289,13 @@ mod disassembly {
                     "pop {{{}{}{}{}{}{}{}{}{}}}",
                     r0, r1, r2, r3, r4, r5, r6, r7, pc
                 )
+            } else if self.0 & 0xff00 == 0xb000 {
+                let imm = self.0.to_le_bytes()[0] as i8;
+                if imm < 0 {
+                    write!(f, "sub sp, #{}", 0 - imm)
+                } else {
+                    write!(f, "add sp, #{}", imm)
+                }
             } else if self.0 & 0xf000 == 0xc000 {
                 let r0 = if self.0 & 0x01 != 0 { "r0, " } else { "" };
                 let r1 = if self.0 & 0x02 != 0 { "r1, " } else { "" };
