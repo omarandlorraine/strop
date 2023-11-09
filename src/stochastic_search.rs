@@ -1,20 +1,19 @@
 //! Module for searching for solutions stochastically.
 
-use crate::{Candidate, Instruction, Lcg, Test};
+use crate::{Candidate, Instruction, Lcg, InstructionSet};
 
 /// A candidate program
 #[derive(Clone, Debug)]
-pub struct StochasticSearch<I: Instruction, T: Test<I>> {
+pub struct StochasticSearch<I: InstructionSet> {
     /// The program under current consideration.
-    pub instructions: Candidate<I>,
-    tester: T,
+    pub instructions: Candidate<I::Instruction>,
     fitness: Option<f64>,
     prng: Lcg,
 }
 
-impl<I: Instruction, T: Test<I>> StochasticSearch<I, T> {
+impl<I: InstructionSet> StochasticSearch<I> {
     /// returns a new `Candidate`
-    pub fn new(tester: T) -> Self {
+    pub fn new() -> Self {
         // Empty list of instructions
         let instructions = Candidate::<I>::empty();
 
@@ -25,7 +24,6 @@ impl<I: Instruction, T: Test<I>> StochasticSearch<I, T> {
 
         Self {
             instructions,
-            tester,
             fitness,
             prng,
         }

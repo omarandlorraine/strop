@@ -20,6 +20,7 @@ pub mod mos6502;
 pub mod robo6502;
 pub mod stochastic_search;
 use crate::bruteforce::BruteForceSearch;
+use crate::stochastic_search::StochasticSearch;
 
 use rand::Rng;
 use std::convert::TryInto;
@@ -112,6 +113,11 @@ pub trait InstructionSet: Clone + std::marker::Send {
     /// returns a `BruteForceSearch` over this `InstructionSet`
     fn bruteforce(&mut self) -> BruteForceSearch<Self> {
         BruteForceSearch::new(self.clone(), usize::MAX)
+    }
+
+    /// returns a `StochasticSearch` over this `InstructionSet`
+    fn stochastic(&mut self) -> StochasticSearch<Self> {
+        StochasticSearch::new(self.clone())
     }
 
     /// returns a `BruteForceSearch` over this `InstructionSet`, bounded to a maximum length of
