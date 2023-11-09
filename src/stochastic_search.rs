@@ -5,6 +5,7 @@ use crate::{Candidate, Instruction, Lcg, InstructionSet};
 /// A candidate program
 #[derive(Clone, Debug)]
 pub struct StochasticSearch<I: InstructionSet> {
+    instruction_set: I,
     /// The program under current consideration.
     pub instructions: Candidate<I::Instruction>,
     fitness: Option<f64>,
@@ -13,9 +14,9 @@ pub struct StochasticSearch<I: InstructionSet> {
 
 impl<I: InstructionSet> StochasticSearch<I> {
     /// returns a new `Candidate`
-    pub fn new() -> Self {
+    pub fn new(instruction_set: I) -> Self {
         // Empty list of instructions
-        let instructions = Candidate::<I>::empty();
+        let instructions = Candidate::<I::Instruction>::empty();
 
         // we don't have a valid fitness score yet
         let fitness = None;
@@ -23,23 +24,11 @@ impl<I: InstructionSet> StochasticSearch<I> {
         let prng = Lcg::new(rand::random());
 
         Self {
+            instruction_set,
             instructions,
             fitness,
             prng,
         }
-    }
-
-    /// Recomputes the `Candidate`'s fitness
-    pub fn score(&mut self) -> f64 {
-        // if the fitness score has been invalidated, then recompute it
-        if self.fitness.is_none() {
-            self.fitness = Some(self.tester.run(&self.instructions));
-        }
-        self.fitness.unwrap()
-    }
-
-    fn invalidate_fitness_score(&mut self) {
-        self.fitness = None;
     }
 
     fn random_offset(&mut self) -> usize {
@@ -53,7 +42,6 @@ impl<I: InstructionSet> StochasticSearch<I> {
         if !self.instructions.instructions.is_empty() {
             let offset = self.random_offset();
             self.instructions.instructions.remove(offset);
-            self.invalidate_fitness_score();
         }
     }
 
@@ -65,7 +53,6 @@ impl<I: InstructionSet> StochasticSearch<I> {
             self.random_offset()
         };
         self.instructions.instructions.insert(offset, I::random());
-        self.invalidate_fitness_score();
     }
 
     fn swap(&mut self) {
@@ -78,7 +65,6 @@ impl<I: InstructionSet> StochasticSearch<I> {
             let instruction_b = self.instructions.instructions[offset_b];
             self.instructions.instructions[offset_a] = instruction_b;
             self.instructions.instructions[offset_b] = instruction_a;
-            self.invalidate_fitness_score();
         }
     }
 
@@ -88,7 +74,6 @@ impl<I: InstructionSet> StochasticSearch<I> {
         if !self.instructions.instructions.is_empty() {
             let offset = self.random_offset();
             self.instructions.instructions[offset] = I::random();
-            self.invalidate_fitness_score();
         }
     }
 
@@ -98,7 +83,6 @@ impl<I: InstructionSet> StochasticSearch<I> {
         if !self.instructions.instructions.is_empty() {
             let offset = self.random_offset();
             self.instructions.instructions[offset].mutate();
-            self.invalidate_fitness_score();
         }
     }
 
