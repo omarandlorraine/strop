@@ -3,21 +3,19 @@
 
 use crate::armv4t::emulators::ArmV4T;
 use crate::armv4t::instruction_set::Thumb;
-use crate::armv4t::instruction_set::ThumbInstructionSet;
-use crate::BruteForceSearch;
-use crate::Candidate;
-use crate::SearchFeedback;
-use crate::InstructionSet;
-use crate::Instruction;
 
+use crate::Candidate;
+use crate::InstructionSet;
+use crate::SearchFeedback;
 
 /// Tests the candidate programs visited by a bruteforce search to see if they compute the given
 /// function, taking two 32-bit integers and return one 32-bit integer, and also match the AAPCS32
 /// calling convention.
 #[derive(Debug)]
 pub struct Aapcs32<S>
-where S: SearchFeedback,
-      S: Iterator<Item = Candidate<Thumb>>
+where
+    S: SearchFeedback,
+    S: Iterator<Item = Candidate<Thumb>>,
 {
     inputs: Vec<(i32, i32)>,
     search: S,
@@ -26,10 +24,7 @@ where S: SearchFeedback,
 
 impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
     /// Returns a new Aapcs32 struct
-    pub fn new(
-        search: S,
-        func: fn(i32, i32) -> Option<i32>,
-    ) -> Self {
+    pub fn new(search: S, func: fn(i32, i32) -> Option<i32>) -> Self {
         Self {
             inputs: vec![],
             search,
@@ -89,8 +84,7 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
     }
 }
 
-impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Iterator for Aapcs32<S> 
-{
+impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Iterator for Aapcs32<S> {
     type Item = Candidate<Thumb>;
 
     fn next(&mut self) -> Option<Self::Item> {

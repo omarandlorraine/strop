@@ -1,8 +1,8 @@
 //! Module implementing a brute-force search
 
-use crate::SearchFeedback;
 use crate::Candidate;
 use crate::InstructionSet;
+use crate::SearchFeedback;
 
 /// Iterates across the entire search space, shortest programs first.
 #[derive(Debug, Default)]

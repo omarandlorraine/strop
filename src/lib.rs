@@ -11,7 +11,12 @@
 //! embedded, and hobbyist retrocomputing.
 //!
 
-#![warn(missing_debug_implementations, rust_2018_idioms, missing_docs, clippy::missing_panics_doc)]
+#![warn(
+    missing_debug_implementations,
+    rust_2018_idioms,
+    missing_docs,
+    clippy::missing_panics_doc
+)]
 #![forbid(unsafe_code)]
 
 pub mod armv4t;

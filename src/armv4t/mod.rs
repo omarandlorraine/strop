@@ -6,8 +6,7 @@ pub mod testers;
 
 use crate::BruteForceSearch;
 use crate::StochasticSearch;
-use            instruction_set::ThumbInstructionSet;
-use            instruction_set::Thumb;
+use instruction_set::ThumbInstructionSet;
 
 /// Returns a default `ThumbInstructionSet`
 pub fn thumb() -> instruction_set::ThumbInstructionSet {
