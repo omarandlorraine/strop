@@ -1,5 +1,6 @@
 //! Module implementing a brute-force search
 
+use crate::SearchFeedback;
 use crate::Candidate;
 use crate::InstructionSet;
 
@@ -9,6 +10,10 @@ pub struct BruteForceSearch<I: InstructionSet> {
     instruction_set: I,
     curr: Vec<I::Instruction>,
     maximum_length: usize,
+}
+
+impl<I: InstructionSet> SearchFeedback for BruteForceSearch<I> {
+    fn score(&mut self, _: f32) {}
 }
 
 impl<I: InstructionSet> BruteForceSearch<I> {

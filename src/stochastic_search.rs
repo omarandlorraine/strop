@@ -1,6 +1,7 @@
 //! Module for searching for solutions stochastically.
 
 use crate::{Candidate, Instruction, Lcg, InstructionSet};
+use crate::SearchFeedback;
 
 /// A candidate program
 #[derive(Clone, Debug)]
@@ -8,8 +9,15 @@ pub struct StochasticSearch<I: InstructionSet> {
     instruction_set: I,
     /// The program under current consideration.
     pub instructions: Candidate<I::Instruction>,
-    fitness: Option<f64>,
+    fitness: Option<f32>,
     prng: Lcg,
+}
+
+impl<I: InstructionSet> SearchFeedback for StochasticSearch<I> {
+    fn score(&mut self, score: f32) {
+        self.fitness = Some(score);
+    }
+
 }
 
 impl<I: InstructionSet> StochasticSearch<I> {
@@ -98,5 +106,13 @@ impl<I: InstructionSet> StochasticSearch<I> {
             4 => self.mutate(),
             _ => panic!(),
         }
+    }
+}
+
+impl<I: InstructionSet> Iterator for StochasticSearch<I> {
+    type Item = Candidate<<I as InstructionSet>::Instruction>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        None
     }
 }

@@ -116,7 +116,7 @@ pub trait InstructionSet: Clone + std::marker::Send {
     }
 
     /// returns a `StochasticSearch` over this `InstructionSet`
-    fn stochastic(&mut self) -> StochasticSearch<Self> {
+    fn stochastic_search(&mut self) -> StochasticSearch<Self> {
         StochasticSearch::new(self.clone())
     }
 
@@ -174,6 +174,13 @@ impl<T: Instruction> Candidate<T> {
             println!("\t{}", insn);
         }
     }
+}
+
+pub trait SearchFeedback {
+    //! You can use this to feed back to the search strategy whether it's getting close or not
+
+    /// Tell the search algorithm about how close it's getting
+    fn score(&mut self, score: f32);
 }
 
 #[cfg(test)]
