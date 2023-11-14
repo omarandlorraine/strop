@@ -5,7 +5,6 @@ use crate::armv4t::emulators::ArmV4T;
 use crate::armv4t::instruction_set::Thumb;
 
 use crate::Candidate;
-use crate::InstructionSet;
 use crate::SearchFeedback;
 
 /// Tests the candidate programs visited by a bruteforce search to see if they compute the given
@@ -25,8 +24,23 @@ where
 impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
     /// Returns a new Aapcs32 struct
     pub fn new(search: S, func: fn(i32, i32) -> Option<i32>) -> Self {
+        use rand::Rng;
+        use rand::random;
+        let mut inputs: Vec<(i32, i32)> = vec![];
+        for _ in 0..10 {
+            let a: i32 = rand::thread_rng().gen_range(-100..100);
+            let b: i32 = rand::thread_rng().gen_range(-100..100);
+            if func( a, b).is_some() {
+                inputs.push((a, b));
+            }
+            let a: i32 = random();
+            let b: i32 = random();
+            if func( a, b).is_some() {
+                inputs.push((a, b));
+            }
+        }
         Self {
-            inputs: vec![],
+            inputs,
             search,
             func,
         }
@@ -56,6 +70,9 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
         for inputs in &self.inputs {
             score += self.test1(candidate, inputs.0, inputs.1);
         }
+        if score > 0 {
+            return score;
+        }
 
         // Try ten more random value pairs across a small range to see if we discover any other values where the
         // function returns something different from the generated program
@@ -67,6 +84,9 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
                 self.inputs.push((a, b));
                 score += score1;
             }
+        }
+        if score > 0 {
+            return score;
         }
 
         // Try ten more random value pairs to see if we discover any other values where the
