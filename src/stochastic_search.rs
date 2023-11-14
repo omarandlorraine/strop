@@ -25,7 +25,6 @@ impl<I: InstructionSet> Default for StochasticSearch<I> {
     }
 }
 
-
 impl<I: InstructionSet> StochasticSearch<I> {
     /// returns a new `Candidate`
     pub fn new() -> Self {
