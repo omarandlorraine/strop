@@ -109,7 +109,9 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Iterator for Aapcs32
 
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(candidate) = self.search.next() {
-            if self.test(&candidate) == 0 {
+            let score = self.test(&candidate);
+            self.search.score(score as f32);
+            if score == 0 {
                 return Some(candidate);
             }
         }
