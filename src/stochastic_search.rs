@@ -6,8 +6,6 @@ use crate::{Candidate, Instruction, InstructionSet, Lcg};
 /// A candidate program
 #[derive(Clone, Debug)]
 pub struct StochasticSearch<I: InstructionSet> {
-    instruction_set: I,
-    /// The program under current consideration.
     parent: Candidate<I::Instruction>,
     child: Candidate<I::Instruction>,
     parent_score: f32,
@@ -21,9 +19,16 @@ impl<I: InstructionSet> SearchFeedback for StochasticSearch<I> {
     }
 }
 
+impl<I: InstructionSet> Default for StochasticSearch<I> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+
 impl<I: InstructionSet> StochasticSearch<I> {
     /// returns a new `Candidate`
-    pub fn new(instruction_set: I) -> Self {
+    pub fn new() -> Self {
         // Empty list of instructions
         let parent = Candidate::<I::Instruction>::empty();
         let child = Candidate::<I::Instruction>::empty();
@@ -37,7 +42,6 @@ impl<I: InstructionSet> StochasticSearch<I> {
             parent_score,
             child,
             child_score,
-            instruction_set,
             prng,
         }
     }
@@ -120,7 +124,7 @@ impl<I: InstructionSet> Iterator for StochasticSearch<I> {
 
         if self.child_score < self.parent_score {
             // The child is better than the parent, so definitely remember that
-            self.parent_score = self.child_score.clone();
+            self.parent_score = self.child_score;
             self.parent = self.child.clone();
         } else if self.child_score > self.parent_score {
             // The child is worse that the parent.

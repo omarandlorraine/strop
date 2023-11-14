@@ -15,7 +15,6 @@
     missing_debug_implementations,
     rust_2018_idioms,
     missing_docs,
-    clippy::missing_panics_doc
 )]
 #![forbid(unsafe_code)]
 
@@ -122,7 +121,7 @@ pub trait InstructionSet: Clone + std::marker::Send {
 
     /// returns a `StochasticSearch` over this `InstructionSet`
     fn stochastic_search(&mut self) -> StochasticSearch<Self> {
-        StochasticSearch::new(self.clone())
+        StochasticSearch::new()
     }
 
     /// returns a `BruteForceSearch` over this `InstructionSet`, bounded to a maximum length of
