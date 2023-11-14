@@ -33,10 +33,6 @@ Strop currently has a relatively small number of backends:
 accompanied by emulators for some of the different variant 6502s.
  * **armv4t**, which targets the Thumb instruction set as found on the ARM7TDMI.
 
-The first two backends, which both target the same physical hardware, are tested
-against each other by `examples/emutest65.rs`, which searches for programs that
-behave differently on the three provided emulators.
-
 To add a backend should be a relatively simple task:
 
 1. Select an emulator that will execute the necessary instructions,
