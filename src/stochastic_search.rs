@@ -32,7 +32,12 @@ impl<I: InstructionSet> StochasticSearch<I> {
 
         let prng = Lcg::new(rand::random());
 
-        Self { parent, parent_score, child, child_score, instruction_set,
+        Self {
+            parent,
+            parent_score,
+            child,
+            child_score,
+            instruction_set,
             prng,
         }
     }
@@ -118,7 +123,7 @@ impl<I: InstructionSet> Iterator for StochasticSearch<I> {
             self.parent_score = self.child_score.clone();
             self.parent = self.child.clone();
         } else if self.child_score > self.parent_score {
-            // The child is worse that the parent. 
+            // The child is worse that the parent.
             let num = rand::thread_rng().gen_range(0.0..self.child_score);
 
             if num > self.parent_score {

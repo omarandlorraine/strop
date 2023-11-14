@@ -24,18 +24,18 @@ where
 impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
     /// Returns a new Aapcs32 struct
     pub fn new(search: S, func: fn(i32, i32) -> Option<i32>) -> Self {
-        use rand::Rng;
         use rand::random;
+        use rand::Rng;
         let mut inputs: Vec<(i32, i32)> = vec![];
         for _ in 0..10 {
             let a: i32 = rand::thread_rng().gen_range(-100..100);
             let b: i32 = rand::thread_rng().gen_range(-100..100);
-            if func( a, b).is_some() {
+            if func(a, b).is_some() {
                 inputs.push((a, b));
             }
             let a: i32 = random();
             let b: i32 = random();
-            if func( a, b).is_some() {
+            if func(a, b).is_some() {
                 inputs.push((a, b));
             }
         }
