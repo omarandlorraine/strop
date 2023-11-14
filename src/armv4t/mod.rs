@@ -1,0 +1,38 @@
+//! Backend targetting the ARMv4 CPUs (for example, the ARM7TDMI)
+
+pub mod emulators;
+pub mod instruction_set;
+pub mod testers;
+
+use crate::BruteForceSearch;
+use crate::StochasticSearch;
+use instruction_set::ThumbInstructionSet;
+
+/// Returns a default `ThumbInstructionSet`
+pub fn thumb() -> instruction_set::ThumbInstructionSet {
+    instruction_set::ThumbInstructionSet::default()
+}
+
+impl BruteForceSearch<ThumbInstructionSet> {
+    /// returns an iterator yielding functions complying with the AAPCS32 calling conventions, and
+    /// computing the provided functions.
+    ///
+    /// `func` should be a function returning an Option<i32>. For inputs where `func` returns
+    /// `Some(x)`, the generated function returns `x`. But for inputs where `func` returns `None`,
+    /// the behavior of the generated function is undefined.
+    pub fn aapcs32(self, func: fn(i32, i32) -> Option<i32>) -> testers::Aapcs32<Self> {
+        testers::Aapcs32::new(self, func)
+    }
+}
+
+impl StochasticSearch<ThumbInstructionSet> {
+    /// returns an iterator yielding functions complying with the AAPCS32 calling conventions, and
+    /// computing the provided functions.
+    ///
+    /// `func` should be a function returning an Option<i32>. For inputs where `func` returns
+    /// `Some(x)`, the generated function returns `x`. But for inputs where `func` returns `None`,
+    /// the behavior of the generated function is undefined.
+    pub fn aapcs32(self, func: fn(i32, i32) -> Option<i32>) -> testers::Aapcs32<Self> {
+        testers::Aapcs32::new(self, func)
+    }
+}
