@@ -1,7 +1,7 @@
 //! Module for searching for solutions stochastically.
 
 use crate::SearchFeedback;
-use crate::{Candidate, Instruction, InstructionSet, Lcg};
+use crate::{Candidate, Instruction, InstructionSet};
 
 /// A candidate program
 #[derive(Clone, Debug)]
@@ -10,7 +10,6 @@ pub struct StochasticSearch<I: InstructionSet> {
     child: Candidate<I::Instruction>,
     parent_score: f32,
     child_score: f32,
-    prng: Lcg,
 }
 
 impl<I: InstructionSet> SearchFeedback for StochasticSearch<I> {
@@ -34,20 +33,17 @@ impl<I: InstructionSet> StochasticSearch<I> {
         let parent_score = f32::MAX;
         let child_score = f32::MAX;
 
-        let prng = Lcg::new(rand::random());
-
         Self {
             parent,
             parent_score,
             child,
             child_score,
-            prng,
         }
     }
 
     fn random_offset(&mut self) -> usize {
-        let offset: usize = self.prng.next().unwrap().into();
-        offset % self.child.instructions.len()
+        use rand::Rng;
+        rand::thread_rng().gen_range(0..self.child.instructions.len())
     }
 
     fn delete(&mut self) {
@@ -102,7 +98,8 @@ impl<I: InstructionSet> StochasticSearch<I> {
 
     /// Randomly mutates the `Candidate`
     pub fn random_mutation(&mut self) {
-        let choice = self.prng.next().unwrap() % 5;
+        use rand::Rng;
+        let choice = rand::thread_rng().gen_range(0..5);
 
         match choice {
             0 => self.delete(),

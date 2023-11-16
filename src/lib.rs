@@ -31,29 +31,6 @@ pub trait Test<I: Instruction> {
     fn run(&self, program: &Candidate<I>) -> f64;
 }
 
-/// Linear Congruence Generator (used for fast and reproducible pseudo-random number generation).
-/// [A video explaining how this works](https://www.youtube.com/watch?v=PtEivGPxwAI).
-#[derive(Clone, Debug)]
-pub struct Lcg(pub u16);
-
-impl Lcg {
-    fn new(initial: u16) -> Self {
-        Self(initial)
-    }
-}
-
-impl Iterator for Lcg {
-    type Item = u8;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        // I just got these constants, 75 and 1, from the ZX Spectrum ROM. I skimmed Wikipedia
-        // which says if the modulus is a power of two (as in this case), the low bits have a
-        // shorter period (not as random) than the higher bits. Hence the right shift.
-        self.0 = self.0.wrapping_mul(75).wrapping_add(1);
-        Some((self.0 >> 3).to_be_bytes()[1])
-    }
-}
-
 pub trait Instruction: Copy + Clone + std::marker::Send + std::fmt::Display {
     //! A trait for any kind of machine instruction. The searches use this trait to mutate
     //! candidate programs, the emulators use this trait to get at a byte stream encoding a
@@ -181,21 +158,4 @@ pub trait SearchFeedback {
 
     /// Tell the search algorithm about how close it's getting
     fn score(&mut self, score: f32);
-}
-
-#[cfg(test)]
-mod test {
-
-    #[test]
-    fn lcg() {
-        use crate::Lcg;
-
-        let lcg1 = Lcg::new(0x1234);
-        let nums1: Vec<_> = lcg1.take(50).collect();
-
-        let lcg2 = Lcg::new(0x1234);
-        let nums2: Vec<_> = lcg2.take(50).collect();
-
-        assert!(nums1 == nums2);
-    }
 }
