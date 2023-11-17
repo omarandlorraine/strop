@@ -70,9 +70,7 @@ pub trait InstructionSet: Clone + std::marker::Send {
     type Instruction: Instruction;
 
     /// Return a random machine instruction
-    fn random() -> Self::Instruction {
-        Self::Instruction::random()
-    }
+    fn random(&self) -> Self::Instruction;
 
     /// returns true if the lint fires, and false otherwise. Useful for Iterator::filter
     fn filter(&self, _cand: &Candidate<Self::Instruction>) -> bool {
