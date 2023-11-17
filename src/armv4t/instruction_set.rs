@@ -218,13 +218,30 @@ mod test {
 
         let mut binding = ThumbInstructionSet::default();
         let isa = binding.branchless();
+        assert!(isa.branchless);
         let mut thumb = Thumb::first();
         while isa.next(&mut thumb).is_some() {
             let dasm = format!("{}", thumb);
-            assert!(!dasm.starts_with("b "), "{} looks like a branch instruction", dasm);
-            assert!(!dasm.starts_with("bl "), "{} looks like a branch instruction", dasm);
-            assert!(!dasm.starts_with("bx "), "{} looks like a branch instruction", dasm);
-            assert!(!dasm.starts_with("blx "), "{} looks like a branch instruction", dasm);
+            assert!(
+                !dasm.starts_with("b "),
+                "{} looks like a branch instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("bl "),
+                "{} looks like a branch instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("bx "),
+                "{} looks like a branch instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("blx "),
+                "{} looks like a branch instruction",
+                dasm
+            );
         }
     }
 
@@ -239,19 +256,67 @@ mod test {
         let mut thumb = Thumb::first();
         while isa.next(&mut thumb).is_some() {
             let dasm = format!("{}", thumb);
-            assert!(!dasm.starts_with("ldmia "), "{} looks like a load instruction", dasm);
-            assert!(!dasm.starts_with("ldr "), "{} looks like a load instruction", dasm);
-            assert!(!dasm.starts_with("ldrb "), "{} looks like a load instruction", dasm);
-            assert!(!dasm.starts_with("ldrh "), "{} looks like a load instruction", dasm);
-            assert!(!dasm.starts_with("ldrsb "), "{} looks like a load instruction", dasm);
-            assert!(!dasm.starts_with("ldrsh "), "{} looks like a load instruction", dasm);
+            assert!(
+                !dasm.starts_with("ldmia "),
+                "{} looks like a load instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("ldr "),
+                "{} looks like a load instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("ldrb "),
+                "{} looks like a load instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("ldrh "),
+                "{} looks like a load instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("ldrsb "),
+                "{} looks like a load instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("ldrsh "),
+                "{} looks like a load instruction",
+                dasm
+            );
 
-            assert!(!dasm.starts_with("stmia "), "{} looks like a store instruction", dasm);
-            assert!(!dasm.starts_with("str "), "{} looks like a store instruction", dasm);
-            assert!(!dasm.starts_with("strb "), "{} looks like a store instruction", dasm);
-            assert!(!dasm.starts_with("strh "), "{} looks like a store instruction", dasm);
-            assert!(!dasm.starts_with("strsb "), "{} looks like a store instruction", dasm);
-            assert!(!dasm.starts_with("strsh "), "{} looks like a store instruction", dasm);
+            assert!(
+                !dasm.starts_with("stmia "),
+                "{} looks like a store instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("str "),
+                "{} looks like a store instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("strb "),
+                "{} looks like a store instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("strh "),
+                "{} looks like a store instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("strsb "),
+                "{} looks like a store instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("strsh "),
+                "{} looks like a store instruction",
+                dasm
+            );
         }
     }
 }
