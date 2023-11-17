@@ -11,7 +11,7 @@ fn pepper(a: i32, _b: i32) -> Option<i32> {
 }
 
 fn salt(a: i32, b: i32) -> Option<i32> {
-    Some((a & 0x1f) | ((b & 0x0700) >> 3))
+    Some((a* b))
 }
 
 fn bruteforce_search(label: &'static str, func: fn(i32, i32) -> Option<i32>) {
@@ -28,6 +28,7 @@ fn bruteforce_search(label: &'static str, func: fn(i32, i32) -> Option<i32>) {
 
 fn stochastic_search(label: &'static str, func: fn(i32, i32) -> Option<i32>) {
     let program = strop::armv4t::thumb()
+        .branchless()
         .stochastic_search()
         .aapcs32(func)
         .next()
@@ -46,6 +47,6 @@ fn main() {
     bruteforce_search("mul", |x, y| x.checked_mul(y));
 
     // These functions a bit more involved and need several instructions to compute.
-    stochastic_search("pepper", pepper);
     stochastic_search("salt", salt);
+    stochastic_search("pepper", pepper);
 }

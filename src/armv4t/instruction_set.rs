@@ -569,7 +569,7 @@ mod disassembly {
             } else if self.0 & 0xf800 == 0xf800 {
                 write!(f, "bl {}     ; {:#06x}", self.0 & 0x7ff, self.0)
             } else {
-                panic!("I don't know how to disassemble {:#06x}", self.0);
+                write!(f, "; {:#06x}", self.0)
             }
         }
     }

@@ -90,8 +90,11 @@ impl<T: Instruction> Emulator<T> for ArmV4T {
 
         self.mem.insert(org, &encoding);
 
+        // Start at 0, with a stack pointer, and in thumb mode
         self.cpu.reg_set(Mode::User, reg::PC, org);
-        self.cpu.reg_set(Mode::User, reg::CPSR, 0x20); // go into thumb mode
+        self.cpu.reg_set(Mode::User, reg::SP, 0x200);
+        self.cpu.reg_set(Mode::User, reg::CPSR, 0x20);
+
         assert!(self.cpu.thumb_mode());
 
         for _ in 0..1000 {
