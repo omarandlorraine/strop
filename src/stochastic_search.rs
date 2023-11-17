@@ -58,7 +58,9 @@ impl<I: InstructionSet> StochasticSearch<I> {
         } else {
             self.random_offset()
         };
-        self.child.instructions.insert(offset, self.instruction_set.random());
+        self.child
+            .instructions
+            .insert(offset, self.instruction_set.random());
     }
 
     fn swap(&mut self) {
@@ -88,7 +90,8 @@ impl<I: InstructionSet> StochasticSearch<I> {
         // and call its `mutate` method.
         if !self.child.instructions.is_empty() {
             let offset = self.random_offset();
-            self.instruction_set.mutate(&mut self.child.instructions[offset]);
+            self.instruction_set
+                .mutate(&mut self.child.instructions[offset]);
         }
     }
 
