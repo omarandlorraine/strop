@@ -10,6 +10,7 @@ pub struct StochasticSearch<I: InstructionSet> {
     child: Candidate<I::Instruction>,
     parent_score: f32,
     child_score: f32,
+    instruction_set: I,
 }
 
 impl<I: InstructionSet> SearchFeedback for StochasticSearch<I> {
@@ -18,15 +19,9 @@ impl<I: InstructionSet> SearchFeedback for StochasticSearch<I> {
     }
 }
 
-impl<I: InstructionSet> Default for StochasticSearch<I> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl<I: InstructionSet> StochasticSearch<I> {
     /// returns a new `Candidate`
-    pub fn new() -> Self {
+    pub fn new(instruction_set: I) -> Self {
         // Empty list of instructions
         let parent = Candidate::<I::Instruction>::empty();
         let child = Candidate::<I::Instruction>::empty();
@@ -38,6 +33,7 @@ impl<I: InstructionSet> StochasticSearch<I> {
             parent_score,
             child,
             child_score,
+            instruction_set,
         }
     }
 
@@ -62,7 +58,7 @@ impl<I: InstructionSet> StochasticSearch<I> {
         } else {
             self.random_offset()
         };
-        self.child.instructions.insert(offset, I::random());
+        self.child.instructions.insert(offset, self.instruction_set.random());
     }
 
     fn swap(&mut self) {
@@ -83,7 +79,7 @@ impl<I: InstructionSet> StochasticSearch<I> {
         // and swap it for something totally different.
         if !self.child.instructions.is_empty() {
             let offset = self.random_offset();
-            self.child.instructions[offset] = I::random();
+            self.child.instructions[offset] = self.instruction_set.random();
         }
     }
 
@@ -92,7 +88,7 @@ impl<I: InstructionSet> StochasticSearch<I> {
         // and call its `mutate` method.
         if !self.child.instructions.is_empty() {
             let offset = self.random_offset();
-            self.child.instructions[offset].mutate();
+            self.instruction_set.mutate(&mut self.child.instructions[offset]);
         }
     }
 

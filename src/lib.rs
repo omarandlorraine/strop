@@ -87,6 +87,9 @@ pub trait InstructionSet: Clone + std::marker::Send {
     /// gets the next instruction
     fn next(&self, instruction: &mut Self::Instruction) -> Option<()>;
 
+    /// mutates an instruction
+    fn mutate(&self, instruction: &mut Self::Instruction);
+
     /// returns a `BruteForceSearch` over this `InstructionSet`
     fn bruteforce(&mut self) -> BruteForceSearch<Self> {
         BruteForceSearch::new(self.clone(), usize::MAX)
@@ -94,7 +97,7 @@ pub trait InstructionSet: Clone + std::marker::Send {
 
     /// returns a `StochasticSearch` over this `InstructionSet`
     fn stochastic_search(&mut self) -> StochasticSearch<Self> {
-        StochasticSearch::new()
+        StochasticSearch::new(self.clone())
     }
 
     /// returns a `BruteForceSearch` over this `InstructionSet`, bounded to a maximum length of

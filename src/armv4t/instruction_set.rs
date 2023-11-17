@@ -15,7 +15,12 @@ pub struct Arm(pub u32);
 impl Instruction for Thumb {
     fn random() -> Self {
         use rand::random;
-        Self(random())
+        let thumb = Self(random());
+        if let Some(next) = undefined_instruction(&thumb) {
+            next
+        } else {
+            thumb
+        }
     }
 
     fn mutate(self) -> Self {
@@ -46,7 +51,7 @@ impl Instruction for Thumb {
 fn control_flow(insn: &Thumb) -> Option<Thumb> {
     // If it's a control flow instruction, then return the next instruction which isn't.
     if insn.0 & 0xff00 == 0x4700 {
-        Some(Thumb((insn.0 | 0x00ff) + 1))
+        Some(Thumb((insn.0 | 0x07ff) + 1))
     } else {
         None
     }
@@ -132,6 +137,23 @@ impl ThumbInstructionSet {
         self.branchless = true;
         self
     }
+
+    fn check(&self, thumb: &Thumb) -> Option<Thumb> {
+        if let Some(new_instruction) = load_store_instruction(thumb) {
+            return Some(new_instruction);
+        }
+        if !self.unpredictables {
+            if let Some(new_instruction) = unpredictable_instruction(thumb) {
+                return Some(new_instruction);
+            }
+        }
+        if self.branchless {
+            if let Some(new_instruction) = control_flow(thumb) {
+                return Some(new_instruction);
+            }
+        }
+        return None;
+    }
 }
 
 impl crate::InstructionSet for ThumbInstructionSet {
@@ -139,46 +161,30 @@ impl crate::InstructionSet for ThumbInstructionSet {
 
     fn next(&self, thumb: &mut Self::Instruction) -> Option<()> {
         thumb.increment()?;
-        if let Some(new_instruction) = load_store_instruction(thumb) {
-            *thumb = new_instruction;
+        while let Some(nt) = self.check(thumb) {
+            *thumb = nt;
         }
-        if !self.unpredictables {
-            if let Some(new_instruction) = unpredictable_instruction(thumb) {
-                *thumb = new_instruction;
-            }
-        }
-        if self.branchless {
-            if let Some(new_instruction) = control_flow(thumb) {
-                *thumb = new_instruction;
-            }
-            if thumb.0 >= 0xfc00 {
-                // There are no more instructions that aren't branches.
-                return None;
-            }
+        if self.branchless && thumb.0 >= 0xfc00 {
+            return None;
         }
         Some(())
     }
 
-    fn next(&self, thumb: &mut Self::Instruction) -> Option<()> {
-        thumb.increment()?;
-        if let Some(new_instruction) = load_store_instruction(thumb) {
-            *thumb = new_instruction;
-        }
-        if !self.unpredictables {
-            if let Some(new_instruction) = unpredictable_instruction(thumb) {
-                *thumb = new_instruction;
+    fn mutate(&self, thumb: &mut Self::Instruction) {
+        thumb.mutate();
+        while self.check(thumb).is_some() {
+            *thumb = thumb.mutate();
+
+            while self.branchless && thumb.0 >= 0xfc00 {
+                *thumb = thumb.mutate();
             }
         }
-        if self.branchless {
-            if let Some(new_instruction) = control_flow(thumb) {
-                *thumb = new_instruction;
-            }
-            if thumb.0 >= 0xfc00 {
-                // There are no more instructions that aren't branches.
-                return None;
-            }
-        }
-        Some(())
+    }
+
+    fn random(&self) -> Self::Instruction {
+        let mut thumb = Thumb::random();
+        self.mutate(&mut thumb);
+        thumb
     }
 
     fn filter(&self, _cand: &Candidate<Self::Instruction>) -> bool {
