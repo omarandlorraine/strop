@@ -154,6 +154,10 @@ impl<T: Instruction> Candidate<T> {
             println!("\t{}", insn);
         }
     }
+
+    pub fn length(&self) -> usize {
+        self.instructions.len()
+    }
 }
 
 pub trait SearchFeedback {
