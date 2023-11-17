@@ -1,7 +1,7 @@
 //! Module for searching for solutions stochastically.
 
 use crate::SearchFeedback;
-use crate::{Candidate, Instruction, InstructionSet};
+use crate::{Candidate, InstructionSet};
 
 /// A candidate program
 #[derive(Clone, Debug)]

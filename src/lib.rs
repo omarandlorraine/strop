@@ -153,6 +153,7 @@ impl<T: Instruction> Candidate<T> {
         }
     }
 
+    /// Returns the number of instructions in the candidate program
     pub fn length(&self) -> usize {
         self.instructions.len()
     }

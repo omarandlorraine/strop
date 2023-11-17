@@ -152,7 +152,7 @@ impl ThumbInstructionSet {
                 return Some(new_instruction);
             }
         }
-        return None;
+        None
     }
 }
 
