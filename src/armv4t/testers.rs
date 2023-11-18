@@ -46,11 +46,25 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
         }
     }
 
+    fn possible_test_case(&mut self, candidate: &<S as Iterator>::Item, a: i32, b: i32) -> Option<i32> {
+        use crate::Emulator;
+        if let Some(result) = (self.func)(a, b) {
+            let mut emu = ArmV4T::default();
+            emu.set_r0(a);
+            emu.set_r1(b);
+            emu.run(0x8000, candidate);
+            if emu.get_r0() != result {
+                self.inputs.push((a, b));
+                return Some(result);
+            }
+        }
+        None
+    }
+
     fn test1(&self, candidate: &<S as Iterator>::Item, a: i32, b: i32) -> u32 {
         use crate::Emulator;
-        let mut emu = ArmV4T::default();
-
         if let Some(result) = (self.func)(a, b) {
+            let mut emu = ArmV4T::default();
             emu.set_r0(a);
             emu.set_r1(b);
             emu.run(0x8000, candidate);
@@ -60,16 +74,20 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
         }
     }
 
-    fn test(&mut self, candidate: &Candidate<Thumb>) -> u32 {
-        use rand::random;
-        use rand::Rng;
-
+    fn correctness(&self,  candidate: &Candidate<Thumb>) -> u32 {
         let mut score = 0;
-
         // Try the values that have returned false before
         for inputs in &self.inputs {
             score += self.test1(candidate, inputs.0, inputs.1);
         }
+        score
+    }
+
+    fn test(&mut self, candidate: &Candidate<Thumb>) -> u32 {
+        use rand::random;
+        use rand::Rng;
+
+        let mut score = self.correctness(candidate);
         if score > 0 {
             return score;
         }
@@ -79,26 +97,13 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
         for _ in 0..10 {
             let a: i32 = rand::thread_rng().gen_range(-100..100);
             let b: i32 = rand::thread_rng().gen_range(-100..100);
-            let score1 = self.test1(candidate, a, b);
-            if score1 != 0 {
-                self.inputs.push((a, b));
-                score += score1;
-            }
-        }
-        if score > 0 {
-            return score;
-        }
+            self.possible_test_case(candidate, a, b);
+            score += self.test1(candidate, a, b);
 
-        // Try ten more random value pairs to see if we discover any other values where the
-        // function returns something different from the generated program
-        for _ in 0..10 {
             let a: i32 = random();
             let b: i32 = random();
-            let score1 = self.test1(candidate, a, b);
-            if score1 != 0 {
-                self.inputs.push((a, b));
-                score += score1;
-            }
+            self.possible_test_case(candidate, a, b);
+            score += self.test1(candidate, a, b);
         }
         score
     }

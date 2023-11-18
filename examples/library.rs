@@ -16,6 +16,7 @@ fn salt(a: i32, b: i32) -> Option<i32> {
 
 fn bruteforce_search(label: &'static str, func: fn(i32, i32) -> Option<i32>) {
     let program = strop::armv4t::thumb()
+        .branchless()
         .bruteforce_with_maximum_length(5)
         .aapcs32(func)
         .next()
