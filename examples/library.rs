@@ -11,7 +11,7 @@ fn pepper(a: i32, _b: i32) -> Option<i32> {
 }
 
 fn salt(a: i32, b: i32) -> Option<i32> {
-    Some((a * b))
+    Some(a * b)
 }
 
 fn bruteforce_search(label: &'static str, func: fn(i32, i32) -> Option<i32>) {
