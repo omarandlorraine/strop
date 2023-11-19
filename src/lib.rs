@@ -15,12 +15,12 @@
 #![forbid(unsafe_code)]
 
 pub mod armv4t;
-pub mod bruteforce;
 pub mod mos6502;
 pub mod robo6502;
-pub mod stochastic_search;
-use crate::bruteforce::BruteForceSearch;
-use crate::stochastic_search::StochasticSearch;
+pub mod search;
+
+use crate::search::BruteForceSearch;
+use crate::search::StochasticSearch;
 
 use rand::Rng;
 use std::convert::TryInto;
