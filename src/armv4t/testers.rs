@@ -120,7 +120,9 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
 
         for _ in 0..100000 {
             // try removing a bajillion instructions at random.
-            let candidate = optimizer.next().expect("The dead code eliminator is broken! Why has it stopped trying!");
+            let candidate = optimizer
+                .next()
+                .expect("The dead code eliminator is broken! Why has it stopped trying!");
             let score = self.correctness(&candidate);
             if score == 0 {
                 optimized = candidate;
@@ -141,7 +143,6 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Iterator for Aapcs32
             if score == 0 {
                 // We've found a program that passes the test cases we've found; let's optimize the
                 // program.
-                println!("got one");
                 return Some(self.optimize(&candidate));
             }
         }

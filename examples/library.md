@@ -11,7 +11,7 @@ verifying or testing this.
 
 As of the time of writing, one possible output of the program is:
 
-```assembler
+```asm
 add:
 	add r0, r0, r1   ; 0x1808
 	mov pc, lr
@@ -25,14 +25,14 @@ mul:
 	mul r0, r1     ; 0x4348
 	mov pc, lr
 salt:
-	adc r0, r0     ; 0x4140
-	cmn r7, r0     ; 0x42c7
+	add r0, r0, r0   ; 0x1800
+	mov r4, #137     ; 0x2c89
 	adc r0, r1     ; 0x4148
 	mov pc, lr
 pepper:
-	sub r5, #28     ; 0x3d1c
-	ldmia r5!, {r0, r2, r5, }     ; 0xc525
-	and r0, r5     ; 0x4028
+	add r7, r0, #6     ; 0x1df7
+	ldmia r7!, {r3, r5, }     ; 0xc728
+	bic r0, r7     ; 0x43b8
 	mov pc, lr
 ```
 
