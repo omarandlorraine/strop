@@ -7,7 +7,7 @@ use crate::armv4t::instruction_set::Thumb;
 use crate::Candidate;
 use crate::SearchFeedback;
 
-/// Tests the candidate programs visited by a bruteforce search to see if they compute the given
+/// Tests the candidate programs visited by a search stategy to see if they compute the given
 /// function, taking two 32-bit integers and return one 32-bit integer, and also match the AAPCS32
 /// calling convention.
 #[derive(Debug)]
@@ -27,7 +27,7 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
         use rand::random;
         use rand::Rng;
         let mut inputs: Vec<(i32, i32)> = vec![];
-        for _ in 0..10 {
+        for _ in 0..100 {
             let a: i32 = rand::thread_rng().gen_range(-100..100);
             let b: i32 = rand::thread_rng().gen_range(-100..100);
             if func(a, b).is_some() {
@@ -112,6 +112,23 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
         }
         score
     }
+
+    fn optimize(&self, candidate: &Candidate<Thumb>) -> Candidate<Thumb> {
+        use crate::search::DeadCodeEliminator;
+        let mut optimizer = DeadCodeEliminator::new(candidate);
+        let mut optimized = candidate.clone();
+
+        for _ in 0..100000 {
+            // try removing a bajillion instructions at random.
+            let candidate = optimizer.next().expect("The dead code eliminator is broken! Why has it stopped trying!");
+            let score = self.correctness(&candidate);
+            if score == 0 {
+                optimized = candidate;
+            }
+            optimizer.score(score as f32);
+        }
+        optimized
+    }
 }
 
 impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Iterator for Aapcs32<S> {
@@ -122,7 +139,10 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Iterator for Aapcs32
             let score = self.test(&candidate);
             self.search.score(score as f32);
             if score == 0 {
-                return Some(candidate);
+                // We've found a program that passes the test cases we've found; let's optimize the
+                // program.
+                println!("got one");
+                return Some(self.optimize(&candidate));
             }
         }
         None

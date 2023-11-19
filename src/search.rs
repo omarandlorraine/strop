@@ -1,7 +1,7 @@
 //! Module containing definitions of miscellaneous search strategies.
 
 use crate::SearchFeedback;
-use crate::{Candidate, InstructionSet};
+use crate::{Candidate, Instruction, InstructionSet};
 
 /// Generates a program by stochastic approximation to a correctness function
 #[derive(Clone, Debug)]
@@ -204,22 +204,24 @@ where
 
 /// Random dead-code eliminator
 #[derive(Clone, Debug)]
-pub struct DeadCodeEliminator<I: InstructionSet> {
-    parent: Candidate<I::Instruction>,
-    child: Candidate<I::Instruction>,
+pub struct DeadCodeEliminator<I: Instruction> {
+    parent: Candidate<I>,
+    child: Candidate<I>,
 }
 
-impl<I: InstructionSet> SearchFeedback for DeadCodeEliminator<I> {
+impl<I: Instruction> SearchFeedback for DeadCodeEliminator<I> {
     fn score(&mut self, score: f32) {
         if score != 0.0 {
             self.child = self.parent.clone();
+        } else {
+            self.parent = self.child.clone();
         }
     }
 }
 
-impl<I: InstructionSet> DeadCodeEliminator<I> {
+impl<I: Instruction> DeadCodeEliminator<I> {
     /// returns a new `Candidate`
-    pub fn new(unoptimized: &Candidate<I::Instruction>) -> Self {
+    pub fn new(unoptimized: &Candidate<I>) -> Self {
         Self {
             parent: unoptimized.clone(),
             child: unoptimized.clone(),
@@ -241,11 +243,14 @@ impl<I: InstructionSet> DeadCodeEliminator<I> {
     }
 }
 
-impl<I: InstructionSet> Iterator for DeadCodeEliminator<I> {
-    type Item = Candidate<<I as InstructionSet>::Instruction>;
+impl<I: Instruction> Iterator for DeadCodeEliminator<I> {
+    type Item = Candidate<I>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.delete();
+        use rand::random;
+        if random() {
+            self.delete();
+        }
         Some(self.child.clone())
     }
 }
