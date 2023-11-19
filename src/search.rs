@@ -1,9 +1,9 @@
 //! Module containing definitions of miscellaneous search strategies.
 
 use crate::SearchFeedback;
-use crate::{Candidate, Instruction, InstructionSet};
+use crate::{Candidate, InstructionSet};
 
-/// A candidate program
+/// Generates a program by stochastic approximation to a correctness function
 #[derive(Clone, Debug)]
 pub struct StochasticSearch<I: InstructionSet> {
     parent: Candidate<I::Instruction>,
@@ -202,6 +202,7 @@ where
     }
 }
 
+/// Random dead-code eliminator
 #[derive(Clone, Debug)]
 pub struct DeadCodeEliminator<I: InstructionSet> {
     parent: Candidate<I::Instruction>,
@@ -238,19 +239,12 @@ impl<I: InstructionSet> DeadCodeEliminator<I> {
             self.child.instructions.remove(offset);
         }
     }
-
-    pub fn random_mutation(&mut self) {
-        use rand::Rng;
-        self.delete();
-    }
 }
 
 impl<I: InstructionSet> Iterator for DeadCodeEliminator<I> {
     type Item = Candidate<<I as InstructionSet>::Instruction>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        use rand::Rng;
-
         self.delete();
         Some(self.child.clone())
     }
