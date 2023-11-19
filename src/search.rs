@@ -1,7 +1,7 @@
 //! Module containing definitions of miscellaneous search strategies.
 
 use crate::SearchFeedback;
-use crate::{Candidate, InstructionSet, Instruction};
+use crate::{Candidate, Instruction, InstructionSet};
 
 /// A candidate program
 #[derive(Clone, Debug)]
@@ -204,7 +204,10 @@ where
 
 /// A very fast dead-code eliminator. Just tries removing each instruction in turn, and testing if
 /// the resulting program is still correct.
-pub fn quick_dead_code_eliminate<T: Instruction>(unoptimized: &Candidate<T>, score: fn(&Candidate<T>) -> bool) -> Candidate<T> {
+pub fn quick_dead_code_eliminate<T: Instruction>(
+    unoptimized: &Candidate<T>,
+    score: fn(&Candidate<T>) -> bool,
+) -> Candidate<T> {
     let mut optimized = unoptimized.clone();
     let mut getting_there = unoptimized.clone();
 

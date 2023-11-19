@@ -46,7 +46,12 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
         }
     }
 
-    fn possible_test_case(&mut self, candidate: &<S as Iterator>::Item, a: i32, b: i32) -> Option<i32> {
+    fn possible_test_case(
+        &mut self,
+        candidate: &<S as Iterator>::Item,
+        a: i32,
+        b: i32,
+    ) -> Option<i32> {
         use crate::Emulator;
         if let Some(result) = (self.func)(a, b) {
             let mut emu = ArmV4T::default();
@@ -74,7 +79,7 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
         }
     }
 
-    fn correctness(&self,  candidate: &Candidate<Thumb>) -> u32 {
+    fn correctness(&self, candidate: &Candidate<Thumb>) -> u32 {
         let mut score = 0;
         // Try the values that have returned false before
         for inputs in &self.inputs {
