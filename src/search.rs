@@ -202,28 +202,56 @@ where
     }
 }
 
-/// A very fast dead-code eliminator. Just tries removing each instruction in turn, and testing if
-/// the resulting program is still correct.
-pub fn quick_dead_code_eliminate<T: Instruction>(
-    unoptimized: &Candidate<T>,
-    score: fn(&Candidate<T>) -> bool,
-) -> Candidate<T> {
-    let mut optimized = unoptimized.clone();
-    let mut getting_there = unoptimized.clone();
+#[derive(Clone, Debug)]
+pub struct DeadCodeEliminator<I: InstructionSet> {
+    parent: Candidate<I::Instruction>,
+    child: Candidate<I::Instruction>,
+}
 
-    let mut current_offset = 0usize;
-
-    loop {
-        if current_offset > getting_there.length() {
-            return optimized;
+impl<I: InstructionSet> SearchFeedback for DeadCodeEliminator<I> {
+    fn score(&mut self, score: f32) {
+        if score != 0.0 {
+            self.child = self.parent.clone();
         }
-        getting_there.instructions.remove(current_offset);
+    }
+}
 
-        if (score)(&getting_there) {
-            optimized = getting_there.clone();
-        } else {
-            getting_there = optimized.clone();
+impl<I: InstructionSet> DeadCodeEliminator<I> {
+    /// returns a new `Candidate`
+    pub fn new(unoptimized: &Candidate<I::Instruction>) -> Self {
+        Self {
+            parent: unoptimized.clone(),
+            child: unoptimized.clone(),
         }
-        current_offset += 1;
+    }
+
+    fn random_offset(&mut self) -> usize {
+        use rand::Rng;
+        rand::thread_rng().gen_range(0..self.child.instructions.len())
+    }
+
+    fn delete(&mut self) {
+        // If the list of instructions contains at least one instruction, then delete one at
+        // random.
+        if !self.child.instructions.is_empty() {
+            let offset = self.random_offset();
+            self.child.instructions.remove(offset);
+        }
+    }
+
+    pub fn random_mutation(&mut self) {
+        use rand::Rng;
+        self.delete();
+    }
+}
+
+impl<I: InstructionSet> Iterator for DeadCodeEliminator<I> {
+    type Item = Candidate<<I as InstructionSet>::Instruction>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        use rand::Rng;
+
+        self.delete();
+        Some(self.child.clone())
     }
 }
