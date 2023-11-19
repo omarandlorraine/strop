@@ -15,12 +15,12 @@
 #![forbid(unsafe_code)]
 
 pub mod armv4t;
-pub mod bruteforce;
 pub mod mos6502;
 pub mod robo6502;
-pub mod stochastic_search;
-use crate::bruteforce::BruteForceSearch;
-use crate::stochastic_search::StochasticSearch;
+pub mod search;
+
+use crate::search::BruteForceSearch;
+use crate::search::StochasticSearch;
 
 use rand::Rng;
 use std::convert::TryInto;
@@ -29,29 +29,6 @@ use std::convert::TryInto;
 pub trait Test<I: Instruction> {
     /// Run the program, and return a score of how well it did
     fn run(&self, program: &Candidate<I>) -> f64;
-}
-
-/// Linear Congruence Generator (used for fast and reproducible pseudo-random number generation).
-/// [A video explaining how this works](https://www.youtube.com/watch?v=PtEivGPxwAI).
-#[derive(Clone, Debug)]
-pub struct Lcg(pub u16);
-
-impl Lcg {
-    fn new(initial: u16) -> Self {
-        Self(initial)
-    }
-}
-
-impl Iterator for Lcg {
-    type Item = u8;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        // I just got these constants, 75 and 1, from the ZX Spectrum ROM. I skimmed Wikipedia
-        // which says if the modulus is a power of two (as in this case), the low bits have a
-        // shorter period (not as random) than the higher bits. Hence the right shift.
-        self.0 = self.0.wrapping_mul(75).wrapping_add(1);
-        Some((self.0 >> 3).to_be_bytes()[1])
-    }
 }
 
 pub trait Instruction: Copy + Clone + std::marker::Send + std::fmt::Display {
@@ -93,9 +70,7 @@ pub trait InstructionSet: Clone + std::marker::Send {
     type Instruction: Instruction;
 
     /// Return a random machine instruction
-    fn random() -> Self::Instruction {
-        Self::Instruction::random()
-    }
+    fn random(&self) -> Self::Instruction;
 
     /// returns true if the lint fires, and false otherwise. Useful for Iterator::filter
     fn filter(&self, _cand: &Candidate<Self::Instruction>) -> bool {
@@ -110,6 +85,9 @@ pub trait InstructionSet: Clone + std::marker::Send {
     /// gets the next instruction
     fn next(&self, instruction: &mut Self::Instruction) -> Option<()>;
 
+    /// mutates an instruction
+    fn mutate(&self, instruction: &mut Self::Instruction);
+
     /// returns a `BruteForceSearch` over this `InstructionSet`
     fn bruteforce(&mut self) -> BruteForceSearch<Self> {
         BruteForceSearch::new(self.clone(), usize::MAX)
@@ -117,7 +95,7 @@ pub trait InstructionSet: Clone + std::marker::Send {
 
     /// returns a `StochasticSearch` over this `InstructionSet`
     fn stochastic_search(&mut self) -> StochasticSearch<Self> {
-        StochasticSearch::new()
+        StochasticSearch::new(self.clone())
     }
 
     /// returns a `BruteForceSearch` over this `InstructionSet`, bounded to a maximum length of
@@ -174,6 +152,11 @@ impl<T: Instruction> Candidate<T> {
             println!("\t{}", insn);
         }
     }
+
+    /// Returns the number of instructions in the candidate program
+    pub fn length(&self) -> usize {
+        self.instructions.len()
+    }
 }
 
 pub trait SearchFeedback {
@@ -181,21 +164,4 @@ pub trait SearchFeedback {
 
     /// Tell the search algorithm about how close it's getting
     fn score(&mut self, score: f32);
-}
-
-#[cfg(test)]
-mod test {
-
-    #[test]
-    fn lcg() {
-        use crate::Lcg;
-
-        let lcg1 = Lcg::new(0x1234);
-        let nums1: Vec<_> = lcg1.take(50).collect();
-
-        let lcg2 = Lcg::new(0x1234);
-        let nums2: Vec<_> = lcg2.take(50).collect();
-
-        assert!(nums1 == nums2);
-    }
 }

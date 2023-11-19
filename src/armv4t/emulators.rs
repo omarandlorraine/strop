@@ -90,8 +90,11 @@ impl<T: Instruction> Emulator<T> for ArmV4T {
 
         self.mem.insert(org, &encoding);
 
+        // Start at 0, with a stack pointer, and in thumb mode
         self.cpu.reg_set(Mode::User, reg::PC, org);
-        self.cpu.reg_set(Mode::User, reg::CPSR, 0x20); // go into thumb mode
+        self.cpu.reg_set(Mode::User, reg::SP, 0x200);
+        self.cpu.reg_set(Mode::User, reg::CPSR, 0x20);
+
         assert!(self.cpu.thumb_mode());
 
         for _ in 0..1000 {
@@ -104,33 +107,5 @@ impl<T: Instruction> Emulator<T> for ArmV4T {
                 break;
             }
         }
-    }
-}
-
-#[cfg(test)]
-use crate::armv4t::instruction_set::Thumb;
-
-#[cfg(test)]
-impl ArmV4T {
-    pub fn run_thumb(&mut self, instruction: &Thumb) -> bool {
-        use armv4t_emu::{reg, Mode};
-
-        let program = Candidate::new(vec![*instruction]);
-
-        let org: u32 = 0x8000;
-        let encoding = program.encode();
-
-        self.mem.insert(org, &encoding);
-
-        self.cpu.reg_set(Mode::User, reg::PC, org);
-        self.cpu.reg_set(Mode::User, reg::CPSR, 0x20); // go into thumb mode
-
-        assert!(self.cpu.thumb_mode(), "The CPU didn't go into Thumb mode");
-
-        self.cpu.step(&mut self.mem)
-    }
-
-    pub fn thumb_mode(&self) -> bool {
-        self.cpu.thumb_mode()
     }
 }

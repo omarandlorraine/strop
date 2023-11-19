@@ -198,6 +198,23 @@ impl InstructionSet for Mos6502 {
         Some(())
     }
 
+    fn mutate(&self, insn: &mut Self::Instruction) {
+        insn.mutate();
+        while !self.check_opcode(insn) {
+            // If this in an opcode that's not under consideration due to static analysis, then
+            // skip this opcode.
+            insn.mutate();
+        }
+
+        self.address_fixup(insn);
+    }
+
+    fn random(&self) -> Nmos6502Instruction {
+        let mut insn = Nmos6502Instruction::random();
+        self.mutate(&mut insn);
+        insn
+    }
+
     fn filter(&self, _candidate: &Candidate<Nmos6502Instruction>) -> bool {
         true
     }

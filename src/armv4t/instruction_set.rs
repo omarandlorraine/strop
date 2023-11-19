@@ -15,7 +15,12 @@ pub struct Arm(pub u32);
 impl Instruction for Thumb {
     fn random() -> Self {
         use rand::random;
-        Self(random())
+        let thumb = Self(random());
+        if let Some(next) = undefined_instruction(&thumb) {
+            next
+        } else {
+            thumb
+        }
     }
 
     fn mutate(self) -> Self {
@@ -40,6 +45,15 @@ impl Instruction for Thumb {
             *self = next;
         }
         Some(*self)
+    }
+}
+
+fn control_flow(insn: &Thumb) -> Option<Thumb> {
+    // If it's a control flow instruction, then return the next instruction which isn't.
+    if insn.0 & 0xff00 == 0x4700 {
+        Some(Thumb((insn.0 | 0x07ff) + 1))
+    } else {
+        None
     }
 }
 
@@ -84,18 +98,61 @@ fn unpredictable_instruction(insn: &Thumb) -> Option<Thumb> {
     }
 }
 
+fn load_store_instruction(insn: &Thumb) -> Option<Thumb> {
+    // If it's an load/store instruction, then return the next instruction which isn't a
+    // load/store instruction.
+
+    if insn.0 >= 0x4800 && insn.0 < 0xb000 {
+        // looks like all load/store instructions are in this range. This range also includes adds
+        // relative to SP or PC, which have the same addressing modes. So just return the next
+        // instruction which is `sub sp, sp, 0`.
+        Some(Thumb(0xb080))
+    } else {
+        None
+    }
+}
+
 /// The instruction set known by the ARMv4T in Thumb mode
 #[derive(Clone, Default, Debug)]
 pub struct ThumbInstructionSet {
     unpredictables: bool,
+    branchless: bool,
 }
 
 impl ThumbInstructionSet {
+    /// An ordinary `ThumbInstructionSet`
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     /// Configures the `ThumbInstructionSet` to consider valid encodings which are so-called
     /// "Unpredictable". I have no idea how the third-party emulator emulates these.
     pub fn allow_unpredictable_instructions(&mut self) -> &mut Self {
         self.unpredictables = true;
         self
+    }
+
+    /// Makes sure not to select any branches or other control flow instructions.
+    pub fn branchless(&mut self) -> &mut Self {
+        self.branchless = true;
+        self
+    }
+
+    fn check(&self, thumb: &Thumb) -> Option<Thumb> {
+        if let Some(new_instruction) = load_store_instruction(thumb) {
+            return Some(new_instruction);
+        }
+        if !self.unpredictables {
+            if let Some(new_instruction) = unpredictable_instruction(thumb) {
+                return Some(new_instruction);
+            }
+        }
+        if self.branchless {
+            if let Some(new_instruction) = control_flow(thumb) {
+                return Some(new_instruction);
+            }
+        }
+        None
     }
 }
 
@@ -104,12 +161,30 @@ impl crate::InstructionSet for ThumbInstructionSet {
 
     fn next(&self, thumb: &mut Self::Instruction) -> Option<()> {
         thumb.increment()?;
-        if !self.unpredictables {
-            if let Some(new_instruction) = unpredictable_instruction(thumb) {
-                *thumb = new_instruction;
-            }
+        while let Some(nt) = self.check(thumb) {
+            *thumb = nt;
+        }
+        if self.branchless && thumb.0 >= 0xfc00 {
+            return None;
         }
         Some(())
+    }
+
+    fn mutate(&self, thumb: &mut Self::Instruction) {
+        thumb.mutate();
+        while self.check(thumb).is_some() {
+            *thumb = thumb.mutate();
+
+            while self.branchless && thumb.0 >= 0xfc00 {
+                *thumb = thumb.mutate();
+            }
+        }
+    }
+
+    fn random(&self) -> Self::Instruction {
+        let mut thumb = Thumb::random();
+        self.mutate(&mut thumb);
+        thumb
     }
 
     fn filter(&self, _cand: &Candidate<Self::Instruction>) -> bool {
@@ -133,6 +208,117 @@ mod test {
             assert!(!dasm.starts_with("0x"), "no disassembly for {}", dasm);
         }
     }
+
+    #[test]
+    fn no_control_flow_in_branchless_code() {
+        use crate::armv4t::instruction_set::Thumb;
+        use crate::armv4t::instruction_set::ThumbInstructionSet;
+        use crate::Instruction;
+        use crate::InstructionSet;
+
+        let mut binding = ThumbInstructionSet::default();
+        let isa = binding.branchless();
+        assert!(isa.branchless);
+        let mut thumb = Thumb::first();
+        while isa.next(&mut thumb).is_some() {
+            let dasm = format!("{}", thumb);
+            assert!(
+                !dasm.starts_with("b "),
+                "{} looks like a branch instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("bl "),
+                "{} looks like a branch instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("bx "),
+                "{} looks like a branch instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("blx "),
+                "{} looks like a branch instruction",
+                dasm
+            );
+        }
+    }
+
+    #[test]
+    fn no_loads_or_stores() {
+        use crate::armv4t::instruction_set::Thumb;
+        use crate::armv4t::instruction_set::ThumbInstructionSet;
+        use crate::Instruction;
+        use crate::InstructionSet;
+
+        let isa = ThumbInstructionSet::default();
+        let mut thumb = Thumb::first();
+        while isa.next(&mut thumb).is_some() {
+            let dasm = format!("{}", thumb);
+            assert!(
+                !dasm.starts_with("ldmia "),
+                "{} looks like a load instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("ldr "),
+                "{} looks like a load instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("ldrb "),
+                "{} looks like a load instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("ldrh "),
+                "{} looks like a load instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("ldrsb "),
+                "{} looks like a load instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("ldrsh "),
+                "{} looks like a load instruction",
+                dasm
+            );
+
+            assert!(
+                !dasm.starts_with("stmia "),
+                "{} looks like a store instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("str "),
+                "{} looks like a store instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("strb "),
+                "{} looks like a store instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("strh "),
+                "{} looks like a store instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("strsb "),
+                "{} looks like a store instruction",
+                dasm
+            );
+            assert!(
+                !dasm.starts_with("strsh "),
+                "{} looks like a store instruction",
+                dasm
+            );
+        }
+    }
 }
 
 mod disassembly {
@@ -151,9 +337,13 @@ mod disassembly {
                 let op = if self.0 & 0x0200 == 0 { "add" } else { "sub" };
 
                 if self.0 & 0x0400 == 0 {
-                    write!(f, "{} {}, {}, {}", op, rd, rn, registers[imm as usize])
+                    write!(
+                        f,
+                        "{} {}, {}, {}   ; {:#06x}",
+                        op, rd, rn, registers[imm as usize], self.0
+                    )
                 } else {
-                    write!(f, "{} {}, {}, #{}", op, rd, rn, imm)
+                    write!(f, "{} {}, {}, #{}     ; {:#06x}", op, rd, rn, imm, self.0)
                 }
             } else if self.0 & 0xe000 == 0x0000 {
                 let opcodes = ["lsl", "lsr", "asr"];
@@ -163,7 +353,11 @@ mod disassembly {
                 let offset = self.0 >> 6 & 0x1f;
                 let opcode = opcodes[(self.0 >> 11 & 0x3) as usize];
 
-                write!(f, "{} {}, {}, {}", opcode, rs, rd, offset)
+                write!(
+                    f,
+                    "{} {}, {}, {}     ; {:#06x}",
+                    opcode, rs, rd, offset, self.0
+                )
             } else if self.0 & 0xe000 == 0x2000 {
                 let opcodes = ["cmp", "mov", "add", "sub"];
 
@@ -171,7 +365,7 @@ mod disassembly {
                 let imm = self.0 & 0x00ff;
                 let opcode = opcodes[(self.0 >> 11 & 0x3) as usize];
 
-                write!(f, "{} {}, #{}", opcode, r, imm)
+                write!(f, "{} {}, #{}     ; {:#06x}", opcode, r, imm, self.0)
             } else if self.0 & 0xfc00 == 0x4000 {
                 let opcodes = [
                     "and", "eor", "lsl", "lsr", "asr", "adc", "sbc", "ror", "tst", "neg", "cmp",
@@ -180,7 +374,7 @@ mod disassembly {
                 let rd = registers[(self.0 & 0x07) as usize];
                 let rs = registers[(self.0 >> 3 & 0x07) as usize];
                 let opcode = opcodes[(self.0 >> 6 & 0x0f) as usize];
-                write!(f, "{} {}, {}", opcode, rd, rs)
+                write!(f, "{} {}, {}     ; {:#06x}", opcode, rd, rs, self.0)
             } else if self.0 & 0xfc00 == 0x4400 && self.0 & 0x0300 != 0x0300 {
                 // These are opcodes add, mov, and cmp, which can access high registers and low
                 // registers.
@@ -198,14 +392,14 @@ mod disassembly {
                     registers[(self.0 & 0x07) as usize]
                 };
                 let opcode = opcodes[(self.0 >> 8 & 0x03) as usize];
-                write!(f, "{} {}, {}", opcode, rd, rm)
+                write!(f, "{} {}, {}     ; {:#06x}", opcode, rd, rm, self.0)
             } else if self.0 & 0xff07 == 0x4700 {
                 let rd = if self.0 & 0x0040 != 0x00 {
                     high_registers[(self.0 >> 3 & 0x07) as usize]
                 } else {
                     registers[(self.0 >> 3 & 0x07) as usize]
                 };
-                write!(f, "bx {}", rd)
+                write!(f, "bx {}     ; {:#06x}", rd, self.0)
             } else if self.0 & 0xf000 == 0x5000 {
                 let opcodes = [
                     "str", "strsh", "strb", "strsb", "ldr", "ldrsh", "ldrb", "ldrsb",
@@ -214,10 +408,20 @@ mod disassembly {
                 let rn = registers[(self.0 >> 3 & 0x07) as usize];
                 let rm = registers[(self.0 >> 6 & 0x07) as usize];
                 let opcode = opcodes[(self.0 >> 9 & 0x03) as usize];
-                write!(f, "{} {}, [{}, {}]", opcode, rd, rn, rm)
+                write!(
+                    f,
+                    "{} {}, [{}, {}]     ; {:#06x}",
+                    opcode, rd, rn, rm, self.0
+                )
             } else if self.0 & 0xf800 == 0x4800 {
                 let rd = registers[(self.0 >> 8 & 0x07) as usize];
-                write!(f, "ldr {}, [pc, {}]", rd, self.0 & 0xff)
+                write!(
+                    f,
+                    "ldr {}, [pc, {}]     ; {:#06x}",
+                    rd,
+                    self.0 & 0xff,
+                    self.0
+                )
             } else if self.0 & 0xe000 == 0x6000 {
                 let opcodes = ["str", "ldr", "strb", "ldrb"];
                 let rd = registers[(self.0 & 0x07) as usize];
@@ -227,38 +431,60 @@ mod disassembly {
 
                 let scale = if self.0 & 0x0800 == 0 { 4 } else { 1 };
 
-                write!(f, "{} {}, [{}, {}]", opcode, rd, rn, offset * scale)
+                write!(
+                    f,
+                    "{} {}, [{}, {}]     ; {:#06x}",
+                    opcode,
+                    rd,
+                    rn,
+                    offset * scale,
+                    self.0
+                )
             } else if self.0 & 0xf000 == 0x8000 {
                 let rd = registers[(self.0 & 0x07) as usize];
                 let rn = registers[(self.0 >> 3 & 0x07) as usize];
                 let offset = self.0 >> 6 & 0x01f;
 
                 if self.0 & 0x1000 == 0 {
-                    write!(f, "strh {}, [{}, {}]", rd, rn, offset * 2)
+                    write!(
+                        f,
+                        "strh {}, [{}, {}]     ; {:#06x}",
+                        rd,
+                        rn,
+                        offset * 2,
+                        self.0
+                    )
                 } else {
-                    write!(f, "ldrh {}, [{}, {}]", rd, rn, offset * 2)
+                    write!(
+                        f,
+                        "ldrh {}, [{}, {}]     ; {:#06x}",
+                        rd,
+                        rn,
+                        offset * 2,
+                        self.0
+                    )
                 }
             } else if self.0 & 0xf000 == 0x9000 {
                 let rd = registers[(self.0 >> 8 & 0x07) as usize];
                 let offset = self.0 & 0x00ff;
 
                 if self.0 & 0x0800 == 0 {
-                    write!(f, "str {}, [pc, {}]", rd, offset * 4)
+                    write!(f, "str {}, [pc, {}]     ; {:#06x}", rd, offset * 4, self.0)
                 } else {
-                    write!(f, "ldr {}, [pc, {}]", rd, offset * 4)
+                    write!(f, "ldr {}, [pc, {}]     ; {:#06x}", rd, offset * 4, self.0)
                 }
             } else if self.0 & 0xf000 == 0xa000 {
                 let rd = registers[(self.0 >> 8 & 0x07) as usize];
                 let offset = self.0 & 0x00ff;
 
                 if self.0 & 0x0800 == 0 {
-                    write!(f, "add {}, [pc, {}]", rd, offset * 4)
+                    write!(f, "add {}, [pc, {}]     ; {:#06x}", rd, offset * 4, self.0)
                 } else {
-                    write!(f, "add {}, [sp, {}]", rd, offset * 4)
+                    write!(f, "add {}, [sp, {}]     ; {:#06x}", rd, offset * 4, self.0)
                 }
             } else if self.0 & 0xff80 == 0xb080 {
                 let value = self.0 & 0x007f;
-                write!(f, "sub sp, sp, {}", value)
+                write!(f, "sub sp, sp, {}     ; {:#06x}", value, self.0)
             } else if self.0 & 0xfe00 == 0xb400 {
                 let r0 = if self.0 & 0x01 != 0 { "r0, " } else { "" };
                 let r1 = if self.0 & 0x02 != 0 { "r1, " } else { "" };
@@ -271,8 +497,8 @@ mod disassembly {
                 let lr = if self.0 & 0x100 != 0 { "lr, " } else { "" };
                 write!(
                     f,
-                    "push {{{}{}{}{}{}{}{}{}{}}}",
-                    r0, r1, r2, r3, r4, r5, r6, r7, lr
+                    "push {{{}{}{}{}{}{}{}{}{}}}     ; {:#06x}",
+                    r0, r1, r2, r3, r4, r5, r6, r7, lr, self.0
                 )
             } else if self.0 & 0xfe00 == 0xbc00 {
                 let r0 = if self.0 & 0x01 != 0 { "r0, " } else { "" };
@@ -286,15 +512,15 @@ mod disassembly {
                 let pc = if self.0 & 0x100 != 0 { "pc, " } else { "" };
                 write!(
                     f,
-                    "pop {{{}{}{}{}{}{}{}{}{}}}",
-                    r0, r1, r2, r3, r4, r5, r6, r7, pc
+                    "pop {{{}{}{}{}{}{}{}{}{}}}     ; {:#06x}",
+                    r0, r1, r2, r3, r4, r5, r6, r7, pc, self.0
                 )
             } else if self.0 & 0xff00 == 0xb000 {
                 let imm = self.0.to_le_bytes()[0] as i8;
                 if imm < 0 {
-                    write!(f, "sub sp, #{}", 0 - imm)
+                    write!(f, "sub sp, #{}     ; {:#06x}", 0 - imm, self.0)
                 } else {
-                    write!(f, "add sp, #{}", imm)
+                    write!(f, "add sp, #{}     ; {:#06x}", imm, self.0)
                 }
             } else if self.0 & 0xf000 == 0xc000 {
                 let r0 = if self.0 & 0x01 != 0 { "r0, " } else { "" };
@@ -309,14 +535,14 @@ mod disassembly {
                 if self.0 & 0x0800 != 0 {
                     write!(
                         f,
-                        "stmia {}!, {{{}{}{}{}{}{}{}{}}}",
-                        rn, r0, r1, r2, r3, r4, r5, r6, r7
+                        "stmia {}!, {{{}{}{}{}{}{}{}{}}}     ; {:#06x}",
+                        rn, r0, r1, r2, r3, r4, r5, r6, r7, self.0
                     )
                 } else {
                     write!(
                         f,
-                        "ldmia {}!, {{{}{}{}{}{}{}{}{}}}",
-                        rn, r0, r1, r2, r3, r4, r5, r6, r7
+                        "ldmia {}!, {{{}{}{}{}{}{}{}{}}}     ; {:#06x}",
+                        rn, r0, r1, r2, r3, r4, r5, r6, r7, self.0
                     )
                 }
             } else if self.0 & 0xf000 == 0xd000 {
@@ -330,20 +556,20 @@ mod disassembly {
 
                 #[allow(clippy::comparison_chain)]
                 if func < 15 {
-                    write!(f, "b{} {}", opcodes[func], offset)
+                    write!(f, "b{} {}     ; {:#06x}", opcodes[func], offset, self.0)
                 } else if func == 0x0f {
-                    write!(f, "swi {}", syscall)
+                    write!(f, "swi {}     ; {:#06x}", syscall, self.0)
                 } else {
-                    write!(f, "0x{:04x}", self.0)
+                    write!(f, "0x{:04x}     ; {:#06x}", self.0, self.0)
                 }
             } else if self.0 & 0xf800 == 0xe000 {
-                write!(f, "b {}", self.0 & 0x7ff)
+                write!(f, "b {}     ; {:#06x}", self.0 & 0x7ff, self.0)
             } else if self.0 & 0xf800 == 0xf000 {
-                write!(f, "bl {} (+)", self.0 & 0x7ff) // I have no idea what this means
+                write!(f, "bl {} (+)     ; {:#06x}", self.0 & 0x7ff, self.0) // I have no idea what this means
             } else if self.0 & 0xf800 == 0xf800 {
-                write!(f, "bl {}", self.0 & 0x7ff)
+                write!(f, "bl {}     ; {:#06x}", self.0 & 0x7ff, self.0)
             } else {
-                write!(f, "0x{:04x}", self.0)
+                write!(f, "; {:#06x}", self.0)
             }
         }
     }

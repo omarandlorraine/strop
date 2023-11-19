@@ -36,3 +36,18 @@ impl StochasticSearch<ThumbInstructionSet> {
         testers::Aapcs32::new(self, func)
     }
 }
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn all_instructions_can_be_executed() {
+        use crate::armv4t::emulators::ArmV4T;
+        use crate::Emulator;
+        use crate::InstructionSet;
+
+        for candidate in crate::armv4t::thumb().bruteforce_with_maximum_length(1) {
+            ArmV4T::default().run(0x2000, &candidate);
+            candidate.disassemble();
+        }
+    }
+}
