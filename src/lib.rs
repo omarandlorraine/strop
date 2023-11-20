@@ -18,6 +18,7 @@ pub mod armv4t;
 pub mod mos6502;
 pub mod robo6502;
 pub mod search;
+pub mod z80;
 
 use crate::search::BruteForceSearch;
 use crate::search::StochasticSearch;
