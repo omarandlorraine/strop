@@ -32,6 +32,8 @@ Strop currently has a relatively small number of backends:
    [6502](https://en.wikipedia.org/wiki/MOS_Technology_6502). This backend is
 accompanied by emulators for some of the different variant 6502s.
  * **armv4t**, which targets the Thumb instruction set as found on the ARM7TDMI.
+ * **lr35902**, which targets the LR35902, famously found in the Nintendo
+   Gameboy.
 
 To add a backend should be a relatively simple task:
 
