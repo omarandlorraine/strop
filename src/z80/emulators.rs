@@ -48,3 +48,45 @@ impl<T: Instruction> Emulator<T> for Z80 {
         }
     }
 }
+
+/// An Intel 8080 emulator
+#[allow(missing_debug_implementations)]
+pub struct I8080 {
+    machine: PlainMachine,
+    cpu: Cpu,
+}
+
+impl Default for I8080 {
+    fn default() -> Self {
+        Self {
+            machine: PlainMachine::default(),
+            cpu: Cpu::new_8080(),
+        }
+    }
+}
+
+impl<T: Instruction> Emulator<T> for I8080 {
+    fn run(&mut self, addr: usize, candidate: &Candidate<T>) {
+        let org: u16 = addr.try_into().unwrap();
+        let encoding = candidate.encode();
+        let end: u16 = (addr + encoding.len()).try_into().unwrap();
+
+        // write the program into the CPU's memory
+        for (offset, byte) in encoding.into_iter().enumerate() {
+            self.machine.poke(org + offset as u16, byte);
+        }
+
+        self.cpu.registers().set_pc(org);
+
+        for _ in 0..1000 {
+            self.cpu.execute_instruction(&mut self.machine);
+            let pc = self.cpu.registers().pc();
+            if pc < org {
+                break;
+            }
+            if pc > end {
+                break;
+            }
+        }
+    }
+}
