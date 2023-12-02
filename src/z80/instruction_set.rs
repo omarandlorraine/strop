@@ -19,6 +19,29 @@ impl std::fmt::Debug for Z80Instruction {
     }
 }
 
+impl Z80Instruction {
+    fn i8080_fixup(&mut self) {
+        // Some opcodes don't exist on the 8080, so this function changes them
+        self.mc[0] = match self.mc[0] {
+            0x08 => 0x09, // ex af, af'
+            0x10 => 0x11, // djnz
+            0x18 => 0x19, // jr off
+            0x20 => 0x21, // jr nz,off
+            0x28 => 0x29, // jr z,off
+            0x30 => 0x31, // jr nc,off
+            0x38 => 0x39, // jr c,off
+            0xd9 => 0xda, // exx
+
+            // and the prefixes:
+            0xcb => 0xcc,
+            0xed => 0xee,
+            0xdd => 0xde,
+            0xfd => 0xfe,
+            opcode => opcode,
+        }
+    }
+}
+
 impl Instruction for Z80Instruction {
     fn random() -> Self {
         use rand::random;
@@ -147,7 +170,17 @@ impl std::fmt::Display for Z80Instruction {
 
 /// The Z80 instruction set.
 #[derive(Clone, Copy, Debug, Default)]
-pub struct Z80InstructionSet {}
+pub struct Z80InstructionSet {
+    i8080: bool,
+}
+
+impl Z80InstructionSet {
+    /// limits the instruction selection to instructions that are available on the Intel 8080.
+    pub fn i8080(&mut self) -> Self {
+        self.i8080 = true;
+        *self
+    }
+}
 
 impl InstructionSet for Z80InstructionSet {
     type Instruction = Z80Instruction;
@@ -158,6 +191,9 @@ impl InstructionSet for Z80InstructionSet {
 
     fn next(&self, instruction: &mut Self::Instruction) -> Option<()> {
         instruction.increment()?;
+        if self.i8080 {
+            instruction.i8080_fixup();
+        }
         Some(())
     }
 
@@ -174,6 +210,22 @@ mod test {
         use crate::InstructionSet;
         for p in crate::z80::z80().bruteforce_with_maximum_length(1) {
             p.disassemble();
+        }
+    }
+
+    #[test]
+    fn the_emulator_can_run_the_instructions() {
+        use crate::z80::emulators::*;
+        use crate::Emulator;
+        use crate::InstructionSet;
+
+        for p in crate::z80::z80().bruteforce_with_maximum_length(1) {
+            Z80::default().run(0x8000, &p);
+        }
+
+        for p in crate::z80::z80().i8080().bruteforce_with_maximum_length(1) {
+            Z80::default().run(0x8000, &p);
+            I8080::default().run(0x8000, &p);
         }
     }
 
