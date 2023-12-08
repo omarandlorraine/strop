@@ -17,7 +17,7 @@ impl BruteForceSearch<ThumbInstructionSet> {
     /// returns an iterator yielding functions complying with the AAPCS32 calling conventions, and
     /// computing the provided functions.
     ///
-    /// `func` should be a function returning an Option<i32>. For inputs where `func` returns
+    /// `func` should be a function returning an `Option<i32>`. For inputs where `func` returns
     /// `Some(x)`, the generated function returns `x`. But for inputs where `func` returns `None`,
     /// the behavior of the generated function is undefined.
     pub fn aapcs32(self, func: fn(i32, i32) -> Option<i32>) -> testers::Aapcs32<Self> {
@@ -29,7 +29,7 @@ impl StochasticSearch<ThumbInstructionSet> {
     /// returns an iterator yielding functions complying with the AAPCS32 calling conventions, and
     /// computing the provided functions.
     ///
-    /// `func` should be a function returning an Option<i32>. For inputs where `func` returns
+    /// `func` should be a function returning an `Option<i32>`. For inputs where `func` returns
     /// `Some(x)`, the generated function returns `x`. But for inputs where `func` returns `None`,
     /// the behavior of the generated function is undefined.
     pub fn aapcs32(self, func: fn(i32, i32) -> Option<i32>) -> testers::Aapcs32<Self> {

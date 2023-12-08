@@ -133,7 +133,7 @@ impl<T: Instruction> Candidate<T> {
         }
     }
 
-    /// creates a new candidate from a Vec<T>
+    /// creates a new candidate from a `Vec<T>`.
     pub fn new(instructions: Vec<T>) -> Self {
         Self { instructions }
     }
