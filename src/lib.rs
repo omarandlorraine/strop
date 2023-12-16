@@ -20,6 +20,8 @@ pub mod robo6502;
 pub mod search;
 pub mod z80;
 
+mod hamming;
+
 use crate::search::BruteForceSearch;
 use crate::search::StochasticSearch;
 
@@ -165,4 +167,14 @@ pub trait SearchFeedback {
 
     /// Tell the search algorithm about how close it's getting
     fn score(&mut self, score: f32);
+}
+
+pub trait HammingDistance<T> {
+    //! Trait for calculating the hamming distance of two values, even if they have different
+    //! widths.
+
+    /// Returns the values' hamming distance. This is a commutative operations, so
+    /// `x.hamming_distance(y)` is equivalent to `y.hamming_distance(x)`.
+    fn hamming_distance(&self, other: T) -> f32 {
+    }
 }
