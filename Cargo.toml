@@ -11,6 +11,9 @@ homepage = "https://github.com/omarandlorraine/strop"
 [dependencies]
 armv4t_emu = "0.1.0"
 asm = { version = "0.3.0", features = ["6502"] }
+dez80 = "3.0.0"
+iz80 = "0.4.0"
 mos6502 = "0.5.0"
+num = "0.4.1"
 rand = "0.8.5"
 robo6502 = "0.3.2"

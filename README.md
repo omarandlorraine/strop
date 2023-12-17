@@ -28,10 +28,12 @@ If you're wondering what this could be used for, here are some examples:
 
 Strop currently has a relatively small number of backends:
 
- * **mos6502** which targets the
+ * **armv4t**, which targets the Thumb instruction set as found on the ARM7TDMI.
+ * **mos6502**, which targets the
    [6502](https://en.wikipedia.org/wiki/MOS_Technology_6502). This backend is
 accompanied by emulators for some of the different variant 6502s.
- * **armv4t**, which targets the Thumb instruction set as found on the ARM7TDMI.
+ * **z80**, which targets the [Z80](https://en.wikipedia.org/wiki/Zilog_Z80),
+   another retro eight-bitter.
 
 To add a backend should be a relatively simple task:
 
