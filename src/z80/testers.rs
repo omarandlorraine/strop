@@ -1,10 +1,10 @@
 //! Z80 testers.
 use crate::HammingDistance;
 
-use crate::SearchFeedback;
-use crate::Candidate;
 use crate::z80::instruction_set::Z80Instruction;
- 
+use crate::Candidate;
+use crate::SearchFeedback;
+
 use num::cast::AsPrimitive;
 use rand::distributions::Standard;
 use rand::prelude::Distribution;
@@ -33,20 +33,29 @@ where
     func: fn(Operand) -> Option<Return>,
 }
 
-impl<S: Iterator<Item = Candidate<Z80Instruction>> + SearchFeedback, Operand: num::cast::AsPrimitive<u32>, Return: num::cast::AsPrimitive<u32>> Z88dkfastcall<S, Operand, Return> 
-where u32: HammingDistance<Return>, u32: AsPrimitive<Operand>, u32: From<Operand>, Standard: Distribution<Operand>
+impl<
+        S: Iterator<Item = Candidate<Z80Instruction>> + SearchFeedback,
+        Operand: num::cast::AsPrimitive<u32>,
+        Return: num::cast::AsPrimitive<u32>,
+    > Z88dkfastcall<S, Operand, Return>
+where
+    u32: HammingDistance<Return>,
+    u32: AsPrimitive<Operand>,
+    u32: From<Operand>,
+    Standard: Distribution<Operand>,
 {
     /// Returns a new Z88dkfastcall struct.
     pub fn new(search: S, func: fn(Operand) -> Option<Return>) -> Self {
         Self {
             inputs: vec![],
-            search, func
+            search,
+            func,
         }
     }
 
     fn test1(&self, candidate: &<S as Iterator>::Item, a: u32) -> f32 {
-        use crate::Emulator;
         use crate::z80::emulators::Z80;
+        use crate::Emulator;
 
         if let Some(result) = (self.func)(a.as_()) {
             let mut emu = Z80::default();
@@ -58,13 +67,9 @@ where u32: HammingDistance<Return>, u32: AsPrimitive<Operand>, u32: From<Operand
         }
     }
 
-    fn possible_test_case(
-        &mut self,
-        candidate: &<S as Iterator>::Item,
-        a: Operand
-    ) {
-        use crate::Emulator;
+    fn possible_test_case(&mut self, candidate: &<S as Iterator>::Item, a: Operand) {
         use crate::z80::emulators::Z80;
+        use crate::Emulator;
 
         if let Some(result) = (self.func)(a) {
             let mut emu = Z80::default();
@@ -102,13 +107,20 @@ where u32: HammingDistance<Return>, u32: AsPrimitive<Operand>, u32: From<Operand
         }
         score
     }
-
 }
 
-impl<S: Iterator<Item = Candidate<Z80Instruction>> + SearchFeedback, Operand: num::cast::AsPrimitive<u32>, Return> Iterator for Z88dkfastcall<S, Operand, Return> 
-where u32: HammingDistance<Return>, u32: AsPrimitive<Operand>, u32: From<Operand>, Standard: Distribution<Operand> 
-    , Return: num::cast::AsPrimitive<u32>
-    {
+impl<
+        S: Iterator<Item = Candidate<Z80Instruction>> + SearchFeedback,
+        Operand: num::cast::AsPrimitive<u32>,
+        Return,
+    > Iterator for Z88dkfastcall<S, Operand, Return>
+where
+    u32: HammingDistance<Return>,
+    u32: AsPrimitive<Operand>,
+    u32: From<Operand>,
+    Standard: Distribution<Operand>,
+    Return: num::cast::AsPrimitive<u32>,
+{
     type Item = Candidate<Z80Instruction>;
 
     fn next(&mut self) -> Option<Self::Item> {
