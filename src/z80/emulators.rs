@@ -49,6 +49,25 @@ impl<T: Instruction> Emulator<T> for Z80 {
     }
 }
 
+impl Z80 {
+    pub fn get_dehl(&self) -> u32 {
+        u32::from_le_bytes([
+        self.cpu.immutable_registers().get8(iz80::Reg8::D),
+        self.cpu.immutable_registers().get8(iz80::Reg8::E),
+        self.cpu.immutable_registers().get8(iz80::Reg8::H),
+        self.cpu.immutable_registers().get8(iz80::Reg8::L)
+        ])
+    }
+
+    pub fn set_dehl(&mut self, val: u32) {
+        let bytes = val.to_le_bytes();
+        self.cpu.registers().set8(iz80::Reg8::D, bytes[3]);
+        self.cpu.registers().set8(iz80::Reg8::E, bytes[2]);
+        self.cpu.registers().set8(iz80::Reg8::H, bytes[1]);
+        self.cpu.registers().set8(iz80::Reg8::L, bytes[0]);
+    }
+}
+
 /// An Intel 8080 emulator
 #[allow(missing_debug_implementations)]
 pub struct I8080 {

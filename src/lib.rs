@@ -175,6 +175,5 @@ pub trait HammingDistance<T> {
 
     /// Returns the values' hamming distance. This is a commutative operations, so
     /// `x.hamming_distance(y)` is equivalent to `y.hamming_distance(x)`.
-    fn hamming_distance(&self, other: T) -> f32 {
-    }
+    fn hamming_distance(self, other: T) -> f32;
 }
