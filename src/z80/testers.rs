@@ -114,7 +114,7 @@ where u32: HammingDistance<Return>, u32: AsPrimitive<Operand>, u32: From<Operand
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(candidate) = self.search.next() {
             let score = self.test(&candidate);
-            self.search.score(score as f32);
+            self.search.score(score);
             if score == 0.0 {
                 // We've found a program that passes the test cases we've found; let's optimize the
                 // program.

@@ -20,7 +20,7 @@ impl HammingDistance<u8> for i8 {
 
 impl HammingDistance<i8> for i8 {
     fn hamming_distance(self, other: i8) -> f32 {
-        other.hamming_distance(self)
+        (self ^ other).count_ones() as f32
     }
 }
 

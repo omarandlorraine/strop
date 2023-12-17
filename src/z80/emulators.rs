@@ -50,6 +50,7 @@ impl<T: Instruction> Emulator<T> for Z80 {
 }
 
 impl Z80 {
+    /// Returns the 32-bit value represented by the emulated CPU's D, E, H and L registers.
     pub fn get_dehl(&self) -> u32 {
         u32::from_le_bytes([
         self.cpu.immutable_registers().get8(iz80::Reg8::D),
@@ -59,6 +60,7 @@ impl Z80 {
         ])
     }
 
+    /// Writes a 32-bit value to the emulated CPU's D, E, H and L registers.
     pub fn set_dehl(&mut self, val: u32) {
         let bytes = val.to_le_bytes();
         self.cpu.registers().set8(iz80::Reg8::D, bytes[3]);
