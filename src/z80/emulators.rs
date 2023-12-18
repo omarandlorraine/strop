@@ -4,6 +4,7 @@ use crate::Candidate;
 use crate::Emulator;
 use crate::Instruction;
 use std::convert::TryInto;
+use crate::z80::instruction_set::Z80Instruction;
 
 use iz80::*;
 
@@ -43,6 +44,53 @@ impl<T: Instruction> Emulator<T> for Z80 {
                 break;
             }
             if pc > end {
+                break;
+            }
+        }
+    }
+}
+
+impl Z80 {
+    /// Runs a subroutine in the emulator.
+    pub fn run_subroutine(&mut self, org: u16, from: u16, candidate: &Candidate<Z80Instruction>) {
+        use rand::random;
+        let encoding = candidate.encode();
+        let end: u16 = org + encoding.len() as u16;
+
+        let mut sp: u16 = random();
+        while (org..end).contains(&sp) || (from..from+3).contains(&sp) {
+            sp = random();
+        }
+        let sp = sp;
+
+        // write the subroutine into the CPU's memory
+        for (offset, byte) in encoding.into_iter().enumerate() {
+            self.machine.poke(org + offset as u16, byte);
+        }
+
+        // write a CALL instruction into the CPU's memory
+        let org_bytes = org.to_le_bytes();
+        for (offset, byte) in vec![0xcd, org_bytes[0], org_bytes[1]].into_iter().enumerate() {
+            self.machine.poke(from + offset as u16, byte);
+        }
+
+        // execute the CALL instruction
+        self.cpu.registers().set_pc(from);
+        self.cpu.execute_instruction(&mut self.machine);
+        assert_eq!(self.cpu.registers().pc(), org);
+
+        for _ in 0..1000 {
+            self.cpu.execute_instruction(&mut self.machine);
+
+            let pc = self.cpu.registers().pc();
+
+            // So the PC is pointing to the instruction right after the CALL instruction
+            if pc == from + 3 {
+                break;
+            }
+
+            // So the stack pointer has returned to where it was before the CALL.
+            if self.cpu.registers().get16(Reg16::SP) == sp {
                 break;
             }
         }
