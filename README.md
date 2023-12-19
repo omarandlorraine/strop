@@ -23,6 +23,8 @@ If you're wondering what this could be used for, here are some examples:
   differently on different emulators, exposing bugs
 * [library](examples/library.md), which produces a small library of
   miscellaneous functions, in Thumb assembly, all callable from C.
+* [arpa_inet_h](examples/arpa_inet_h.md), which emits the functions in
+  `arpa/inet.h` in Z80 assembler.
 
 ### Supported instruction sets:
 
