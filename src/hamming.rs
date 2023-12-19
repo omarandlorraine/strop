@@ -38,8 +38,8 @@ impl HammingDistance<u32> for u32 {
 
 impl HammingDistance<u16> for u32 {
     fn hamming_distance(self, other: u16) -> f32 {
-        self.to_le_bytes()[0].hamming_distance(other.to_le_bytes()[0]) +
-        self.to_le_bytes()[1].hamming_distance(other.to_le_bytes()[1])
+        self.to_le_bytes()[0].hamming_distance(other.to_le_bytes()[0])
+            + self.to_le_bytes()[1].hamming_distance(other.to_le_bytes()[1])
     }
 }
 

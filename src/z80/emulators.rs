@@ -1,10 +1,10 @@
 //! Module containing ways to emulate the Arm processor, in a way that's suitable for use with
 //! strop.
+use crate::z80::instruction_set::Z80Instruction;
 use crate::Candidate;
 use crate::Emulator;
 use crate::Instruction;
 use std::convert::TryInto;
-use crate::z80::instruction_set::Z80Instruction;
 
 use iz80::*;
 
@@ -58,7 +58,7 @@ impl Z80 {
         let end: u16 = org + encoding.len() as u16;
 
         let mut sp: u16 = random();
-        while (org..end).contains(&sp) || (from..from+3).contains(&sp) {
+        while (org..end).contains(&sp) || (from..from + 3).contains(&sp) {
             sp = random();
         }
         let sp = sp;
@@ -70,7 +70,10 @@ impl Z80 {
 
         // write a CALL instruction into the CPU's memory
         let org_bytes = org.to_le_bytes();
-        for (offset, byte) in vec![0xcd, org_bytes[0], org_bytes[1]].into_iter().enumerate() {
+        for (offset, byte) in vec![0xcd, org_bytes[0], org_bytes[1]]
+            .into_iter()
+            .enumerate()
+        {
             self.machine.poke(from + offset as u16, byte);
         }
 
