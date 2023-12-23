@@ -163,8 +163,7 @@ impl<I: InstructionSet> BruteForceSearch<I> {
 impl<I: InstructionSet> BruteForceSearch<I> {
     fn iterate(&mut self, offset: usize) {
         if offset >= self.curr.len() {
-            // We've run off the current length of the vector, so append a new instruction iterator
-            // and its first instruction.
+            // We've run off the current length of the vector, so append another instruction
             self.curr.push(self.instruction_set.first());
             return;
         }
