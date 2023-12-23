@@ -214,6 +214,37 @@ mod test {
     }
 
     #[test]
+    fn instruction_increment() {
+        use crate::Instruction;
+        let mut p = super::Z80Instruction::first();
+        assert!(p.increment().is_some());
+        assert!(p.increment().is_some());
+        assert!(p.increment().is_some());
+        assert!(p.increment().is_some());
+    }
+
+    #[test]
+    fn instruction_set_increment() {
+        use crate::Instruction;
+        use crate::InstructionSet;
+        let mut i = super::Z80Instruction::first();
+        let p = super::Z80InstructionSet::default();
+        assert!(p.next(&mut i).is_some());
+        assert!(p.next(&mut i).is_some());
+        assert!(p.next(&mut i).is_some());
+        assert!(p.next(&mut i).is_some());
+    }
+
+    #[test]
+    fn bruteforce_search() {
+        use crate::InstructionSet;
+        let mut p = crate::z80::z80().bruteforce_with_maximum_length(1);
+        p.next().unwrap();
+        p.next().unwrap();
+        p.next().unwrap();
+    }
+
+    #[test]
     fn the_emulator_can_run_the_instructions() {
         use crate::z80::emulators::*;
         use crate::Emulator;
