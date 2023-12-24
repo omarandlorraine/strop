@@ -1,5 +1,6 @@
 //! Module containing definitions for Z80 and 8080 instruction sets
 
+use crate::Candidate;
 use crate::Instruction;
 use crate::InstructionSet;
 
@@ -199,6 +200,10 @@ impl InstructionSet for Z80InstructionSet {
 
     fn mutate(&self, _instruction: &mut Self::Instruction) {
         todo!()
+    }
+
+    fn filter(&self, _cand: &Candidate<Self::Instruction>) -> bool {
+        true
     }
 }
 

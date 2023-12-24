@@ -58,11 +58,6 @@ pub trait Instruction: Copy + Clone + std::marker::Send + std::fmt::Display {
 
     /// Increments the instruction's encoding by one, and then returns a clone of self.
     fn increment(&mut self) -> Option<Self>;
-
-    /// returns true if the lint fires, and false otherwise. Useful for Iterator::filter
-    fn filter(&self, _cand: &Candidate<Self>) -> bool {
-        false
-    }
 }
 
 pub trait InstructionSet: Clone + std::marker::Send {
@@ -76,9 +71,7 @@ pub trait InstructionSet: Clone + std::marker::Send {
     fn random(&self) -> Self::Instruction;
 
     /// returns true if the lint fires, and false otherwise. Useful for Iterator::filter
-    fn filter(&self, _cand: &Candidate<Self::Instruction>) -> bool {
-        false
-    }
+    fn filter(&self, _cand: &Candidate<Self::Instruction>) -> bool;
 
     /// gets the first instruction
     fn first(&self) -> Self::Instruction {
