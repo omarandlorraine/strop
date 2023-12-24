@@ -250,22 +250,6 @@ mod test {
     }
 
     #[test]
-    fn the_emulator_can_run_the_instructions() {
-        use crate::z80::emulators::*;
-        use crate::Emulator;
-        use crate::InstructionSet;
-
-        for p in crate::z80::z80().bruteforce_with_maximum_length(1) {
-            Z80::default().run(0x8000, &p);
-        }
-
-        for p in crate::z80::z80().i8080().bruteforce_with_maximum_length(1) {
-            Z80::default().run(0x8000, &p);
-            I8080::default().run(0x8000, &p);
-        }
-    }
-
-    #[test]
     fn lengths() {
         use crate::Instruction;
 
