@@ -20,7 +20,7 @@ fn ntohs(val: u16) -> Option<u16> {
 
 fn bruteforce32(label: &'static str, func: fn(u32) -> Option<u32>) {
     let program = strop::z80::z80()
-        .bruteforce_with_maximum_length(5)
+        .stochastic_search()
         .z88dkfastcall(func)
         .next()
         .unwrap();
@@ -31,7 +31,7 @@ fn bruteforce32(label: &'static str, func: fn(u32) -> Option<u32>) {
 
 fn bruteforce16(label: &'static str, func: fn(u16) -> Option<u16>) {
     let program = strop::z80::z80()
-        .bruteforce_with_maximum_length(5)
+        .stochastic_search()
         .z88dkfastcall(func)
         .next()
         .unwrap();
