@@ -122,7 +122,7 @@ where
             if score == 0.0 {
                 optimized = candidate;
             }
-            optimizer.score(score as f32);
+            optimizer.score(score);
         }
         optimized
     }
