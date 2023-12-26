@@ -119,6 +119,18 @@ impl Z80 {
         self.cpu.registers().set8(iz80::Reg8::H, bytes[1]);
         self.cpu.registers().set8(iz80::Reg8::L, bytes[0]);
     }
+
+    pub fn set_sp(&mut self, val: u16) {
+        self.cpu.registers().set16(Reg16::SP, val);
+    }
+
+    pub fn get_sp(&mut self) -> u16 {
+        self.cpu.registers().get16(Reg16::SP)
+    }
+
+    pub fn get_pc(&mut self) -> u16 {
+        self.cpu.registers().pc()
+    }
 }
 
 /// An Intel 8080 emulator

@@ -55,13 +55,13 @@ where
 
     fn test1(&self, candidate: &<S as Iterator>::Item, a: u32) -> f32 {
         use crate::z80::emulators::Z80;
-        use crate::Emulator;
 
         if let Some(result) = (self.func)(a.as_()) {
             let mut emu = Z80::default();
             emu.set_dehl(a);
-            emu.run(0x8000, candidate);
-            emu.get_dehl().hamming_distance(result)
+            emu.set_sp(0x3000);
+            emu.run_subroutine(0x8000, 0x4000, candidate);
+            emu.get_dehl().hamming_distance(result) + emu.get_sp().hamming_distance(0x3000) + emu.get_pc().hamming_distance(0x4003)
         } else {
             0.0
         }

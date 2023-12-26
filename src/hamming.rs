@@ -6,6 +6,12 @@ impl HammingDistance<u8> for u8 {
     }
 }
 
+impl HammingDistance<u16> for u16 {
+    fn hamming_distance(self, other: u16) -> f32 {
+        (self ^ other).count_ones() as f32
+    }
+}
+
 impl HammingDistance<i8> for u8 {
     fn hamming_distance(self, other: i8) -> f32 {
         ((self as i8) ^ other).count_ones() as f32
