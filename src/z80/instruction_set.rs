@@ -187,7 +187,11 @@ impl InstructionSet for Z80InstructionSet {
     type Instruction = Z80Instruction;
 
     fn random(&self) -> Self::Instruction {
-        todo!()
+        let mut instruction = Z80Instruction::random();
+        if self.i8080 {
+            instruction.i8080_fixup();
+        }
+        instruction
     }
 
     fn next(&self, instruction: &mut Self::Instruction) -> Option<()> {
@@ -198,8 +202,11 @@ impl InstructionSet for Z80InstructionSet {
         Some(())
     }
 
-    fn mutate(&self, _instruction: &mut Self::Instruction) {
-        todo!()
+    fn mutate(&self, instruction: &mut Self::Instruction) {
+        instruction.mutate();
+        if self.i8080 {
+            instruction.i8080_fixup();
+        }
     }
 
     fn filter(&self, _cand: &Candidate<Self::Instruction>) -> bool {
