@@ -7,9 +7,19 @@ calling convention, and so ought to be callable from C using the proper definiti
 As of the time of writing, one possible output of the program is:
 
 ```asm
-thread 'main' panicked at examples/arpa_inet_h.rs:35:10:
-called `Option::unwrap()` on a `None` value
-note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+htons:
+	EX DE, HL
+	RET
+htonl:
+	DAA
+	RET NZ
+ntohl:
+	RET M
+ntohs:
+	EX DE, HL
+	RET Z
 ```
 
-... because strop does not find any solutions. Not sure why yet.
+... which appears to do some kind of endianness conversion for the `*s`
+functions at least.
+
