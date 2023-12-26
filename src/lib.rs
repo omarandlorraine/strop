@@ -14,10 +14,17 @@
 #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 #![forbid(unsafe_code)]
 
+#[cfg(feature = "armv4t")]
 pub mod armv4t;
+
+#[cfg(feature = "mos6502")]
 pub mod mos6502;
+
+#[cfg(feature = "mos6502")]
 pub mod robo6502;
 pub mod search;
+
+#[cfg(feature = "z80")]
 pub mod z80;
 
 mod hamming;
