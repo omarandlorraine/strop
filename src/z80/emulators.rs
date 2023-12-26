@@ -120,14 +120,17 @@ impl Z80 {
         self.cpu.registers().set8(iz80::Reg8::L, bytes[0]);
     }
 
+    /// Sets the stack-pointer
     pub fn set_sp(&mut self, val: u16) {
         self.cpu.registers().set16(Reg16::SP, val);
     }
 
+    /// Returns the stack pointer
     pub fn get_sp(&mut self) -> u16 {
         self.cpu.registers().get16(Reg16::SP)
     }
 
+    /// Returns the program counter
     pub fn get_pc(&mut self) -> u16 {
         self.cpu.registers().pc()
     }
