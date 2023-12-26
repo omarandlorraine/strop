@@ -107,6 +107,25 @@ where
         }
         score
     }
+
+    fn optimize(&self, candidate: &Candidate<Z80Instruction>) -> Candidate<Z80Instruction> {
+        use crate::search::DeadCodeEliminator;
+        let mut optimizer = DeadCodeEliminator::new(candidate);
+        let mut optimized = candidate.clone();
+
+        for _ in 0..1000 {
+            // try removing a bajillion instructions at random.
+            let candidate = optimizer
+                .next()
+                .expect("The dead code eliminator is broken! Why has it stopped trying!");
+            let score = self.correctness(&candidate);
+            if score == 0.0 {
+                optimized = candidate;
+            }
+            optimizer.score(score as f32);
+        }
+        optimized
+    }
 }
 
 impl<
@@ -130,7 +149,7 @@ where
             if score == 0.0 {
                 // We've found a program that passes the test cases we've found; let's optimize the
                 // program.
-                return Some(candidate);
+                return Some(self.optimize(&candidate));
             }
         }
         None
