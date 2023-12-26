@@ -61,7 +61,9 @@ where
             emu.set_dehl(a);
             emu.set_sp(0x3000);
             emu.run_subroutine(0x8000, 0x4000, candidate);
-            emu.get_dehl().hamming_distance(result) + emu.get_sp().hamming_distance(0x3000) + emu.get_pc().hamming_distance(0x4003)
+            emu.get_dehl().hamming_distance(result)
+                + emu.get_sp().hamming_distance(0x3000)
+                + emu.get_pc().hamming_distance(0x4003)
         } else {
             0.0
         }
