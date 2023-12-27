@@ -187,9 +187,10 @@ mod test {
 
     #[test]
     fn disassembly() {
-        use crate::InstructionSet;
-        for p in crate::z80::z80().bruteforce_with_maximum_length(1) {
-            p.disassemble();
+        use crate::Instruction;
+        let mut p = super::Z80Instruction::first();
+        while let Some(insn) = p.increment() {
+            insn.disassemble();
         }
     }
 
@@ -206,7 +207,6 @@ mod test {
     #[test]
     fn instruction_set_increment() {
         use crate::Instruction;
-        use crate::InstructionSet;
         let mut i = super::Z80Instruction::first();
         let p = super::Z80InstructionSet::default();
         assert!(p.next(&mut i).is_some());
@@ -217,11 +217,11 @@ mod test {
 
     #[test]
     fn bruteforce_search() {
-        use crate::InstructionSet;
-        let mut p = crate::z80::z80().bruteforce_with_maximum_length(1);
-        p.next().unwrap();
-        p.next().unwrap();
-        p.next().unwrap();
+        use crate::Instruction;
+        let mut p = super::Z80Instruction::first();
+        p.increment().unwrap();
+        p.increment().unwrap();
+        p.increment().unwrap();
     }
 
     #[test]

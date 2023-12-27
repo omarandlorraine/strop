@@ -163,11 +163,9 @@ mod test {
         use crate::armv4t::instruction_set::Thumb;
         use crate::armv4t::instruction_set::ThumbInstructionSet;
         use crate::Instruction;
-        use crate::InstructionSet;
 
-        let isa = ThumbInstructionSet::default();
         let mut thumb = Thumb::first();
-        while isa.next(&mut thumb).is_some() {
+        while thumb.increment().is_some() {
             let dasm = format!("{}", thumb);
             assert!(!dasm.starts_with("0x"), "no disassembly for {}", dasm);
         }
@@ -178,13 +176,12 @@ mod test {
         use crate::armv4t::instruction_set::Thumb;
         use crate::armv4t::instruction_set::ThumbInstructionSet;
         use crate::Instruction;
-        use crate::InstructionSet;
 
         let mut binding = ThumbInstructionSet::default();
         let isa = binding.branchless();
         assert!(isa.branchless);
         let mut thumb = Thumb::first();
-        while isa.next(&mut thumb).is_some() {
+        while thumb.increment().is_some() {
             let dasm = format!("{}", thumb);
             assert!(
                 !dasm.starts_with("b "),
@@ -214,11 +211,10 @@ mod test {
         use crate::armv4t::instruction_set::Thumb;
         use crate::armv4t::instruction_set::ThumbInstructionSet;
         use crate::Instruction;
-        use crate::InstructionSet;
 
         let isa = ThumbInstructionSet::default();
         let mut thumb = Thumb::first();
-        while isa.next(&mut thumb).is_some() {
+        while thumb.increment().is_some() {
             let dasm = format!("{}", thumb);
             assert!(
                 !dasm.starts_with("ldmia "),
