@@ -1,0 +1,22 @@
+name: mos6502
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  checks:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build
+      run: cargo build --verbose --features mos6502 --no-default-features
+    - name: Test
+      run: cargo test --features mos6502 --no-default-features --lib

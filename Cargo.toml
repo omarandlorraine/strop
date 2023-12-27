@@ -9,11 +9,17 @@ repository = "https://github.com/omarandlorraine/strop"
 homepage = "https://github.com/omarandlorraine/strop"
 
 [dependencies]
-armv4t_emu = "0.1.0"
-asm = { version = "0.3.0", features = ["6502"] }
-dez80 = "3.0.0"
-iz80 = "0.4.0"
-mos6502 = "0.5.0"
+armv4t_emu = { version="0.1.0", optional=true}
+asm = { version = "0.3.0", optional=true, features = ["6502"] }
+dez80 = {version="3.0.0", optional=true}
+iz80 = {version="0.4.0", optional=true}
+mos6502 = {version="0.5.0", optional=true}
 num = "0.4.1"
 rand = "0.8.5"
-robo6502 = "0.3.2"
+robo6502 = {version="0.3.2", optional=true}
+
+[features]
+default=["armv4t", "mos6502", "z80"]
+armv4t=["armv4t_emu"]
+mos6502=["dep:mos6502", "asm", "robo6502"]
+z80=["dez80", "iz80"]
