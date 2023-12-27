@@ -47,8 +47,8 @@ mod test {
         use crate::armv4t::emulators::ArmV4T;
         use crate::Emulator;
 
-        for candidate in BruteForceSearch::<Thumb>::default() {
-            if candidate.len() > 1 {
+        for candidate in BruteForceSearch::<Thumb>::new() {
+            if candidate.length() > 1 {
                 break; //TODO
             }
             ArmV4T::default().run(0x2000, &candidate);

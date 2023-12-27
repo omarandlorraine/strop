@@ -134,11 +134,9 @@ impl<I: Instruction> Iterator for StochasticSearch<I> {
 }
 
 /// Iterates across the entire search space, shortest programs first.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct BruteForceSearch<I: Instruction> {
-    instruction_set: I,
     curr: Vec<I>,
-    maximum_length: usize,
 }
 
 impl<I: Instruction> SearchFeedback for BruteForceSearch<I> {
@@ -146,6 +144,12 @@ impl<I: Instruction> SearchFeedback for BruteForceSearch<I> {
 }
 
 impl<I: Instruction> BruteForceSearch<I> {
+    pub fn new() -> Self {
+        Self {
+            curr: vec![]
+        }
+    }
+
     fn iterate(&mut self, offset: usize) {
         if offset >= self.curr.len() {
             // We've run off the current length of the vector, so append another instruction
@@ -176,11 +180,7 @@ where
 
     fn next(&mut self) -> Option<Candidate<I>> {
         self.iterate(0);
-        if self.curr.len() <= self.maximum_length {
-            Some(self.candidate())
-        } else {
-            None
-        }
+        Some(self.candidate())
     }
 }
 
