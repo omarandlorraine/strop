@@ -6,7 +6,7 @@ pub mod testers;
 
 use crate::BruteForceSearch;
 use crate::StochasticSearch;
-use instruction_set::ThumbInstructionSet;
+
 use crate::armv4t::instruction_set::Thumb;
 
 /// Returns a default `ThumbInstructionSet`

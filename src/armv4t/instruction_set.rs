@@ -1,6 +1,6 @@
 //!  Two instruction sets supported by the ARMv4T.
 
-use crate::Candidate;
+
 use crate::Instruction;
 
 /// Type representing the Thumb instruction (no Thumb2 instructions are present here. It's just the

@@ -1,6 +1,6 @@
 //! Module containing definitions for Z80 and 8080 instruction sets
 
-use crate::Candidate;
+
 use crate::Instruction;
 
 /// Represents a Z80 instruction
