@@ -1,30 +1,29 @@
 //! Module containing definitions of miscellaneous search strategies.
 
 use crate::SearchFeedback;
-use crate::{Candidate, Instruction, InstructionSet};
+use crate::{Candidate, Instruction};
 
 /// Generates a program by stochastic approximation to a correctness function
 #[derive(Clone, Debug)]
-pub struct StochasticSearch<I: InstructionSet> {
-    parent: Candidate<I::Instruction>,
-    child: Candidate<I::Instruction>,
+pub struct StochasticSearch<I: Instruction> {
+    parent: Candidate<I>,
+    child: Candidate<I>,
     parent_score: f32,
     child_score: f32,
-    instruction_set: I,
 }
 
-impl<I: InstructionSet> SearchFeedback for StochasticSearch<I> {
+impl<I: Instruction> SearchFeedback for StochasticSearch<I> {
     fn score(&mut self, score: f32) {
         self.child_score = score.abs();
     }
 }
 
-impl<I: InstructionSet> StochasticSearch<I> {
+impl<I: Instruction> StochasticSearch<I> {
     /// returns a new `Candidate`
-    pub fn new(instruction_set: I) -> Self {
+    pub fn new() -> Self {
         // Empty list of instructions
-        let parent = Candidate::<I::Instruction>::empty();
-        let child = Candidate::<I::Instruction>::empty();
+        let parent = Candidate::<I>::empty();
+        let child = Candidate::<I>::empty();
         let parent_score = f32::MAX;
         let child_score = f32::MAX;
 
@@ -33,7 +32,6 @@ impl<I: InstructionSet> StochasticSearch<I> {
             parent_score,
             child,
             child_score,
-            instruction_set,
         }
     }
 
@@ -60,7 +58,7 @@ impl<I: InstructionSet> StochasticSearch<I> {
         };
         self.child
             .instructions
-            .insert(offset, self.instruction_set.random());
+            .insert(offset, I::random());
     }
 
     fn swap(&mut self) {
@@ -81,7 +79,7 @@ impl<I: InstructionSet> StochasticSearch<I> {
         // and swap it for something totally different.
         if !self.child.instructions.is_empty() {
             let offset = self.random_offset();
-            self.child.instructions[offset] = self.instruction_set.random();
+            self.child.instructions[offset] = I::random();
         }
     }
 
@@ -90,8 +88,7 @@ impl<I: InstructionSet> StochasticSearch<I> {
         // and call its `mutate` method.
         if !self.child.instructions.is_empty() {
             let offset = self.random_offset();
-            self.instruction_set
-                .mutate(&mut self.child.instructions[offset]);
+                self.child.instructions[offset].mutate();
         }
     }
 
@@ -111,8 +108,8 @@ impl<I: InstructionSet> StochasticSearch<I> {
     }
 }
 
-impl<I: InstructionSet> Iterator for StochasticSearch<I> {
-    type Item = Candidate<<I as InstructionSet>::Instruction>;
+impl<I: Instruction> Iterator for StochasticSearch<I> {
+    type Item = Candidate<I>;
 
     fn next(&mut self) -> Option<Self::Item> {
         use rand::Rng;
@@ -138,60 +135,46 @@ impl<I: InstructionSet> Iterator for StochasticSearch<I> {
 
 /// Iterates across the entire search space, shortest programs first.
 #[derive(Debug, Default)]
-pub struct BruteForceSearch<I: InstructionSet> {
+pub struct BruteForceSearch<I: Instruction> {
     instruction_set: I,
-    curr: Vec<I::Instruction>,
+    curr: Vec<I>,
     maximum_length: usize,
 }
 
-impl<I: InstructionSet> SearchFeedback for BruteForceSearch<I> {
+impl<I: Instruction> SearchFeedback for BruteForceSearch<I> {
     fn score(&mut self, _: f32) {}
 }
 
-impl<I: InstructionSet> BruteForceSearch<I> {
-    /// Creates a new `BruteForceSearch` from an `InstructionSet`. (That is, a bruteforce search
-    /// over the search space defined by the instruction set).
-    pub fn new(instruction_set: I, maximum_length: usize) -> BruteForceSearch<I> {
-        BruteForceSearch {
-            instruction_set,
-            curr: vec![],
-            maximum_length,
-        }
-    }
-}
-
-impl<I: InstructionSet> BruteForceSearch<I> {
+impl<I: Instruction> BruteForceSearch<I> {
     fn iterate(&mut self, offset: usize) {
         if offset >= self.curr.len() {
             // We've run off the current length of the vector, so append another instruction
-            self.curr.push(self.instruction_set.first());
+            self.curr.push(I::first());
             return;
         }
 
-        while self.instruction_set.next(&mut self.curr[offset]).is_some() {
-            // If the altered program passes static analysis, then return
-            if self.instruction_set.filter(&self.candidate()) {
-                return;
-            }
+        if let Some(insn) = self.curr[offset].increment() {
+            self.curr[offset] = insn;
+            return;
         }
 
         // We've exhausted all possibilities for this offset; try the next offset
-        self.curr[offset] = self.instruction_set.first();
+        self.curr[offset] = I::first();
         self.iterate(offset + 1);
     }
 
-    fn candidate(&self) -> Candidate<I::Instruction> {
+    fn candidate(&self) -> Candidate<I> {
         Candidate::new(self.curr.clone())
     }
 }
 
 impl<I> Iterator for BruteForceSearch<I>
 where
-    I: InstructionSet,
+    I: Instruction,
 {
-    type Item = Candidate<<I as InstructionSet>::Instruction>;
+    type Item = Candidate<I>;
 
-    fn next(&mut self) -> Option<Candidate<<I as InstructionSet>::Instruction>> {
+    fn next(&mut self) -> Option<Candidate<I>> {
         self.iterate(0);
         if self.curr.len() <= self.maximum_length {
             Some(self.candidate())

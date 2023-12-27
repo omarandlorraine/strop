@@ -67,47 +67,6 @@ pub trait Instruction: Copy + Clone + std::marker::Send + std::fmt::Display {
     fn increment(&mut self) -> Option<Self>;
 }
 
-pub trait InstructionSet: Clone + std::marker::Send {
-    //! A trait for an instruction set. The bruteforce search and stochastic search use this trait
-    //! to mutate candidate programs.
-
-    /// The type of instruction
-    type Instruction: Instruction;
-
-    /// Return a random machine instruction
-    fn random(&self) -> Self::Instruction;
-
-    /// returns true if the lint fires, and false otherwise. Useful for Iterator::filter
-    fn filter(&self, _cand: &Candidate<Self::Instruction>) -> bool;
-
-    /// gets the first instruction
-    fn first(&self) -> Self::Instruction {
-        Self::Instruction::first()
-    }
-
-    /// gets the next instruction
-    fn next(&self, instruction: &mut Self::Instruction) -> Option<()>;
-
-    /// mutates an instruction
-    fn mutate(&self, instruction: &mut Self::Instruction);
-
-    /// returns a `BruteForceSearch` over this `InstructionSet`
-    fn bruteforce(&mut self) -> BruteForceSearch<Self> {
-        BruteForceSearch::new(self.clone(), usize::MAX)
-    }
-
-    /// returns a `StochasticSearch` over this `InstructionSet`
-    fn stochastic_search(&mut self) -> StochasticSearch<Self> {
-        StochasticSearch::new(self.clone())
-    }
-
-    /// returns a `BruteForceSearch` over this `InstructionSet`, bounded to a maximum length of
-    /// *n*.
-    fn bruteforce_with_maximum_length(&mut self, n: usize) -> BruteForceSearch<Self> {
-        BruteForceSearch::new(self.clone(), n)
-    }
-}
-
 pub trait Emulator<T: Instruction> {
     //! A trait for executing candidate programs, and scoring them
 

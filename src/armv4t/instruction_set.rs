@@ -156,42 +156,6 @@ impl ThumbInstructionSet {
     }
 }
 
-impl crate::InstructionSet for ThumbInstructionSet {
-    type Instruction = Thumb;
-
-    fn next(&self, thumb: &mut Self::Instruction) -> Option<()> {
-        thumb.increment()?;
-        while let Some(nt) = self.check(thumb) {
-            *thumb = nt;
-        }
-        if self.branchless && thumb.0 >= 0xfc00 {
-            return None;
-        }
-        Some(())
-    }
-
-    fn mutate(&self, thumb: &mut Self::Instruction) {
-        thumb.mutate();
-        while self.check(thumb).is_some() {
-            *thumb = thumb.mutate();
-
-            while self.branchless && thumb.0 >= 0xfc00 {
-                *thumb = thumb.mutate();
-            }
-        }
-    }
-
-    fn random(&self) -> Self::Instruction {
-        let mut thumb = Thumb::random();
-        self.mutate(&mut thumb);
-        thumb
-    }
-
-    fn filter(&self, _cand: &Candidate<Self::Instruction>) -> bool {
-        true
-    }
-}
-
 #[cfg(test)]
 mod test {
     #[test]

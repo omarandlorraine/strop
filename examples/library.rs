@@ -1,5 +1,3 @@
-use strop::InstructionSet;
-
 // A program to generate a library of useful subroutines for the ARMv4T CPUs. The parameter passing
 // convention matches my understanding of AAPCS32, so that the routines should be callable from C,
 // but this has not been tested.

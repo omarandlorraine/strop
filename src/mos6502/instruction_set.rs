@@ -3,7 +3,6 @@
 
 use crate::Candidate;
 use crate::Instruction;
-use crate::InstructionSet;
 use rand::random;
 
 type Encoding6502 = [u8; 3];
@@ -166,57 +165,6 @@ impl Mos6502 {
                 todo!();
             }
         }
-    }
-}
-
-impl InstructionSet for Mos6502 {
-    type Instruction = Nmos6502Instruction;
-
-    fn first(&self) -> Self::Instruction {
-        let mut insn = Self::Instruction::first();
-
-        while !self.check_opcode(&mut insn) {
-            // If this in an opcode that's not under consideration due to static analysis, then
-            // skip this opcode.
-            insn.encoding[0] = next_nmos_opcode(insn.encoding[0]).unwrap();
-        }
-
-        self.address_fixup(&mut insn);
-        insn
-    }
-
-    fn next(&self, insn: &mut Self::Instruction) -> Option<()> {
-        insn.increment();
-        while !self.check_opcode(insn) {
-            // If this in an opcode that's not under consideration due to static analysis, then
-            // skip this opcode.
-            insn.encoding[0] = next_nmos_opcode(insn.encoding[0])?;
-        }
-
-        self.address_fixup(insn);
-
-        Some(())
-    }
-
-    fn mutate(&self, insn: &mut Self::Instruction) {
-        insn.mutate();
-        while !self.check_opcode(insn) {
-            // If this in an opcode that's not under consideration due to static analysis, then
-            // skip this opcode.
-            insn.mutate();
-        }
-
-        self.address_fixup(insn);
-    }
-
-    fn random(&self) -> Nmos6502Instruction {
-        let mut insn = Nmos6502Instruction::random();
-        self.mutate(&mut insn);
-        insn
-    }
-
-    fn filter(&self, _candidate: &Candidate<Nmos6502Instruction>) -> bool {
-        true
     }
 }
 

@@ -2,7 +2,6 @@
 
 use crate::Candidate;
 use crate::Instruction;
-use crate::InstructionSet;
 
 /// Represents a Z80 instruction
 #[derive(Clone, Copy)]
@@ -180,37 +179,6 @@ impl Z80InstructionSet {
     pub fn i8080(&mut self) -> Self {
         self.i8080 = true;
         *self
-    }
-}
-
-impl InstructionSet for Z80InstructionSet {
-    type Instruction = Z80Instruction;
-
-    fn random(&self) -> Self::Instruction {
-        let mut instruction = Z80Instruction::random();
-        if self.i8080 {
-            instruction.i8080_fixup();
-        }
-        instruction
-    }
-
-    fn next(&self, instruction: &mut Self::Instruction) -> Option<()> {
-        instruction.increment()?;
-        if self.i8080 {
-            instruction.i8080_fixup();
-        }
-        Some(())
-    }
-
-    fn mutate(&self, instruction: &mut Self::Instruction) {
-        instruction.mutate();
-        if self.i8080 {
-            instruction.i8080_fixup();
-        }
-    }
-
-    fn filter(&self, _cand: &Candidate<Self::Instruction>) -> bool {
-        true
     }
 }
 

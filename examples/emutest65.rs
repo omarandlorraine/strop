@@ -1,5 +1,4 @@
 use strop::Emulator;
-use strop::InstructionSet;
 
 // A program to discover 6502 programs which behave differently on the two emulators strop
 // provides. A program discovered in this way may be a test case exposing a bug in either one of

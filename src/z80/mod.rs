@@ -7,17 +7,12 @@ pub mod testers;
 use crate::BruteForceSearch;
 use crate::HammingDistance;
 use crate::StochasticSearch;
-use instruction_set::Z80InstructionSet;
+use instruction_set::Z80Instruction;
 use num::cast::AsPrimitive;
 use rand::distributions::Standard;
 use rand::prelude::Distribution;
 
-/// Returns the default Z80 instruction set
-pub fn z80() -> instruction_set::Z80InstructionSet {
-    instruction_set::Z80InstructionSet::default()
-}
-
-impl BruteForceSearch<Z80InstructionSet> {
+impl BruteForceSearch<Z80Instruction> {
     /// returns an iterator yielding functions complying with the __z88dk_fastcall calling
     /// convention, and computing the provided functions.
     ///
@@ -40,7 +35,7 @@ impl BruteForceSearch<Z80InstructionSet> {
     }
 }
 
-impl StochasticSearch<Z80InstructionSet> {
+impl StochasticSearch<Z80Instruction> {
     /// returns an iterator yielding functions complying with the __z88dk_fastcall calling
     /// convention, and computing the provided functions.
     ///
