@@ -42,9 +42,9 @@ impl StochasticSearch<Thumb> {
 mod test {
     #[test]
     fn all_instructions_can_be_executed() {
-        use crate::BruteForceSearch;
-        use crate::armv4t::Thumb;
         use crate::armv4t::emulators::ArmV4T;
+        use crate::armv4t::Thumb;
+        use crate::BruteForceSearch;
         use crate::Emulator;
 
         for candidate in BruteForceSearch::<Thumb>::new() {

@@ -1,6 +1,5 @@
 //!  Two instruction sets supported by the ARMv4T.
 
-
 use crate::Instruction;
 
 /// Type representing the Thumb instruction (no Thumb2 instructions are present here. It's just the
@@ -161,7 +160,7 @@ mod test {
     #[test]
     fn all_thumb_instructions_have_disassembly() {
         use crate::armv4t::instruction_set::Thumb;
-        use crate::armv4t::instruction_set::ThumbInstructionSet;
+
         use crate::Instruction;
 
         let mut thumb = Thumb::first();

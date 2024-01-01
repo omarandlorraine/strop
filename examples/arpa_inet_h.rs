@@ -17,8 +17,8 @@ fn ntohs(val: u16) -> Option<u16> {
 }
 
 fn bruteforce32(label: &'static str, func: fn(u32) -> Option<u32>) {
-    use strop::z80::instruction_set::Z80Instruction;
     use strop::search::StochasticSearch;
+    use strop::z80::instruction_set::Z80Instruction;
 
     let program = StochasticSearch::<Z80Instruction>::new()
         .z88dkfastcall(func)
@@ -30,8 +30,8 @@ fn bruteforce32(label: &'static str, func: fn(u32) -> Option<u32>) {
 }
 
 fn bruteforce16(label: &'static str, func: fn(u16) -> Option<u16>) {
-    use strop::z80::instruction_set::Z80Instruction;
     use strop::search::StochasticSearch;
+    use strop::z80::instruction_set::Z80Instruction;
 
     let program = StochasticSearch::<Z80Instruction>::new()
         .z88dkfastcall(func)

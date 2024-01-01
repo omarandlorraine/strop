@@ -56,9 +56,7 @@ impl<I: Instruction> StochasticSearch<I> {
         } else {
             self.random_offset()
         };
-        self.child
-            .instructions
-            .insert(offset, I::random());
+        self.child.instructions.insert(offset, I::random());
     }
 
     fn swap(&mut self) {
@@ -88,7 +86,7 @@ impl<I: Instruction> StochasticSearch<I> {
         // and call its `mutate` method.
         if !self.child.instructions.is_empty() {
             let offset = self.random_offset();
-                self.child.instructions[offset].mutate();
+            self.child.instructions[offset].mutate();
         }
     }
 
@@ -145,9 +143,7 @@ impl<I: Instruction> SearchFeedback for BruteForceSearch<I> {
 
 impl<I: Instruction> BruteForceSearch<I> {
     pub fn new() -> Self {
-        Self {
-            curr: vec![]
-        }
+        Self { curr: vec![] }
     }
 
     fn iterate(&mut self, offset: usize) {
