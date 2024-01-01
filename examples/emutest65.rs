@@ -1,4 +1,6 @@
 use strop::Emulator;
+use strop::BruteForceSearch;
+use strop::mos6502::instruction_set::Nmos6502Instruction;
 
 // A program to discover 6502 programs which behave differently on the two emulators strop
 // provides. A program discovered in this way may be a test case exposing a bug in either one of
@@ -10,10 +12,7 @@ fn main() {
     println!("emulators. This is intended to find bugs in the third-party emulators and in");
     println!("the static analysis passes that strop also includes.");
 
-    let bruteforce = strop::mos6502::nmos()
-        .cmos_compatible()
-        .basic_block()
-        .bruteforce_with_maximum_length(5);
+    let bruteforce = BruteForceSearch::<Nmos6502Instruction>::new();
     for candidate in bruteforce {
         let mut mos6502 = strop::mos6502::emulators::Mos6502::default();
         let mut nmos6502 = strop::robo6502::emulators::Nmos6502::default();

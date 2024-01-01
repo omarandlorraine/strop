@@ -29,8 +29,8 @@ pub mod z80;
 
 mod hamming;
 
-use crate::search::BruteForceSearch;
-use crate::search::StochasticSearch;
+pub use crate::search::BruteForceSearch;
+pub use crate::search::StochasticSearch;
 
 use rand::Rng;
 use std::convert::TryInto;

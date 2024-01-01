@@ -2,6 +2,10 @@
 // convention matches my understanding of AAPCS32, so that the routines should be callable from C,
 // but this has not been tested.
 
+use strop::armv4t::instruction_set::Thumb;
+use strop::BruteForceSearch;
+use strop::StochasticSearch;
+
 fn pepper(a: i32, _b: i32) -> Option<i32> {
     // Increments the lower 4 bits of a
     let inc = a & (0x0f + 1);
@@ -13,9 +17,7 @@ fn salt(a: i32, b: i32) -> Option<i32> {
 }
 
 fn bruteforce_search(label: &'static str, func: fn(i32, i32) -> Option<i32>) {
-    let program = strop::armv4t::thumb()
-        .branchless()
-        .bruteforce_with_maximum_length(5)
+    let program = BruteForceSearch::<Thumb>::new()
         .aapcs32(func)
         .next()
         .unwrap();
@@ -26,9 +28,7 @@ fn bruteforce_search(label: &'static str, func: fn(i32, i32) -> Option<i32>) {
 }
 
 fn stochastic_search(label: &'static str, func: fn(i32, i32) -> Option<i32>) {
-    let program = strop::armv4t::thumb()
-        .branchless()
-        .stochastic_search()
+    let program = StochasticSearch::<Thumb>::new()
         .aapcs32(func)
         .next()
         .unwrap();
