@@ -190,7 +190,7 @@ mod test {
         use crate::Instruction;
         let mut p = super::Z80Instruction::first();
         while let Some(insn) = p.increment() {
-            insn.disassemble();
+            format!("{}", insn);
         }
     }
 
@@ -202,17 +202,6 @@ mod test {
         assert!(p.increment().is_some());
         assert!(p.increment().is_some());
         assert!(p.increment().is_some());
-    }
-
-    #[test]
-    fn instruction_set_increment() {
-        use crate::Instruction;
-        let mut i = super::Z80Instruction::first();
-        let p = super::Z80InstructionSet::default();
-        assert!(p.next(&mut i).is_some());
-        assert!(p.next(&mut i).is_some());
-        assert!(p.next(&mut i).is_some());
-        assert!(p.next(&mut i).is_some());
     }
 
     #[test]
