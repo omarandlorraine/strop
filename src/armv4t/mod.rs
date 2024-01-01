@@ -9,11 +9,6 @@ use crate::StochasticSearch;
 
 use crate::armv4t::instruction_set::Thumb;
 
-/// Returns a default `ThumbInstructionSet`
-pub fn thumb() -> instruction_set::ThumbInstructionSet {
-    instruction_set::ThumbInstructionSet::default()
-}
-
 impl BruteForceSearch<Thumb> {
     /// returns an iterator yielding functions complying with the AAPCS32 calling conventions, and
     /// computing the provided functions.
