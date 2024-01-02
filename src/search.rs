@@ -232,3 +232,15 @@ impl<I: Instruction> Iterator for DeadCodeEliminator<I> {
         Some(self.child.clone())
     }
 }
+
+impl<I: Instruction> Default for StochasticSearch<I> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<I: Instruction> Default for BruteForceSearch<I> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
