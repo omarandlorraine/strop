@@ -1,6 +1,6 @@
-use strop::Emulator;
-use strop::BruteForceSearch;
 use strop::mos6502::instruction_set::Nmos6502Instruction;
+use strop::BruteForceSearch;
+use strop::Emulator;
 
 // A program to discover 6502 programs which behave differently on the two emulators strop
 // provides. A program discovered in this way may be a test case exposing a bug in either one of
