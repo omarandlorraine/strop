@@ -12,9 +12,18 @@ pub struct StochasticSearch<I: Instruction> {
     child_score: f32,
 }
 
-impl<I: Instruction> SearchFeedback for StochasticSearch<I> {
+impl<I: Instruction> SearchFeedback<I> for StochasticSearch<I> {
     fn score(&mut self, score: f32) {
         self.child_score = score.abs();
+    }
+
+    fn replace(&mut self, offset: usize, instruction: I) {
+        use rand::random;
+        self.child.instructions[offset] = if random() {
+            instruction
+        } else {
+            I::random()
+        }
     }
 }
 
@@ -137,8 +146,12 @@ pub struct BruteForceSearch<I: Instruction> {
     curr: Vec<I>,
 }
 
-impl<I: Instruction> SearchFeedback for BruteForceSearch<I> {
+impl<I: Instruction> SearchFeedback<I> for BruteForceSearch<I> {
     fn score(&mut self, _: f32) {}
+
+    fn replace(&mut self, offset: usize, instruction: I) {
+        self.curr[offset] = instruction
+    }
 }
 
 impl<I: Instruction> BruteForceSearch<I> {
@@ -187,13 +200,17 @@ pub struct DeadCodeEliminator<I: Instruction> {
     child: Candidate<I>,
 }
 
-impl<I: Instruction> SearchFeedback for DeadCodeEliminator<I> {
+impl<I: Instruction> SearchFeedback<I> for DeadCodeEliminator<I> {
     fn score(&mut self, score: f32) {
         if score != 0.0 {
             self.child = self.parent.clone();
         } else {
             self.parent = self.child.clone();
         }
+    }
+
+    fn replace(&mut self, _offset: usize, _instruction: I) {
+        self.child = self.parent.clone();
     }
 }
 

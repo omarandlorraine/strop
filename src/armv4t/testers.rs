@@ -13,7 +13,7 @@ use crate::SearchFeedback;
 #[derive(Debug)]
 pub struct Aapcs32<S>
 where
-    S: SearchFeedback,
+    S: SearchFeedback<Thumb>,
     S: Iterator<Item = Candidate<Thumb>>,
 {
     inputs: Vec<(i32, i32)>,
@@ -21,7 +21,7 @@ where
     func: fn(i32, i32) -> Option<i32>,
 }
 
-impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
+impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback<Thumb>> Aapcs32<S> {
     /// Returns a new Aapcs32 struct
     pub fn new(search: S, func: fn(i32, i32) -> Option<i32>) -> Self {
         use rand::random;
@@ -133,7 +133,7 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
     }
 }
 
-impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Iterator for Aapcs32<S> {
+impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback<Thumb>> Iterator for Aapcs32<S> {
     type Item = Candidate<Thumb>;
 
     fn next(&mut self) -> Option<Self::Item> {

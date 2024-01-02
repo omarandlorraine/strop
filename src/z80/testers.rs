@@ -24,7 +24,7 @@ use rand::prelude::Distribution;
 #[derive(Debug)]
 pub struct Z88dkfastcall<S, Operand, Return>
 where
-    S: SearchFeedback,
+    S: SearchFeedback<Z80Instruction>,
     S: Iterator<Item = Candidate<Z80Instruction>>,
     Operand: num::cast::AsPrimitive<u32>,
 {
@@ -34,7 +34,7 @@ where
 }
 
 impl<
-        S: Iterator<Item = Candidate<Z80Instruction>> + SearchFeedback,
+        S: Iterator<Item = Candidate<Z80Instruction>> + SearchFeedback<Z80Instruction>,
         Operand: num::cast::AsPrimitive<u32>,
         Return: num::cast::AsPrimitive<u32>,
     > Z88dkfastcall<S, Operand, Return>
@@ -131,7 +131,7 @@ where
 }
 
 impl<
-        S: Iterator<Item = Candidate<Z80Instruction>> + SearchFeedback,
+        S: Iterator<Item = Candidate<Z80Instruction>> + SearchFeedback<Z80Instruction>,
         Operand: num::cast::AsPrimitive<u32>,
         Return,
     > Iterator for Z88dkfastcall<S, Operand, Return>

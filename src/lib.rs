@@ -121,11 +121,15 @@ impl<T: Instruction> Candidate<T> {
     }
 }
 
-pub trait SearchFeedback {
-    //! You can use this to feed back to the search strategy whether it's getting close or not
+pub trait SearchFeedback<I> {
+    //! You can use this to guide the search algorithm.
 
     /// Tell the search algorithm about how close it's getting
     fn score(&mut self, score: f32);
+
+    /// Tell the search algorithm that an instruction is incorrect; also propose a correction (this
+    /// is to make sure that all proposed programs pass static analysis, for example)
+    fn replace(&mut self, offset: usize, instruction: I);
 }
 
 pub trait HammingDistance<T> {
