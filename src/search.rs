@@ -19,11 +19,7 @@ impl<I: Instruction> SearchAlgorithm<I> for StochasticSearch<I> {
 
     fn replace(&mut self, offset: usize, instruction: I) {
         use rand::random;
-        self.child.instructions[offset] = if random() {
-            instruction
-        } else {
-            I::random()
-        }
+        self.child.instructions[offset] = if random() { instruction } else { I::random() }
     }
 
     fn generate(&mut self) -> Option<Candidate<I>> {

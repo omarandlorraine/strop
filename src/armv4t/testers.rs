@@ -45,12 +45,7 @@ impl<S: SearchAlgorithm<Thumb>> Aapcs32<S> {
         }
     }
 
-    fn possible_test_case(
-        &mut self,
-        candidate: &Candidate<Thumb>,
-        a: i32,
-        b: i32,
-    ) -> Option<i32> {
+    fn possible_test_case(&mut self, candidate: &Candidate<Thumb>, a: i32, b: i32) -> Option<i32> {
         use crate::Emulator;
         if let Some(result) = (self.func)(a, b) {
             let mut emu = ArmV4T::default();

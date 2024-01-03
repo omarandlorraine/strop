@@ -135,7 +135,7 @@ pub trait SearchAlgorithm<I: Instruction> {
     fn generate(&mut self) -> Option<Candidate<I>>;
 }
 
-impl<I: Instruction> Iterator for SearchAlgorithm<I> {
+impl<I: Instruction> Iterator for dyn SearchAlgorithm<I> {
     type Item = Candidate<I>;
 
     fn next(&mut self) -> Option<Self::Item> {
