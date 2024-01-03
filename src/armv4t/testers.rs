@@ -5,7 +5,7 @@ use crate::armv4t::emulators::ArmV4T;
 use crate::armv4t::instruction_set::Thumb;
 
 use crate::Candidate;
-use crate::SearchFeedback;
+use crate::SearchAlgorithm;
 
 /// Tests the candidate programs visited by a search stategy to see if they compute the given
 /// function, taking two 32-bit integers and return one 32-bit integer, and also match the AAPCS32
@@ -13,15 +13,14 @@ use crate::SearchFeedback;
 #[derive(Debug)]
 pub struct Aapcs32<S>
 where
-    S: SearchFeedback<Thumb>,
-    S: Iterator<Item = Candidate<Thumb>>,
+    S: SearchAlgorithm<Thumb>,
 {
     inputs: Vec<(i32, i32)>,
     search: S,
     func: fn(i32, i32) -> Option<i32>,
 }
 
-impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback<Thumb>> Aapcs32<S> {
+impl<S: SearchAlgorithm<Thumb>> Aapcs32<S> {
     /// Returns a new Aapcs32 struct
     pub fn new(search: S, func: fn(i32, i32) -> Option<i32>) -> Self {
         use rand::random;
@@ -48,7 +47,7 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback<Thumb>> Aapcs32<S> {
 
     fn possible_test_case(
         &mut self,
-        candidate: &<S as Iterator>::Item,
+        candidate: &Candidate<Thumb>,
         a: i32,
         b: i32,
     ) -> Option<i32> {
@@ -66,7 +65,7 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback<Thumb>> Aapcs32<S> {
         None
     }
 
-    fn test1(&self, candidate: &<S as Iterator>::Item, a: i32, b: i32) -> u32 {
+    fn test1(&self, candidate: &Candidate<Thumb>, a: i32, b: i32) -> u32 {
         use crate::Emulator;
         if let Some(result) = (self.func)(a, b) {
             let mut emu = ArmV4T::default();
@@ -121,7 +120,7 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback<Thumb>> Aapcs32<S> {
         for _ in 0..100000 {
             // try removing a bajillion instructions at random.
             let candidate = optimizer
-                .next()
+                .generate()
                 .expect("The dead code eliminator is broken! Why has it stopped trying!");
             let score = self.correctness(&candidate);
             if score == 0 {
@@ -133,7 +132,7 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback<Thumb>> Aapcs32<S> {
     }
 }
 
-impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback<Thumb>> Iterator for Aapcs32<S> {
+impl<S: Iterator<Item = Candidate<Thumb>> + SearchAlgorithm<Thumb>> Iterator for Aapcs32<S> {
     type Item = Candidate<Thumb>;
 
     fn next(&mut self) -> Option<Self::Item> {

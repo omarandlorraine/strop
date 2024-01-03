@@ -3,7 +3,7 @@ use crate::HammingDistance;
 
 use crate::z80::instruction_set::Z80Instruction;
 use crate::Candidate;
-use crate::SearchFeedback;
+use crate::SearchAlgorithm;
 
 use num::cast::AsPrimitive;
 use rand::distributions::Standard;
@@ -24,8 +24,7 @@ use rand::prelude::Distribution;
 #[derive(Debug)]
 pub struct Z88dkfastcall<S, Operand, Return>
 where
-    S: SearchFeedback<Z80Instruction>,
-    S: Iterator<Item = Candidate<Z80Instruction>>,
+    S: SearchAlgorithm<Z80Instruction>,
     Operand: num::cast::AsPrimitive<u32>,
 {
     inputs: Vec<(u32, Return)>,
@@ -34,7 +33,7 @@ where
 }
 
 impl<
-        S: Iterator<Item = Candidate<Z80Instruction>> + SearchFeedback<Z80Instruction>,
+        S: SearchAlgorithm<Z80Instruction>,
         Operand: num::cast::AsPrimitive<u32>,
         Return: num::cast::AsPrimitive<u32>,
     > Z88dkfastcall<S, Operand, Return>
@@ -53,7 +52,7 @@ where
         }
     }
 
-    fn test1(&self, candidate: &<S as Iterator>::Item, a: u32) -> f32 {
+    fn test1(&self, candidate: &Candidate<Z80Instruction>, a: u32) -> f32 {
         use crate::z80::emulators::Z80;
 
         if let Some(result) = (self.func)(a.as_()) {
@@ -69,7 +68,7 @@ where
         }
     }
 
-    fn possible_test_case(&mut self, candidate: &<S as Iterator>::Item, a: Operand) {
+    fn possible_test_case(&mut self, candidate: &Candidate<Z80Instruction>, a: Operand) {
         use crate::z80::emulators::Z80;
         use crate::Emulator;
 
@@ -118,7 +117,7 @@ where
         for _ in 0..1000 {
             // try removing a bajillion instructions at random.
             let candidate = optimizer
-                .next()
+                .generate()
                 .expect("The dead code eliminator is broken! Why has it stopped trying!");
             let score = self.correctness(&candidate);
             if score == 0.0 {
@@ -131,7 +130,7 @@ where
 }
 
 impl<
-        S: Iterator<Item = Candidate<Z80Instruction>> + SearchFeedback<Z80Instruction>,
+        S: Iterator<Item = Candidate<Z80Instruction>> + SearchAlgorithm<Z80Instruction>,
         Operand: num::cast::AsPrimitive<u32>,
         Return,
     > Iterator for Z88dkfastcall<S, Operand, Return>

@@ -121,7 +121,7 @@ impl<T: Instruction> Candidate<T> {
     }
 }
 
-pub trait SearchFeedback<I> {
+pub trait SearchAlgorithm<I: Instruction> {
     //! You can use this to guide the search algorithm.
 
     /// Tell the search algorithm about how close it's getting
@@ -130,6 +130,17 @@ pub trait SearchFeedback<I> {
     /// Tell the search algorithm that an instruction is incorrect; also propose a correction (this
     /// is to make sure that all proposed programs pass static analysis, for example)
     fn replace(&mut self, offset: usize, instruction: I);
+
+    /// Get the next Candidate
+    fn generate(&mut self) -> Option<Candidate<I>>;
+}
+
+impl<I: Instruction> Iterator for SearchAlgorithm<I> {
+    type Item = Candidate<I>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.generate()
+    }
 }
 
 pub trait HammingDistance<T> {

@@ -1,6 +1,6 @@
 //! Module containing definitions of miscellaneous search strategies.
 
-use crate::SearchFeedback;
+use crate::SearchAlgorithm;
 use crate::{Candidate, Instruction};
 
 /// Generates a program by stochastic approximation to a correctness function
@@ -12,7 +12,7 @@ pub struct StochasticSearch<I: Instruction> {
     child_score: f32,
 }
 
-impl<I: Instruction> SearchFeedback<I> for StochasticSearch<I> {
+impl<I: Instruction> SearchAlgorithm<I> for StochasticSearch<I> {
     fn score(&mut self, score: f32) {
         self.child_score = score.abs();
     }
@@ -24,6 +24,27 @@ impl<I: Instruction> SearchFeedback<I> for StochasticSearch<I> {
         } else {
             I::random()
         }
+    }
+
+    fn generate(&mut self) -> Option<Candidate<I>> {
+        use rand::Rng;
+
+        if self.child_score < self.parent_score {
+            // The child is better than the parent, so definitely remember that
+            self.parent_score = self.child_score;
+            self.parent = self.child.clone();
+        } else if self.child_score > self.parent_score {
+            // The child is worse that the parent.
+            let num = rand::thread_rng().gen_range(0.0..self.child_score);
+
+            if num > self.parent_score {
+                // Maybe the search has wandered off into the weeds. Try going back to the parent
+                self.child = self.parent.clone();
+                self.child_score = self.parent_score;
+            }
+        }
+        self.random_mutation();
+        Some(self.child.clone())
     }
 }
 
@@ -115,42 +136,22 @@ impl<I: Instruction> StochasticSearch<I> {
     }
 }
 
-impl<I: Instruction> Iterator for StochasticSearch<I> {
-    type Item = Candidate<I>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        use rand::Rng;
-
-        if self.child_score < self.parent_score {
-            // The child is better than the parent, so definitely remember that
-            self.parent_score = self.child_score;
-            self.parent = self.child.clone();
-        } else if self.child_score > self.parent_score {
-            // The child is worse that the parent.
-            let num = rand::thread_rng().gen_range(0.0..self.child_score);
-
-            if num > self.parent_score {
-                // Maybe the search has wandered off into the weeds. Try going back to the parent
-                self.child = self.parent.clone();
-                self.child_score = self.parent_score;
-            }
-        }
-        self.random_mutation();
-        Some(self.child.clone())
-    }
-}
-
 /// Iterates across the entire search space, shortest programs first.
 #[derive(Debug)]
 pub struct BruteForceSearch<I: Instruction> {
     curr: Vec<I>,
 }
 
-impl<I: Instruction> SearchFeedback<I> for BruteForceSearch<I> {
+impl<I: Instruction> SearchAlgorithm<I> for BruteForceSearch<I> {
     fn score(&mut self, _: f32) {}
 
     fn replace(&mut self, offset: usize, instruction: I) {
         self.curr[offset] = instruction
+    }
+
+    fn generate(&mut self) -> Option<Candidate<I>> {
+        self.iterate(0);
+        Some(self.candidate())
     }
 }
 
@@ -181,18 +182,6 @@ impl<I: Instruction> BruteForceSearch<I> {
     }
 }
 
-impl<I> Iterator for BruteForceSearch<I>
-where
-    I: Instruction,
-{
-    type Item = Candidate<I>;
-
-    fn next(&mut self) -> Option<Candidate<I>> {
-        self.iterate(0);
-        Some(self.candidate())
-    }
-}
-
 /// Random dead-code eliminator
 #[derive(Clone, Debug)]
 pub struct DeadCodeEliminator<I: Instruction> {
@@ -200,7 +189,7 @@ pub struct DeadCodeEliminator<I: Instruction> {
     child: Candidate<I>,
 }
 
-impl<I: Instruction> SearchFeedback<I> for DeadCodeEliminator<I> {
+impl<I: Instruction> SearchAlgorithm<I> for DeadCodeEliminator<I> {
     fn score(&mut self, score: f32) {
         if score != 0.0 {
             self.child = self.parent.clone();
@@ -211,6 +200,14 @@ impl<I: Instruction> SearchFeedback<I> for DeadCodeEliminator<I> {
 
     fn replace(&mut self, _offset: usize, _instruction: I) {
         self.child = self.parent.clone();
+    }
+
+    fn generate(&mut self) -> Option<Candidate<I>> {
+        use rand::random;
+        if random() {
+            self.delete();
+        }
+        Some(self.child.clone())
     }
 }
 
@@ -235,18 +232,6 @@ impl<I: Instruction> DeadCodeEliminator<I> {
             let offset = self.random_offset();
             self.child.instructions.remove(offset);
         }
-    }
-}
-
-impl<I: Instruction> Iterator for DeadCodeEliminator<I> {
-    type Item = Candidate<I>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        use rand::random;
-        if random() {
-            self.delete();
-        }
-        Some(self.child.clone())
     }
 }
 
