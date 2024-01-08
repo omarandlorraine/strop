@@ -12,7 +12,9 @@ pub struct StochasticSearch<I: Instruction> {
     child_score: f32,
 }
 
-impl<I: Instruction> SearchAlgorithm<I> for StochasticSearch<I> {
+impl<I: Instruction> SearchAlgorithm for StochasticSearch<I> {
+    type Item = I;
+
     fn score(&mut self, score: f32) {
         self.child_score = score.abs();
     }
@@ -138,7 +140,8 @@ pub struct BruteForceSearch<I: Instruction> {
     curr: Vec<I>,
 }
 
-impl<I: Instruction> SearchAlgorithm<I> for BruteForceSearch<I> {
+impl<I: Instruction> SearchAlgorithm for BruteForceSearch<I> {
+    type Item = I;
     fn score(&mut self, _: f32) {}
 
     fn replace(&mut self, offset: usize, instruction: I) {
@@ -185,7 +188,8 @@ pub struct DeadCodeEliminator<I: Instruction> {
     child: Candidate<I>,
 }
 
-impl<I: Instruction> SearchAlgorithm<I> for DeadCodeEliminator<I> {
+impl<I: Instruction> SearchAlgorithm for DeadCodeEliminator<I> {
+    type Item = I;
     fn score(&mut self, score: f32) {
         if score != 0.0 {
             self.child = self.parent.clone();

@@ -41,8 +41,9 @@ mod test {
         use crate::armv4t::Thumb;
         use crate::BruteForceSearch;
         use crate::Emulator;
+        use crate::SearchAlgorithm;
 
-        for candidate in BruteForceSearch::<Thumb>::new() {
+        for candidate in BruteForceSearch::<Thumb>::new().iter() {
             if candidate.length() > 1 {
                 break; //TODO
             }

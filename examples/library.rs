@@ -3,6 +3,7 @@
 // but this has not been tested.
 
 use strop::armv4t::instruction_set::Thumb;
+use strop::SearchAlgorithm;
 use strop::BruteForceSearch;
 use strop::StochasticSearch;
 
@@ -17,8 +18,10 @@ fn salt(a: i32, b: i32) -> Option<i32> {
 }
 
 fn bruteforce_search(label: &'static str, func: fn(i32, i32) -> Option<i32>) {
+    use strop::SearchAlgorithm;
     let program = BruteForceSearch::<Thumb>::new()
         .aapcs32(func)
+        .iter()
         .next()
         .unwrap();
 
@@ -30,6 +33,7 @@ fn bruteforce_search(label: &'static str, func: fn(i32, i32) -> Option<i32>) {
 fn stochastic_search(label: &'static str, func: fn(i32, i32) -> Option<i32>) {
     let program = StochasticSearch::<Thumb>::new()
         .aapcs32(func)
+        .iter()
         .next()
         .unwrap();
 

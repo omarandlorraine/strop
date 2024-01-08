@@ -13,14 +13,14 @@ use crate::SearchAlgorithm;
 #[derive(Debug)]
 pub struct Aapcs32<S>
 where
-    S: SearchAlgorithm<Thumb>,
+    S: SearchAlgorithm<Item=Thumb>,
 {
     inputs: Vec<(i32, i32)>,
     search: S,
     func: fn(i32, i32) -> Option<i32>,
 }
 
-impl<S: SearchAlgorithm<Thumb>> Aapcs32<S> {
+impl<S: SearchAlgorithm<Item=Thumb>> Aapcs32<S> {
     /// Returns a new Aapcs32 struct
     pub fn new(search: S, func: fn(i32, i32) -> Option<i32>) -> Self {
         use rand::random;
@@ -127,11 +127,19 @@ impl<S: SearchAlgorithm<Thumb>> Aapcs32<S> {
     }
 }
 
-impl<S: Iterator<Item = Candidate<Thumb>> + SearchAlgorithm<Thumb>> Iterator for Aapcs32<S> {
-    type Item = Candidate<Thumb>;
+impl<S: SearchAlgorithm<Item=Thumb>> SearchAlgorithm for Aapcs32<S> {
+    type Item = Thumb;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        while let Some(candidate) = self.search.next() {
+    fn score(&mut self, score: f32) {
+        self.search.score(score);
+    }
+
+    fn replace(&mut self, offset: usize, instruction: Self::Item) {
+        self.search.replace(offset, instruction);
+    }
+
+    fn generate(&mut self) -> Option<Candidate<Self::Item>> {
+        while let Some(candidate) = self.search.generate() {
             let score = self.test(&candidate);
             self.search.score(score as f32);
             if score == 0 {

@@ -19,27 +19,27 @@ fn ntohs(val: u16) -> Option<u16> {
 fn bruteforce32(label: &'static str, func: fn(u32) -> Option<u32>) {
     use strop::search::StochasticSearch;
     use strop::z80::instruction_set::Z80Instruction;
+    use strop::SearchAlgorithm;
 
-    let program = StochasticSearch::<Z80Instruction>::new()
-        .z88dkfastcall(func)
-        .next()
-        .unwrap();
+    let stochastic = StochasticSearch::<Z80Instruction>::new();
+    let mut fastcall = stochastic.z88dkfastcall(func);
+    let mut iterator = fastcall.iter();
 
     println!("{}:", label);
-    program.disassemble();
+    iterator.next().unwrap().disassemble();
 }
 
 fn bruteforce16(label: &'static str, func: fn(u16) -> Option<u16>) {
     use strop::search::StochasticSearch;
     use strop::z80::instruction_set::Z80Instruction;
+    use strop::SearchAlgorithm;
 
-    let program = StochasticSearch::<Z80Instruction>::new()
-        .z88dkfastcall(func)
-        .next()
-        .unwrap();
+    let stochastic = StochasticSearch::<Z80Instruction>::new();
+    let mut fastcall = stochastic.z88dkfastcall(func);
+    let mut iterator = fastcall.iter();
 
     println!("{}:", label);
-    program.disassemble();
+    iterator.next().unwrap().disassemble();
 }
 
 fn main() {

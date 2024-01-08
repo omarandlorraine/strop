@@ -24,7 +24,7 @@ use rand::prelude::Distribution;
 #[derive(Debug)]
 pub struct Z88dkfastcall<S, Operand, Return>
 where
-    S: SearchAlgorithm<Z80Instruction>,
+    S: SearchAlgorithm<Item=Z80Instruction>,
     Operand: num::cast::AsPrimitive<u32>,
 {
     inputs: Vec<(u32, Return)>,
@@ -33,7 +33,7 @@ where
 }
 
 impl<
-        S: SearchAlgorithm<Z80Instruction>,
+        S: SearchAlgorithm<Item=Z80Instruction>,
         Operand: num::cast::AsPrimitive<u32>,
         Return: num::cast::AsPrimitive<u32>,
     > Z88dkfastcall<S, Operand, Return>
@@ -130,10 +130,10 @@ where
 }
 
 impl<
-        S: Iterator<Item = Candidate<Z80Instruction>> + SearchAlgorithm<Z80Instruction>,
+        S: SearchAlgorithm<Item=Z80Instruction>,
         Operand: num::cast::AsPrimitive<u32>,
         Return,
-    > Iterator for Z88dkfastcall<S, Operand, Return>
+    > SearchAlgorithm for Z88dkfastcall<S, Operand, Return>
 where
     u32: HammingDistance<Return>,
     u32: AsPrimitive<Operand>,
@@ -141,10 +141,18 @@ where
     Standard: Distribution<Operand>,
     Return: num::cast::AsPrimitive<u32>,
 {
-    type Item = Candidate<Z80Instruction>;
+    type Item = Z80Instruction;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        while let Some(candidate) = self.search.next() {
+    fn score(&mut self, score: f32) {
+        self.search.score(score);
+    }
+
+    fn replace(&mut self, offset: usize, instruction: Self::Item) {
+        self.search.replace(offset, instruction);
+    }
+
+    fn generate(&mut self) -> Option<Candidate<Self::Item>> {
+        while let Some(candidate) = self.search.generate() {
             let score = self.test(&candidate);
             self.search.score(score);
             if score == 0.0 {

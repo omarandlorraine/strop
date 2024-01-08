@@ -121,25 +121,37 @@ impl<T: Instruction> Candidate<T> {
     }
 }
 
-pub trait SearchAlgorithm<I: Instruction> {
+pub struct SearchAlgorithmIterator<'a, T: SearchAlgorithm + ?Sized> {
+    inner: &'a mut T,
+}
+
+impl<'a, T> Iterator for SearchAlgorithmIterator<'a, T> where T: SearchAlgorithm {
+    type Item = Candidate<T::Item>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.generate()
+    }
+}
+
+pub trait SearchAlgorithm {
     //! You can use this to guide the search algorithm.
+
+    type Item: Instruction;
 
     /// Tell the search algorithm about how close it's getting
     fn score(&mut self, score: f32);
 
     /// Tell the search algorithm that an instruction is incorrect; also propose a correction (this
     /// is to make sure that all proposed programs pass static analysis, for example)
-    fn replace(&mut self, offset: usize, instruction: I);
+    fn replace(&mut self, offset: usize, instruction: Self::Item);
 
     /// Get the next Candidate
-    fn generate(&mut self) -> Option<Candidate<I>>;
-}
+    fn generate(&mut self) -> Option<Candidate<Self::Item>>;
 
-impl<I: Instruction> Iterator for dyn SearchAlgorithm<I> {
-    type Item = Candidate<I>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.generate()
+    fn iter(&mut self) -> SearchAlgorithmIterator<Self> {
+        SearchAlgorithmIterator {
+            inner: self
+        }
     }
 }
 
