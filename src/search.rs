@@ -155,6 +155,7 @@ impl<I: Instruction> SearchAlgorithm for BruteForceSearch<I> {
 }
 
 impl<I: Instruction> BruteForceSearch<I> {
+    /// Returns a new BruteForceSearch<I>
     pub fn new() -> Self {
         Self { curr: vec![] }
     }
