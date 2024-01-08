@@ -3,7 +3,9 @@
 pub mod emulators;
 pub mod instruction_set;
 pub mod testers;
+pub mod static_analysis;
 
+use crate::z80::static_analysis::I8080Compatible;
 use crate::BruteForceSearch;
 use crate::HammingDistance;
 use crate::StochasticSearch;
@@ -35,6 +37,12 @@ macro_rules! z80impl {
                 {
                     testers::Z88dkfastcall::new(self, func)
                 }
+
+            /// Adorns the search algorithm with a static analysis pass ensuring compatibility with
+            /// the Intel 8080
+            pub fn i8080_compatible(self) -> I8080Compatible<$t> {
+                I8080Compatible::new(self)
+            }
         }
     }
 }

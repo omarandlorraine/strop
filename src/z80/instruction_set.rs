@@ -19,25 +19,8 @@ impl std::fmt::Debug for Z80Instruction {
 }
 
 impl Z80Instruction {
-    fn i8080_fixup(&mut self) {
-        // Some opcodes don't exist on the 8080, so this function changes them
-        self.mc[0] = match self.mc[0] {
-            0x08 => 0x09, // ex af, af'
-            0x10 => 0x11, // djnz
-            0x18 => 0x19, // jr off
-            0x20 => 0x21, // jr nz,off
-            0x28 => 0x29, // jr z,off
-            0x30 => 0x31, // jr nc,off
-            0x38 => 0x39, // jr c,off
-            0xd9 => 0xda, // exx
-
-            // and the prefixes:
-            0xcb => 0xcc,
-            0xed => 0xee,
-            0xdd => 0xde,
-            0xfd => 0xfe,
-            opcode => opcode,
-        }
+    pub fn new(mc: [u8; 5]) -> Self {
+        Self { mc }
     }
 }
 
