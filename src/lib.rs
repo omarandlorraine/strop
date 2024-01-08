@@ -151,7 +151,7 @@ pub trait SearchAlgorithm {
     /// Get the next Candidate
     fn generate(&mut self) -> Option<Candidate<Self::Item>>;
 
-    fn iter(&mut self) -> SearchAlgorithmIterator<Self> {
+    fn iter(&mut self) -> SearchAlgorithmIterator<'_, Self> {
         SearchAlgorithmIterator { inner: self }
     }
 }
