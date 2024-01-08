@@ -12,48 +12,32 @@ use num::cast::AsPrimitive;
 use rand::distributions::Standard;
 use rand::prelude::Distribution;
 
-impl BruteForceSearch<Z80Instruction> {
-    /// returns an iterator yielding functions complying with the __z88dk_fastcall calling
-    /// convention, and computing the provided functions.
-    ///
-    /// `func` should be a function returning an `Option<i32>`. For inputs where `func` returns
-    /// `Some(x)`, the generated function returns `x`. But for inputs where `func` returns `None`,
-    /// the behavior of the generated function is undefined.
-    pub fn z88dkfastcall<Operand, Return>(
-        self,
-        func: fn(Operand) -> Option<Return>,
-    ) -> testers::Z88dkfastcall<Self, Operand, Return>
-    where
-        u32: HammingDistance<Return>,
-        u32: AsPrimitive<Operand>,
-        u32: From<Operand>,
-        Standard: Distribution<Operand>,
-        Operand: std::marker::Copy + num::traits::AsPrimitive<u32>,
-        Return: num::traits::AsPrimitive<u32>,
-    {
-        testers::Z88dkfastcall::new(self, func)
+macro_rules! z80impl {
+    ($t:ty) => {
+        impl $t {
+            /// returns an iterator yielding functions complying with the __z88dk_fastcall calling
+            /// convention, and computing the provided functions.
+            ///
+            /// `func` should be a function returning an `Option<i32>`. For inputs where `func` returns
+            /// `Some(x)`, the generated function returns `x`. But for inputs where `func` returns `None`,
+            /// the behavior of the generated function is undefined.
+            pub fn z88dkfastcall<Operand, Return>(
+                self,
+                func: fn(Operand) -> Option<Return>,
+            ) -> testers::Z88dkfastcall<Self, Operand, Return>
+                where
+                    u32: HammingDistance<Return>,
+                    u32: AsPrimitive<Operand>,
+                    u32: From<Operand>,
+                    Standard: Distribution<Operand>,
+                    Operand: std::marker::Copy + num::traits::AsPrimitive<u32>,
+                    Return: num::traits::AsPrimitive<u32>,
+                {
+                    testers::Z88dkfastcall::new(self, func)
+                }
+        }
     }
 }
 
-impl StochasticSearch<Z80Instruction> {
-    /// returns an iterator yielding functions complying with the __z88dk_fastcall calling
-    /// convention, and computing the provided functions.
-    ///
-    /// `func` should be a function returning an `Option<i32>`. For inputs where `func` returns
-    /// `Some(x)`, the generated function returns `x`. But for inputs where `func` returns `None`,
-    /// the behavior of the generated function is undefined.
-    pub fn z88dkfastcall<Operand, Return>(
-        self,
-        func: fn(Operand) -> Option<Return>,
-    ) -> testers::Z88dkfastcall<Self, Operand, Return>
-    where
-        u32: HammingDistance<Return>,
-        u32: AsPrimitive<Operand>,
-        u32: From<Operand>,
-        Standard: Distribution<Operand>,
-        Operand: std::marker::Copy + num::traits::AsPrimitive<u32>,
-        Return: num::traits::AsPrimitive<u32>,
-    {
-        testers::Z88dkfastcall::new(self, func)
-    }
-}
+z80impl!(StochasticSearch<Z80Instruction>);
+z80impl!(BruteForceSearch<Z80Instruction>);

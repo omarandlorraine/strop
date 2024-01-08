@@ -9,29 +9,24 @@ use crate::StochasticSearch;
 
 use crate::armv4t::instruction_set::Thumb;
 
-impl BruteForceSearch<Thumb> {
-    /// returns an iterator yielding functions complying with the AAPCS32 calling conventions, and
-    /// computing the provided functions.
-    ///
-    /// `func` should be a function returning an `Option<i32>`. For inputs where `func` returns
-    /// `Some(x)`, the generated function returns `x`. But for inputs where `func` returns `None`,
-    /// the behavior of the generated function is undefined.
-    pub fn aapcs32(self, func: fn(i32, i32) -> Option<i32>) -> testers::Aapcs32<Self> {
-        testers::Aapcs32::new(self, func)
+macro_rules! armimpl {
+    ($t:ty) => {
+        impl $t {
+            /// returns an iterator yielding functions complying with the AAPCS32 calling conventions, and
+            /// computing the provided functions.
+            ///
+            /// `func` should be a function returning an `Option<i32>`. For inputs where `func` returns
+            /// `Some(x)`, the generated function returns `x`. But for inputs where `func` returns `None`,
+            /// the behavior of the generated function is undefined.
+            pub fn aapcs32(self, func: fn(i32, i32) -> Option<i32>) -> testers::Aapcs32<Self> {
+                testers::Aapcs32::new(self, func)
+            }
+        }
     }
 }
 
-impl StochasticSearch<Thumb> {
-    /// returns an iterator yielding functions complying with the AAPCS32 calling conventions, and
-    /// computing the provided functions.
-    ///
-    /// `func` should be a function returning an `Option<i32>`. For inputs where `func` returns
-    /// `Some(x)`, the generated function returns `x`. But for inputs where `func` returns `None`,
-    /// the behavior of the generated function is undefined.
-    pub fn aapcs32(self, func: fn(i32, i32) -> Option<i32>) -> testers::Aapcs32<Self> {
-        testers::Aapcs32::new(self, func)
-    }
-}
+armimpl!(BruteForceSearch<Thumb>);
+armimpl!(StochasticSearch<Thumb>);
 
 #[cfg(test)]
 mod test {
