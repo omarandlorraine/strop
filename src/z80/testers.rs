@@ -24,7 +24,7 @@ use rand::prelude::Distribution;
 #[derive(Debug)]
 pub struct Z88dkfastcall<S, Operand, Return>
 where
-    S: SearchAlgorithm<Item=Z80Instruction>,
+    S: SearchAlgorithm<Item = Z80Instruction>,
     Operand: num::cast::AsPrimitive<u32>,
 {
     inputs: Vec<(u32, Return)>,
@@ -33,7 +33,7 @@ where
 }
 
 impl<
-        S: SearchAlgorithm<Item=Z80Instruction>,
+        S: SearchAlgorithm<Item = Z80Instruction>,
         Operand: num::cast::AsPrimitive<u32>,
         Return: num::cast::AsPrimitive<u32>,
     > Z88dkfastcall<S, Operand, Return>
@@ -129,11 +129,8 @@ where
     }
 }
 
-impl<
-        S: SearchAlgorithm<Item=Z80Instruction>,
-        Operand: num::cast::AsPrimitive<u32>,
-        Return,
-    > SearchAlgorithm for Z88dkfastcall<S, Operand, Return>
+impl<S: SearchAlgorithm<Item = Z80Instruction>, Operand: num::cast::AsPrimitive<u32>, Return>
+    SearchAlgorithm for Z88dkfastcall<S, Operand, Return>
 where
     u32: HammingDistance<Return>,
     u32: AsPrimitive<Operand>,

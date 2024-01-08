@@ -13,14 +13,14 @@ use crate::SearchAlgorithm;
 #[derive(Debug)]
 pub struct Aapcs32<S>
 where
-    S: SearchAlgorithm<Item=Thumb>,
+    S: SearchAlgorithm<Item = Thumb>,
 {
     inputs: Vec<(i32, i32)>,
     search: S,
     func: fn(i32, i32) -> Option<i32>,
 }
 
-impl<S: SearchAlgorithm<Item=Thumb>> Aapcs32<S> {
+impl<S: SearchAlgorithm<Item = Thumb>> Aapcs32<S> {
     /// Returns a new Aapcs32 struct
     pub fn new(search: S, func: fn(i32, i32) -> Option<i32>) -> Self {
         use rand::random;
@@ -127,7 +127,7 @@ impl<S: SearchAlgorithm<Item=Thumb>> Aapcs32<S> {
     }
 }
 
-impl<S: SearchAlgorithm<Item=Thumb>> SearchAlgorithm for Aapcs32<S> {
+impl<S: SearchAlgorithm<Item = Thumb>> SearchAlgorithm for Aapcs32<S> {
     type Item = Thumb;
 
     fn score(&mut self, score: f32) {

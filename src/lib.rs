@@ -125,7 +125,10 @@ pub struct SearchAlgorithmIterator<'a, T: SearchAlgorithm + ?Sized> {
     inner: &'a mut T,
 }
 
-impl<'a, T> Iterator for SearchAlgorithmIterator<'a, T> where T: SearchAlgorithm {
+impl<'a, T> Iterator for SearchAlgorithmIterator<'a, T>
+where
+    T: SearchAlgorithm,
+{
     type Item = Candidate<T::Item>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -149,9 +152,7 @@ pub trait SearchAlgorithm {
     fn generate(&mut self) -> Option<Candidate<Self::Item>>;
 
     fn iter(&mut self) -> SearchAlgorithmIterator<Self> {
-        SearchAlgorithmIterator {
-            inner: self
-        }
+        SearchAlgorithmIterator { inner: self }
     }
 }
 

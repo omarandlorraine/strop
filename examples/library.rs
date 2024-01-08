@@ -3,8 +3,8 @@
 // but this has not been tested.
 
 use strop::armv4t::instruction_set::Thumb;
-use strop::SearchAlgorithm;
 use strop::BruteForceSearch;
+use strop::SearchAlgorithm;
 use strop::StochasticSearch;
 
 fn pepper(a: i32, _b: i32) -> Option<i32> {
