@@ -43,10 +43,10 @@ where                    S: SearchAlgorithm<Item=Z80Instruction> {
                     self.inner.replace(offset, Z80Instruction::new([opcode + 1, 0, 0, 0, 0]));
                     break;
                 }
-
-                // We didn't find a Z80-only opcode, so return this candidate
-                return Some(c);
             }
+
+            // We didn't find a Z80-only opcode, so return this candidate
+            return Some(c);
         }
         None
     }
