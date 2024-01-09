@@ -22,7 +22,7 @@ macro_rules! armimpl {
                 testers::Aapcs32::new(self, func)
             }
         }
-    }
+    };
 }
 
 armimpl!(BruteForceSearch<Thumb>);

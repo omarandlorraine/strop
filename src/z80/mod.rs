@@ -2,8 +2,8 @@
 
 pub mod emulators;
 pub mod instruction_set;
-pub mod testers;
 pub mod static_analysis;
+pub mod testers;
 
 use crate::z80::static_analysis::I8080Compatible;
 use crate::BruteForceSearch;
@@ -27,16 +27,16 @@ macro_rules! z80impl {
                 self,
                 func: fn(Operand) -> Option<Return>,
             ) -> testers::Z88dkfastcall<Self, Operand, Return>
-                where
-                    u32: HammingDistance<Return>,
-                    u32: AsPrimitive<Operand>,
-                    u32: From<Operand>,
-                    Standard: Distribution<Operand>,
-                    Operand: std::marker::Copy + num::traits::AsPrimitive<u32>,
-                    Return: num::traits::AsPrimitive<u32>,
-                {
-                    testers::Z88dkfastcall::new(self, func)
-                }
+            where
+                u32: HammingDistance<Return>,
+                u32: AsPrimitive<Operand>,
+                u32: From<Operand>,
+                Standard: Distribution<Operand>,
+                Operand: std::marker::Copy + num::traits::AsPrimitive<u32>,
+                Return: num::traits::AsPrimitive<u32>,
+            {
+                testers::Z88dkfastcall::new(self, func)
+            }
 
             /// Adorns the search algorithm with a static analysis pass ensuring compatibility with
             /// the Intel 8080
@@ -44,7 +44,7 @@ macro_rules! z80impl {
                 I8080Compatible::new(self)
             }
         }
-    }
+    };
 }
 
 z80impl!(StochasticSearch<Z80Instruction>);
