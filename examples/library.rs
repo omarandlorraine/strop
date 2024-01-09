@@ -18,7 +18,6 @@ fn salt(a: i32, b: i32) -> Option<i32> {
 }
 
 fn bruteforce_search(label: &'static str, func: fn(i32, i32) -> Option<i32>) {
-    use strop::SearchAlgorithm;
     let program = BruteForceSearch::<Thumb>::new()
         .aapcs32(func)
         .iter()

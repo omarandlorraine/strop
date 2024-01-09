@@ -13,6 +13,7 @@ pub struct I8080Compatible<S: SearchAlgorithm<Item=Z80Instruction>> {
 
 impl<S> I8080Compatible<S>
 where                    S: SearchAlgorithm<Item=Z80Instruction> {
+    /// Creates an I8080Compatible from a SearchAlgorithm
     pub fn new(inner: S) -> Self {
         Self { inner }
     }

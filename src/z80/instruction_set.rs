@@ -19,6 +19,7 @@ impl std::fmt::Debug for Z80Instruction {
 }
 
 impl Z80Instruction {
+    /// Constructs a new Z80Instruction from five bytes.
     pub fn new(mc: [u8; 5]) -> Self {
         Self { mc }
     }
