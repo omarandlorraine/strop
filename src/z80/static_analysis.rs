@@ -38,7 +38,7 @@ where
     fn generate(&mut self) -> Option<Candidate<Self::Item>> {
         use crate::Instruction;
 
-        while let Some(c) = self.inner.generate() {
+        'outer: while let Some(c) = self.inner.generate() {
             for (offset, insn) in c.instructions.iter().enumerate() {
                 let opcode = insn.encode()[0];
                 if matches!(
@@ -59,7 +59,7 @@ where
                     // Replace it, and try getting another candidate.
                     self.inner
                         .replace(offset, Z80Instruction::new([opcode + 1, 0, 0, 0, 0]));
-                    break;
+                    continue 'outer;
                 }
             }
 
