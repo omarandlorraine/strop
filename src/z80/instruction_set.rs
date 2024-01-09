@@ -151,20 +151,6 @@ impl std::fmt::Display for Z80Instruction {
     }
 }
 
-/// The Z80 instruction set.
-#[derive(Clone, Copy, Debug, Default)]
-pub struct Z80InstructionSet {
-    i8080: bool,
-}
-
-impl Z80InstructionSet {
-    /// limits the instruction selection to instructions that are available on the Intel 8080.
-    pub fn i8080(&mut self) -> Self {
-        self.i8080 = true;
-        *self
-    }
-}
-
 #[cfg(test)]
 mod test {
 
