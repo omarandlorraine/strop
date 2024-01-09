@@ -1,3 +1,5 @@
+//! Module containing miscellaneous Z80 specific static analysis passes.
+
 use crate::SearchAlgorithm;
 use crate::z80::Z80Instruction;
 use crate::Candidate;
