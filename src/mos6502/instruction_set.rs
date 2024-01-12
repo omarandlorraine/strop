@@ -60,12 +60,6 @@ pub struct Cmos6502Instruction {
     encoding: Encoding6502,
 }
 
-#[derive(Clone, Debug)]
-enum Mos6502StaticAnalysisTypes {
-    NoIndirectJumpBug,
-    SensibleBranchTargets,
-}
-
 impl Nmos6502Instruction {
     /// Returns the length of the instruction in bytes. And a 6502 instruction is always either 1,
     /// 2 or 3 bytes.
