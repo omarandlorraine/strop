@@ -89,10 +89,12 @@ impl Nmos6502Instruction {
         Self { encoding }
     }
 
+    #[cfg(test)]
     fn reva_compatible(&self) -> bool {
         !matches!(self.encoding[0], 0x66 | 0x6a | 0x6e | 0x76 | 0x7e)
     }
 
+    #[cfg(test)]
     fn cmos_compatible(&self) -> bool {
         CMOS_OPCODES.contains(&self.encoding[0]) && !matches!(self.encoding[0], 0x9c | 0x9e)
     }
