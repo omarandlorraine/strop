@@ -1,6 +1,7 @@
 //! Module containing definitions for Z80 and 8080 instruction sets
 
 use crate::Instruction;
+use crate::SearchCull;
 
 /// Represents a Z80 instruction
 #[derive(Clone, Copy)]
@@ -22,6 +23,10 @@ impl Z80Instruction {
     /// Constructs a new Z80Instruction from five bytes.
     pub fn new(mc: [u8; 5]) -> Self {
         Self { mc }
+    }
+
+    pub fn next_opcode(&self) -> Self {
+        Self::new([self.mc[0] + 1, 0, 0, 0, 0])
     }
 }
 
@@ -89,6 +94,11 @@ impl Instruction for Z80Instruction {
             }
         }
 
+        if !incr_operand(self, offset - 1) {
+            return None;
+        }
+        // managed to increment the operand
+
         // this prefix is ignored if the following byte is in the set below. In other words, there
         // are no valid encodings starting with 0xdd or 0xfd and one of the following bytes.
         // So let's skip it.
@@ -128,18 +138,59 @@ impl Instruction for Z80Instruction {
             incr_operand(self, 1);
         }
 
+        // the ED prefix avails the Z80 of the RETI and RETN opcodes, but they are aliased over
+        // several encodings. Skip the unnecessary duplicates.
+        while matches!(self.mc[0], 0xed)
+            && matches!(self.mc[1], 0x55 | 0x5d | 0x65 | 0x6d | 0x75 | 0x7d)
+        {
+            incr_operand(self, 1);
+        }
+
         #[cfg(test)]
         {
             let instruction =
                 dez80::Instruction::decode_one(&mut self.encode().as_slice()).unwrap();
             assert!(instruction.ignored_prefixes.is_empty(), "{:?}", self);
-        }
 
-        // managed to increment the operand
-        if incr_operand(self, offset - 1) {
-            Some(*self)
-        } else {
-            None
+            assert!(!format!("{}", instruction).contains("invalid prefix"));
+        }
+        Some(*self)
+    }
+
+    fn cull_flow_control(&self) -> SearchCull<Self> {
+        match self.mc[0] {
+            0x18 | 0x20 | 0x28 | 0x30 | 0x38 | 0xc0 | 0xd2 | 0xd4 | 0xda | 0xdc | 0xe2 | 0xe4
+            | 0xec | 0xf2 | 0xf4 | 0xfa | 0xfc => {
+                SearchCull::<Self>::SkipTo(Some(self.next_opcode()))
+            }
+            0xc2..=0xc4 => SearchCull::<Self>::SkipTo(Some(Self::new([0xc5, 0, 0, 0, 0]))),
+            0xc7..=0xca => SearchCull::<Self>::SkipTo(Some(Self::new([0xcb, 0, 0, 0, 0]))),
+            0xcc..=0xcd => SearchCull::<Self>::SkipTo(Some(Self::new([0xce, 0, 0, 0, 0]))),
+            0xcf..=0xd0 => SearchCull::<Self>::SkipTo(Some(Self::new([0xd1, 0, 0, 0, 0]))),
+            0xd7..=0xd8 => SearchCull::<Self>::SkipTo(Some(Self::new([0xd9, 0, 0, 0, 0]))),
+            0xdd | 0xfd => {
+                if self.mc[1] == 0xe9 {
+                    SearchCull::<Self>::SkipTo(Some(Self::new([0xdd, 0xea, 0, 0, 0])))
+                } else {
+                    SearchCull::<Self>::Okay
+                }
+            }
+            0xdf..=0xe0 => SearchCull::<Self>::SkipTo(Some(Self::new([0xe1, 0, 0, 0, 0]))),
+            0xe7..=0xea => SearchCull::<Self>::SkipTo(Some(Self::new([0xeb, 0, 0, 0, 0]))),
+            0xed => {
+                if matches!(
+                    self.mc[1],
+                    0x4d | 0x45 | 0x55 | 0x5d | 0x65 | 0x6d | 0x75 | 0x7d
+                ) {
+                    SearchCull::<Self>::SkipTo(Some(Self::new([0xed, self.mc[1] + 1, 0, 0, 0])))
+                } else {
+                    SearchCull::<Self>::Okay
+                }
+            }
+            0xef..=0xf0 => SearchCull::<Self>::SkipTo(Some(Self::new([0xf1, 0, 0, 0, 0]))),
+            0xf7..=0xf8 => SearchCull::<Self>::SkipTo(Some(Self::new([0xf9, 0, 0, 0, 0]))),
+            0xff => SearchCull::<Self>::SkipTo(None),
+            _ => SearchCull::<Self>::Okay,
         }
     }
 }
@@ -162,6 +213,9 @@ mod test {
             format!("{}", insn);
         }
     }
+
+    #[test]
+    fn invalid_prefixes() {}
 
     #[test]
     fn instruction_increment() {
@@ -187,11 +241,56 @@ mod test {
         use crate::Instruction;
 
         use super::Z80Instruction;
+        let insn = Z80Instruction::first();
+
+        todo!();
+    }
+
+    #[test]
+    fn is_valid_encoding() {
+        use super::Z80Instruction;
+        use crate::Instruction;
+
         let mut insn = Z80Instruction::first();
 
-        loop {
-            if insn.increment().is_none() {
-                break;
+        while insn.increment().is_some() {
+            let dasm = format!("{}", insn);
+            assert!(!dasm.contains("invalid prefix"), "{} {:?}", dasm, insn)
+        }
+    }
+
+    #[test]
+    fn cull_flow_control() {
+        use super::Z80Instruction;
+        use crate::Instruction;
+
+        let mut insn = Z80Instruction::first();
+        let opcodes = vec!["CALL", "RET", "RST", "JP", "JR"];
+
+        while insn.increment().is_some() {
+            let dasm = format!("{}", insn);
+
+            for opcode in &opcodes {
+                if dasm.starts_with(opcode) {
+                    assert!(
+                        !insn.cull_flow_control().is_okay(),
+                        "{} {:?} should be marked as a flow control instruction",
+                        dasm,
+                        insn
+                    )
+                }
+            }
+
+            if insn.cull_flow_control().is_okay() {
+                for opcode in &opcodes {
+                    assert!(
+                        !dasm.starts_with(opcode),
+                        "{} should not be marked as a flow control instruction",
+                        dasm
+                    )
+                }
+            } else if let Some(s) = insn.cull_flow_control().suggestion() {
+                assert!(s.cull_flow_control().is_okay())
             }
         }
     }

@@ -3,6 +3,7 @@
 
 use crate::Candidate;
 use crate::Instruction;
+use crate::SearchCull;
 use rand::random;
 
 type Encoding6502 = [u8; 3];
@@ -377,6 +378,10 @@ impl Instruction for Nmos6502Instruction {
             ),
         }
     }
+
+    fn cull_flow_control(&self) -> SearchCull<Self> {
+        SearchCull::<Self>::Okay
+    }
 }
 
 impl Instruction for Cmos6502Instruction {
@@ -444,6 +449,10 @@ impl Instruction for Cmos6502Instruction {
                 self, self.encoding[0], length
             ),
         }
+    }
+
+    fn cull_flow_control(&self) -> SearchCull<Self> {
+        SearchCull::<Self>::Okay
     }
 }
 
@@ -1069,5 +1078,44 @@ mod test {
         let cand = Candidate::new(vec![insn]);
         let vars = VariablesInMemory::from(&cand);
         assert_eq!(vars.reads[0], 0x45);
+    }
+
+    #[test]
+    fn nmos_cull_flow_control() {
+        use super::Nmos6502Instruction;
+        use crate::Instruction;
+
+        let mut insn = Nmos6502Instruction::first();
+        let opcodes = vec![
+            "jmp", "jsr", "beq", "bpl", "bmi", "bvc", "bvs", "bcc", "bcs", "bne", "beq", "rts",
+            "rti", "brk",
+        ];
+
+        while insn.increment().is_some() {
+            let dasm = format!("{}", insn);
+
+            for opcode in &opcodes {
+                if dasm.starts_with(opcode) {
+                    assert!(
+                        !insn.cull_flow_control().is_okay(),
+                        "{} {:?} should be marked as a flow control instruction",
+                        dasm,
+                        insn
+                    )
+                }
+            }
+
+            if insn.cull_flow_control().is_okay() {
+                for opcode in &opcodes {
+                    assert!(
+                        !dasm.starts_with(opcode),
+                        "{} should not be marked as a flow control instruction",
+                        dasm
+                    )
+                }
+            } else if let Some(s) = insn.cull_flow_control().suggestion() {
+                assert!(s.cull_flow_control().is_okay())
+            }
+        }
     }
 }

@@ -41,6 +41,34 @@ pub trait Test<I: Instruction> {
     fn run(&self, program: &Candidate<I>) -> f64;
 }
 
+#[derive(Debug)]
+pub enum SearchCull<I: Instruction> {
+    /// This instruction is okay, no need to cull the search space.
+    Okay,
+
+    /// The instruction is filtered away, and in so doing we want to suggest an instruction that
+    /// wouldn't be filtered away. So this is like calling `instruction.increment()` until the
+    /// condition to filter for no longer holds. In this way, the exhaustive search can cull huge
+    /// swathes of of the search space by static analysis.
+    SkipTo(Option<I>),
+}
+
+impl<I: Instruction> SearchCull<I> {
+    pub fn is_okay(&self) -> bool {
+        match self {
+            SearchCull::<I>::Okay => true,
+            _ => false,
+        }
+    }
+
+    pub fn suggestion(&self) -> Option<I> {
+        match self {
+            SearchCull::<I>::SkipTo(s) => *s,
+            _ => None,
+        }
+    }
+}
+
 pub trait Instruction: Copy + Clone + std::marker::Send + std::fmt::Display {
     //! A trait for any kind of machine instruction. The searches use this trait to mutate
     //! candidate programs, the emulators use this trait to get at a byte stream encoding a
@@ -65,6 +93,16 @@ pub trait Instruction: Copy + Clone + std::marker::Send + std::fmt::Display {
 
     /// Increments the instruction's encoding by one, and then returns a clone of self.
     fn increment(&mut self) -> Option<Self>;
+
+    /// If this instruction is a skip operation, returns the next instruction that isn't a skip
+    /// operation. Otherwise, returns None.
+    fn cull_skip(&self) -> SearchCull<Self> {
+        SearchCull::<Self>::Okay
+    }
+
+    /// If this instruction is a flow control instruction, returns the next instruction that isn't
+    /// a flow control instruction. Otherwise, returns None.
+    fn cull_flow_control(&self) -> SearchCull<Self>;
 }
 
 pub trait Emulator<T: Instruction> {
