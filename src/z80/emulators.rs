@@ -43,7 +43,7 @@ impl<T: Instruction> Emulator<T> for Z80 {
             if pc < org {
                 break;
             }
-            if pc > end {
+            if pc >= end {
                 break;
             }
         }

@@ -239,11 +239,23 @@ mod test {
     #[test]
     fn lengths() {
         use crate::Instruction;
-
+        use crate::Candidate;
         use super::Z80Instruction;
-        let insn = Z80Instruction::first();
+        use crate::Emulator;
+        use crate::z80::emulators::Z80;
 
-        todo!();
+        let mut insn = Z80Instruction::first();
+
+        while insn.increment().is_some() {
+            if insn.cull_flow_control().is_okay() {
+                // It's not a flow-control instruction, so we can check the length of the
+                // instruction against the program counter in the emulator
+                let cand = Candidate::<_>::new(vec![insn]);
+                let mut emu = Z80::default();
+                emu.run(0, &cand);
+                assert_eq!(insn.encode().len(), emu.get_pc().into(), "{}; {:?} {:?}", insn, insn, insn.encode());
+            }
+        }
     }
 
     #[test]
