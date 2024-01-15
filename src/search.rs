@@ -180,6 +180,36 @@ impl<I: Instruction> BruteForceSearch<I> {
     fn candidate(&self) -> Candidate<I> {
         Candidate::new(self.curr.clone())
     }
+
+    pub fn limit_length(self, length: usize) -> LengthLimitedSearch<Self, I> {
+        LengthLimitedSearch {inner: self, length}
+    }
+}
+
+pub struct LengthLimitedSearch<S: SearchAlgorithm<Item = I>, I: Instruction> {
+    inner: S,
+    length: usize,
+}
+
+impl<S: SearchAlgorithm<Item = I>, I: Instruction> SearchAlgorithm for LengthLimitedSearch<S, I> {
+    type Item = I;
+
+    fn score(&mut self, score: f32) {
+        self.inner.score(score);
+    }
+
+    fn replace(&mut self, offset: usize, instruction: Self::Item) {
+        self.inner.replace(offset, instruction);
+    }
+
+    fn generate(&mut self) -> Option<Candidate<Self::Item>> {
+        let cand = self.inner.generate().unwrap();
+        if cand.instructions.len() <= self.length {
+            Some(cand)
+        } else {
+            None
+        }
+    }
 }
 
 /// Random dead-code eliminator

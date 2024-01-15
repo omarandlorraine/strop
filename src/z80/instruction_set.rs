@@ -254,36 +254,29 @@ mod test {
 
     #[test]
     fn lengths() {
+        use crate::BruteForceSearch;
         use super::Z80Instruction;
         use crate::z80::emulators::Z80;
         use crate::Candidate;
         use crate::Emulator;
         use crate::Instruction;
+         use crate::SearchAlgorithm;
 
-        let mut insn = Z80Instruction::first();
 
-        while insn.increment().is_some() {
-            for opcode in vec![
-                "LDI", "CPI", "INI", "OUTI", "LDD", "CPD", "IND", "OUTD", "LDIR", "CPIR", "INIR",
-                "OTIR", "LDDR", "CPDR", "INDR", "OTDR",
-            ] {
-                assert!(!format!("{}", insn).contains(opcode));
-            }
-            if insn.cull_flow_control().is_okay() {
-                // It's not a flow-control instruction, so we can check the length of the
-                // instruction against the program counter in the emulator
-                let cand = Candidate::<_>::new(vec![insn]);
-                let mut emu = Z80::default();
-                emu.run(0, &cand);
-                assert_eq!(
-                    insn.encode().len(),
-                    emu.get_pc().into(),
-                    "{}; {:?} {:?}",
-                    insn,
-                    insn,
-                    insn.encode()
+        for cand in BruteForceSearch::<Z80Instruction>::new().limit_length(1).iter() {
+            // It's not a flow-control instruction, so we can check the length of the
+            // instruction against the program counter in the emulator
+            let mut emu = Z80::default();
+            emu.run(0, &cand);
+            let insn = cand.instructions[0];
+            assert_eq!(
+                cand.encode().len(),
+                emu.get_pc().into(),
+                "{}; {:?} {:?}",
+                insn,
+                insn,
+                insn.encode()
                 );
-            }
         }
     }
 
