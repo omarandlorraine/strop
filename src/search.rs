@@ -215,6 +215,37 @@ impl<S: SearchAlgorithm<Item = I>, I: Instruction> SearchAlgorithm for LengthLim
     }
 }
 
+pub struct BasicBlock<S: ?Sized + SearchAlgorithm<Item = I>, I: Instruction> {
+    inner: S,
+}
+
+impl<S: SearchAlgorithm<Item = I>, I: Instruction> SearchAlgorithm for BasicBlock<S, I> {
+    type Item = I;
+
+    fn score(&mut self, score: f32) {
+        self.inner.score(score);
+    }
+
+    fn replace(&mut self, offset: usize, instruction: Self::Item) {
+        self.inner.replace(offset, instruction);
+    }
+
+    fn generate(&mut self) -> Option<Candidate<Self::Item>> {
+        use crate::SearchCull::SkipTo;
+
+        'outer: while let Some(cand) = self.inner.generate() {
+            for (offset, instruction) in cand.instructions.iter().take(cand.instructions.len() - 1).enumerate() {
+                if let SkipTo(i) = instruction.cull_flow_control() {
+                    self.inner.replace(offset, i);
+                    continue 'outer;
+                }
+            }
+            return Some(cand);
+        }
+        None
+    }
+}
+
 /// Random dead-code eliminator
 #[derive(Clone, Debug)]
 pub struct DeadCodeEliminator<I: Instruction> {

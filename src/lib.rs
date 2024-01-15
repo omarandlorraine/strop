@@ -31,6 +31,7 @@ mod hamming;
 
 pub use crate::search::BruteForceSearch;
 pub use crate::search::StochasticSearch;
+pub use crate::search::BasicBlock;
 
 use rand::Rng;
 use std::convert::TryInto;
@@ -191,6 +192,19 @@ pub trait SearchAlgorithm {
 
     /// Get the next Candidate
     fn generate(&mut self) -> Option<Candidate<Self::Item>>;
+
+    /// Adorns the search algorithm with a static analysis pass which disallows flow-control
+    /// instructions.
+    fn no_flow_control(self) -> BasicBlock<Self, Self::Item> where Self: Sized{
+        BasicBlock { inner: self }
+    }
+
+    /// Adorns the search algorithm with a static analysis pass which searches only for basic
+    /// blocks (i.e, a sequence of instructions where none but the last instruction may be a flow
+    /// control instruction)
+    fn basic_block(self) -> BasicBlock<Self, Self::Item> where Self: Sized {
+        BasicBlock { inner: self }
+    }
 
     /// Returns a `SearchAlgorithmIterator`, which can be used to iterate over the generated
     /// candidates.
