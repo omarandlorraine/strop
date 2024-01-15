@@ -28,6 +28,11 @@ impl Z80Instruction {
     pub fn next_opcode(&self) -> Self {
         Self::new([self.mc[0] + 1, 0, 0, 0, 0])
     }
+
+    fn decode(&self) -> dez80::Instruction {
+        let encoding = Vec::<_>::from(self.mc);
+        dez80::Instruction::decode_one(&mut encoding.as_slice()).unwrap()
+    }
 }
 
 impl Instruction for Z80Instruction {
@@ -56,14 +61,7 @@ impl Instruction for Z80Instruction {
     }
 
     fn encode(self) -> Vec<u8> {
-        let encoding = Vec::<_>::from(self.mc);
-        // We now have the bytes in the right order, but there's possibly garbage bytes at the end
-        // of the Vec<u8>, because there's variable-length instruction stored in a [u8; 5]. So
-        // therefore I'm going to use the dez80 crate to decode the instruction, and then re-encode
-        // it. The re-encoding of course will not include these garbage bytes.
-
-        let instruction = dez80::Instruction::decode_one(&mut encoding.as_slice()).unwrap();
-        instruction.to_bytes()
+        self.decode().to_bytes()
     }
 
     fn first() -> Self {
@@ -163,12 +161,14 @@ impl Instruction for Z80Instruction {
 
         #[cfg(test)]
         {
-            let instruction =
-                dez80::Instruction::decode_one(&mut self.encode().as_slice()).unwrap();
+            let instruction = self.decode();
             assert!(instruction.ignored_prefixes.is_empty(), "{:?}", self);
-
             assert!(!format!("{}", instruction).contains("invalid prefix"));
-            assert!(!format!("{}", instruction).starts_with(";"), "invalid encoding, {:?}", self);
+            assert!(
+                !format!("{}", instruction).starts_with(";"),
+                "invalid encoding, {:?}",
+                self
+            );
         }
         Some(*self)
     }
