@@ -139,11 +139,26 @@ impl Instruction for Z80Instruction {
         }
 
         // the ED prefix avails the Z80 of the RETI and RETN opcodes, but they are aliased over
-        // several encodings. Skip the unnecessary duplicates.
-        while matches!(self.mc[0], 0xed)
-            && matches!(self.mc[1], 0x55 | 0x5d | 0x65 | 0x6d | 0x75 | 0x7d)
-        {
-            incr_operand(self, 1);
+        // several encodings. These unnecessary duplicates are skipped. So are other illegal
+        // instructions in the ED prefix. And block instructions are also skipped; I'm having
+        // trouble with the emulator executing these.
+        while self.mc[0] == 0xed {
+            match self.mc[1] {
+                0x00..=0x3f => self.mc[1] = 0x40, // this range is undefined instructions
+                0x55 | 0x5d | 0x65 | 0x6d | 0x75 | 0x7d => {
+                    // aliases for RETI and RETN
+                    incr_operand(self, 1);
+                }
+                0x77 | 0x7f => {
+                    // undefined instructions
+                    incr_operand(self, 1);
+                }
+                0x80..=0xff => {
+                    // undefined instructions
+                    incr_operand(self, 0);
+                }
+                _ => break,
+            }
         }
 
         #[cfg(test)]
@@ -153,6 +168,7 @@ impl Instruction for Z80Instruction {
             assert!(instruction.ignored_prefixes.is_empty(), "{:?}", self);
 
             assert!(!format!("{}", instruction).contains("invalid prefix"));
+            assert!(!format!("{}", instruction).starts_with(";"), "invalid encoding, {:?}", self);
         }
         Some(*self)
     }
