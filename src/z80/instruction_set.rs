@@ -165,7 +165,7 @@ impl Instruction for Z80Instruction {
             assert!(instruction.ignored_prefixes.is_empty(), "{:?}", self);
             assert!(!format!("{}", instruction).contains("invalid prefix"));
             assert!(
-                !format!("{}", instruction).starts_with(";"),
+                !format!("{}", instruction).starts_with(';'),
                 "invalid encoding, {:?}",
                 self
             );
@@ -254,16 +254,17 @@ mod test {
 
     #[test]
     fn lengths() {
-        use crate::BruteForceSearch;
         use super::Z80Instruction;
         use crate::z80::emulators::Z80;
-        use crate::Candidate;
+        use crate::BruteForceSearch;
         use crate::Emulator;
         use crate::Instruction;
-         use crate::SearchAlgorithm;
+        use crate::SearchAlgorithm;
 
-
-        for cand in BruteForceSearch::<Z80Instruction>::new().limit_length(1).iter() {
+        for cand in BruteForceSearch::<Z80Instruction>::new()
+            .limit_length(1)
+            .iter()
+        {
             // It's not a flow-control instruction, so we can check the length of the
             // instruction against the program counter in the emulator
             let mut emu = Z80::default();
@@ -276,7 +277,7 @@ mod test {
                 insn,
                 insn,
                 insn.encode()
-                );
+            );
         }
     }
 

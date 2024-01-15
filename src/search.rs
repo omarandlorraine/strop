@@ -182,7 +182,10 @@ impl<I: Instruction> BruteForceSearch<I> {
     }
 
     pub fn limit_length(self, length: usize) -> LengthLimitedSearch<Self, I> {
-        LengthLimitedSearch {inner: self, length}
+        LengthLimitedSearch {
+            inner: self,
+            length,
+        }
     }
 }
 
