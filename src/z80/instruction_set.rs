@@ -159,7 +159,7 @@ impl Instruction for Z80Instruction {
 
     fn cull_flow_control(&self) -> SearchCull<Self> {
         match self.mc[0] {
-            0x18 | 0x20 | 0x28 | 0x30 | 0x38 | 0xc0 | 0xd2 | 0xd4 | 0xda | 0xdc | 0xe2 | 0xe4
+            0x10 | 0x18 | 0x20 | 0x28 | 0x30 | 0x38 | 0xc0 | 0xd2 | 0xd4 | 0xda | 0xdc | 0xe2 | 0xe4
             | 0xec | 0xf2 | 0xf4 | 0xfa | 0xfc => {
                 SearchCull::<Self>::SkipTo(Some(self.next_opcode()))
             }
@@ -277,7 +277,7 @@ mod test {
         use crate::Instruction;
 
         let mut insn = Z80Instruction::first();
-        let opcodes = vec!["CALL", "RET", "RST", "JP", "JR"];
+        let opcodes = vec!["CALL", "RET", "RST", "JP", "JR", "DJNZ"];
 
         while insn.increment().is_some() {
             let dasm = format!("{}", insn);
