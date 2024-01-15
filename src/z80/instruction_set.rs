@@ -175,8 +175,8 @@ impl Instruction for Z80Instruction {
 
     fn cull_flow_control(&self) -> SearchCull<Self> {
         match self.mc[0] {
-            0x10 | 0x18 | 0x20 | 0x28 | 0x30 | 0x38 | 0xc0 | 0xd2 | 0xd4 | 0xda | 0xdc | 0xe2 | 0xe4
-            | 0xec | 0xf2 | 0xf4 | 0xfa | 0xfc => {
+            0x10 | 0x18 | 0x20 | 0x28 | 0x30 | 0x38 | 0xc0 | 0xd2 | 0xd4 | 0xda | 0xdc | 0xe2
+            | 0xe4 | 0xec | 0xf2 | 0xf4 | 0xfa | 0xfc => {
                 SearchCull::<Self>::SkipTo(Some(self.next_opcode()))
             }
             0xc2..=0xc4 => SearchCull::<Self>::SkipTo(Some(Self::new([0xc5, 0, 0, 0, 0]))),
@@ -254,22 +254,35 @@ mod test {
 
     #[test]
     fn lengths() {
-        use crate::Instruction;
-        use crate::Candidate;
         use super::Z80Instruction;
-        use crate::Emulator;
         use crate::z80::emulators::Z80;
+        use crate::Candidate;
+        use crate::Emulator;
+        use crate::Instruction;
 
         let mut insn = Z80Instruction::first();
 
         while insn.increment().is_some() {
+            for opcode in vec![
+                "LDI", "CPI", "INI", "OUTI", "LDD", "CPD", "IND", "OUTD", "LDIR", "CPIR", "INIR",
+                "OTIR", "LDDR", "CPDR", "INDR", "OTDR",
+            ] {
+                assert!(!format!("{}", insn).contains(opcode));
+            }
             if insn.cull_flow_control().is_okay() {
                 // It's not a flow-control instruction, so we can check the length of the
                 // instruction against the program counter in the emulator
                 let cand = Candidate::<_>::new(vec![insn]);
                 let mut emu = Z80::default();
                 emu.run(0, &cand);
-                assert_eq!(insn.encode().len(), emu.get_pc().into(), "{}; {:?} {:?}", insn, insn, insn.encode());
+                assert_eq!(
+                    insn.encode().len(),
+                    emu.get_pc().into(),
+                    "{}; {:?} {:?}",
+                    insn,
+                    insn,
+                    insn.encode()
+                );
             }
         }
     }
