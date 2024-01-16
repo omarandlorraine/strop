@@ -261,12 +261,13 @@ mod test {
         use crate::Instruction;
         use crate::SearchAlgorithm;
 
+        // If it's not a flow-control instruction, then we can check the length of the instruction
+        // against the program counter in the emulator
         for cand in BruteForceSearch::<Z80Instruction>::new()
             .limit_length(1)
+            .no_flow_control()
             .iter()
         {
-            // It's not a flow-control instruction, so we can check the length of the
-            // instruction against the program counter in the emulator
             let mut emu = Z80::default();
             emu.run(0, &cand);
             let insn = cand.instructions[0];

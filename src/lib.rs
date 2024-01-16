@@ -31,7 +31,7 @@ mod hamming;
 
 pub use crate::search::BruteForceSearch;
 pub use crate::search::StochasticSearch;
-pub use crate::search::BasicBlock;
+pub use crate::search::{BasicBlock, NoFlowControl};
 
 use rand::Rng;
 use std::convert::TryInto;
@@ -188,22 +188,22 @@ pub trait SearchAlgorithm {
 
     /// Tell the search algorithm that an instruction is incorrect; also propose a correction (this
     /// is to make sure that all proposed programs pass static analysis, for example)
-    fn replace(&mut self, offset: usize, instruction: Self::Item);
+    fn replace(&mut self, offset: usize, instruction: Option<Self::Item>);
 
     /// Get the next Candidate
     fn generate(&mut self) -> Option<Candidate<Self::Item>>;
 
     /// Adorns the search algorithm with a static analysis pass which disallows flow-control
     /// instructions.
-    fn no_flow_control(self) -> BasicBlock<Self, Self::Item> where Self: Sized{
-        BasicBlock { inner: self }
+    fn no_flow_control(self) -> NoFlowControl<Self, Self::Item> where Self: Sized{
+        NoFlowControl::new(self)
     }
 
     /// Adorns the search algorithm with a static analysis pass which searches only for basic
     /// blocks (i.e, a sequence of instructions where none but the last instruction may be a flow
     /// control instruction)
     fn basic_block(self) -> BasicBlock<Self, Self::Item> where Self: Sized {
-        BasicBlock { inner: self }
+        BasicBlock::new(self)
     }
 
     /// Returns a `SearchAlgorithmIterator`, which can be used to iterate over the generated

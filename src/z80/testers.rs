@@ -144,7 +144,7 @@ where
         self.search.score(score);
     }
 
-    fn replace(&mut self, offset: usize, instruction: Self::Item) {
+    fn replace(&mut self, offset: usize, instruction: Option<Self::Item>) {
         self.search.replace(offset, instruction);
     }
 

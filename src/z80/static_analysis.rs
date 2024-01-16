@@ -31,7 +31,7 @@ where
         self.inner.score(score);
     }
 
-    fn replace(&mut self, offset: usize, instruction: Self::Item) {
+    fn replace(&mut self, offset: usize, instruction: Option<Self::Item>) {
         self.inner.replace(offset, instruction);
     }
 
@@ -58,7 +58,7 @@ where
                     // So one of the opcodes has an opcode which is not valid on the Intel 8080.
                     // Replace it, and try getting another candidate.
                     self.inner
-                        .replace(offset, Z80Instruction::new([opcode + 1, 0, 0, 0, 0]));
+                        .replace(offset, Some(Z80Instruction::new([opcode + 1, 0, 0, 0, 0])));
                     continue 'outer;
                 }
             }

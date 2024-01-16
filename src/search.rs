@@ -19,9 +19,9 @@ impl<I: Instruction> SearchAlgorithm for StochasticSearch<I> {
         self.child_score = score.abs();
     }
 
-    fn replace(&mut self, offset: usize, instruction: I) {
+    fn replace(&mut self, offset: usize, instruction: Option<I>) {
         use rand::random;
-        self.child.instructions[offset] = if random() { instruction } else { I::random() }
+        self.child.instructions[offset] = if random() { instruction.unwrap_or_else(I::random) } else { I::random() }
     }
 
     fn generate(&mut self) -> Option<Candidate<I>> {
@@ -144,8 +144,12 @@ impl<I: Instruction> SearchAlgorithm for BruteForceSearch<I> {
     type Item = I;
     fn score(&mut self, _: f32) {}
 
-    fn replace(&mut self, offset: usize, instruction: I) {
-        self.curr[offset] = instruction
+    fn replace(&mut self, offset: usize, instruction: Option<I>) {
+        if let Some(instruction) = instruction {
+            self.curr[offset] = instruction
+        } else {
+            self.iterate(offset);
+        }
     }
 
     fn generate(&mut self) -> Option<Candidate<I>> {
@@ -201,7 +205,7 @@ impl<S: SearchAlgorithm<Item = I>, I: Instruction> SearchAlgorithm for LengthLim
         self.inner.score(score);
     }
 
-    fn replace(&mut self, offset: usize, instruction: Self::Item) {
+    fn replace(&mut self, offset: usize, instruction: Option<Self::Item>) {
         self.inner.replace(offset, instruction);
     }
 
@@ -219,6 +223,14 @@ pub struct BasicBlock<S: ?Sized + SearchAlgorithm<Item = I>, I: Instruction> {
     inner: S,
 }
 
+impl<S, I> BasicBlock<S, I> 
+where S: Sized + SearchAlgorithm<Item = I>, I: Instruction
+{
+    pub fn new(inner: S) -> Self {
+        Self { inner }
+    }
+}
+
 impl<S: SearchAlgorithm<Item = I>, I: Instruction> SearchAlgorithm for BasicBlock<S, I> {
     type Item = I;
 
@@ -226,7 +238,7 @@ impl<S: SearchAlgorithm<Item = I>, I: Instruction> SearchAlgorithm for BasicBloc
         self.inner.score(score);
     }
 
-    fn replace(&mut self, offset: usize, instruction: Self::Item) {
+    fn replace(&mut self, offset: usize, instruction: Option<Self::Item>) {
         self.inner.replace(offset, instruction);
     }
 
@@ -235,6 +247,45 @@ impl<S: SearchAlgorithm<Item = I>, I: Instruction> SearchAlgorithm for BasicBloc
 
         'outer: while let Some(cand) = self.inner.generate() {
             for (offset, instruction) in cand.instructions.iter().take(cand.instructions.len() - 1).enumerate() {
+                if let SkipTo(i) = instruction.cull_flow_control() {
+                    self.inner.replace(offset, i);
+                    continue 'outer;
+                }
+            }
+            return Some(cand);
+        }
+        None
+    }
+}
+
+pub struct NoFlowControl<S: ?Sized + SearchAlgorithm<Item = I>, I: Instruction> {
+    inner: S,
+}
+
+impl<S, I> NoFlowControl<S, I> 
+where S: Sized + SearchAlgorithm<Item = I>, I: Instruction
+{
+    pub fn new(inner: S) -> Self {
+        Self { inner }
+    }
+}
+
+impl<S: SearchAlgorithm<Item = I>, I: Instruction> SearchAlgorithm for NoFlowControl<S, I> {
+    type Item = I;
+
+    fn score(&mut self, score: f32) {
+        self.inner.score(score);
+    }
+
+    fn replace(&mut self, offset: usize, instruction: Option<Self::Item>) {
+        self.inner.replace(offset, instruction);
+    }
+
+    fn generate(&mut self) -> Option<Candidate<Self::Item>> {
+        use crate::SearchCull::SkipTo;
+
+        'outer: while let Some(cand) = self.inner.generate() {
+            for (offset, instruction) in cand.instructions.iter().enumerate() {
                 if let SkipTo(i) = instruction.cull_flow_control() {
                     self.inner.replace(offset, i);
                     continue 'outer;
@@ -263,7 +314,7 @@ impl<I: Instruction> SearchAlgorithm for DeadCodeEliminator<I> {
         }
     }
 
-    fn replace(&mut self, _offset: usize, _instruction: I) {
+    fn replace(&mut self, _offset: usize, _instruction: Option<I>) {
         self.child = self.parent.clone();
     }
 
