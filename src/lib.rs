@@ -42,6 +42,9 @@ pub trait Test<I: Instruction> {
     fn run(&self, program: &Candidate<I>) -> f64;
 }
 
+/// Type used to feed back to the SearchAlgorithms. The search algorithms are made to react to this
+/// to cull the search space by disallowing certain instructions, and to make sure that generated
+/// programs pass static analysis passes.
 #[derive(Debug)]
 pub enum SearchCull<I: Instruction> {
     /// This instruction is okay, no need to cull the search space.
@@ -55,13 +58,12 @@ pub enum SearchCull<I: Instruction> {
 }
 
 impl<I: Instruction> SearchCull<I> {
+    /// Returns true if the SearchCull is okay
     pub fn is_okay(&self) -> bool {
-        match self {
-            SearchCull::<I>::Okay => true,
-            _ => false,
-        }
+        matches!(self, SearchCull::<I>::Okay)
     }
 
+    /// Returns the suggested instruction if it exists
     pub fn suggestion(&self) -> Option<I> {
         match self {
             SearchCull::<I>::SkipTo(s) => *s,

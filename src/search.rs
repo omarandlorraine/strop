@@ -185,6 +185,7 @@ impl<I: Instruction> BruteForceSearch<I> {
         Candidate::new(self.curr.clone())
     }
 
+    /// Limits the length of the generated programs
     pub fn limit_length(self, length: usize) -> LengthLimitedSearch<Self, I> {
         LengthLimitedSearch {
             inner: self,
@@ -193,6 +194,8 @@ impl<I: Instruction> BruteForceSearch<I> {
     }
 }
 
+#[derive(Debug)]
+/// A SearchAlgorithm that rejects any programs having a longer length than the one specified.
 pub struct LengthLimitedSearch<S: SearchAlgorithm<Item = I>, I: Instruction> {
     inner: S,
     length: usize,
@@ -219,6 +222,10 @@ impl<S: SearchAlgorithm<Item = I>, I: Instruction> SearchAlgorithm for LengthLim
     }
 }
 
+/// A static analysis pass that rejects any programs that are not basic blocks; (i.e., no
+/// instruction in the program may influence the control flow, except the last instruction).
+/// Influencing the control flow here means, branches, jumps, subroutines, returns, etc.
+#[derive(Debug)]
 pub struct BasicBlock<S: ?Sized + SearchAlgorithm<Item = I>, I: Instruction> {
     inner: S,
 }
@@ -226,6 +233,7 @@ pub struct BasicBlock<S: ?Sized + SearchAlgorithm<Item = I>, I: Instruction> {
 impl<S, I> BasicBlock<S, I> 
 where S: Sized + SearchAlgorithm<Item = I>, I: Instruction
 {
+    /// Creates a new BasicBlock from another search algorithm.
     pub fn new(inner: S) -> Self {
         Self { inner }
     }
@@ -258,6 +266,8 @@ impl<S: SearchAlgorithm<Item = I>, I: Instruction> SearchAlgorithm for BasicBloc
     }
 }
 
+/// A static analysis pass which rejects any flow control instructions
+#[derive(Debug)]
 pub struct NoFlowControl<S: ?Sized + SearchAlgorithm<Item = I>, I: Instruction> {
     inner: S,
 }
@@ -265,6 +275,7 @@ pub struct NoFlowControl<S: ?Sized + SearchAlgorithm<Item = I>, I: Instruction> 
 impl<S, I> NoFlowControl<S, I> 
 where S: Sized + SearchAlgorithm<Item = I>, I: Instruction
 {
+    /// Creates a new NoFlowControl from another search algorithm.
     pub fn new(inner: S) -> Self {
         Self { inner }
     }
