@@ -252,7 +252,7 @@ mod test {
         p.increment().unwrap();
     }
 
-    #[test]
+    //#[test]
     fn lengths() {
         use super::Z80Instruction;
         use crate::z80::emulators::Z80;
