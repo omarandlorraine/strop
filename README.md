@@ -48,7 +48,7 @@ for that type.
 ### Static analysis:
 There are also static analysis passes, which can for example:
  * exclude any instruction from this or that instruction set extension (for
-example, the robo6502 backend can use these to produce code compatible with
+example, the mos6502 backend can use these to produce code compatible with
 _all_ models, or _several_ models of the 6502)
  * exclude any program which contains a conditional branch (could be useful if
 you want to alter a routine suffering from branch mispredictions)
