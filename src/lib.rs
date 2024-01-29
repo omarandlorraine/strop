@@ -31,7 +31,7 @@ mod hamming;
 
 pub use crate::search::BruteForceSearch;
 pub use crate::search::StochasticSearch;
-pub use crate::search::{BasicBlock, NoFlowControl};
+pub use crate::search::{BasicBlock, CompatibilitySearch, NoFlowControl};
 
 use rand::Rng;
 use std::convert::TryInto;
@@ -179,6 +179,13 @@ where
     }
 }
 
+/// Selects instructions to ensure compatibility with CPU variants.
+pub trait Compatibility<I: Instruction> {
+    /// Returns a `SearchCull` to either say the instruction is okay, or to say it's not okay and
+    /// perhaps get a suggestion to the search algorithm.
+    fn check(&self, instruction: &I) -> SearchCull<I>;
+}
+
 pub trait SearchAlgorithm {
     //! You can use this to guide the search algorithm.
 
@@ -194,6 +201,18 @@ pub trait SearchAlgorithm {
 
     /// Get the next Candidate
     fn generate(&mut self) -> Option<Candidate<Self::Item>>;
+
+    /// Adorns the search algorithm with a static analysis pass ensuring compatibility with a given
+    /// model.
+    fn compatibility<C: Compatibility<Self::Item>>(
+        self,
+        compatibility: C,
+    ) -> CompatibilitySearch<Self, <Self as SearchAlgorithm>::Item, C>
+    where
+        Self: Sized,
+    {
+        CompatibilitySearch::new(self, compatibility)
+    }
 
     /// Adorns the search algorithm with a static analysis pass which disallows flow-control
     /// instructions.

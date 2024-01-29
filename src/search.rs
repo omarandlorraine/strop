@@ -1,5 +1,6 @@
 //! Module containing definitions of miscellaneous search strategies.
 
+use crate::Compatibility;
 use crate::SearchAlgorithm;
 use crate::{Candidate, Instruction};
 
@@ -371,5 +372,62 @@ impl<I: Instruction> Default for StochasticSearch<I> {
 impl<I: Instruction> Default for BruteForceSearch<I> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// A static analysis pass which selects instructions for compatibility with particular CPU
+/// variants.
+#[derive(Debug)]
+pub struct CompatibilitySearch<S: SearchAlgorithm<Item = I>, I: Instruction, C: Compatibility<I>> {
+    inner: S,
+    compatibility: C,
+}
+
+impl<S, I, C> CompatibilitySearch<S, I, C>
+where
+    S: Sized + SearchAlgorithm<Item = I>,
+    I: Instruction,
+    C: Compatibility<I>,
+{
+    /// Creates a new NoFlowControl from another search algorithm.
+    pub fn new(inner: S, compatibility: C) -> Self {
+        Self {
+            inner,
+            compatibility,
+        }
+    }
+}
+
+impl<S, I, C> SearchAlgorithm for CompatibilitySearch<S, I, C>
+where
+    S: Sized + SearchAlgorithm<Item = I>,
+    I: Instruction,
+    C: Compatibility<I>,
+{
+    type Item = I;
+    fn score(&mut self, score: f32) {
+        self.inner.score(score);
+    }
+
+    fn replace(&mut self, offset: usize, instruction: Option<I>) {
+        self.inner.replace(offset, instruction)
+    }
+
+    fn generate(&mut self) -> Option<Candidate<I>> {
+        use crate::SearchCull;
+
+        'outer: loop {
+            let candidate = self.inner.generate()?;
+            for (offset, insn) in candidate.instructions.iter().enumerate() {
+                match self.compatibility.check(insn) {
+                    SearchCull::Okay => {}
+                    SearchCull::SkipTo(i) => {
+                        self.inner.replace(offset, i);
+                        continue 'outer;
+                    }
+                }
+            }
+            return Some(candidate);
+        }
     }
 }
