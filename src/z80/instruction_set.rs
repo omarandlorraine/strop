@@ -25,10 +25,6 @@ impl Z80Instruction {
         Self { mc }
     }
 
-    pub fn next_opcode(&self) -> Self {
-        Self::new([self.mc[0] + 1, 0, 0, 0, 0])
-    }
-
     fn decode(&self) -> dez80::Instruction {
         let encoding = Vec::<_>::from(self.mc);
         dez80::Instruction::decode_one(&mut encoding.as_slice()).unwrap()
@@ -174,10 +170,11 @@ impl Instruction for Z80Instruction {
     }
 
     fn cull_flow_control(&self) -> SearchCull<Self> {
-        match self.mc[0] {
+        let opcode = self.mc[0];
+        match opcode {
             0x10 | 0x18 | 0x20 | 0x28 | 0x30 | 0x38 | 0xc0 | 0xd2 | 0xd4 | 0xda | 0xdc | 0xe2
             | 0xe4 | 0xec | 0xf2 | 0xf4 | 0xfa | 0xfc => {
-                SearchCull::<Self>::SkipTo(Some(self.next_opcode()))
+                SearchCull::<Self>::SkipTo(Some(Self::new([opcode + 1, 0, 0, 0, 0,])))
             }
             0xc2..=0xc4 => SearchCull::<Self>::SkipTo(Some(Self::new([0xc5, 0, 0, 0, 0]))),
             0xc7..=0xca => SearchCull::<Self>::SkipTo(Some(Self::new([0xcb, 0, 0, 0, 0]))),
