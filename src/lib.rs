@@ -216,14 +216,20 @@ pub trait SearchAlgorithm {
 
     /// Adorns the search algorithm with a static analysis pass which disallows flow-control
     /// instructions.
-    fn no_flow_control(self) -> NoFlowControl<Self, Self::Item> where Self: Sized{
+    fn no_flow_control(self) -> NoFlowControl<Self, Self::Item>
+    where
+        Self: Sized,
+    {
         NoFlowControl::new(self)
     }
 
     /// Adorns the search algorithm with a static analysis pass which searches only for basic
     /// blocks (i.e, a sequence of instructions where none but the last instruction may be a flow
     /// control instruction)
-    fn basic_block(self) -> BasicBlock<Self, Self::Item> where Self: Sized {
+    fn basic_block(self) -> BasicBlock<Self, Self::Item>
+    where
+        Self: Sized,
+    {
         BasicBlock::new(self)
     }
 

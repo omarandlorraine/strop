@@ -22,7 +22,11 @@ impl<I: Instruction> SearchAlgorithm for StochasticSearch<I> {
 
     fn replace(&mut self, offset: usize, instruction: Option<I>) {
         use rand::random;
-        self.child.instructions[offset] = if random() { instruction.unwrap_or_else(I::random) } else { I::random() }
+        self.child.instructions[offset] = if random() {
+            instruction.unwrap_or_else(I::random)
+        } else {
+            I::random()
+        }
     }
 
     fn generate(&mut self) -> Option<Candidate<I>> {
@@ -231,8 +235,10 @@ pub struct BasicBlock<S: ?Sized + SearchAlgorithm<Item = I>, I: Instruction> {
     inner: S,
 }
 
-impl<S, I> BasicBlock<S, I> 
-where S: Sized + SearchAlgorithm<Item = I>, I: Instruction
+impl<S, I> BasicBlock<S, I>
+where
+    S: Sized + SearchAlgorithm<Item = I>,
+    I: Instruction,
 {
     /// Creates a new BasicBlock from another search algorithm.
     pub fn new(inner: S) -> Self {
@@ -255,7 +261,12 @@ impl<S: SearchAlgorithm<Item = I>, I: Instruction> SearchAlgorithm for BasicBloc
         use crate::SearchCull::SkipTo;
 
         'outer: while let Some(cand) = self.inner.generate() {
-            for (offset, instruction) in cand.instructions.iter().take(cand.instructions.len() - 1).enumerate() {
+            for (offset, instruction) in cand
+                .instructions
+                .iter()
+                .take(cand.instructions.len() - 1)
+                .enumerate()
+            {
                 if let SkipTo(i) = instruction.cull_flow_control() {
                     self.inner.replace(offset, i);
                     continue 'outer;
@@ -273,8 +284,10 @@ pub struct NoFlowControl<S: ?Sized + SearchAlgorithm<Item = I>, I: Instruction> 
     inner: S,
 }
 
-impl<S, I> NoFlowControl<S, I> 
-where S: Sized + SearchAlgorithm<Item = I>, I: Instruction
+impl<S, I> NoFlowControl<S, I>
+where
+    S: Sized + SearchAlgorithm<Item = I>,
+    I: Instruction,
 {
     /// Creates a new NoFlowControl from another search algorithm.
     pub fn new(inner: S) -> Self {
