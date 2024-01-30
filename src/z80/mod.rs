@@ -4,6 +4,10 @@ pub mod emulators;
 pub mod instruction_set;
 pub mod testers;
 
+use crate::LinkageSearch;
+use crate::Candidate;
+use crate::Linkage;
+use crate::SearchAlgorithm;
 use crate::BruteForceSearch;
 use crate::Compatibility;
 use crate::CompatibilitySearch;
@@ -44,6 +48,7 @@ macro_rules! z80impl {
 
 z80impl!(StochasticSearch<Z80Instruction>);
 z80impl!(BruteForceSearch<Z80Instruction>);
+z80impl!(LinkageSearch<CompatibilitySearch<StochasticSearch<Z80Instruction>, Z80Instruction, ZilogZ80>, Z80Instruction, Subroutine>);
 z80impl!(CompatibilitySearch<StochasticSearch<Z80Instruction>, Z80Instruction, ZilogZ80>);
 
 /// A type representing the Zilog Z80. Useful for a `CompatibilitySearch` for example.
@@ -74,5 +79,35 @@ impl Compatibility<Z80Instruction> for Intel8080 {
         }
 
         SearchCull::Okay
+    }
+}
+
+/// A type representing the Z80 subroutine. The `Linkage` trait is implemented here, so use this if
+/// you want to search only for subroutines ending in the `ret` instruction. As per an ordinary Z80
+/// subroutine.
+#[derive(Debug)]
+pub struct Subroutine;
+
+impl<S: SearchAlgorithm<Item=Z80Instruction>> Linkage<S, Z80Instruction> for Subroutine {
+    fn check(&self, search: &mut S, candidate: &Candidate<Z80Instruction>) -> bool {
+        use crate::Instruction;
+        let len = candidate.instructions.len();
+        if len < 1 {
+            // not long enough to even contain a `ret` instruction.
+            return false;
+        }
+        let offset = len - 1;
+
+        let last_instruction = candidate.instructions[offset];
+        let opcode = last_instruction.encode()[0];
+        if opcode < 0xc9 {
+            search.replace(offset, Some(Z80Instruction::new([0xc9, 0, 0, 0, 0])));
+            return false;
+        } else if opcode > 0xc9 {
+            search.replace(offset, None);
+            return false;
+        } else {
+            return true;
+        }
     }
 }

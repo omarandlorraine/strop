@@ -3,6 +3,7 @@
 use crate::Compatibility;
 use crate::SearchAlgorithm;
 use crate::{Candidate, Instruction};
+use crate::Linkage;
 
 /// Generates a program by stochastic approximation to a correctness function
 #[derive(Clone, Debug)]
@@ -441,6 +442,41 @@ where
                 }
             }
             return Some(candidate);
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct LinkageSearch<S: SearchAlgorithm<Item = I>, I: Instruction, L: Linkage<S, I>> {
+    inner: S,
+    linkage: L,
+}
+
+impl<S: SearchAlgorithm<Item=I>, I: Instruction, L: Linkage<S, I>> LinkageSearch<S, I, L> {
+    pub fn new(inner: S, linkage: L) -> Self { Self { inner, linkage }}
+}
+
+impl<S, I, L> SearchAlgorithm for LinkageSearch<S, I, L>
+where
+    S: Sized + SearchAlgorithm<Item = I>,
+    I: Instruction,
+    L: Linkage<S, I>,
+{
+    type Item = I;
+    fn score(&mut self, score: f32) {
+        self.inner.score(score);
+    }
+
+    fn replace(&mut self, offset: usize, instruction: Option<I>) {
+        self.inner.replace(offset, instruction)
+    }
+
+    fn generate(&mut self) -> Option<Candidate<I>> {
+        loop {
+            let candidate = self.inner.generate()?;
+            if self.linkage.check(&mut self.inner, &candidate) {
+                return Some(candidate);
+            }
         }
     }
 }

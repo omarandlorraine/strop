@@ -31,6 +31,7 @@ mod hamming;
 
 pub use crate::search::BruteForceSearch;
 pub use crate::search::StochasticSearch;
+pub use crate::search::LinkageSearch;
 pub use crate::search::{BasicBlock, CompatibilitySearch, NoFlowControl};
 
 use rand::Rng;
@@ -186,6 +187,12 @@ pub trait Compatibility<I: Instruction> {
     fn check(&self, instruction: &I) -> SearchCull<I>;
 }
 
+/// Selects instructions to ensure the program begins and ends with the correct instructions.
+pub trait Linkage<S: SearchAlgorithm, I: Instruction> {
+    /// Returns a `Vec<SearchCull<I>>` to list the problems with the given `Candidate<I>`.
+    fn check(&self, search: &mut S, instruction: &Candidate<I>) -> bool;
+}
+
 pub trait SearchAlgorithm {
     //! You can use this to guide the search algorithm.
 
@@ -212,6 +219,14 @@ pub trait SearchAlgorithm {
         Self: Sized,
     {
         CompatibilitySearch::new(self, compatibility)
+    }
+
+    /// Adorns the search algorithm with a static analysis pass which ensures the program's
+    /// linkage. For example, it could yield only subroutines, or only interrupt handlers, or ...
+    fn linkage<L: Linkage<Self, Self::Item>>(self, linkage: L) -> LinkageSearch<Self, <Self as SearchAlgorithm>::Item, L> 
+        where Self: Sized,
+    {
+        LinkageSearch::new(self, linkage)
     }
 
     /// Adorns the search algorithm with a static analysis pass which disallows flow-control
