@@ -4,14 +4,14 @@ pub mod emulators;
 pub mod instruction_set;
 pub mod testers;
 
-use crate::LinkageSearch;
-use crate::Candidate;
-use crate::Linkage;
-use crate::SearchAlgorithm;
 use crate::BruteForceSearch;
+use crate::Candidate;
 use crate::Compatibility;
 use crate::CompatibilitySearch;
 use crate::HammingDistance;
+use crate::Linkage;
+use crate::LinkageSearch;
+use crate::SearchAlgorithm;
 use crate::SearchCull;
 use crate::StochasticSearch;
 use instruction_set::Z80Instruction;
@@ -48,7 +48,13 @@ macro_rules! z80impl {
 
 z80impl!(StochasticSearch<Z80Instruction>);
 z80impl!(BruteForceSearch<Z80Instruction>);
-z80impl!(LinkageSearch<CompatibilitySearch<StochasticSearch<Z80Instruction>, Z80Instruction, ZilogZ80>, Z80Instruction, Subroutine>);
+z80impl!(
+    LinkageSearch<
+        CompatibilitySearch<StochasticSearch<Z80Instruction>, Z80Instruction, ZilogZ80>,
+        Z80Instruction,
+        Subroutine,
+    >
+);
 z80impl!(CompatibilitySearch<StochasticSearch<Z80Instruction>, Z80Instruction, ZilogZ80>);
 
 /// A type representing the Zilog Z80. Useful for a `CompatibilitySearch` for example.
@@ -88,7 +94,7 @@ impl Compatibility<Z80Instruction> for Intel8080 {
 #[derive(Debug)]
 pub struct Subroutine;
 
-impl<S: SearchAlgorithm<Item=Z80Instruction>> Linkage<S, Z80Instruction> for Subroutine {
+impl<S: SearchAlgorithm<Item = Z80Instruction>> Linkage<S, Z80Instruction> for Subroutine {
     fn check(&self, search: &mut S, candidate: &Candidate<Z80Instruction>) -> bool {
         use crate::Instruction;
         let len = candidate.instructions.len();

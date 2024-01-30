@@ -1,9 +1,9 @@
 //! Module containing definitions of miscellaneous search strategies.
 
 use crate::Compatibility;
+use crate::Linkage;
 use crate::SearchAlgorithm;
 use crate::{Candidate, Instruction};
-use crate::Linkage;
 
 /// Generates a program by stochastic approximation to a correctness function
 #[derive(Clone, Debug)]
@@ -452,8 +452,10 @@ pub struct LinkageSearch<S: SearchAlgorithm<Item = I>, I: Instruction, L: Linkag
     linkage: L,
 }
 
-impl<S: SearchAlgorithm<Item=I>, I: Instruction, L: Linkage<S, I>> LinkageSearch<S, I, L> {
-    pub fn new(inner: S, linkage: L) -> Self { Self { inner, linkage }}
+impl<S: SearchAlgorithm<Item = I>, I: Instruction, L: Linkage<S, I>> LinkageSearch<S, I, L> {
+    pub fn new(inner: S, linkage: L) -> Self {
+        Self { inner, linkage }
+    }
 }
 
 impl<S, I, L> SearchAlgorithm for LinkageSearch<S, I, L>

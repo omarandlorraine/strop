@@ -3,10 +3,10 @@
 pub mod emulators;
 pub mod instruction_set;
 
-use crate::SearchCull;
-use crate::Compatibility;
-use crate::mos6502::instruction_set::Nmos6502Instruction;
 use crate::mos6502::instruction_set::Cmos6502Instruction;
+use crate::mos6502::instruction_set::Nmos6502Instruction;
+use crate::Compatibility;
+use crate::SearchCull;
 
 struct RevisionA;
 

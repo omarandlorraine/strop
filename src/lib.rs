@@ -30,8 +30,8 @@ pub mod z80;
 mod hamming;
 
 pub use crate::search::BruteForceSearch;
-pub use crate::search::StochasticSearch;
 pub use crate::search::LinkageSearch;
+pub use crate::search::StochasticSearch;
 pub use crate::search::{BasicBlock, CompatibilitySearch, NoFlowControl};
 
 use rand::Rng;
@@ -223,8 +223,12 @@ pub trait SearchAlgorithm {
 
     /// Adorns the search algorithm with a static analysis pass which ensures the program's
     /// linkage. For example, it could yield only subroutines, or only interrupt handlers, or ...
-    fn linkage<L: Linkage<Self, Self::Item>>(self, linkage: L) -> LinkageSearch<Self, <Self as SearchAlgorithm>::Item, L> 
-        where Self: Sized,
+    fn linkage<L: Linkage<Self, Self::Item>>(
+        self,
+        linkage: L,
+    ) -> LinkageSearch<Self, <Self as SearchAlgorithm>::Item, L>
+    where
+        Self: Sized,
     {
         LinkageSearch::new(self, linkage)
     }
