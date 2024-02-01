@@ -100,12 +100,12 @@ fn check_last_instruction<S: SearchAlgorithm<Item = Z80Instruction>>(search: &mu
 
     if last_instruction < instruction {
         search.replace(offset, Some(instruction));
-        return false;
+        false
     } else if last_instruction > instruction {
         search.replace(offset, None);
-        return false;
+        false
     } else {
-        return true;
+        true
     }
 }
 
