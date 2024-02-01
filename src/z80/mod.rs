@@ -88,6 +88,27 @@ impl Compatibility<Z80Instruction> for Intel8080 {
     }
 }
 
+fn check_last_instruction<S: SearchAlgorithm<Item = Z80Instruction>>(search: &mut S, candidate: &Candidate<Z80Instruction>, instruction: Z80Instruction) -> bool {
+    let len = candidate.instructions.len();
+    if len < 1 {
+        // not long enough to even contain a `ret` instruction or anything.
+        return false;
+    }
+    let offset = len - 1;
+
+    let last_instruction = candidate.instructions[offset];
+
+    if last_instruction < instruction {
+        search.replace(offset, Some(instruction));
+        return false;
+    } else if last_instruction > instruction {
+        search.replace(offset, None);
+        return false;
+    } else {
+        return true;
+    }
+}
+
 /// A type representing the Z80 subroutine. The `Linkage` trait is implemented here, so use this if
 /// you want to search only for subroutines ending in the `ret` instruction. As per an ordinary Z80
 /// subroutine.
@@ -96,24 +117,30 @@ pub struct Subroutine;
 
 impl<S: SearchAlgorithm<Item = Z80Instruction>> Linkage<S, Z80Instruction> for Subroutine {
     fn check(&self, search: &mut S, candidate: &Candidate<Z80Instruction>) -> bool {
-        use crate::Instruction;
-        let len = candidate.instructions.len();
-        if len < 1 {
-            // not long enough to even contain a `ret` instruction.
-            return false;
-        }
-        let offset = len - 1;
+        check_last_instruction(search, candidate, Z80Instruction::new([0xc9, 0, 0, 0, 0]))
+    }
+}
 
-        let last_instruction = candidate.instructions[offset];
-        let opcode = last_instruction.encode()[0];
-        if opcode < 0xc9 {
-            search.replace(offset, Some(Z80Instruction::new([0xc9, 0, 0, 0, 0])));
-            return false;
-        } else if opcode > 0xc9 {
-            search.replace(offset, None);
-            return false;
-        } else {
-            return true;
-        }
+/// A type representing the IRQ handler. The `Linkage` trait is implemented here, so use this if
+/// you want to search only for subroutines ending in the `reti` instruction. As per an ordinary Z80
+/// IRQ handler.
+#[derive(Debug)]
+pub struct IrqHandler;
+
+impl<S: SearchAlgorithm<Item = Z80Instruction>> Linkage<S, Z80Instruction> for IrqHandler {
+    fn check(&self, search: &mut S, candidate: &Candidate<Z80Instruction>) -> bool {
+        check_last_instruction(search, candidate, Z80Instruction::new([0xed, 0x4d, 0,0,0]))
+    }
+}
+
+/// A type representing the NMI handler. The `Linkage` trait is implemented here, so use this if
+/// you want to search only for subroutines ending in the `retn` instruction. As per an ordinary Z80
+/// NMI handler.
+#[derive(Debug)]
+pub struct NmiHandler;
+
+impl<S: SearchAlgorithm<Item = Z80Instruction>> Linkage<S, Z80Instruction> for NmiHandler {
+    fn check(&self, search: &mut S, candidate: &Candidate<Z80Instruction>) -> bool {
+        check_last_instruction(search, candidate, Z80Instruction::new([0xed, 0x45, 0,0,0]))
     }
 }

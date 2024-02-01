@@ -4,7 +4,7 @@ use crate::Instruction;
 use crate::SearchCull;
 
 /// Represents a Z80 instruction
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, PartialOrd)]
 pub struct Z80Instruction {
     mc: [u8; 5],
 }
