@@ -32,7 +32,7 @@ mod hamming;
 pub use crate::search::BruteForceSearch;
 pub use crate::search::LinkageSearch;
 pub use crate::search::StochasticSearch;
-pub use crate::search::{BasicBlock, CompatibilitySearch, NoFlowControl};
+pub use crate::search::CompatibilitySearch;
 
 use rand::Rng;
 use std::convert::TryInto;
@@ -97,16 +97,6 @@ pub trait Instruction: Copy + Clone + std::marker::Send + std::fmt::Display {
 
     /// Increments the instruction's encoding by one, and then returns a clone of self.
     fn increment(&mut self) -> Option<Self>;
-
-    /// If this instruction is a skip operation, returns the next instruction that isn't a skip
-    /// operation. Otherwise, returns None.
-    fn cull_skip(&self) -> SearchCull<Self> {
-        SearchCull::<Self>::Okay
-    }
-
-    /// If this instruction is a flow control instruction, returns the next instruction that isn't
-    /// a flow control instruction. Otherwise, returns None.
-    fn cull_flow_control(&self) -> SearchCull<Self>;
 }
 
 pub trait Emulator<T: Instruction> {
@@ -231,25 +221,6 @@ pub trait SearchAlgorithm {
         Self: Sized,
     {
         LinkageSearch::new(self, linkage)
-    }
-
-    /// Adorns the search algorithm with a static analysis pass which disallows flow-control
-    /// instructions.
-    fn no_flow_control(self) -> NoFlowControl<Self, Self::Item>
-    where
-        Self: Sized,
-    {
-        NoFlowControl::new(self)
-    }
-
-    /// Adorns the search algorithm with a static analysis pass which searches only for basic
-    /// blocks (i.e, a sequence of instructions where none but the last instruction may be a flow
-    /// control instruction)
-    fn basic_block(self) -> BasicBlock<Self, Self::Item>
-    where
-        Self: Sized,
-    {
-        BasicBlock::new(self)
     }
 
     /// Returns a `SearchAlgorithmIterator`, which can be used to iterate over the generated

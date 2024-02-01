@@ -1,7 +1,6 @@
 //!  Two instruction sets supported by the ARMv4T.
 
 use crate::Instruction;
-use crate::SearchCull;
 
 /// Type representing the Thumb instruction (no Thumb2 instructions are present here. It's just the
 /// first, fixed-width version).
@@ -38,10 +37,6 @@ impl Instruction for Thumb {
         self.0 = self.0.checked_add(1)?;
         Some(*self)
     }
-
-    fn cull_flow_control(&self) -> SearchCull<Self> {
-        SearchCull::<Self>::Okay
-    }
 }
 
 #[cfg(test)]
@@ -56,43 +51,6 @@ mod test {
         while thumb.increment().is_some() {
             let dasm = format!("{}", thumb);
             assert!(!dasm.starts_with("0x"), "no disassembly for {}", dasm);
-        }
-    }
-
-    #[test]
-    fn thumb_instructions_cull_flow_control() {
-        use crate::armv4t::instruction_set::Thumb;
-
-        use crate::Instruction;
-
-        let mut insn = Thumb::first();
-        let opcodes = vec!["swi ", "bl ", "blx ", "ldr pc,", "b "];
-
-        while insn.increment().is_some() {
-            let dasm = format!("{}", insn);
-
-            for opcode in &opcodes {
-                if dasm.starts_with(opcode) {
-                    assert!(
-                        !insn.cull_flow_control().is_okay(),
-                        "{} {:?} should be marked as a flow control instruction",
-                        dasm,
-                        insn
-                    )
-                }
-            }
-
-            if insn.cull_flow_control().is_okay() {
-                for opcode in &opcodes {
-                    assert!(
-                        !dasm.starts_with(opcode),
-                        "{} should not be marked as a flow control instruction",
-                        dasm
-                    )
-                }
-            } else if let Some(s) = insn.cull_flow_control().suggestion() {
-                assert!(s.cull_flow_control().is_okay())
-            }
         }
     }
 }
