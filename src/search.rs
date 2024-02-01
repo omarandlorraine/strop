@@ -228,7 +228,7 @@ impl<S: SearchAlgorithm<Item = I>, I: Instruction> SearchAlgorithm for LengthLim
     }
 }
 
-/// Random dead-code eliminator
+/// Stochastic dead-code eliminator
 #[derive(Clone, Debug)]
 pub struct DeadCodeEliminator<I: Instruction> {
     parent: Candidate<I>,
@@ -351,6 +351,7 @@ where
     }
 }
 
+/// A static analysis pass for ensuring that subroutines have the correct prologues/epilogues
 #[derive(Debug)]
 pub struct LinkageSearch<S: SearchAlgorithm<Item = I>, I: Instruction, L: Linkage<S, I>> {
     inner: S,
@@ -358,6 +359,8 @@ pub struct LinkageSearch<S: SearchAlgorithm<Item = I>, I: Instruction, L: Linkag
 }
 
 impl<S: SearchAlgorithm<Item = I>, I: Instruction, L: Linkage<S, I>> LinkageSearch<S, I, L> {
+    /// Constructs a new LinkageSearch object, from an inner search algorithm, and some type
+    /// implementing the `Linkage` trait, representing the prologue/epilogue details.
     pub fn new(inner: S, linkage: L) -> Self {
         Self { inner, linkage }
     }
