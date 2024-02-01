@@ -88,7 +88,11 @@ impl Compatibility<Z80Instruction> for Intel8080 {
     }
 }
 
-fn check_last_instruction<S: SearchAlgorithm<Item = Z80Instruction>>(search: &mut S, candidate: &Candidate<Z80Instruction>, instruction: Z80Instruction) -> bool {
+fn check_last_instruction<S: SearchAlgorithm<Item = Z80Instruction>>(
+    search: &mut S,
+    candidate: &Candidate<Z80Instruction>,
+    instruction: Z80Instruction,
+) -> bool {
     let len = candidate.instructions.len();
     if len < 1 {
         // not long enough to even contain a `ret` instruction or anything.
@@ -129,7 +133,11 @@ pub struct IrqHandler;
 
 impl<S: SearchAlgorithm<Item = Z80Instruction>> Linkage<S, Z80Instruction> for IrqHandler {
     fn check(&self, search: &mut S, candidate: &Candidate<Z80Instruction>) -> bool {
-        check_last_instruction(search, candidate, Z80Instruction::new([0xed, 0x4d, 0,0,0]))
+        check_last_instruction(
+            search,
+            candidate,
+            Z80Instruction::new([0xed, 0x4d, 0, 0, 0]),
+        )
     }
 }
 
@@ -141,6 +149,10 @@ pub struct NmiHandler;
 
 impl<S: SearchAlgorithm<Item = Z80Instruction>> Linkage<S, Z80Instruction> for NmiHandler {
     fn check(&self, search: &mut S, candidate: &Candidate<Z80Instruction>) -> bool {
-        check_last_instruction(search, candidate, Z80Instruction::new([0xed, 0x45, 0,0,0]))
+        check_last_instruction(
+            search,
+            candidate,
+            Z80Instruction::new([0xed, 0x45, 0, 0, 0]),
+        )
     }
 }
