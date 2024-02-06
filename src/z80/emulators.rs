@@ -101,6 +101,14 @@ impl Z80 {
 }
 
 impl Z80 {
+    /// Returns the 16-bit value represented by the emulated CPU's B and C registers.
+    pub fn get_bc(&self) -> u16 {
+        u16::from_le_bytes([
+            self.cpu.immutable_registers().get8(iz80::Reg8::B),
+            self.cpu.immutable_registers().get8(iz80::Reg8::C),
+        ])
+    }
+
     /// Returns the 32-bit value represented by the emulated CPU's D, E, H and L registers.
     pub fn get_dehl(&self) -> u32 {
         u32::from_le_bytes([
