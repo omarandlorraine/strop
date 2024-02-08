@@ -142,16 +142,17 @@ impl<I: Instruction> StochasticSearch<I> {
 
 /// Iterates across the entire search space, shortest programs first.
 #[derive(Debug)]
-pub struct BruteForceSearch<I: Instruction> {
+pub struct BruteForceSearch<I: Instruction + PartialOrd + PartialEq> {
     curr: Vec<I>,
 }
 
-impl<I: Instruction> SearchAlgorithm for BruteForceSearch<I> {
+impl<I: Instruction  + std::cmp::PartialOrd> SearchAlgorithm for BruteForceSearch<I> {
     type Item = I;
     fn score(&mut self, _: f32) {}
 
     fn replace(&mut self, offset: usize, instruction: Option<I>) {
         if let Some(instruction) = instruction {
+            assert!(self.curr[offset] < instruction);
             self.curr[offset] = instruction
         } else {
             self.iterate(offset);
@@ -164,7 +165,7 @@ impl<I: Instruction> SearchAlgorithm for BruteForceSearch<I> {
     }
 }
 
-impl<I: Instruction> BruteForceSearch<I> {
+impl<I: Instruction + std::cmp::PartialOrd + std::cmp::PartialEq> BruteForceSearch<I> {
     /// Returns a new BruteForceSearch<I>
     pub fn new() -> Self {
         Self { curr: vec![] }
@@ -288,7 +289,7 @@ impl<I: Instruction> Default for StochasticSearch<I> {
     }
 }
 
-impl<I: Instruction> Default for BruteForceSearch<I> {
+impl<I: Instruction + PartialOrd + PartialEq> Default for BruteForceSearch<I> {
     fn default() -> Self {
         Self::new()
     }

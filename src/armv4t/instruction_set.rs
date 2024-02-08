@@ -4,11 +4,11 @@ use crate::Instruction;
 
 /// Type representing the Thumb instruction (no Thumb2 instructions are present here. It's just the
 /// first, fixed-width version).
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Thumb(pub u16);
 
 /// Type representing the full-width ARM instruction.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Arm(pub u32);
 
 impl Instruction for Thumb {
