@@ -430,3 +430,42 @@ where
         }
     }
 }
+
+/// A static analysis pass for ensuring that programs do not access memory outside of the allow
+/// ranges.
+pub struct SearchTrace<'a, S: SearchAlgorithm<Item = I>, I: Instruction> {
+    inner: S,
+    func: &'a dyn Fn(&Candidate<I>),
+}
+
+impl<'a, S: SearchAlgorithm<Item = I>, I: Instruction> SearchTrace<'a, S, I> {
+    /// Constructs a new LinkageSearch object, from an inner search algorithm, and some type
+    /// implementing the `Linkage` trait, representing the prologue/epilogue details.
+    pub fn new<'b>(inner: S, func: &'b dyn Fn(&Candidate<I>)) -> SearchTrace<'b, S, I> 
+        where 'a: 'b, 'b: 'a
+    {
+        Self { inner, func }
+    }
+}
+
+impl<S, I> SearchAlgorithm for SearchTrace<'_, S, I>
+where
+    S: Sized + SearchAlgorithm<Item = I>,
+    I: Instruction,
+{
+    type Item = I;
+    fn score(&mut self, score: f32) {
+        self.inner.score(score);
+    }
+
+    fn replace(&mut self, offset: usize, instruction: Option<I>) {
+        self.inner.replace(offset, instruction)
+    }
+
+    fn generate(&mut self) -> Option<Candidate<I>> {
+            let candidate = self.inner.generate()?;
+            (self.func)(&candidate);
+
+            return Some(candidate);
+    }
+}

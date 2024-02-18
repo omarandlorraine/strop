@@ -34,6 +34,7 @@ pub use crate::search::CompatibilitySearch;
 pub use crate::search::LinkageSearch;
 pub use crate::search::MemoryAccessSearch;
 pub use crate::search::StochasticSearch;
+pub use crate::search::SearchTrace;
 
 use rand::Rng;
 use std::convert::TryInto;
@@ -230,6 +231,13 @@ pub trait SearchAlgorithm {
         where Self: Sized
     {
         MemoryAccessSearch::new(self, regions)
+    }
+
+    /// Calls the supplied function on each generated program
+    fn trace(self, func: &dyn Fn(&Candidate<Self::Item>)) -> SearchTrace<'_, Self,  <Self as SearchAlgorithm>::Item>
+        where Self: Sized
+    {
+        SearchTrace::new(self, func)
     }
 
     /// Returns a `SearchAlgorithmIterator`, which can be used to iterate over the generated
