@@ -433,22 +433,23 @@ where
 
 /// A static analysis pass for ensuring that programs do not access memory outside of the allow
 /// ranges.
-pub struct SearchTrace<'a, S: SearchAlgorithm<Item = I>, I: Instruction> {
+#[derive(Debug)]
+pub struct SearchTrace<S: SearchAlgorithm<Item = I>, I: Instruction> {
     inner: S,
-    func: &'a dyn Fn(&Candidate<I>),
+    func: fn(&Candidate<I>),
 }
 
-impl<'a, S: SearchAlgorithm<Item = I>, I: Instruction> SearchTrace<'a, S, I> {
+impl<S: SearchAlgorithm<Item = I>, I: Instruction> SearchTrace<S, I> {
     /// Constructs a new LinkageSearch object, from an inner search algorithm, and some type
     /// implementing the `Linkage` trait, representing the prologue/epilogue details.
-    pub fn new<'b>(inner: S, func: &'b dyn Fn(&Candidate<I>)) -> SearchTrace<'b, S, I> 
-        where 'a: 'b, 'b: 'a
+    pub fn new<'b>(inner: S, func: fn(&Candidate<I>)) -> SearchTrace<S, I> 
+       
     {
         Self { inner, func }
     }
 }
 
-impl<S, I> SearchAlgorithm for SearchTrace<'_, S, I>
+impl<S, I> SearchAlgorithm for SearchTrace<S, I>
 where
     S: Sized + SearchAlgorithm<Item = I>,
     I: Instruction,

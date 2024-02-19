@@ -234,7 +234,7 @@ pub trait SearchAlgorithm {
     }
 
     /// Calls the supplied function on each generated program
-    fn trace(self, func: &dyn Fn(&Candidate<Self::Item>)) -> SearchTrace<'_, Self,  <Self as SearchAlgorithm>::Item>
+    fn trace(self, func: fn(&Candidate<Self::Item>)) -> SearchTrace<Self,  <Self as SearchAlgorithm>::Item>
         where Self: Sized
     {
         SearchTrace::new(self, func)
