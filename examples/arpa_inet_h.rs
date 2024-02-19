@@ -40,7 +40,6 @@ fn bruteforce16(label: &'static str, func: fn(u16) -> Option<u16>) {
     use strop::z80::ZilogZ80;
     use strop::SearchAlgorithm;
 
-
     let mut iterator = StochasticSearch::<Z80Instruction>::new()
         .compatibility(ZilogZ80)
         .linkage(Subroutine)

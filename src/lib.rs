@@ -32,8 +32,8 @@ mod hamming;
 pub use crate::search::BruteForceSearch;
 pub use crate::search::CompatibilitySearch;
 pub use crate::search::LinkageSearch;
-pub use crate::search::StochasticSearch;
 pub use crate::search::SearchTrace;
+pub use crate::search::StochasticSearch;
 
 use rand::Rng;
 use std::convert::TryInto;
@@ -225,8 +225,12 @@ pub trait SearchAlgorithm {
     }
 
     /// Calls the supplied function on each generated program
-    fn trace(self, func: fn(&Candidate<Self::Item>)) -> SearchTrace<Self,  <Self as SearchAlgorithm>::Item>
-        where Self: Sized
+    fn trace(
+        self,
+        func: fn(&Candidate<Self::Item>),
+    ) -> SearchTrace<Self, <Self as SearchAlgorithm>::Item>
+    where
+        Self: Sized,
     {
         SearchTrace::new(self, func)
     }

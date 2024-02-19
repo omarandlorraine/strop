@@ -146,7 +146,7 @@ pub struct BruteForceSearch<I: Instruction + PartialOrd + PartialEq> {
     curr: Vec<I>,
 }
 
-impl<I: Instruction  + std::cmp::PartialOrd> SearchAlgorithm for BruteForceSearch<I> {
+impl<I: Instruction + std::cmp::PartialOrd> SearchAlgorithm for BruteForceSearch<I> {
     type Item = I;
     fn score(&mut self, _: f32) {}
 
@@ -403,9 +403,7 @@ pub struct SearchTrace<S: SearchAlgorithm<Item = I>, I: Instruction> {
 impl<S: SearchAlgorithm<Item = I>, I: Instruction> SearchTrace<S, I> {
     /// Constructs a new LinkageSearch object, from an inner search algorithm, and some type
     /// implementing the `Linkage` trait, representing the prologue/epilogue details.
-    pub fn new<'b>(inner: S, func: fn(&Candidate<I>)) -> SearchTrace<S, I> 
-       
-    {
+    pub fn new(inner: S, func: fn(&Candidate<I>)) -> SearchTrace<S, I> {
         Self { inner, func }
     }
 }
@@ -425,9 +423,8 @@ where
     }
 
     fn generate(&mut self) -> Option<Candidate<I>> {
-            let candidate = self.inner.generate()?;
-            (self.func)(&candidate);
-
-            return Some(candidate);
+        let candidate = self.inner.generate()?;
+        (self.func)(&candidate);
+        Some(candidate)
     }
 }
