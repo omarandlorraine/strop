@@ -49,13 +49,13 @@ const CMOS_OPCODES: [u8; 178] = [
 ];
 
 /// A struct representing one MOS 6502 instruction
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Nmos6502Instruction {
     encoding: Encoding6502,
 }
 
 /// A struct representing one MOS 6502 instruction
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Cmos6502Instruction {
     encoding: Encoding6502,
 }
