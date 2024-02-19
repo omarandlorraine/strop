@@ -1,8 +1,9 @@
 //! Z80 testers.
-use crate::HammingDistance;
-
 use crate::z80::instruction_set::Z80Instruction;
+use crate::z80::Subroutine;
 use crate::Candidate;
+use crate::HammingDistance;
+use crate::LinkageSearch;
 use crate::SearchAlgorithm;
 
 use num::cast::AsPrimitive;
@@ -29,7 +30,7 @@ where
 {
     func: fn(Operand) -> Option<Return>,
     inputs: Vec<(u32, Return)>,
-    search: S,
+    search: LinkageSearch<S, Z80Instruction, Subroutine>,
 }
 
 impl<
@@ -45,6 +46,7 @@ where
 {
     /// Returns a new Z88dkfastcall struct.
     pub fn new(search: S, func: fn(Operand) -> Option<Return>) -> Self {
+        let search = search.linkage(Subroutine);
         Self {
             inputs: vec![],
             search,
