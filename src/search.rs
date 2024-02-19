@@ -395,45 +395,6 @@ where
 /// A static analysis pass for ensuring that programs do not access memory outside of the allow
 /// ranges.
 #[derive(Debug)]
-pub struct MemoryAccessSearch<S: SearchAlgorithm<Item = I>, I: Instruction> {
-    inner: S,
-    ranges: Vec<core::ops::Range<u16>>,
-}
-
-impl<S: SearchAlgorithm<Item = I>, I: Instruction> MemoryAccessSearch<S, I> {
-    /// Constructs a new LinkageSearch object, from an inner search algorithm, and some type
-    /// implementing the `Linkage` trait, representing the prologue/epilogue details.
-    pub fn new(inner: S, ranges: Vec<core::ops::Range<u16>>) -> Self {
-        Self { inner, ranges }
-    }
-}
-
-impl<S, I> SearchAlgorithm for MemoryAccessSearch<S, I>
-where
-    S: Sized + SearchAlgorithm<Item = I>,
-    I: Instruction,
-{
-    type Item = I;
-    fn score(&mut self, score: f32) {
-        self.inner.score(score);
-    }
-
-    fn replace(&mut self, offset: usize, instruction: Option<I>) {
-        self.inner.replace(offset, instruction)
-    }
-
-    fn generate(&mut self) -> Option<Candidate<I>> {
-        loop {
-            let candidate = self.inner.generate()?;
-
-            return Some(candidate);
-        }
-    }
-}
-
-/// A static analysis pass for ensuring that programs do not access memory outside of the allow
-/// ranges.
-#[derive(Debug)]
 pub struct SearchTrace<S: SearchAlgorithm<Item = I>, I: Instruction> {
     func: fn(&Candidate<I>),
     inner: S,

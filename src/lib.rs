@@ -32,7 +32,6 @@ mod hamming;
 pub use crate::search::BruteForceSearch;
 pub use crate::search::CompatibilitySearch;
 pub use crate::search::LinkageSearch;
-pub use crate::search::MemoryAccessSearch;
 pub use crate::search::StochasticSearch;
 pub use crate::search::SearchTrace;
 
@@ -223,14 +222,6 @@ pub trait SearchAlgorithm {
         Self: Sized,
     {
         LinkageSearch::new(self, linkage)
-    }
-
-    /// Adorns the search algorith with a static analysis pass which ensures the program does not
-    /// access memory outside of the specified regions
-    fn memory_access(self, regions: Vec<core::ops::Range<u16>>) -> MemoryAccessSearch<Self, <Self as SearchAlgorithm>::Item>
-        where Self: Sized
-    {
-        MemoryAccessSearch::new(self, regions)
     }
 
     /// Calls the supplied function on each generated program
