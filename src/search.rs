@@ -299,8 +299,8 @@ impl<I: Instruction + PartialOrd + PartialEq> Default for BruteForceSearch<I> {
 /// variants.
 #[derive(Debug)]
 pub struct CompatibilitySearch<S: SearchAlgorithm<Item = I>, I: Instruction, C: Compatibility<I>> {
-    inner: S,
     compatibility: C,
+    inner: S,
 }
 
 impl<S, I, C> CompatibilitySearch<S, I, C>
@@ -355,8 +355,8 @@ where
 /// A static analysis pass for ensuring that subroutines have the correct prologues/epilogues
 #[derive(Debug)]
 pub struct LinkageSearch<S: SearchAlgorithm<Item = I>, I: Instruction, L: Linkage<S, I>> {
-    inner: S,
     linkage: L,
+    inner: S,
 }
 
 impl<S: SearchAlgorithm<Item = I>, I: Instruction, L: Linkage<S, I>> LinkageSearch<S, I, L> {
@@ -435,8 +435,8 @@ where
 /// ranges.
 #[derive(Debug)]
 pub struct SearchTrace<S: SearchAlgorithm<Item = I>, I: Instruction> {
-    inner: S,
     func: fn(&Candidate<I>),
+    inner: S,
 }
 
 impl<S: SearchAlgorithm<Item = I>, I: Instruction> SearchTrace<S, I> {

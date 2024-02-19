@@ -27,9 +27,9 @@ where
     S: SearchAlgorithm<Item = Z80Instruction>,
     Operand: num::cast::AsPrimitive<u32>,
 {
+    func: fn(Operand) -> Option<Return>,
     inputs: Vec<(u32, Return)>,
     search: S,
-    func: fn(Operand) -> Option<Return>,
 }
 
 impl<
