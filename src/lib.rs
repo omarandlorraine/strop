@@ -38,12 +38,6 @@ pub use crate::search::StochasticSearch;
 use rand::Rng;
 use std::convert::TryInto;
 
-/// Trait for testing a code sequence
-pub trait Test<I: Instruction> {
-    /// Run the program, and return a score of how well it did
-    fn run(&self, program: &Candidate<I>) -> f64;
-}
-
 /// Type used to feed back to the SearchAlgorithms. The search algorithms are made to react to this
 /// to cull the search space by disallowing certain instructions, and to make sure that generated
 /// programs pass static analysis passes.
