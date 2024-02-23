@@ -1,7 +1,7 @@
 //! Module containing definitions of miscellaneous search strategies.
 
-use crate::Fitness;
 use crate::Compatibility;
+use crate::Fitness;
 use crate::Linkage;
 use crate::SearchAlgorithm;
 use crate::{Candidate, Instruction};
@@ -257,8 +257,9 @@ impl<I: Instruction + PartialOrd + PartialEq> Default for BruteForceSearch<I> {
 /// A static analysis pass which selects instructions for compatibility with particular CPU
 /// variants.
 #[derive(Debug)]
-pub struct CompatibilitySearch<S: SearchAlgorithm<Item = I>, I: Instruction, C: Compatibility<I>> 
-where I: PartialEq
+pub struct CompatibilitySearch<S: SearchAlgorithm<Item = I>, I: Instruction, C: Compatibility<I>>
+where
+    I: PartialEq,
 {
     compatibility: C,
     inner: S,
@@ -289,7 +290,12 @@ where
 
     fn fitness(&mut self, candidate: &Candidate<I>) -> Fitness {
         use crate::SearchCull;
-        if candidate.instructions.iter().map(|i| self.compatibility.check(i)).any(|c| c != SearchCull::Okay) {
+        if candidate
+            .instructions
+            .iter()
+            .map(|i| self.compatibility.check(i))
+            .any(|c| c != SearchCull::Okay)
+        {
             Fitness::FailsStaticAnalysis
         } else {
             self.inner.fitness(candidate)
@@ -345,7 +351,7 @@ where
     L: Linkage<S, I>,
 {
     type Item = I;
-    
+
     fn fitness(&mut self, candidate: &Candidate<I>) -> Fitness {
         if self.linkage.check(candidate) {
             Fitness::FailsStaticAnalysis

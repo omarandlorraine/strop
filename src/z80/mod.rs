@@ -160,10 +160,7 @@ impl<S: SearchAlgorithm<Item = Z80Instruction>> Linkage<S, Z80Instruction> for I
         )
     }
     fn check(&self, candidate: &Candidate<Z80Instruction>) -> bool {
-        check_last_instruction(
-            candidate,
-            Z80Instruction::new([0xed, 0x4d, 0, 0, 0]),
-        )
+        check_last_instruction(candidate, Z80Instruction::new([0xed, 0x4d, 0, 0, 0]))
     }
 }
 
@@ -182,9 +179,6 @@ impl<S: SearchAlgorithm<Item = Z80Instruction>> Linkage<S, Z80Instruction> for N
         )
     }
     fn check(&self, candidate: &Candidate<Z80Instruction>) -> bool {
-        check_last_instruction(
-            candidate,
-            Z80Instruction::new([0xed, 0x45, 0, 0, 0]),
-        )
+        check_last_instruction(candidate, Z80Instruction::new([0xed, 0x45, 0, 0, 0]))
     }
 }

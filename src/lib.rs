@@ -191,7 +191,7 @@ pub trait SearchAlgorithm {
     fn score(&mut self, score: f32);
 
     /// Test a given candidate for suitability.
-    fn fitness(&mut self, candidate: &Candidate::<Self::Item>) -> Fitness;
+    fn fitness(&mut self, candidate: &Candidate<Self::Item>) -> Fitness;
 
     /// Tell the search algorithm that an instruction is incorrect; also propose a correction (this
     /// is to make sure that all proposed programs pass static analysis, for example)
@@ -208,7 +208,7 @@ pub trait SearchAlgorithm {
     ) -> CompatibilitySearch<Self, <Self as SearchAlgorithm>::Item, C>
     where
         Self: Sized,
-        Self::Item: PartialEq
+        Self::Item: PartialEq,
     {
         CompatibilitySearch::new(self, compatibility)
     }

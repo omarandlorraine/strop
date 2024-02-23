@@ -1,8 +1,8 @@
 //! Z80 testers.
-use crate::Fitness;
 use crate::z80::instruction_set::Z80Instruction;
 use crate::z80::Subroutine;
 use crate::Candidate;
+use crate::Fitness;
 use crate::HammingDistance;
 use crate::LinkageSearch;
 use crate::SearchAlgorithm;
@@ -127,7 +127,7 @@ where
     fn fitness(&mut self, candidate: &Candidate<Z80Instruction>) -> Fitness {
         match self.search.fitness(candidate) {
             Fitness::FailsStaticAnalysis => Fitness::FailsStaticAnalysis,
-            Fitness::Passes(_) => Fitness::Passes(self.test(candidate))
+            Fitness::Passes(_) => Fitness::Passes(self.test(candidate)),
         }
     }
 

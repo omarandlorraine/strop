@@ -114,9 +114,8 @@ impl<S: SearchAlgorithm<Item = Thumb>> SearchAlgorithm for Aapcs32<S> {
 
     fn fitness(&mut self, candidate: &Candidate<Thumb>) -> Fitness {
         match self.search.fitness(candidate) {
-            Fitness::FailsStaticAnalysis => Fitness::FailsStaticAnalysis ,
-            Fitness::Passes(_) =>
-                Fitness::Passes(self.test(candidate) as f32)
+            Fitness::FailsStaticAnalysis => Fitness::FailsStaticAnalysis,
+            Fitness::Passes(_) => Fitness::Passes(self.test(candidate) as f32),
         }
     }
 
