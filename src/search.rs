@@ -347,7 +347,7 @@ where
     type Item = I;
     
     fn fitness(&mut self, candidate: &Candidate<I>) -> Fitness {
-        if self.linkage.check(&candidate) {
+        if self.linkage.check(candidate) {
             Fitness::FailsStaticAnalysis
         } else {
             self.inner.fitness(candidate)

@@ -195,7 +195,7 @@ mod test {
     fn instruction_increment() {
         use crate::Instruction;
         let mut previous = super::Z80Instruction::first();
-        let mut next = previous.clone();
+        let mut next = previous;
         while let Some(n) = next.increment() {
             assert!(n > previous);
             previous = next
