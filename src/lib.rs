@@ -244,3 +244,8 @@ pub trait HammingDistance<T> {
     /// `x.hamming_distance(y)` is equivalent to `y.hamming_distance(x)`.
     fn hamming_distance(self, other: T) -> f32;
 }
+
+pub enum Fitness {
+    FailsStaticAnalysis,
+    Passes(f32),
+}
