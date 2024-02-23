@@ -1,5 +1,6 @@
 //! Module containing definitions of miscellaneous search strategies.
 
+use crate::Fitness;
 use crate::Compatibility;
 use crate::Linkage;
 use crate::SearchAlgorithm;
@@ -16,6 +17,10 @@ pub struct StochasticSearch<I: Instruction> {
 
 impl<I: Instruction> SearchAlgorithm for StochasticSearch<I> {
     type Item = I;
+
+    fn fitness(&mut self, _cand: &Candidate<Self::Item>) -> Fitness {
+        Fitness::Passes(0.0)
+    }
 
     fn score(&mut self, score: f32) {
         self.child_score = score.abs();
@@ -150,6 +155,10 @@ impl<I: Instruction + std::cmp::PartialOrd> SearchAlgorithm for BruteForceSearch
     type Item = I;
     fn score(&mut self, _: f32) {}
 
+    fn fitness(&mut self, _cand: &Candidate<Self::Item>) -> Fitness {
+        Fitness::Passes(0.0)
+    }
+
     fn replace(&mut self, offset: usize, instruction: Option<I>) {
         if let Some(instruction) = instruction {
             assert!(self.curr[offset] < instruction);
@@ -211,6 +220,10 @@ pub struct LengthLimitedSearch<S: SearchAlgorithm<Item = I>, I: Instruction> {
 impl<S: SearchAlgorithm<Item = I>, I: Instruction> SearchAlgorithm for LengthLimitedSearch<S, I> {
     type Item = I;
 
+    fn fitness(&mut self, cand: &Candidate<Self::Item>) -> Fitness {
+        self.inner.fitness(cand)
+    }
+
     fn score(&mut self, score: f32) {
         self.inner.score(score);
     }
@@ -225,60 +238,6 @@ impl<S: SearchAlgorithm<Item = I>, I: Instruction> SearchAlgorithm for LengthLim
             Some(cand)
         } else {
             None
-        }
-    }
-}
-
-/// Stochastic dead-code eliminator
-#[derive(Clone, Debug)]
-pub struct DeadCodeEliminator<I: Instruction> {
-    parent: Candidate<I>,
-    child: Candidate<I>,
-}
-
-impl<I: Instruction> SearchAlgorithm for DeadCodeEliminator<I> {
-    type Item = I;
-    fn score(&mut self, score: f32) {
-        if score != 0.0 {
-            self.child = self.parent.clone();
-        } else {
-            self.parent = self.child.clone();
-        }
-    }
-
-    fn replace(&mut self, _offset: usize, _instruction: Option<I>) {
-        self.child = self.parent.clone();
-    }
-
-    fn generate(&mut self) -> Option<Candidate<I>> {
-        use rand::random;
-        if random() {
-            self.delete();
-        }
-        Some(self.child.clone())
-    }
-}
-
-impl<I: Instruction> DeadCodeEliminator<I> {
-    /// returns a new `Candidate`
-    pub fn new(unoptimized: &Candidate<I>) -> Self {
-        Self {
-            parent: unoptimized.clone(),
-            child: unoptimized.clone(),
-        }
-    }
-
-    fn random_offset(&mut self) -> usize {
-        use rand::Rng;
-        rand::thread_rng().gen_range(0..self.child.instructions.len())
-    }
-
-    fn delete(&mut self) {
-        // If the list of instructions contains at least one instruction, then delete one at
-        // random.
-        if !self.child.instructions.is_empty() {
-            let offset = self.random_offset();
-            self.child.instructions.remove(offset);
         }
     }
 }
@@ -298,7 +257,9 @@ impl<I: Instruction + PartialOrd + PartialEq> Default for BruteForceSearch<I> {
 /// A static analysis pass which selects instructions for compatibility with particular CPU
 /// variants.
 #[derive(Debug)]
-pub struct CompatibilitySearch<S: SearchAlgorithm<Item = I>, I: Instruction, C: Compatibility<I>> {
+pub struct CompatibilitySearch<S: SearchAlgorithm<Item = I>, I: Instruction, C: Compatibility<I>> 
+where I: PartialEq
+{
     compatibility: C,
     inner: S,
 }
@@ -306,7 +267,7 @@ pub struct CompatibilitySearch<S: SearchAlgorithm<Item = I>, I: Instruction, C: 
 impl<S, I, C> CompatibilitySearch<S, I, C>
 where
     S: Sized + SearchAlgorithm<Item = I>,
-    I: Instruction,
+    I: Instruction + PartialEq,
     C: Compatibility<I>,
 {
     /// Creates a new NoFlowControl from another search algorithm.
@@ -321,10 +282,20 @@ where
 impl<S, I, C> SearchAlgorithm for CompatibilitySearch<S, I, C>
 where
     S: Sized + SearchAlgorithm<Item = I>,
-    I: Instruction,
+    I: Instruction + PartialEq,
     C: Compatibility<I>,
 {
     type Item = I;
+
+    fn fitness(&mut self, candidate: &Candidate<I>) -> Fitness {
+        use crate::SearchCull;
+        if candidate.instructions.iter().map(|i| self.compatibility.check(i)).any(|c| c != SearchCull::Okay) {
+            Fitness::FailsStaticAnalysis
+        } else {
+            self.inner.fitness(candidate)
+        }
+    }
+
     fn score(&mut self, score: f32) {
         self.inner.score(score);
     }
@@ -374,6 +345,15 @@ where
     L: Linkage<S, I>,
 {
     type Item = I;
+    
+    fn fitness(&mut self, candidate: &Candidate<I>) -> Fitness {
+        if self.linkage.check(&candidate) {
+            Fitness::FailsStaticAnalysis
+        } else {
+            self.inner.fitness(candidate)
+        }
+    }
+
     fn score(&mut self, score: f32) {
         self.inner.score(score);
     }
@@ -385,7 +365,7 @@ where
     fn generate(&mut self) -> Option<Candidate<I>> {
         loop {
             let candidate = self.inner.generate()?;
-            if self.linkage.check(&mut self.inner, &candidate) {
+            if self.linkage.fixup(&mut self.inner, &candidate) {
                 return Some(candidate);
             }
         }
@@ -414,6 +394,11 @@ where
     I: Instruction,
 {
     type Item = I;
+
+    fn fitness(&mut self, candidate: &Candidate<I>) -> Fitness {
+        self.inner.fitness(candidate)
+    }
+
     fn score(&mut self, score: f32) {
         self.inner.score(score);
     }

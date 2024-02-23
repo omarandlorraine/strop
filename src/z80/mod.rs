@@ -88,7 +88,23 @@ impl Compatibility<Z80Instruction> for Intel8080 {
     }
 }
 
-fn check_last_instruction<S: SearchAlgorithm<Item = Z80Instruction>>(
+fn check_last_instruction(
+    candidate: &Candidate<Z80Instruction>,
+    instruction: Z80Instruction,
+) -> bool {
+    let len = candidate.instructions.len();
+    if len < 1 {
+        // not long enough to even contain a `ret` instruction or anything.
+        return false;
+    }
+    let offset = len - 1;
+
+    let last_instruction = candidate.instructions[offset];
+
+    last_instruction != instruction
+}
+
+fn fixup_last_instruction<S: SearchAlgorithm<Item = Z80Instruction>>(
     search: &mut S,
     candidate: &Candidate<Z80Instruction>,
     instruction: Z80Instruction,
@@ -120,8 +136,12 @@ fn check_last_instruction<S: SearchAlgorithm<Item = Z80Instruction>>(
 pub struct Subroutine;
 
 impl<S: SearchAlgorithm<Item = Z80Instruction>> Linkage<S, Z80Instruction> for Subroutine {
-    fn check(&self, search: &mut S, candidate: &Candidate<Z80Instruction>) -> bool {
-        check_last_instruction(search, candidate, Z80Instruction::new([0xc9, 0, 0, 0, 0]))
+    fn fixup(&self, search: &mut S, candidate: &Candidate<Z80Instruction>) -> bool {
+        fixup_last_instruction(search, candidate, Z80Instruction::new([0xc9, 0, 0, 0, 0]))
+    }
+
+    fn check(&self, candidate: &Candidate<Z80Instruction>) -> bool {
+        check_last_instruction(candidate, Z80Instruction::new([0xc9, 0, 0, 0, 0]))
     }
 }
 
@@ -132,9 +152,15 @@ impl<S: SearchAlgorithm<Item = Z80Instruction>> Linkage<S, Z80Instruction> for S
 pub struct IrqHandler;
 
 impl<S: SearchAlgorithm<Item = Z80Instruction>> Linkage<S, Z80Instruction> for IrqHandler {
-    fn check(&self, search: &mut S, candidate: &Candidate<Z80Instruction>) -> bool {
-        check_last_instruction(
+    fn fixup(&self, search: &mut S, candidate: &Candidate<Z80Instruction>) -> bool {
+        fixup_last_instruction(
             search,
+            candidate,
+            Z80Instruction::new([0xed, 0x4d, 0, 0, 0]),
+        )
+    }
+    fn check(&self, candidate: &Candidate<Z80Instruction>) -> bool {
+        check_last_instruction(
             candidate,
             Z80Instruction::new([0xed, 0x4d, 0, 0, 0]),
         )
@@ -148,9 +174,15 @@ impl<S: SearchAlgorithm<Item = Z80Instruction>> Linkage<S, Z80Instruction> for I
 pub struct NmiHandler;
 
 impl<S: SearchAlgorithm<Item = Z80Instruction>> Linkage<S, Z80Instruction> for NmiHandler {
-    fn check(&self, search: &mut S, candidate: &Candidate<Z80Instruction>) -> bool {
-        check_last_instruction(
+    fn fixup(&self, search: &mut S, candidate: &Candidate<Z80Instruction>) -> bool {
+        fixup_last_instruction(
             search,
+            candidate,
+            Z80Instruction::new([0xed, 0x45, 0, 0, 0]),
+        )
+    }
+    fn check(&self, candidate: &Candidate<Z80Instruction>) -> bool {
+        check_last_instruction(
             candidate,
             Z80Instruction::new([0xed, 0x45, 0, 0, 0]),
         )

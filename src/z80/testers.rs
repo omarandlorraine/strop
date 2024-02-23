@@ -1,4 +1,5 @@
 //! Z80 testers.
+use crate::Fitness;
 use crate::z80::instruction_set::Z80Instruction;
 use crate::z80::Subroutine;
 use crate::Candidate;
@@ -110,25 +111,6 @@ where
         }
         score
     }
-
-    fn optimize(&self, candidate: &Candidate<Z80Instruction>) -> Candidate<Z80Instruction> {
-        use crate::search::DeadCodeEliminator;
-        let mut optimizer = DeadCodeEliminator::new(candidate);
-        let mut optimized = candidate.clone();
-
-        for _ in 0..1000 {
-            // try removing a bajillion instructions at random.
-            let candidate = optimizer
-                .generate()
-                .expect("The dead code eliminator is broken! Why has it stopped trying!");
-            let score = self.correctness(&candidate);
-            if score == 0.0 {
-                optimized = candidate;
-            }
-            optimizer.score(score);
-        }
-        optimized
-    }
 }
 
 impl<S: SearchAlgorithm<Item = Z80Instruction>, Operand: num::cast::AsPrimitive<u32>, Return>
@@ -141,6 +123,13 @@ where
     Return: num::cast::AsPrimitive<u32>,
 {
     type Item = Z80Instruction;
+
+    fn fitness(&mut self, candidate: &Candidate<Z80Instruction>) -> Fitness {
+        match self.search.fitness(candidate) {
+            Fitness::FailsStaticAnalysis => Fitness::FailsStaticAnalysis,
+            Fitness::Passes(_) => Fitness::Passes(self.test(candidate))
+        }
+    }
 
     fn score(&mut self, score: f32) {
         self.search.score(score);
@@ -157,7 +146,7 @@ where
             if score == 0.0 {
                 // We've found a program that passes the test cases we've found; let's optimize the
                 // program.
-                return Some(self.optimize(&candidate));
+                return Some(candidate);
             }
         }
         None

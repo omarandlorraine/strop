@@ -41,8 +41,8 @@ use std::convert::TryInto;
 /// Type used to feed back to the SearchAlgorithms. The search algorithms are made to react to this
 /// to cull the search space by disallowing certain instructions, and to make sure that generated
 /// programs pass static analysis passes.
-#[derive(Debug)]
-pub enum SearchCull<I: Instruction> {
+#[derive(Debug, PartialEq)]
+pub enum SearchCull<I: Instruction + PartialEq> {
     /// This instruction is okay, no need to cull the search space.
     Okay,
 
@@ -53,7 +53,7 @@ pub enum SearchCull<I: Instruction> {
     SkipTo(Option<I>),
 }
 
-impl<I: Instruction> SearchCull<I> {
+impl<I: Instruction + PartialEq> SearchCull<I> {
     /// Returns true if the SearchCull is okay
     pub fn is_okay(&self) -> bool {
         matches!(self, SearchCull::<I>::Okay)
@@ -166,7 +166,7 @@ where
 }
 
 /// Selects instructions to ensure compatibility with CPU variants.
-pub trait Compatibility<I: Instruction> {
+pub trait Compatibility<I: Instruction + PartialEq> {
     /// Returns a `SearchCull` to either say the instruction is okay, or to say it's not okay and
     /// perhaps get a suggestion to the search algorithm.
     fn check(&self, instruction: &I) -> SearchCull<I>;
@@ -174,8 +174,11 @@ pub trait Compatibility<I: Instruction> {
 
 /// Selects instructions to ensure the program begins and ends with the correct instructions.
 pub trait Linkage<S: SearchAlgorithm, I: Instruction> {
-    /// Returns a `Vec<SearchCull<I>>` to list the problems with the given `Candidate<I>`.
-    fn check(&self, search: &mut S, instruction: &Candidate<I>) -> bool;
+    /// Returns `true` iff the candidate fits the linkage
+    fn check(&self, instruction: &Candidate<I>) -> bool;
+
+    /// Gives hints to the search algorithm to get the next candidate to fit the linkage
+    fn fixup(&self, search: &mut S, instruction: &Candidate<I>) -> bool;
 }
 
 pub trait SearchAlgorithm {
@@ -186,6 +189,9 @@ pub trait SearchAlgorithm {
 
     /// Tell the search algorithm about how close it's getting
     fn score(&mut self, score: f32);
+
+    /// Test a given candidate for suitability.
+    fn fitness(&mut self, candidate: &Candidate::<Self::Item>) -> Fitness;
 
     /// Tell the search algorithm that an instruction is incorrect; also propose a correction (this
     /// is to make sure that all proposed programs pass static analysis, for example)
@@ -202,6 +208,7 @@ pub trait SearchAlgorithm {
     ) -> CompatibilitySearch<Self, <Self as SearchAlgorithm>::Item, C>
     where
         Self: Sized,
+        Self::Item: PartialEq
     {
         CompatibilitySearch::new(self, compatibility)
     }
@@ -245,7 +252,15 @@ pub trait HammingDistance<T> {
     fn hamming_distance(self, other: T) -> f32;
 }
 
+/// After finding a valid solution, we might want to optimize it further. To that end, we want to
+/// propose a mutation to the valid but suboptimal solution, and see if it still passes static
+/// analysis and still computes the function as expected. This enum is for answering that question.
+#[derive(Clone, Copy, Debug)]
 pub enum Fitness {
+    /// The solution can be rejected for failing static analysis
     FailsStaticAnalysis,
+
+    /// The solution passes static analysis and was run in the emulator; it's fitness score is
+    /// supplied.
     Passes(f32),
 }
