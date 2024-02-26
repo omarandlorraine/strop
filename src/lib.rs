@@ -97,9 +97,6 @@ pub trait Instruction: Copy + Clone + std::marker::Send + std::fmt::Display + Si
 
     /// Increments the instruction's encoding by one, and then returns a clone of self.
     fn increment(&mut self) -> Option<Self>;
-
-    /// Returns a platform-specific object, for searching for platform-specific code sequences.
-    fn platform<S: SearchAlgorithm>(inner: S) -> impl Platform<S>;
 }
 
 pub trait Emulator<T: Instruction> {
@@ -252,13 +249,8 @@ pub trait SearchAlgorithm {
 
     /// Returns a Z80-specific type, having conveniences for generating platform-specific or ABI
     /// specific like functions, interrupt-handlers, subroutines, and whatever.
-    fn z80(self) -> Z80Search<Self> where Self: Sized, Self::Item: Z80Instruction {
-        crate::z80::Z80::new(self)
-    }
-
-    /// Returns a ARM-specific search-algorithm, having conveniences for generating
-    /// AAPCS32-compliant functions, or FIQ interrupts handlers, etc.
-    fn thumb(self) -> ArmSearch<Self> where Self: Sized, Self::Item: ThumbInstruction {
+    fn z80(self) -> crate::z80::Z80Search<Self> where Self: Sized {
+        crate::z80::Z80Search::new(self)
     }
 }
 

@@ -10,10 +10,21 @@ use crate::Linkage;
 use crate::SearchAlgorithm;
 use crate::SearchCull;
 use instruction_set::Z80Instruction;
+use num::cast::AsPrimitive;
+use rand::distributions::Standard;
+use rand::prelude::Distribution;
 
-macro_rules! z80impl {
-    ($t:ty) => {
-        impl $t {
+use crate::HammingDistance;
+
+pub struct Z80Search<S: SearchAlgorithm>(S);
+
+        impl<S: SearchAlgorithm<Item = Z80Instruction>> Z80Search<S> {
+
+            /// Constructs a new Z80Search
+            pub fn new(inner: S) -> Self {
+                Self(inner)
+            }
+
             /// returns an iterator yielding functions complying with the __z88dk_fastcall calling
             /// convention, and computing the provided functions.
             ///
@@ -23,7 +34,7 @@ macro_rules! z80impl {
             pub fn z88dkfastcall<Operand, Return>(
                 self,
                 func: fn(Operand) -> Option<Return>,
-            ) -> testers::Z88dkfastcall<Self, Operand, Return>
+            ) -> testers::Z88dkfastcall<S, Operand, Return>
             where
                 u32: HammingDistance<Return>,
                 u32: AsPrimitive<Operand>,
@@ -32,11 +43,9 @@ macro_rules! z80impl {
                 Operand: std::marker::Copy + num::traits::AsPrimitive<u32>,
                 Return: num::traits::AsPrimitive<u32>,
             {
-                testers::Z88dkfastcall::new(self, func)
+                testers::Z88dkfastcall::new(self.0, func)
             }
         }
-    };
-}
 
 /// A type representing the Zilog Z80. Useful for a `CompatibilitySearch` for example.
 #[derive(Debug)]
