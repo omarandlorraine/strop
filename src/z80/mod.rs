@@ -4,20 +4,12 @@ pub mod emulators;
 pub mod instruction_set;
 pub mod testers;
 
-use crate::BruteForceSearch;
 use crate::Candidate;
 use crate::Compatibility;
-use crate::CompatibilitySearch;
-use crate::HammingDistance;
 use crate::Linkage;
-use crate::LinkageSearch;
 use crate::SearchAlgorithm;
 use crate::SearchCull;
-use crate::StochasticSearch;
 use instruction_set::Z80Instruction;
-use num::cast::AsPrimitive;
-use rand::distributions::Standard;
-use rand::prelude::Distribution;
 
 macro_rules! z80impl {
     ($t:ty) => {
@@ -45,17 +37,6 @@ macro_rules! z80impl {
         }
     };
 }
-
-z80impl!(StochasticSearch<Z80Instruction>);
-z80impl!(BruteForceSearch<Z80Instruction>);
-z80impl!(
-    LinkageSearch<
-        CompatibilitySearch<StochasticSearch<Z80Instruction>, Z80Instruction, ZilogZ80>,
-        Z80Instruction,
-        Subroutine,
-    >
-);
-z80impl!(CompatibilitySearch<StochasticSearch<Z80Instruction>, Z80Instruction, ZilogZ80>);
 
 /// A type representing the Zilog Z80. Useful for a `CompatibilitySearch` for example.
 #[derive(Debug)]

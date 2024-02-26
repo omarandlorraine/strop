@@ -38,6 +38,11 @@ pub use crate::search::StochasticSearch;
 use rand::Rng;
 use std::convert::TryInto;
 
+/// Trait enabling a stochastic search over instruction sequences
+pub trait Stochastic : Instruction {
+    fn stochastic_search() -> StochasticSearch<Self>;
+}
+
 /// Type used to feed back to the SearchAlgorithms. The search algorithms are made to react to this
 /// to cull the search space by disallowing certain instructions, and to make sure that generated
 /// programs pass static analysis passes.
@@ -68,7 +73,7 @@ impl<I: Instruction + PartialEq> SearchCull<I> {
     }
 }
 
-pub trait Instruction: Copy + Clone + std::marker::Send + std::fmt::Display {
+pub trait Instruction: Copy + Clone + std::marker::Send + std::fmt::Display + Sized {
     //! A trait for any kind of machine instruction. The searches use this trait to mutate
     //! candidate programs, the emulators use this trait to get at a byte stream encoding a
     //! candidate program.
@@ -92,6 +97,9 @@ pub trait Instruction: Copy + Clone + std::marker::Send + std::fmt::Display {
 
     /// Increments the instruction's encoding by one, and then returns a clone of self.
     fn increment(&mut self) -> Option<Self>;
+
+    /// Returns a platform-specific object, for searching for platform-specific code sequences.
+    fn platform<S: SearchAlgorithm>(inner: S) -> impl Platform<S>;
 }
 
 pub trait Emulator<T: Instruction> {
@@ -241,7 +249,20 @@ pub trait SearchAlgorithm {
     fn iter(&mut self) -> SearchAlgorithmIterator<'_, Self> {
         SearchAlgorithmIterator { inner: self }
     }
+
+    /// Returns a Z80-specific type, having conveniences for generating platform-specific or ABI
+    /// specific like functions, interrupt-handlers, subroutines, and whatever.
+    fn z80(self) -> Z80Search<Self> where Self: Sized, Self::Item: Z80Instruction {
+        crate::z80::Z80::new(self)
+    }
+
+    /// Returns a ARM-specific search-algorithm, having conveniences for generating
+    /// AAPCS32-compliant functions, or FIQ interrupts handlers, etc.
+    fn thumb(self) -> ArmSearch<Self> where Self: Sized, Self::Item: ThumbInstruction {
+    }
 }
+
+pub trait Platform<S: SearchAlgorithm + ?Sized> {}
 
 pub trait HammingDistance<T> {
     //! Trait for calculating the hamming distance of two values, even if they have different

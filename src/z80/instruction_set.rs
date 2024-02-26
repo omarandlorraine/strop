@@ -1,11 +1,19 @@
 //! Module containing definitions for Z80 and 8080 instruction sets
 
 use crate::Instruction;
+use crate::StochasticSearch;
+use crate::Stochastic;
 
 /// Represents a Z80 instruction
 #[derive(Clone, Copy, PartialEq, PartialOrd)]
 pub struct Z80Instruction {
     mc: [u8; 5],
+}
+
+impl Stochastic for Z80Instruction {
+    fn stochastic_search() -> StochasticSearch<Self> {
+     StochasticSearch::<Self> ::new()
+    }
 }
 
 impl std::fmt::Debug for Z80Instruction {

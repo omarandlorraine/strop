@@ -18,32 +18,36 @@ fn ntohs(val: u16) -> Option<u16> {
 
 fn bruteforce32(label: &'static str, func: fn(u32) -> Option<u32>) {
     use strop::search::StochasticSearch;
+    use strop::Stochastic;
     use strop::z80::instruction_set::Z80Instruction;
     use strop::z80::ZilogZ80;
     use strop::SearchAlgorithm;
 
-    let mut iterator = StochasticSearch::<Z80Instruction>::new()
-        .compatibility(ZilogZ80)
-        .z88dkfastcall(func);
-    let mut iterator = iterator.iter();
-
     println!("{}:", label);
-    iterator.next().unwrap().disassemble();
+    let mut function = Z80Instruction::stochastic_search()
+        .compatibility(ZilogZ80)
+        .platform()
+        .z88dkfastcall(func)
+        .iter()
+        .unwrap()
+        .disassemble();
 }
 
 fn bruteforce16(label: &'static str, func: fn(u16) -> Option<u16>) {
     use strop::search::StochasticSearch;
+    use strop::Stochastic;
     use strop::z80::instruction_set::Z80Instruction;
     use strop::z80::ZilogZ80;
     use strop::SearchAlgorithm;
 
-    let mut iterator = StochasticSearch::<Z80Instruction>::new()
-        .compatibility(ZilogZ80)
-        .z88dkfastcall(func);
-    let mut iterator = iterator.iter();
-
     println!("{}:", label);
-    iterator.next().unwrap().disassemble();
+    let mut function = Z80Instruction::stochastic_search()
+        .compatibility(ZilogZ80)
+        .platform()
+        .z88dkfastcall(func)
+        .iter()
+        .unwrap()
+        .disassemble();
 }
 
 fn main() {

@@ -5,7 +5,6 @@ pub mod instruction_set;
 pub mod testers;
 
 use crate::BruteForceSearch;
-use crate::StochasticSearch;
 
 use crate::armv4t::instruction_set::Thumb;
 
@@ -26,7 +25,6 @@ macro_rules! armimpl {
 }
 
 armimpl!(BruteForceSearch<Thumb>);
-armimpl!(StochasticSearch<Thumb>);
 
 #[cfg(test)]
 mod test {
