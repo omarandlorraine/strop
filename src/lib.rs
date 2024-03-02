@@ -30,6 +30,7 @@ pub mod z80;
 mod hamming;
 
 pub use crate::search::BruteForceSearch;
+pub use crate::search::LengthLimitedSearch;
 pub use crate::search::CompatibilitySearch;
 pub use crate::search::LinkageSearch;
 pub use crate::search::SearchTrace;
@@ -245,12 +246,6 @@ pub trait SearchAlgorithm {
     /// candidates.
     fn iter(&mut self) -> SearchAlgorithmIterator<'_, Self> {
         SearchAlgorithmIterator { inner: self }
-    }
-
-    /// Returns a Z80-specific type, having conveniences for generating platform-specific or ABI
-    /// specific like functions, interrupt-handlers, subroutines, and whatever.
-    fn z80(self) -> crate::z80::Z80Search<Self> where Self: Sized {
-        crate::z80::Z80Search::new(self)
     }
 }
 

@@ -16,36 +16,54 @@ use rand::prelude::Distribution;
 
 use crate::HammingDistance;
 
-pub struct Z80Search<S: SearchAlgorithm>(S);
+trait IntoZ80Search<S: SearchAlgorithm<Item = Z80Instruction>> {
+        /// Adorns the search algorithm with a static analysis pass ensuring compatibility with a given
+    /// model.
+    fn z80(
+        self,
+    ) -> Z80Search<Self>
+    where
+        Self: Sized, Self: SearchAlgorithm<Item = Z80Instruction>
+    {
+        Z80Search::new(self)
+    }
+}
 
-        impl<S: SearchAlgorithm<Item = Z80Instruction>> Z80Search<S> {
+impl<S: SearchAlgorithm<Item = Z80Instruction>> IntoZ80Search<S> for crate::StochasticSearch<Z80Instruction> {}
+impl<S: SearchAlgorithm<Item = Z80Instruction>> IntoZ80Search<S> for crate::BruteForceSearch<Z80Instruction> {}
+impl<S: SearchAlgorithm<Item = Z80Instruction>> IntoZ80Search<S> for crate::LengthLimitedSearch<S, Z80Instruction> {}
+impl<S: SearchAlgorithm<Item = Z80Instruction>, C: Compatibility<instruction_set::Z80Instruction>> IntoZ80Search<S> for crate::CompatibilitySearch<S, Z80Instruction, C> {}
 
-            /// Constructs a new Z80Search
-            pub fn new(inner: S) -> Self {
-                Self(inner)
-            }
+pub struct Z80Search<S: SearchAlgorithm<Item = Z80Instruction>>(S);
 
-            /// returns an iterator yielding functions complying with the __z88dk_fastcall calling
-            /// convention, and computing the provided functions.
-            ///
-            /// `func` should be a function returning an `Option<i32>`. For inputs where `func` returns
-            /// `Some(x)`, the generated function returns `x`. But for inputs where `func` returns `None`,
-            /// the behavior of the generated function is undefined.
-            pub fn z88dkfastcall<Operand, Return>(
-                self,
-                func: fn(Operand) -> Option<Return>,
-            ) -> testers::Z88dkfastcall<S, Operand, Return>
-            where
-                u32: HammingDistance<Return>,
-                u32: AsPrimitive<Operand>,
-                u32: From<Operand>,
-                Standard: Distribution<Operand>,
-                Operand: std::marker::Copy + num::traits::AsPrimitive<u32>,
-                Return: num::traits::AsPrimitive<u32>,
-            {
-                testers::Z88dkfastcall::new(self.0, func)
-            }
+impl<S: SearchAlgorithm<Item = Z80Instruction>> Z80Search<S> {
+
+    /// Constructs a new Z80Search
+    pub fn new(inner: S) -> Self {
+        Self(inner)
+    }
+
+    /// returns an iterator yielding functions complying with the __z88dk_fastcall calling
+    /// convention, and computing the provided functions.
+    ///
+    /// `func` should be a function returning an `Option<i32>`. For inputs where `func` returns
+    /// `Some(x)`, the generated function returns `x`. But for inputs where `func` returns `None`,
+    /// the behavior of the generated function is undefined.
+    pub fn z88dkfastcall<Operand, Return>(
+        self,
+        func: fn(Operand) -> Option<Return>,
+    ) -> testers::Z88dkfastcall<S, Operand, Return>
+        where
+            u32: HammingDistance<Return>,
+            u32: AsPrimitive<Operand>,
+            u32: From<Operand>,
+            Standard: Distribution<Operand>,
+            Operand: std::marker::Copy + num::traits::AsPrimitive<u32>,
+            Return: num::traits::AsPrimitive<u32>,
+        {
+            testers::Z88dkfastcall::new(self.0, func)
         }
+}
 
 /// A type representing the Zilog Z80. Useful for a `CompatibilitySearch` for example.
 #[derive(Debug)]
