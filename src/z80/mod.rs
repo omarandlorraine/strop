@@ -17,11 +17,8 @@ use rand::prelude::Distribution;
 use crate::HammingDistance;
 
 pub trait IntoZ80Search<S: SearchAlgorithm<Item = Z80Instruction>> {
-        /// Adorns the search algorithm with a static analysis pass ensuring compatibility with a given
-    /// model.
-    fn z80(
-        self,
-    ) -> Z80Search<Self>
+    /// Builds and returns a [Z80Search] object
+    fn z80( self) -> Z80Search<Self>
     where
         Self: Sized, Self: SearchAlgorithm<Item = Z80Instruction>
     {
