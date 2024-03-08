@@ -1,9 +1,9 @@
 //! A module representing the MOS 6502's instruction set in a way that facilitates its use by
 //! strop.
 
-use crate::SearchCull;
 use crate::Candidate;
 use crate::Instruction;
+use crate::SearchCull;
 use rand::random;
 
 type Encoding6502 = [u8; 3];
@@ -62,23 +62,39 @@ const COMMON_OPCODES: [u8; 149] = [
     0xf5, 0xf6, 0xf9, 0xfd, 0xfe,
 ];
 
-trait Mos6502Compatibility where Self: PartialEq + Instruction {
+trait Mos6502Compatibility
+where
+    Self: PartialEq + Instruction,
+{
     fn cmos_compatible(&self) -> SearchCull<Self>;
     fn safe_bet(&self) -> SearchCull<Self>;
 }
 
 impl Mos6502Compatibility for Nmos6502Instruction {
     fn cmos_compatible(&self) -> SearchCull<Self> {
-        assert_eq!(format!("{}", self), format!("{}", Cmos6502Instruction{      encoding: self.encoding}));
+        assert_eq!(
+            format!("{}", self),
+            format!(
+                "{}",
+                Cmos6502Instruction {
+                    encoding: self.encoding
+                }
+            )
+        );
         SearchCull::Okay
     }
 
     fn safe_bet(&self) -> SearchCull<Self> {
         if COMMON_OPCODES.contains(&self.encoding[0]) {
             SearchCull::Okay
-        }else {
-            SearchCull::SkipTo(COMMON_OPCODES.iter().filter(|&num| *num > self.encoding[0]).min().map(|op|
-            Nmos6502Instruction::new([*op, 0, 0])))
+        } else {
+            SearchCull::SkipTo(
+                COMMON_OPCODES
+                    .iter()
+                    .filter(|&num| *num > self.encoding[0])
+                    .min()
+                    .map(|op| Nmos6502Instruction::new([*op, 0, 0])),
+            )
         }
     }
 }
@@ -91,9 +107,14 @@ impl Mos6502Compatibility for Cmos6502Instruction {
     fn safe_bet(&self) -> SearchCull<Self> {
         if COMMON_OPCODES.contains(&self.encoding[0]) {
             SearchCull::Okay
-        }else {
-            SearchCull::SkipTo(COMMON_OPCODES.iter().filter(|&num| *num > self.encoding[0]).min().map(|op|
-            Cmos6502Instruction::new([*op, 0, 0])))
+        } else {
+            SearchCull::SkipTo(
+                COMMON_OPCODES
+                    .iter()
+                    .filter(|&num| *num > self.encoding[0])
+                    .min()
+                    .map(|op| Cmos6502Instruction::new([*op, 0, 0])),
+            )
         }
     }
 }
@@ -1146,13 +1167,17 @@ mod test {
 
     #[test]
     fn safe_bet() {
-        use crate::mos6502::Nmos6502Instruction;
-        use crate::mos6502::Cmos6502Instruction;
         use crate::mos6502::instruction_set::Mos6502Compatibility;
+        use crate::mos6502::Cmos6502Instruction;
+        use crate::mos6502::Nmos6502Instruction;
 
         for i in 0..=255 {
-            let  nmos =  Nmos6502Instruction{encoding: [i, 0, 0]};
-            let cmos = Cmos6502Instruction{encoding: [i, 0, 0]};
+            let nmos = Nmos6502Instruction {
+                encoding: [i, 0, 0],
+            };
+            let cmos = Cmos6502Instruction {
+                encoding: [i, 0, 0],
+            };
 
             if nmos.safe_bet().is_okay() {
                 assert_eq!(format!("{}", nmos), format!("{}", cmos));
