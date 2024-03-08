@@ -4,11 +4,11 @@ pub mod emulators;
 pub mod instruction_set;
 pub mod testers;
 
-use crate::SearchAlgorithm;
 use crate::BruteForceSearch;
-use crate::Compatibility;
 use crate::Candidate;
+use crate::Compatibility;
 use crate::Fitness;
+use crate::SearchAlgorithm;
 
 use crate::armv4t::instruction_set::Thumb;
 
@@ -16,9 +16,10 @@ pub struct ThumbSearch<S: SearchAlgorithm<Item = Thumb>>(S);
 
 pub trait IntoThumbSearch<S: SearchAlgorithm<Item = Thumb>> {
     /// Builds and returns a [ThumbSearch] object.
-    fn thumb( self) -> ThumbSearch<Self>
+    fn thumb(self) -> ThumbSearch<Self>
     where
-        Self: Sized, Self: SearchAlgorithm<Item = Thumb>
+        Self: Sized,
+        Self: SearchAlgorithm<Item = Thumb>,
     {
         ThumbSearch::<Self>::new(self)
     }
@@ -27,15 +28,16 @@ pub trait IntoThumbSearch<S: SearchAlgorithm<Item = Thumb>> {
 impl<S: SearchAlgorithm<Item = Thumb>> IntoThumbSearch<S> for crate::StochasticSearch<Thumb> {}
 impl<S: SearchAlgorithm<Item = Thumb>> IntoThumbSearch<S> for crate::BruteForceSearch<Thumb> {}
 impl<S: SearchAlgorithm<Item = Thumb>> IntoThumbSearch<S> for crate::LengthLimitedSearch<S, Thumb> {}
-impl<S: SearchAlgorithm<Item = Thumb>, C: Compatibility<instruction_set::Thumb>> IntoThumbSearch<S> for crate::CompatibilitySearch<S, Thumb, C> {}
+impl<S: SearchAlgorithm<Item = Thumb>, C: Compatibility<instruction_set::Thumb>> IntoThumbSearch<S>
+    for crate::CompatibilitySearch<S, Thumb, C>
+{
+}
 
 impl<S: SearchAlgorithm<Item = Thumb>> ThumbSearch<S> {
-
     /// Constructs a new ThumbSearch
     pub fn new(inner: S) -> Self {
         Self(inner)
     }
-
 
     /// returns an iterator yielding functions complying with the AAPCS32 calling conventions, and
     /// computing the provided functions.
@@ -51,10 +53,18 @@ impl<S: SearchAlgorithm<Item = Thumb>> ThumbSearch<S> {
 impl<S: SearchAlgorithm<Item = Thumb>> SearchAlgorithm for ThumbSearch<S> {
     type Item = Thumb;
 
-    fn score(&mut self, score: f32) { self.0.score(score) }
-    fn fitness(&mut self, candidate: &Candidate<Self::Item>) -> Fitness { self.0.fitness(candidate) }
-    fn replace(&mut self, offset: usize, instruction: Option<Self::Item>) {self.0.replace(offset, instruction) }
-    fn generate(&mut self) -> Option<Candidate<Self::Item>> {self.0.generate()}
+    fn score(&mut self, score: f32) {
+        self.0.score(score)
+    }
+    fn fitness(&mut self, candidate: &Candidate<Self::Item>) -> Fitness {
+        self.0.fitness(candidate)
+    }
+    fn replace(&mut self, offset: usize, instruction: Option<Self::Item>) {
+        self.0.replace(offset, instruction)
+    }
+    fn generate(&mut self) -> Option<Candidate<Self::Item>> {
+        self.0.generate()
+    }
 }
 
 #[cfg(test)]

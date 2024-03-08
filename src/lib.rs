@@ -30,8 +30,8 @@ pub mod z80;
 mod hamming;
 
 pub use crate::search::BruteForceSearch;
-pub use crate::search::LengthLimitedSearch;
 pub use crate::search::CompatibilitySearch;
+pub use crate::search::LengthLimitedSearch;
 pub use crate::search::LinkageSearch;
 pub use crate::search::SearchTrace;
 pub use crate::search::StochasticSearch;
@@ -40,7 +40,7 @@ use rand::Rng;
 use std::convert::TryInto;
 
 /// Trait enabling a stochastic search over instruction sequences
-pub trait Stochastic : Instruction {
+pub trait Stochastic: Instruction {
     fn stochastic_search() -> StochasticSearch<Self>;
 }
 

@@ -25,11 +25,7 @@ fn stochastic_search(label: &'static str, func: fn(i32, i32) -> Option<i32>) {
 
     let p: StochasticSearch<Thumb> = Thumb::stochastic_search();
     let q = p.thumb();
-    let r = q
-        .aapcs32(func)
-        .iter()
-        .next()
-        .unwrap();
+    let r = q.aapcs32(func).iter().next().unwrap();
 
     println!("{}:", label);
     r.disassemble();

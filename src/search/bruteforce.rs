@@ -103,7 +103,6 @@ impl<S: SearchAlgorithm<Item = I>, I: Instruction> SearchAlgorithm for LengthLim
     }
 }
 
-
 impl<I: Instruction + PartialOrd + PartialEq> Default for BruteForceSearch<I> {
     fn default() -> Self {
         Self::new()

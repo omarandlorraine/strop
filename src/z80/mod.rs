@@ -18,23 +18,37 @@ use crate::HammingDistance;
 
 pub trait IntoZ80Search<S: SearchAlgorithm<Item = Z80Instruction>> {
     /// Builds and returns a [Z80Search] object
-    fn z80( self) -> Z80Search<Self>
+    fn z80(self) -> Z80Search<Self>
     where
-        Self: Sized, Self: SearchAlgorithm<Item = Z80Instruction>
+        Self: Sized,
+        Self: SearchAlgorithm<Item = Z80Instruction>,
     {
         Z80Search::new(self)
     }
 }
 
-impl<S: SearchAlgorithm<Item = Z80Instruction>> IntoZ80Search<S> for crate::StochasticSearch<Z80Instruction> {}
-impl<S: SearchAlgorithm<Item = Z80Instruction>> IntoZ80Search<S> for crate::BruteForceSearch<Z80Instruction> {}
-impl<S: SearchAlgorithm<Item = Z80Instruction>> IntoZ80Search<S> for crate::LengthLimitedSearch<S, Z80Instruction> {}
-impl<S: SearchAlgorithm<Item = Z80Instruction>, C: Compatibility<instruction_set::Z80Instruction>> IntoZ80Search<S> for crate::CompatibilitySearch<S, Z80Instruction, C> {}
+impl<S: SearchAlgorithm<Item = Z80Instruction>> IntoZ80Search<S>
+    for crate::StochasticSearch<Z80Instruction>
+{
+}
+impl<S: SearchAlgorithm<Item = Z80Instruction>> IntoZ80Search<S>
+    for crate::BruteForceSearch<Z80Instruction>
+{
+}
+impl<S: SearchAlgorithm<Item = Z80Instruction>> IntoZ80Search<S>
+    for crate::LengthLimitedSearch<S, Z80Instruction>
+{
+}
+impl<
+        S: SearchAlgorithm<Item = Z80Instruction>,
+        C: Compatibility<instruction_set::Z80Instruction>,
+    > IntoZ80Search<S> for crate::CompatibilitySearch<S, Z80Instruction, C>
+{
+}
 
 pub struct Z80Search<S: SearchAlgorithm<Item = Z80Instruction>>(S);
 
 impl<S: SearchAlgorithm<Item = Z80Instruction>> Z80Search<S> {
-
     /// Constructs a new Z80Search
     pub fn new(inner: S) -> Self {
         Self(inner)
@@ -50,16 +64,16 @@ impl<S: SearchAlgorithm<Item = Z80Instruction>> Z80Search<S> {
         self,
         func: fn(Operand) -> Option<Return>,
     ) -> testers::Z88dkfastcall<S, Operand, Return>
-        where
-            u32: HammingDistance<Return>,
-            u32: AsPrimitive<Operand>,
-            u32: From<Operand>,
-            Standard: Distribution<Operand>,
-            Operand: std::marker::Copy + num::traits::AsPrimitive<u32>,
-            Return: num::traits::AsPrimitive<u32>,
-        {
-            testers::Z88dkfastcall::new(self.0, func)
-        }
+    where
+        u32: HammingDistance<Return>,
+        u32: AsPrimitive<Operand>,
+        u32: From<Operand>,
+        Standard: Distribution<Operand>,
+        Operand: std::marker::Copy + num::traits::AsPrimitive<u32>,
+        Return: num::traits::AsPrimitive<u32>,
+    {
+        testers::Z88dkfastcall::new(self.0, func)
+    }
 }
 
 /// A type representing the Zilog Z80. Useful for a `CompatibilitySearch` for example.

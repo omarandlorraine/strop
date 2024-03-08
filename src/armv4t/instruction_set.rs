@@ -15,7 +15,7 @@ pub struct Arm(pub u32);
 
 impl Stochastic for Thumb {
     fn stochastic_search() -> StochasticSearch<Self> {
-     StochasticSearch::<Self>::new()
+        StochasticSearch::<Self>::new()
     }
 }
 
