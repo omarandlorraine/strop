@@ -1,6 +1,8 @@
 //!  Two instruction sets supported by the ARMv4T.
 
 use crate::Instruction;
+use crate::Stochastic;
+use crate::StochasticSearch;
 
 /// Type representing the Thumb instruction (no Thumb2 instructions are present here. It's just the
 /// first, fixed-width version).
@@ -10,6 +12,12 @@ pub struct Thumb(pub u16);
 /// Type representing the full-width ARM instruction.
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Arm(pub u32);
+
+impl Stochastic for Thumb {
+    fn stochastic_search() -> StochasticSearch<Self> {
+     StochasticSearch::<Self>::new()
+    }
+}
 
 impl Instruction for Thumb {
     fn random() -> Self {

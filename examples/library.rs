@@ -17,36 +17,31 @@ fn salt(a: i32, b: i32) -> Option<i32> {
     a.checked_mul(2)?.checked_add(b)
 }
 
-fn bruteforce_search(label: &'static str, func: fn(i32, i32) -> Option<i32>) {
-    let program = BruteForceSearch::<Thumb>::new()
-        .aapcs32(func)
-        .iter()
-        .next()
-        .unwrap();
-
-    println!("{}:", label);
-    program.disassemble();
-    println!("\tmov pc, lr"); // this should do the trick.
-}
-
 fn stochastic_search(label: &'static str, func: fn(i32, i32) -> Option<i32>) {
-    let program = StochasticSearch::<Thumb>::new()
+    use strop::armv4t::instruction_set::Thumb;
+    use strop::armv4t::IntoThumbSearch;
+    use strop::SearchAlgorithm;
+    use strop::Stochastic;
+
+    let p: StochasticSearch<Thumb> = Thumb::stochastic_search();
+    let q = p.thumb();
+    let r = q
         .aapcs32(func)
         .iter()
         .next()
         .unwrap();
 
     println!("{}:", label);
-    program.disassemble();
+    r.disassemble();
     println!("\tmov pc, lr"); // this should do the trick.
 }
 
 fn main() {
     // These functions are so simple, mapping to a single ARM instruction, that a bruteforce search works okay.
-    bruteforce_search("add", |x, y| x.checked_add(y));
-    bruteforce_search("shl", |x, y| x.checked_shl(y as u32));
-    bruteforce_search("shr", |x, y| x.checked_shr(y as u32));
-    bruteforce_search("mul", |x, y| x.checked_mul(y));
+    stochastic_search("add", |x, y| x.checked_add(y));
+    stochastic_search("shl", |x, y| x.checked_shl(y as u32));
+    stochastic_search("shr", |x, y| x.checked_shr(y as u32));
+    stochastic_search("mul", |x, y| x.checked_mul(y));
 
     // These functions a bit more involved and need several instructions to compute.
     stochastic_search("salt", salt);
