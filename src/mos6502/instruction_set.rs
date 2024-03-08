@@ -49,6 +49,19 @@ const CMOS_OPCODES: [u8; 178] = [
     0xfd, 0xfe,
 ];
 
+const COMMON_OPCODES: [u8; 149] = [
+    0x00, 0x01, 0x05, 0x06, 0x08, 0x09, 0x0a, 0x0d, 0x0e, 0x10, 0x11, 0x15, 0x16, 0x18, 0x19, 0x1d,
+    0x1e, 0x20, 0x21, 0x24, 0x25, 0x26, 0x28, 0x29, 0x2a, 0x2c, 0x2d, 0x2e, 0x30, 0x31, 0x35, 0x36,
+    0x38, 0x39, 0x3d, 0x3e, 0x40, 0x41, 0x45, 0x46, 0x48, 0x49, 0x4a, 0x4c, 0x4d, 0x4e, 0x50, 0x51,
+    0x55, 0x56, 0x58, 0x59, 0x5d, 0x5e, 0x60, 0x61, 0x65, 0x66, 0x68, 0x69, 0x6a, 0x6c, 0x6d, 0x6e,
+    0x70, 0x71, 0x75, 0x76, 0x78, 0x79, 0x7d, 0x7e, 0x81, 0x84, 0x85, 0x86, 0x88, 0x8a, 0x8c, 0x8d,
+    0x8e, 0x90, 0x91, 0x94, 0x95, 0x96, 0x98, 0x99, 0x9a, 0x9d, 0xa0, 0xa1, 0xa2, 0xa4, 0xa5, 0xa6,
+    0xa8, 0xa9, 0xaa, 0xac, 0xad, 0xae, 0xb0, 0xb1, 0xb4, 0xb5, 0xb6, 0xb8, 0xb9, 0xba, 0xbc, 0xbd,
+    0xbe, 0xc0, 0xc1, 0xc4, 0xc5, 0xc6, 0xc8, 0xc9, 0xca, 0xcc, 0xcd, 0xce, 0xd0, 0xd1, 0xd5, 0xd6,
+    0xd8, 0xd9, 0xdd, 0xde, 0xe0, 0xe1, 0xe4, 0xe5, 0xe6, 0xe8, 0xe9, 0xea, 0xec, 0xed, 0xee, 0xf0,
+    0xf5, 0xf6, 0xf9, 0xfd, 0xfe,
+];
+
 trait Mos6502Compatibility where Self: PartialEq + Instruction {
     fn cmos_compatible(&self) -> SearchCull<Self>;
     fn safe_bet(&self) -> SearchCull<Self>;
@@ -61,25 +74,13 @@ impl Mos6502Compatibility for Nmos6502Instruction {
     }
 
     fn safe_bet(&self) -> SearchCull<Self> {
-        let op = self.encoding[0];
-
-        let cull = match op {
-            0x03 => SearchCull::SkipTo(Some(Nmos6502Instruction{encoding: [0x05, 0, 0]})),
-            0x07 => SearchCull::SkipTo(Some(Nmos6502Instruction{encoding: [0x08, 0, 0]})),
-            0x0b => SearchCull::SkipTo(Some(Nmos6502Instruction{encoding: [0x0c, 0, 0]})),
-            _ => {
-                assert_eq!(format!("{}", self), format!("{}", Cmos6502Instruction{      encoding: self.encoding}));
-                SearchCull::Okay
-            }
-        };
-
-        if let Some(suggestion) = cull.suggestion() {
-            assert!(suggestion.safe_bet().is_okay())
+        if COMMON_OPCODES.contains(&self.encoding[0]) {
+            SearchCull::Okay
+        }else {
+            SearchCull::SkipTo(COMMON_OPCODES.iter().filter(|&num| *num > self.encoding[0]).min().map(|op|
+            Nmos6502Instruction::new([*op, 0, 0])))
         }
-
-        cull
     }
-
 }
 
 impl Mos6502Compatibility for Cmos6502Instruction {
@@ -88,9 +89,13 @@ impl Mos6502Compatibility for Cmos6502Instruction {
     }
 
     fn safe_bet(&self) -> SearchCull<Self> {
-                SearchCull::Okay
+        if COMMON_OPCODES.contains(&self.encoding[0]) {
+            SearchCull::Okay
+        }else {
+            SearchCull::SkipTo(COMMON_OPCODES.iter().filter(|&num| *num > self.encoding[0]).min().map(|op|
+            Cmos6502Instruction::new([*op, 0, 0])))
+        }
     }
-
 }
 
 /// A compatibility check that only lets instructions through that will execute okay on the 65C02.
@@ -1146,12 +1151,13 @@ mod test {
         use crate::mos6502::instruction_set::Mos6502Compatibility;
 
         for i in 0..=255 {
-            if let Some(nmos) = (Nmos6502Instruction{encoding: [i, 0, 0]}).safe_bet().suggestion() {
-                let cmos = Cmos6502Instruction{encoding: [i, 0, 0]};
+            let  nmos =  Nmos6502Instruction{encoding: [i, 0, 0]};
+            let cmos = Cmos6502Instruction{encoding: [i, 0, 0]};
+
+            if nmos.safe_bet().is_okay() {
                 assert_eq!(format!("{}", nmos), format!("{}", cmos));
             }
-            if let Some(cmos) = (Cmos6502Instruction{encoding: [i, 0, 0]}).safe_bet().suggestion() {
-                let nmos = Nmos6502Instruction{encoding: [i, 0, 0]};
+            if cmos.safe_bet().is_okay() {
                 assert_eq!(format!("{}", nmos), format!("{}", cmos));
             }
         }
