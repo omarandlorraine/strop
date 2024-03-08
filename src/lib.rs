@@ -41,6 +41,7 @@ use std::convert::TryInto;
 
 /// Trait enabling a stochastic search over instruction sequences
 pub trait Stochastic: Instruction {
+    /// Builds a [StochasticSearch] object for the given instruction set
     fn stochastic_search() -> StochasticSearch<Self>;
 }
 
@@ -248,8 +249,6 @@ pub trait SearchAlgorithm {
         SearchAlgorithmIterator { inner: self }
     }
 }
-
-pub trait Platform<S: SearchAlgorithm + ?Sized> {}
 
 pub trait HammingDistance<T> {
     //! Trait for calculating the hamming distance of two values, even if they have different

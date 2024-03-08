@@ -16,6 +16,7 @@ use rand::prelude::Distribution;
 
 use crate::HammingDistance;
 
+/// A trait for building [Z80Search] objects
 pub trait IntoZ80Search<S: SearchAlgorithm<Item = Z80Instruction>> {
     /// Builds and returns a [Z80Search] object
     fn z80(self) -> Z80Search<Self>
@@ -46,6 +47,9 @@ impl<
 {
 }
 
+/// An object having methods for building search algorithms yielding Z80 specific programs, such as
+/// subroutines, IRQ handlers, NMI handlers, etc.
+#[derive(Debug)]
 pub struct Z80Search<S: SearchAlgorithm<Item = Z80Instruction>>(S);
 
 impl<S: SearchAlgorithm<Item = Z80Instruction>> Z80Search<S> {

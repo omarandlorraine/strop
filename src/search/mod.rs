@@ -1,3 +1,5 @@
+//! Module containing miscellaneous search algorithms that are generic across instruction sets.
+//! Also contains some static analysis passes.
 mod bruteforce;
 mod stochastic;
 

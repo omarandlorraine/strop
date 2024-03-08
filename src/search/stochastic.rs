@@ -2,9 +2,9 @@
 //!
 use crate::Stochastic;
 
+use crate::Candidate;
 use crate::Fitness;
 use crate::SearchAlgorithm;
-use crate::{Candidate, Instruction};
 
 /// Generates a program by stochastic approximation to a correctness function
 #[derive(Clone, Debug)]

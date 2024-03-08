@@ -2,8 +2,6 @@
 // convention matches my understanding of AAPCS32, so that the routines should be callable from C,
 // but this has not been tested.
 
-use strop::armv4t::instruction_set::Thumb;
-use strop::BruteForceSearch;
 use strop::SearchAlgorithm;
 use strop::StochasticSearch;
 
@@ -20,7 +18,6 @@ fn salt(a: i32, b: i32) -> Option<i32> {
 fn stochastic_search(label: &'static str, func: fn(i32, i32) -> Option<i32>) {
     use strop::armv4t::instruction_set::Thumb;
     use strop::armv4t::IntoThumbSearch;
-    use strop::SearchAlgorithm;
     use strop::Stochastic;
 
     let p: StochasticSearch<Thumb> = Thumb::stochastic_search();

@@ -4,7 +4,6 @@ pub mod emulators;
 pub mod instruction_set;
 pub mod testers;
 
-use crate::BruteForceSearch;
 use crate::Candidate;
 use crate::Compatibility;
 use crate::Fitness;
@@ -12,8 +11,12 @@ use crate::SearchAlgorithm;
 
 use crate::armv4t::instruction_set::Thumb;
 
+/// An object having methods for building search algorithms yielding ARM specific programs, such as
+/// subroutines, IRQ handlers, FIQ handlers, etc.
+#[derive(Debug)]
 pub struct ThumbSearch<S: SearchAlgorithm<Item = Thumb>>(S);
 
+/// A trait for building [ThumbSearch] objects
 pub trait IntoThumbSearch<S: SearchAlgorithm<Item = Thumb>> {
     /// Builds and returns a [ThumbSearch] object.
     fn thumb(self) -> ThumbSearch<Self>
