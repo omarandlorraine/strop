@@ -1,6 +1,7 @@
 //! A module representing the MOS 6502's instruction set in a way that facilitates its use by
 //! strop.
 
+use crate::SearchCull;
 use crate::Candidate;
 use crate::Instruction;
 use rand::random;
@@ -47,6 +48,36 @@ const CMOS_OPCODES: [u8; 178] = [
     0xe5, 0xe6, 0xe8, 0xe9, 0xea, 0xec, 0xed, 0xee, 0xf0, 0xf1, 0xf2, 0xf5, 0xf6, 0xf8, 0xf9, 0xfa,
     0xfd, 0xfe,
 ];
+
+trait Mos6502Compatibility<S: PartialEq + Instruction> {
+    fn cmos_compatible(&self) -> SearchCull<S>;
+    fn safe_bet(&self) ->  SearchCull<S>;
+    fn reva_compatible(&self) ->  SearchCull<S>;
+    fn nes_compatible(&self) ->  SearchCull<S>;
+}
+
+/// A compatibility check that only lets instructions through that will execute okay on the 65C02.
+#[derive(Debug)]
+pub struct CmosCompatible;
+
+impl<I: PartialEq + Instruction + Mos6502Compatibility<I>> crate::Compatibility<I> for CmosCompatible {
+    fn check(&self, i: &I) -> SearchCull<I> {
+        i.cmos_compatible()
+    }
+}
+
+/// A compatibility check that only lets instructions through that will execute okay on both NMOS
+/// and CMOS CPUs, and which doesn't exercise decimal mode. That is, it does not let any
+/// CMOS-specific instructions through, nor NMOS "illegal opcodes", not `SED`. The resulting
+/// program should run on a wide variety of 6502s.
+#[derive(Debug)]
+pub struct SafeBet;
+
+impl<I: PartialEq + Instruction + Mos6502Compatibility<I>> crate::Compatibility<I> for SafeBet {
+    fn check(&self, i: &I) -> SearchCull<I> {
+        i.safe_bet()
+    }
+}
 
 /// A struct representing one MOS 6502 instruction
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
