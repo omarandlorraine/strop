@@ -49,18 +49,55 @@ const CMOS_OPCODES: [u8; 178] = [
     0xfd, 0xfe,
 ];
 
-trait Mos6502Compatibility<S: PartialEq + Instruction> {
-    fn cmos_compatible(&self) -> SearchCull<S>;
-    fn safe_bet(&self) ->  SearchCull<S>;
-    fn reva_compatible(&self) ->  SearchCull<S>;
-    fn nes_compatible(&self) ->  SearchCull<S>;
+trait Mos6502Compatibility where Self: PartialEq + Instruction {
+    fn cmos_compatible(&self) -> SearchCull<Self>;
+    fn safe_bet(&self) -> SearchCull<Self>;
+}
+
+impl Mos6502Compatibility for Nmos6502Instruction {
+    fn cmos_compatible(&self) -> SearchCull<Self> {
+        assert_eq!(format!("{}", self), format!("{}", Cmos6502Instruction{      encoding: self.encoding}));
+        SearchCull::Okay
+    }
+
+    fn safe_bet(&self) -> SearchCull<Self> {
+        let op = self.encoding[0];
+
+        let cull = match op {
+            0x03 => SearchCull::SkipTo(Some(Nmos6502Instruction{encoding: [0x05, 0, 0]})),
+            0x07 => SearchCull::SkipTo(Some(Nmos6502Instruction{encoding: [0x08, 0, 0]})),
+            0x0b => SearchCull::SkipTo(Some(Nmos6502Instruction{encoding: [0x0c, 0, 0]})),
+            _ => {
+                assert_eq!(format!("{}", self), format!("{}", Cmos6502Instruction{      encoding: self.encoding}));
+                SearchCull::Okay
+            }
+        };
+
+        if let Some(suggestion) = cull.suggestion() {
+            assert!(suggestion.safe_bet().is_okay())
+        }
+
+        cull
+    }
+
+}
+
+impl Mos6502Compatibility for Cmos6502Instruction {
+    fn cmos_compatible(&self) -> SearchCull<Self> {
+        SearchCull::Okay
+    }
+
+    fn safe_bet(&self) -> SearchCull<Self> {
+                SearchCull::Okay
+    }
+
 }
 
 /// A compatibility check that only lets instructions through that will execute okay on the 65C02.
 #[derive(Debug)]
 pub struct CmosCompatible;
 
-impl<I: PartialEq + Instruction + Mos6502Compatibility<I>> crate::Compatibility<I> for CmosCompatible {
+impl<I: PartialEq + Instruction + Mos6502Compatibility> crate::Compatibility<I> for CmosCompatible {
     fn check(&self, i: &I) -> SearchCull<I> {
         i.cmos_compatible()
     }
@@ -73,7 +110,7 @@ impl<I: PartialEq + Instruction + Mos6502Compatibility<I>> crate::Compatibility<
 #[derive(Debug)]
 pub struct SafeBet;
 
-impl<I: PartialEq + Instruction + Mos6502Compatibility<I>> crate::Compatibility<I> for SafeBet {
+impl<I: PartialEq + Instruction + Mos6502Compatibility> crate::Compatibility<I> for SafeBet {
     fn check(&self, i: &I) -> SearchCull<I> {
         i.safe_bet()
     }
@@ -1100,5 +1137,23 @@ mod test {
         let cand = Candidate::new(vec![insn]);
         let vars = VariablesInMemory::from(&cand);
         assert_eq!(vars.reads[0], 0x45);
+    }
+
+    #[test]
+    fn safe_bet() {
+        use crate::mos6502::Nmos6502Instruction;
+        use crate::mos6502::Cmos6502Instruction;
+        use crate::mos6502::instruction_set::Mos6502Compatibility;
+
+        for i in 0..=255 {
+            if let Some(nmos) = (Nmos6502Instruction{encoding: [i, 0, 0]}).safe_bet().suggestion() {
+                let cmos = Cmos6502Instruction{encoding: [i, 0, 0]};
+                assert_eq!(format!("{}", nmos), format!("{}", cmos));
+            }
+            if let Some(cmos) = (Cmos6502Instruction{encoding: [i, 0, 0]}).safe_bet().suggestion() {
+                let nmos = Nmos6502Instruction{encoding: [i, 0, 0]};
+                assert_eq!(format!("{}", nmos), format!("{}", cmos));
+            }
+        }
     }
 }
