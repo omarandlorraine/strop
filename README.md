@@ -53,13 +53,12 @@ search and restrict the search space. The search algorithms themselves, and the
 static analysis passes, all implement the same traits, so that they may be
 combined at will by the program which uses the library strop. These objects
 also all have the `.iter()` method, so that client code can idiomatically
-consider the programs visited by the search algorithm. This is illustrated by
-the example below:
+iterate across the programs visited by the search algorithm. This is
+illustrated by the example below:
 
 ```rust
 for program in
-   BruteForceSearch::<Z80Instruction>::new()   // Exhaustive search for Z80 programs,
-   .limit_length(6)                            // no longer than 6 instructions long,
+	Z80Instruction::stochastic_search()        // stochastic search for Z80 programs,
    .compatibility(Intel8080)                   // that are compatible with the Intel 8080,
    .linkage(Subroutine)                        // and are well-formed subroutines.
    .iter()                                     // (Rust idiom for instantiating an iterator)
