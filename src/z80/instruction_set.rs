@@ -1,13 +1,19 @@
 //! Module containing definitions for Z80 and 8080 instruction sets
 
-use crate::Candidate;
 use crate::Instruction;
-use crate::InstructionSet;
+use crate::Stochastic;
+use crate::StochasticSearch;
 
 /// Represents a Z80 instruction
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, PartialOrd)]
 pub struct Z80Instruction {
     mc: [u8; 5],
+}
+
+impl Stochastic for Z80Instruction {
+    fn stochastic_search() -> StochasticSearch<Self> {
+        StochasticSearch::<Self>::new()
+    }
 }
 
 impl std::fmt::Debug for Z80Instruction {
@@ -21,25 +27,14 @@ impl std::fmt::Debug for Z80Instruction {
 }
 
 impl Z80Instruction {
-    fn i8080_fixup(&mut self) {
-        // Some opcodes don't exist on the 8080, so this function changes them
-        self.mc[0] = match self.mc[0] {
-            0x08 => 0x09, // ex af, af'
-            0x10 => 0x11, // djnz
-            0x18 => 0x19, // jr off
-            0x20 => 0x21, // jr nz,off
-            0x28 => 0x29, // jr z,off
-            0x30 => 0x31, // jr nc,off
-            0x38 => 0x39, // jr c,off
-            0xd9 => 0xda, // exx
+    /// Constructs a new Z80Instruction from five bytes.
+    pub fn new(mc: [u8; 5]) -> Self {
+        Self { mc }
+    }
 
-            // and the prefixes:
-            0xcb => 0xcc,
-            0xed => 0xee,
-            0xdd => 0xde,
-            0xfd => 0xfe,
-            opcode => opcode,
-        }
+    fn decode(&self) -> dez80::Instruction {
+        let encoding = Vec::<_>::from(self.mc);
+        dez80::Instruction::decode_one(&mut encoding.as_slice()).unwrap()
     }
 }
 
@@ -69,14 +64,7 @@ impl Instruction for Z80Instruction {
     }
 
     fn encode(self) -> Vec<u8> {
-        let encoding = Vec::<_>::from(self.mc);
-        // We now have the bytes in the right order, but there's possibly garbage bytes at the end
-        // of the Vec<u8>, because there's variable-length instruction stored in a [u8; 5]. So
-        // therefore I'm going to use the dez80 crate to decode the instruction, and then re-encode
-        // it. The re-encoding of course will not include these garbage bytes.
-
-        let instruction = dez80::Instruction::decode_one(&mut encoding.as_slice()).unwrap();
-        instruction.to_bytes()
+        self.decode().to_bytes()
     }
 
     fn first() -> Self {
@@ -106,6 +94,11 @@ impl Instruction for Z80Instruction {
                 }
             }
         }
+
+        if !incr_operand(self, offset - 1) {
+            return None;
+        }
+        // managed to increment the operand
 
         // this prefix is ignored if the following byte is in the set below. In other words, there
         // are no valid encodings starting with 0xdd or 0xfd and one of the following bytes.
@@ -146,19 +139,41 @@ impl Instruction for Z80Instruction {
             incr_operand(self, 1);
         }
 
-        #[cfg(test)]
-        {
-            let instruction =
-                dez80::Instruction::decode_one(&mut self.encode().as_slice()).unwrap();
-            assert!(instruction.ignored_prefixes.is_empty(), "{:?}", self);
+        // the ED prefix avails the Z80 of the RETI and RETN opcodes, but they are aliased over
+        // several encodings. These unnecessary duplicates are skipped. So are other illegal
+        // instructions in the ED prefix. And block instructions are also skipped; I'm having
+        // trouble with the emulator executing these.
+        while self.mc[0] == 0xed {
+            match self.mc[1] {
+                0x00..=0x3f => self.mc[1] = 0x40, // this range is undefined instructions
+                0x55 | 0x5d | 0x65 | 0x6d | 0x75 | 0x7d => {
+                    // aliases for RETI and RETN
+                    incr_operand(self, 1);
+                }
+                0x77 | 0x7f => {
+                    // undefined instructions
+                    incr_operand(self, 1);
+                }
+                0x80..=0xff => {
+                    // undefined instructions
+                    incr_operand(self, 0);
+                }
+                _ => break,
+            }
         }
 
-        // managed to increment the operand
-        if incr_operand(self, offset - 1) {
-            Some(*self)
-        } else {
-            None
+        #[cfg(test)]
+        {
+            let instruction = self.decode();
+            assert!(instruction.ignored_prefixes.is_empty(), "{:?}", self);
+            assert!(!format!("{}", instruction).contains("invalid prefix"));
+            assert!(
+                !format!("{}", instruction).starts_with(';'),
+                "invalid encoding, {:?}",
+                self
+            );
         }
+        Some(*self)
     }
 }
 
@@ -169,104 +184,51 @@ impl std::fmt::Display for Z80Instruction {
     }
 }
 
-/// The Z80 instruction set.
-#[derive(Clone, Copy, Debug, Default)]
-pub struct Z80InstructionSet {
-    i8080: bool,
-}
-
-impl Z80InstructionSet {
-    /// limits the instruction selection to instructions that are available on the Intel 8080.
-    pub fn i8080(&mut self) -> Self {
-        self.i8080 = true;
-        *self
-    }
-}
-
-impl InstructionSet for Z80InstructionSet {
-    type Instruction = Z80Instruction;
-
-    fn random(&self) -> Self::Instruction {
-        let mut instruction = Z80Instruction::random();
-        if self.i8080 {
-            instruction.i8080_fixup();
-        }
-        instruction
-    }
-
-    fn next(&self, instruction: &mut Self::Instruction) -> Option<()> {
-        instruction.increment()?;
-        if self.i8080 {
-            instruction.i8080_fixup();
-        }
-        Some(())
-    }
-
-    fn mutate(&self, instruction: &mut Self::Instruction) {
-        instruction.mutate();
-        if self.i8080 {
-            instruction.i8080_fixup();
-        }
-    }
-
-    fn filter(&self, _cand: &Candidate<Self::Instruction>) -> bool {
-        true
-    }
-}
-
 #[cfg(test)]
 mod test {
 
     #[test]
     fn disassembly() {
-        use crate::InstructionSet;
-        for p in crate::z80::z80().bruteforce_with_maximum_length(1) {
-            p.disassemble();
+        use crate::Instruction;
+        let mut p = super::Z80Instruction::first();
+        while let Some(insn) = p.increment() {
+            format!("{}", insn);
         }
     }
 
     #[test]
-    fn instruction_increment() {
-        use crate::Instruction;
-        let mut p = super::Z80Instruction::first();
-        assert!(p.increment().is_some());
-        assert!(p.increment().is_some());
-        assert!(p.increment().is_some());
-        assert!(p.increment().is_some());
-    }
+    fn invalid_prefixes() {}
 
     #[test]
-    fn instruction_set_increment() {
+    fn instruction_increment() {
         use crate::Instruction;
-        use crate::InstructionSet;
-        let mut i = super::Z80Instruction::first();
-        let p = super::Z80InstructionSet::default();
-        assert!(p.next(&mut i).is_some());
-        assert!(p.next(&mut i).is_some());
-        assert!(p.next(&mut i).is_some());
-        assert!(p.next(&mut i).is_some());
+        let mut previous = super::Z80Instruction::first();
+        let mut next = previous;
+        while let Some(n) = next.increment() {
+            assert!(n > previous);
+            previous = next
+        }
     }
 
     #[test]
     fn bruteforce_search() {
-        use crate::InstructionSet;
-        let mut p = crate::z80::z80().bruteforce_with_maximum_length(1);
-        p.next().unwrap();
-        p.next().unwrap();
-        p.next().unwrap();
+        use crate::Instruction;
+        let mut p = super::Z80Instruction::first();
+        p.increment().unwrap();
+        p.increment().unwrap();
+        p.increment().unwrap();
     }
 
     #[test]
-    fn lengths() {
+    fn is_valid_encoding() {
+        use super::Z80Instruction;
         use crate::Instruction;
 
-        use super::Z80Instruction;
         let mut insn = Z80Instruction::first();
 
-        loop {
-            if insn.increment().is_none() {
-                break;
-            }
+        while insn.increment().is_some() {
+            let dasm = format!("{}", insn);
+            assert!(!dasm.contains("invalid prefix"), "{} {:?}", dasm, insn)
         }
     }
 }

@@ -1,11 +1,12 @@
 //! Module containing testers for ARM. A tester in this context means a filter over a bruteforce
 //! search, which filters only the candidate programs that correctly compute the given function.
+use crate::Fitness;
 
 use crate::armv4t::emulators::ArmV4T;
 use crate::armv4t::instruction_set::Thumb;
 
 use crate::Candidate;
-use crate::SearchFeedback;
+use crate::SearchAlgorithm;
 
 /// Tests the candidate programs visited by a search stategy to see if they compute the given
 /// function, taking two 32-bit integers and return one 32-bit integer, and also match the AAPCS32
@@ -13,15 +14,14 @@ use crate::SearchFeedback;
 #[derive(Debug)]
 pub struct Aapcs32<S>
 where
-    S: SearchFeedback,
-    S: Iterator<Item = Candidate<Thumb>>,
+    S: SearchAlgorithm<Item = Thumb>,
 {
     inputs: Vec<(i32, i32)>,
     search: S,
     func: fn(i32, i32) -> Option<i32>,
 }
 
-impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
+impl<S: SearchAlgorithm<Item = Thumb>> Aapcs32<S> {
     /// Returns a new Aapcs32 struct
     pub fn new(search: S, func: fn(i32, i32) -> Option<i32>) -> Self {
         use rand::random;
@@ -46,12 +46,7 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
         }
     }
 
-    fn possible_test_case(
-        &mut self,
-        candidate: &<S as Iterator>::Item,
-        a: i32,
-        b: i32,
-    ) -> Option<i32> {
+    fn possible_test_case(&mut self, candidate: &Candidate<Thumb>, a: i32, b: i32) -> Option<i32> {
         use crate::Emulator;
         if let Some(result) = (self.func)(a, b) {
             let mut emu = ArmV4T::default();
@@ -66,7 +61,7 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
         None
     }
 
-    fn test1(&self, candidate: &<S as Iterator>::Item, a: i32, b: i32) -> u32 {
+    fn test1(&self, candidate: &Candidate<Thumb>, a: i32, b: i32) -> u32 {
         use crate::Emulator;
         if let Some(result) = (self.func)(a, b) {
             let mut emu = ArmV4T::default();
@@ -112,38 +107,34 @@ impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Aapcs32<S> {
         }
         score
     }
-
-    fn optimize(&self, candidate: &Candidate<Thumb>) -> Candidate<Thumb> {
-        use crate::search::DeadCodeEliminator;
-        let mut optimizer = DeadCodeEliminator::new(candidate);
-        let mut optimized = candidate.clone();
-
-        for _ in 0..100000 {
-            // try removing a bajillion instructions at random.
-            let candidate = optimizer
-                .next()
-                .expect("The dead code eliminator is broken! Why has it stopped trying!");
-            let score = self.correctness(&candidate);
-            if score == 0 {
-                optimized = candidate;
-            }
-            optimizer.score(score as f32);
-        }
-        optimized
-    }
 }
 
-impl<S: Iterator<Item = Candidate<Thumb>> + SearchFeedback> Iterator for Aapcs32<S> {
-    type Item = Candidate<Thumb>;
+impl<S: SearchAlgorithm<Item = Thumb>> SearchAlgorithm for Aapcs32<S> {
+    type Item = Thumb;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        while let Some(candidate) = self.search.next() {
+    fn fitness(&mut self, candidate: &Candidate<Thumb>) -> Fitness {
+        match self.search.fitness(candidate) {
+            Fitness::FailsStaticAnalysis => Fitness::FailsStaticAnalysis,
+            Fitness::Passes(_) => Fitness::Passes(self.test(candidate) as f32),
+        }
+    }
+
+    fn score(&mut self, score: f32) {
+        self.search.score(score);
+    }
+
+    fn replace(&mut self, offset: usize, instruction: Option<Self::Item>) {
+        self.search.replace(offset, instruction);
+    }
+
+    fn generate(&mut self) -> Option<Candidate<Self::Item>> {
+        while let Some(candidate) = self.search.generate() {
             let score = self.test(&candidate);
             self.search.score(score as f32);
             if score == 0 {
                 // We've found a program that passes the test cases we've found; let's optimize the
                 // program.
-                return Some(self.optimize(&candidate));
+                return Some(candidate);
             }
         }
         None

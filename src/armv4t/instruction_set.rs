@@ -1,26 +1,28 @@
 //!  Two instruction sets supported by the ARMv4T.
 
-use crate::Candidate;
 use crate::Instruction;
+use crate::Stochastic;
+use crate::StochasticSearch;
 
 /// Type representing the Thumb instruction (no Thumb2 instructions are present here. It's just the
 /// first, fixed-width version).
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Thumb(pub u16);
 
 /// Type representing the full-width ARM instruction.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Arm(pub u32);
+
+impl Stochastic for Thumb {
+    fn stochastic_search() -> StochasticSearch<Self> {
+        StochasticSearch::<Self>::new()
+    }
+}
 
 impl Instruction for Thumb {
     fn random() -> Self {
         use rand::random;
-        let thumb = Self(random());
-        if let Some(next) = undefined_instruction(&thumb) {
-            next
-        } else {
-            thumb
-        }
+        Self(random())
     }
 
     fn mutate(self) -> Self {
@@ -41,154 +43,7 @@ impl Instruction for Thumb {
 
     fn increment(&mut self) -> Option<Self> {
         self.0 = self.0.checked_add(1)?;
-        if let Some(next) = undefined_instruction(self) {
-            *self = next;
-        }
         Some(*self)
-    }
-}
-
-fn control_flow(insn: &Thumb) -> Option<Thumb> {
-    // If it's a control flow instruction, then return the next instruction which isn't.
-    if insn.0 & 0xff00 == 0x4700 {
-        Some(Thumb((insn.0 | 0x07ff) + 1))
-    } else {
-        None
-    }
-}
-
-fn undefined_instruction(insn: &Thumb) -> Option<Thumb> {
-    // If it's an undefined instruction, then return the next instruction which is actually
-    // a defined instruction. (Next instruction here means, the one who's encoding is next
-    // in increasing numerical order)
-    if insn.0 & 0xff04 == 0x4700 {
-        // encodings for `bl rm` and `blx rm`. These need zeroes in the bottom three bits, so
-        // some of the non-zero values are marked as unpredictable
-        Some(Thumb((insn.0 | 0x0007) + 1))
-    } else if insn.0 & 0xff00 == 0xb100 {
-        // No instructions in this range; the next one is `push {<nothing>}`
-        Some(Thumb(0xb400))
-    } else if insn.0 & 0xfe00 == 0xb600 {
-        // for push instructions, bit 10 (0x0200) needs to be zero.
-        Some(Thumb(0xfc00))
-    } else {
-        None
-    }
-}
-
-fn unpredictable_instruction(insn: &Thumb) -> Option<Thumb> {
-    // If it's an unpredictable instruction, then return the next instruction which isn't an
-    // unpredictable instruction. (Next instruction here means, the one who's encoding is next
-    // in increasing numerical order)
-    if insn.0 & 0xffc0 == 0x4400 {
-        // `add rd, rm` encoding, which, because it doesn't use high registers, is redundant
-        // with the three-operand `add rd, rn, rm` instruction. Set the high-bit for Rm.
-        Some(Thumb(0x4440))
-    } else if insn.0 & 0xffc0 == 0x4500 {
-        // `cmp rm, rn` encoding, which, because it doesn't use high registers, is redundant
-        // with the three-operand `cmp rd, rn, rm` instruction. Set the high-bit for Rn.
-        Some(Thumb(0x4540))
-    } else if insn.0 & 0xffc0 == 0x4600 {
-        // `mov rd, rm` encoding, which doesn't use high registers. This does not have any
-        // equivalent instruction, but is still marked as unpredictable. Set the high-bit
-        // for Rm.
-        Some(Thumb(0x4640))
-    } else {
-        None
-    }
-}
-
-fn load_store_instruction(insn: &Thumb) -> Option<Thumb> {
-    // If it's an load/store instruction, then return the next instruction which isn't a
-    // load/store instruction.
-
-    if insn.0 >= 0x4800 && insn.0 < 0xb000 {
-        // looks like all load/store instructions are in this range. This range also includes adds
-        // relative to SP or PC, which have the same addressing modes. So just return the next
-        // instruction which is `sub sp, sp, 0`.
-        Some(Thumb(0xb080))
-    } else {
-        None
-    }
-}
-
-/// The instruction set known by the ARMv4T in Thumb mode
-#[derive(Clone, Default, Debug)]
-pub struct ThumbInstructionSet {
-    unpredictables: bool,
-    branchless: bool,
-}
-
-impl ThumbInstructionSet {
-    /// An ordinary `ThumbInstructionSet`
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Configures the `ThumbInstructionSet` to consider valid encodings which are so-called
-    /// "Unpredictable". I have no idea how the third-party emulator emulates these.
-    pub fn allow_unpredictable_instructions(&mut self) -> &mut Self {
-        self.unpredictables = true;
-        self
-    }
-
-    /// Makes sure not to select any branches or other control flow instructions.
-    pub fn branchless(&mut self) -> &mut Self {
-        self.branchless = true;
-        self
-    }
-
-    fn check(&self, thumb: &Thumb) -> Option<Thumb> {
-        if let Some(new_instruction) = load_store_instruction(thumb) {
-            return Some(new_instruction);
-        }
-        if !self.unpredictables {
-            if let Some(new_instruction) = unpredictable_instruction(thumb) {
-                return Some(new_instruction);
-            }
-        }
-        if self.branchless {
-            if let Some(new_instruction) = control_flow(thumb) {
-                return Some(new_instruction);
-            }
-        }
-        None
-    }
-}
-
-impl crate::InstructionSet for ThumbInstructionSet {
-    type Instruction = Thumb;
-
-    fn next(&self, thumb: &mut Self::Instruction) -> Option<()> {
-        thumb.increment()?;
-        while let Some(nt) = self.check(thumb) {
-            *thumb = nt;
-        }
-        if self.branchless && thumb.0 >= 0xfc00 {
-            return None;
-        }
-        Some(())
-    }
-
-    fn mutate(&self, thumb: &mut Self::Instruction) {
-        thumb.mutate();
-        while self.check(thumb).is_some() {
-            *thumb = thumb.mutate();
-
-            while self.branchless && thumb.0 >= 0xfc00 {
-                *thumb = thumb.mutate();
-            }
-        }
-    }
-
-    fn random(&self) -> Self::Instruction {
-        let mut thumb = Thumb::random();
-        self.mutate(&mut thumb);
-        thumb
-    }
-
-    fn filter(&self, _cand: &Candidate<Self::Instruction>) -> bool {
-        true
     }
 }
 
@@ -197,126 +52,13 @@ mod test {
     #[test]
     fn all_thumb_instructions_have_disassembly() {
         use crate::armv4t::instruction_set::Thumb;
-        use crate::armv4t::instruction_set::ThumbInstructionSet;
-        use crate::Instruction;
-        use crate::InstructionSet;
 
-        let isa = ThumbInstructionSet::default();
+        use crate::Instruction;
+
         let mut thumb = Thumb::first();
-        while isa.next(&mut thumb).is_some() {
+        while thumb.increment().is_some() {
             let dasm = format!("{}", thumb);
             assert!(!dasm.starts_with("0x"), "no disassembly for {}", dasm);
-        }
-    }
-
-    #[test]
-    fn no_control_flow_in_branchless_code() {
-        use crate::armv4t::instruction_set::Thumb;
-        use crate::armv4t::instruction_set::ThumbInstructionSet;
-        use crate::Instruction;
-        use crate::InstructionSet;
-
-        let mut binding = ThumbInstructionSet::default();
-        let isa = binding.branchless();
-        assert!(isa.branchless);
-        let mut thumb = Thumb::first();
-        while isa.next(&mut thumb).is_some() {
-            let dasm = format!("{}", thumb);
-            assert!(
-                !dasm.starts_with("b "),
-                "{} looks like a branch instruction",
-                dasm
-            );
-            assert!(
-                !dasm.starts_with("bl "),
-                "{} looks like a branch instruction",
-                dasm
-            );
-            assert!(
-                !dasm.starts_with("bx "),
-                "{} looks like a branch instruction",
-                dasm
-            );
-            assert!(
-                !dasm.starts_with("blx "),
-                "{} looks like a branch instruction",
-                dasm
-            );
-        }
-    }
-
-    #[test]
-    fn no_loads_or_stores() {
-        use crate::armv4t::instruction_set::Thumb;
-        use crate::armv4t::instruction_set::ThumbInstructionSet;
-        use crate::Instruction;
-        use crate::InstructionSet;
-
-        let isa = ThumbInstructionSet::default();
-        let mut thumb = Thumb::first();
-        while isa.next(&mut thumb).is_some() {
-            let dasm = format!("{}", thumb);
-            assert!(
-                !dasm.starts_with("ldmia "),
-                "{} looks like a load instruction",
-                dasm
-            );
-            assert!(
-                !dasm.starts_with("ldr "),
-                "{} looks like a load instruction",
-                dasm
-            );
-            assert!(
-                !dasm.starts_with("ldrb "),
-                "{} looks like a load instruction",
-                dasm
-            );
-            assert!(
-                !dasm.starts_with("ldrh "),
-                "{} looks like a load instruction",
-                dasm
-            );
-            assert!(
-                !dasm.starts_with("ldrsb "),
-                "{} looks like a load instruction",
-                dasm
-            );
-            assert!(
-                !dasm.starts_with("ldrsh "),
-                "{} looks like a load instruction",
-                dasm
-            );
-
-            assert!(
-                !dasm.starts_with("stmia "),
-                "{} looks like a store instruction",
-                dasm
-            );
-            assert!(
-                !dasm.starts_with("str "),
-                "{} looks like a store instruction",
-                dasm
-            );
-            assert!(
-                !dasm.starts_with("strb "),
-                "{} looks like a store instruction",
-                dasm
-            );
-            assert!(
-                !dasm.starts_with("strh "),
-                "{} looks like a store instruction",
-                dasm
-            );
-            assert!(
-                !dasm.starts_with("strsb "),
-                "{} looks like a store instruction",
-                dasm
-            );
-            assert!(
-                !dasm.starts_with("strsh "),
-                "{} looks like a store instruction",
-                dasm
-            );
         }
     }
 }

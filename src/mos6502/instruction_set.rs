@@ -3,7 +3,7 @@
 
 use crate::Candidate;
 use crate::Instruction;
-use crate::InstructionSet;
+use crate::SearchCull;
 use rand::random;
 
 type Encoding6502 = [u8; 3];
@@ -49,175 +49,109 @@ const CMOS_OPCODES: [u8; 178] = [
     0xfd, 0xfe,
 ];
 
+const COMMON_OPCODES: [u8; 149] = [
+    0x00, 0x01, 0x05, 0x06, 0x08, 0x09, 0x0a, 0x0d, 0x0e, 0x10, 0x11, 0x15, 0x16, 0x18, 0x19, 0x1d,
+    0x1e, 0x20, 0x21, 0x24, 0x25, 0x26, 0x28, 0x29, 0x2a, 0x2c, 0x2d, 0x2e, 0x30, 0x31, 0x35, 0x36,
+    0x38, 0x39, 0x3d, 0x3e, 0x40, 0x41, 0x45, 0x46, 0x48, 0x49, 0x4a, 0x4c, 0x4d, 0x4e, 0x50, 0x51,
+    0x55, 0x56, 0x58, 0x59, 0x5d, 0x5e, 0x60, 0x61, 0x65, 0x66, 0x68, 0x69, 0x6a, 0x6c, 0x6d, 0x6e,
+    0x70, 0x71, 0x75, 0x76, 0x78, 0x79, 0x7d, 0x7e, 0x81, 0x84, 0x85, 0x86, 0x88, 0x8a, 0x8c, 0x8d,
+    0x8e, 0x90, 0x91, 0x94, 0x95, 0x96, 0x98, 0x99, 0x9a, 0x9d, 0xa0, 0xa1, 0xa2, 0xa4, 0xa5, 0xa6,
+    0xa8, 0xa9, 0xaa, 0xac, 0xad, 0xae, 0xb0, 0xb1, 0xb4, 0xb5, 0xb6, 0xb8, 0xb9, 0xba, 0xbc, 0xbd,
+    0xbe, 0xc0, 0xc1, 0xc4, 0xc5, 0xc6, 0xc8, 0xc9, 0xca, 0xcc, 0xcd, 0xce, 0xd0, 0xd1, 0xd5, 0xd6,
+    0xd8, 0xd9, 0xdd, 0xde, 0xe0, 0xe1, 0xe4, 0xe5, 0xe6, 0xe8, 0xe9, 0xea, 0xec, 0xed, 0xee, 0xf0,
+    0xf5, 0xf6, 0xf9, 0xfd, 0xfe,
+];
+
+trait Mos6502Compatibility
+where
+    Self: PartialEq + Instruction,
+{
+    fn cmos_compatible(&self) -> SearchCull<Self>;
+    fn safe_bet(&self) -> SearchCull<Self>;
+}
+
+impl Mos6502Compatibility for Nmos6502Instruction {
+    fn cmos_compatible(&self) -> SearchCull<Self> {
+        assert_eq!(
+            format!("{}", self),
+            format!(
+                "{}",
+                Cmos6502Instruction {
+                    encoding: self.encoding
+                }
+            )
+        );
+        SearchCull::Okay
+    }
+
+    fn safe_bet(&self) -> SearchCull<Self> {
+        if COMMON_OPCODES.contains(&self.encoding[0]) {
+            SearchCull::Okay
+        } else {
+            SearchCull::SkipTo(
+                COMMON_OPCODES
+                    .iter()
+                    .filter(|&num| *num > self.encoding[0])
+                    .min()
+                    .map(|op| Nmos6502Instruction::new([*op, 0, 0])),
+            )
+        }
+    }
+}
+
+impl Mos6502Compatibility for Cmos6502Instruction {
+    fn cmos_compatible(&self) -> SearchCull<Self> {
+        SearchCull::Okay
+    }
+
+    fn safe_bet(&self) -> SearchCull<Self> {
+        if COMMON_OPCODES.contains(&self.encoding[0]) {
+            SearchCull::Okay
+        } else {
+            SearchCull::SkipTo(
+                COMMON_OPCODES
+                    .iter()
+                    .filter(|&num| *num > self.encoding[0])
+                    .min()
+                    .map(|op| Cmos6502Instruction::new([*op, 0, 0])),
+            )
+        }
+    }
+}
+
+/// A compatibility check that only lets instructions through that will execute okay on the 65C02.
+#[derive(Debug)]
+pub struct CmosCompatible;
+
+impl<I: PartialEq + Instruction + Mos6502Compatibility> crate::Compatibility<I> for CmosCompatible {
+    fn check(&self, i: &I) -> SearchCull<I> {
+        i.cmos_compatible()
+    }
+}
+
+/// A compatibility check that only lets instructions through that will execute okay on both NMOS
+/// and CMOS CPUs, and which doesn't exercise decimal mode. That is, it does not let any
+/// CMOS-specific instructions through, nor NMOS "illegal opcodes", not `SED`. The resulting
+/// program should run on a wide variety of 6502s.
+#[derive(Debug)]
+pub struct SafeBet;
+
+impl<I: PartialEq + Instruction + Mos6502Compatibility> crate::Compatibility<I> for SafeBet {
+    fn check(&self, i: &I) -> SearchCull<I> {
+        i.safe_bet()
+    }
+}
+
 /// A struct representing one MOS 6502 instruction
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Nmos6502Instruction {
     encoding: Encoding6502,
 }
 
 /// A struct representing one MOS 6502 instruction
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Cmos6502Instruction {
     encoding: Encoding6502,
-}
-
-#[derive(Clone, Debug)]
-enum Mos6502StaticAnalysisTypes {
-    NoIndirectJumpBug,
-    SensibleBranchTargets,
-}
-
-/// The instruction set known by NMOS 6502s, including the ROR instruction.
-#[derive(Clone, Debug, Default)]
-pub struct Mos6502 {
-    cmos_compatible: bool,
-    reva_compatible: bool,
-
-    basic_block: bool,
-
-    writable_addresses: Vec<u16>,
-    readable_addresses: Vec<u16>,
-
-    sa: Vec<Mos6502StaticAnalysisTypes>,
-}
-
-/// The instruction set known by CMOS 6502s. This includes such instructions as `phx`, `ply`,
-/// `stz`, etc.
-#[derive(Clone, Debug, Default)]
-pub struct Cmos6502 {}
-
-impl Mos6502 {
-    /// Configures the `InstructionSet` to include only those instructions that are compatible with
-    /// the CMOS models of the 6502
-    pub fn cmos_compatible(&mut self) -> &mut Self {
-        self.cmos_compatible = true;
-        self
-    }
-
-    /// configures the `InstructionSet` to exclude the `ROR` instruction, which is not present on
-    /// very early chips.
-    pub fn reva_compatible(&mut self) -> &mut Self {
-        self.reva_compatible = true;
-        self
-    }
-
-    /// Makes sure that any branches actually target instructions (and not, for example, half-way
-    /// through a multi-byte instruction, or somewhere before the program's start, or ...)
-    pub fn branch_target(&mut self) -> &mut Self {
-        self.sa
-            .push(Mos6502StaticAnalysisTypes::SensibleBranchTargets);
-        self
-    }
-
-    /// Makes sure not to include instructions exhibiting the hardware bug that can happen with indirect
-    /// jumps through pointers which straddle memory pages.
-    pub fn no_indirect_jump_bug(&mut self) -> &mut Self {
-        self.sa.push(Mos6502StaticAnalysisTypes::NoIndirectJumpBug);
-        self
-    }
-
-    /// Specifies writeable addresses. When set, the instructions selected will not write to any
-    /// other variables
-    pub fn writeable(&mut self, address: u16) -> &mut Self {
-        self.writable_addresses.push(address);
-        self
-    }
-
-    /// Specifies readable addresses. When set, the instructions selected will not read from any
-    /// other variables
-    pub fn readable(&mut self, address: u16) -> &mut Self {
-        self.readable_addresses.push(address);
-        self
-    }
-
-    /// Excludes any control flow instructions from consideration (e.g. `rts`, `rti`, `jmp`, `beq`,
-    /// etc.)
-    pub fn basic_block(&mut self) -> &mut Self {
-        self.basic_block = true;
-        self
-    }
-
-    fn check_opcode(&self, insn: &mut Nmos6502Instruction) -> bool {
-        #[allow(clippy::if_same_then_else)]
-        #[allow(clippy::needless_bool)]
-        if self.cmos_compatible && !insn.cmos_compatible() {
-            false
-        } else if self.reva_compatible && !insn.reva_compatible() {
-            false
-        } else if self.basic_block && insn.is_control_flow() {
-            false
-        } else if self.readable_addresses.is_empty() && insn.reads_from().is_some() {
-            false
-        } else if self.writable_addresses.is_empty() && insn.writes_to().is_some() {
-            false
-        } else {
-            true
-        }
-    }
-
-    fn address_fixup(&self, insn: &mut Nmos6502Instruction) {
-        if let Some(address) = insn.reads_from() {
-            if !self.readable_addresses.iter().any(|addr| addr == &address) {
-                todo!();
-            }
-        }
-        if let Some(address) = insn.writes_to() {
-            if !self.writable_addresses.iter().any(|addr| addr == &address) {
-                todo!();
-            }
-        }
-    }
-}
-
-impl InstructionSet for Mos6502 {
-    type Instruction = Nmos6502Instruction;
-
-    fn first(&self) -> Self::Instruction {
-        let mut insn = Self::Instruction::first();
-
-        while !self.check_opcode(&mut insn) {
-            // If this in an opcode that's not under consideration due to static analysis, then
-            // skip this opcode.
-            insn.encoding[0] = next_nmos_opcode(insn.encoding[0]).unwrap();
-        }
-
-        self.address_fixup(&mut insn);
-        insn
-    }
-
-    fn next(&self, insn: &mut Self::Instruction) -> Option<()> {
-        insn.increment();
-        while !self.check_opcode(insn) {
-            // If this in an opcode that's not under consideration due to static analysis, then
-            // skip this opcode.
-            insn.encoding[0] = next_nmos_opcode(insn.encoding[0])?;
-        }
-
-        self.address_fixup(insn);
-
-        Some(())
-    }
-
-    fn mutate(&self, insn: &mut Self::Instruction) {
-        insn.mutate();
-        while !self.check_opcode(insn) {
-            // If this in an opcode that's not under consideration due to static analysis, then
-            // skip this opcode.
-            insn.mutate();
-        }
-
-        self.address_fixup(insn);
-    }
-
-    fn random(&self) -> Nmos6502Instruction {
-        let mut insn = Nmos6502Instruction::random();
-        self.mutate(&mut insn);
-        insn
-    }
-
-    fn filter(&self, _candidate: &Candidate<Nmos6502Instruction>) -> bool {
-        true
-    }
 }
 
 impl Nmos6502Instruction {
@@ -225,222 +159,21 @@ impl Nmos6502Instruction {
     /// 2 or 3 bytes.
     pub fn length(&self) -> usize {
         match self.encoding[0] {
-            0x00 => 1, // TODO: is this right?
-            0x01 => 2,
-            0x03 => 2,
-            0x05 => 2,
-            0x06 => 2,
-            0x08 => 1,
-            0x07 => 2,
-            0x0a => 1,
-            0x09 => 2,
-            0x0b => 2,
-            0x0d => 3,
-            0x0e => 3,
-            0x0f => 3,
-            0x10 => 2,
-            0x11 => 2,
-            0x13 => 2,
-            0x15 => 2,
-            0x16 => 2,
-            0x17 => 2,
-            0x18 => 1,
-            0x19 => 3,
-            0x1b => 3,
-            0x1d => 3,
-            0x1e => 3,
-            0x1f => 3,
-            0x20 => 3,
-            0x21 => 2,
-            0x23 => 2,
-            0x24 => 2,
-            0x25 => 2,
-            0x26 => 2,
-            0x27 => 2,
-            0x28 => 1,
-            0x29 => 2,
-            0x2a => 1,
-            0x2b => 2,
-            0x2c => 3,
-            0x2d => 3,
-            0x2e => 3,
-            0x2f => 3,
-            0x30 => 2,
-            0x31 => 2,
-            0x33 => 2,
-            0x35 => 2,
-            0x36 => 2,
-            0x37 => 2,
-            0x38 => 1,
-            0x39 => 3,
-            0x3b => 3,
-            0x3d => 3,
-            0x3e => 3,
-            0x3f => 3,
-            0x40 => 1,
-            0x41 => 2,
-            0x43 => 2,
-            0x45 => 2,
-            0x46 => 2,
-            0x47 => 2,
-            0x48 => 1,
-            0x49 => 2,
-            0x4a => 1,
-            0x4b => 2,
-            0x4c => 3,
-            0x4d => 3,
-            0x4e => 3,
-            0x4f => 3,
-            0x50 => 2,
-            0x51 => 2,
-            0x53 => 2,
-            0x55 => 2,
-            0x56 => 2,
-            0x57 => 2,
-            0x58 => 1,
-            0x59 => 3,
-            0x5b => 3,
-            0x5d => 3,
-            0x5e => 3,
-            0x5f => 3,
-            0x60 => 1,
-            0x61 => 2,
-            0x63 => 2,
-            0x65 => 2,
-            0x66 => 2,
-            0x67 => 2,
-            0x68 => 1,
-            0x69 => 2,
-            0x6a => 1,
-            0x6b => 2,
-            0x6c => 3,
-            0x6d => 3,
-            0x6e => 3,
-            0x6f => 3,
-            0x70 => 2,
-            0x71 => 2,
-            0x73 => 2,
-            0x75 => 2,
-            0x76 => 2,
-            0x77 => 2,
-            0x78 => 1,
-            0x79 => 3,
-            0x7b => 3,
-            0x7d => 3,
-            0x7e => 3,
-            0x7f => 3,
-            0x81 => 2,
-            0x83 => 2,
-            0x84 => 2,
-            0x85 => 2,
-            0x86 => 2,
-            0x87 => 2,
-            0x88 => 1,
-            0x8a => 1,
-            0x8b => 2,
-            0x8c => 3,
-            0x8d => 3,
-            0x8e => 3,
-            0x8f => 3,
-            0x90 => 2,
-            0x91 => 2,
-            0x93 => 2,
-            0x94 => 2,
-            0x95 => 2,
-            0x96 => 2,
-            0x97 => 2,
-            0x98 => 1,
-            0x99 => 3,
-            0x9a => 1,
-            0x9b => 3,
-            0x9c => 3,
-            0x9d => 3,
-            0x9e => 3,
-            0x9f => 3,
-            0xa0 => 2,
-            0xa1 => 2,
-            0xa2 => 2,
-            0xa3 => 2,
-            0xa4 => 2,
-            0xa5 => 2,
-            0xa6 => 2,
-            0xa7 => 2,
-            0xa8 => 1,
-            0xa9 => 2,
-            0xaa => 1,
-            0xab => 2,
-            0xac => 3,
-            0xad => 3,
-            0xae => 3,
-            0xaf => 3,
-            0xb0 => 2,
-            0xb1 => 2,
-            0xb3 => 2,
-            0xb4 => 2,
-            0xb5 => 2,
-            0xb6 => 2,
-            0xb7 => 2,
-            0xb8 => 1,
-            0xb9 => 3,
-            0xba => 1,
-            0xbb => 3,
-            0xbc => 3,
-            0xbd => 3,
-            0xbe => 3,
-            0xbf => 3,
-            0xc0 => 2,
-            0xc1 => 2,
-            0xc3 => 2,
-            0xc4 => 2,
-            0xc5 => 2,
-            0xc6 => 2,
-            0xc7 => 2,
-            0xc8 => 1,
-            0xc9 => 2,
-            0xca => 1,
-            0xcb => 2,
-            0xcc => 3,
-            0xcd => 3,
-            0xce => 3,
-            0xcf => 3,
-            0xd0 => 2,
-            0xd1 => 2,
-            0xd3 => 2,
-            0xd5 => 2,
-            0xd6 => 2,
-            0xd7 => 2,
-            0xd8 => 1,
-            0xd9 => 3,
-            0xdb => 3,
-            0xdd => 3,
-            0xde => 3,
-            0xdf => 3,
-            0xe0 => 2,
-            0xe1 => 2,
-            0xe3 => 2,
-            0xe4 => 2,
-            0xe5 => 2,
-            0xe6 => 2,
-            0xe7 => 2,
-            0xe8 => 1,
-            0xe9 => 2,
-            0xea => 1,
-            0xec => 3,
-            0xed => 3,
-            0xee => 3,
-            0xef => 3,
-            0xf0 => 2,
-            0xf1 => 2,
-            0xf3 => 2,
-            0xf5 => 2,
-            0xf6 => 2,
-            0xf7 => 2,
-            0xf8 => 1,
-            0xf9 => 3,
-            0xfb => 3,
-            0xfd => 3,
-            0xfe => 3,
-            0xff => 3,
+            0x01 | 0x03 | 0x05 | 0x06 | 0x07 | 0x09 | 0x0b | 0x10 | 0x11 | 0x13 | 0x15..=0x17 => 2,
+            0x0d | 0x0e | 0x0f | 0x19 | 0x1b | 0x1d | 0x1e | 0x1f | 0x20 | 0x2c | 0x2d | 0x2e => 3,
+            0x00 | 0x08 | 0x0a | 0x18 | 0x28 | 0x2a | 0x38 | 0x40 | 0x48 | 0x4a | 0x58 | 0x60 => 1,
+            0x21 | 0x23..=0x27 | 0x29 | 0x2b | 0x30 | 0x31 | 0x33 | 0x35..=0x37 | 0x4b | 0x61 => 2,
+            0x2f | 0x39 | 0x3b | 0x3d..=0x3f | 0x4c..=0x4f | 0x59 | 0x5b | 0x5d..=0x5f | 0x79 => 3,
+            0x41 | 0x43 | 0x45..=0x47 | 0x49 | 0x50 | 0x51 | 0x53 | 0x55..=0x57 | 0x63 | 0x81 => 2,
+            0x65..=0x67 | 0x69 | 0x6b | 0x70 | 0x71 | 0x73 | 0x75..=0x77 | 0x83..=0x87 | 0x8b => 2,
+            0x6c..=0x6f | 0x7b | 0x7d..=0x7f | 0x8c..=0x8f | 0x99 | 0x9b..=0x9f | 0xac..=0xaf => 3,
+            0x90 | 0x91 | 0x93..=0x97 | 0xa0..=0xa7 | 0xa9 | 0xab | 0xb0 | 0xb1 | 0xb3..=0xb7 => 2,
+            0x68 | 0x6a | 0x78 | 0x88 | 0x8a | 0x98 | 0x9a | 0xa8 | 0xaa | 0xb8 | 0xba | 0xc8 => 1,
+            0xc0 | 0xc1 | 0xc3..=0xc6 | 0xc7 | 0xc9 | 0xcb | 0xd0 | 0xd1 | 0xd3 | 0xd5..=0xd7 => 2,
+            0xb9 | 0xbb..=0xbf | 0xcc..=0xcf | 0xd9 | 0xdb | 0xdd..=0xdf | 0xec..=0xef | 0xf9 => 3,
+            0xe0 | 0xe1 | 0xe3 | 0xe4 | 0xe5..=0xe9 | 0xf0 | 0xf1 | 0xf3 | 0xf5..=0xf7 => 2,
+            0xca | 0xd8 | 0xea | 0xf8 => 1,
+            0xfb | 0xfd..=0xff => 3,
             _ => 0,
         }
     }
@@ -450,10 +183,12 @@ impl Nmos6502Instruction {
         Self { encoding }
     }
 
+    #[cfg(test)]
     fn reva_compatible(&self) -> bool {
         !matches!(self.encoding[0], 0x66 | 0x6a | 0x6e | 0x76 | 0x7e)
     }
 
+    #[cfg(test)]
     fn cmos_compatible(&self) -> bool {
         CMOS_OPCODES.contains(&self.encoding[0]) && !matches!(self.encoding[0], 0x9c | 0x9e)
     }
@@ -644,247 +379,22 @@ impl Cmos6502Instruction {
     /// 2 or 3 bytes.
     pub fn length(&self) -> usize {
         match self.encoding[0] {
-            0x64 => 2,
-            0x74 => 2,
-            0xda => 1,
-            0x5a => 1,
-            0xfa => 1,
-            0x7a => 1,
-            0x72 => 2,
-            0x32 => 2,
-            0xd2 => 2,
-            0x52 => 2,
-            0xb2 => 2,
-            0x12 => 2,
-            0xf2 => 2,
-            0x92 => 2,
-            0x04 => 2,
-            0x0c => 3,
-            0x14 => 2,
-            0x1c => 3,
-            0x1a => 1,
-            0x34 => 2,
-            0x3c => 3,
-            0x3a => 1,
-            0x7c => 3,
-            0x89 => 2,
-            0x80 => 2,
-            0x00 => 1, // TODO: is this right?
-            0x01 => 2,
-            0x03 => 2,
-            0x05 => 2,
-            0x06 => 2,
-            0x08 => 1,
-            0x07 => 2,
-            0x0a => 1,
-            0x09 => 2,
-            0x0b => 2,
-            0x0d => 3,
-            0x0e => 3,
-            0x0f => 3,
-            0x10 => 2,
-            0x11 => 2,
-            0x13 => 2,
-            0x15 => 2,
-            0x16 => 2,
-            0x17 => 2,
-            0x18 => 1,
-            0x19 => 3,
-            0x1b => 3,
-            0x1d => 3,
-            0x1e => 3,
-            0x1f => 3,
-            0x20 => 3,
-            0x21 => 2,
-            0x23 => 2,
-            0x24 => 2,
-            0x25 => 2,
-            0x26 => 2,
-            0x27 => 2,
-            0x28 => 1,
-            0x29 => 2,
-            0x2a => 1,
-            0x2b => 2,
-            0x2c => 3,
-            0x2d => 3,
-            0x2e => 3,
-            0x2f => 3,
-            0x30 => 2,
-            0x31 => 2,
-            0x33 => 2,
-            0x35 => 2,
-            0x36 => 2,
-            0x37 => 2,
-            0x38 => 1,
-            0x39 => 3,
-            0x3b => 3,
-            0x3d => 3,
-            0x3e => 3,
-            0x3f => 3,
-            0x40 => 1,
-            0x41 => 2,
-            0x43 => 2,
-            0x45 => 2,
-            0x46 => 2,
-            0x47 => 2,
-            0x48 => 1,
-            0x49 => 2,
-            0x4a => 1,
-            0x4b => 2,
-            0x4c => 3,
-            0x4d => 3,
-            0x4e => 3,
-            0x4f => 3,
-            0x50 => 2,
-            0x51 => 2,
-            0x53 => 2,
-            0x55 => 2,
-            0x56 => 2,
-            0x57 => 2,
-            0x58 => 1,
-            0x59 => 3,
-            0x5b => 3,
-            0x5d => 3,
-            0x5e => 3,
-            0x5f => 3,
-            0x60 => 1,
-            0x61 => 2,
-            0x63 => 2,
-            0x65 => 2,
-            0x66 => 2,
-            0x67 => 2,
-            0x68 => 1,
-            0x69 => 2,
-            0x6a => 1,
-            0x6b => 2,
-            0x6c => 3,
-            0x6d => 3,
-            0x6e => 3,
-            0x6f => 3,
-            0x70 => 2,
-            0x71 => 2,
-            0x73 => 2,
-            0x75 => 2,
-            0x76 => 2,
-            0x77 => 2,
-            0x78 => 1,
-            0x79 => 3,
-            0x7b => 3,
-            0x7d => 3,
-            0x7e => 3,
-            0x7f => 3,
-            0x81 => 2,
-            0x83 => 2,
-            0x84 => 2,
-            0x85 => 2,
-            0x86 => 2,
-            0x87 => 2,
-            0x88 => 1,
-            0x8a => 1,
-            0x8b => 2,
-            0x8c => 3,
-            0x8d => 3,
-            0x8e => 3,
-            0x8f => 3,
-            0x90 => 2,
-            0x91 => 2,
-            0x93 => 2,
-            0x94 => 2,
-            0x95 => 2,
-            0x96 => 2,
-            0x97 => 2,
-            0x98 => 1,
-            0x99 => 3,
-            0x9a => 1,
-            0x9b => 3,
-            0x9c => 3,
-            0x9d => 3,
-            0x9e => 3,
-            0x9f => 3,
-            0xa0 => 2,
-            0xa1 => 2,
-            0xa2 => 2,
-            0xa3 => 2,
-            0xa4 => 2,
-            0xa5 => 2,
-            0xa6 => 2,
-            0xa7 => 2,
-            0xa8 => 1,
-            0xa9 => 2,
-            0xaa => 1,
-            0xab => 2,
-            0xac => 3,
-            0xad => 3,
-            0xae => 3,
-            0xaf => 3,
-            0xb0 => 2,
-            0xb1 => 2,
-            0xb3 => 2,
-            0xb4 => 2,
-            0xb5 => 2,
-            0xb6 => 2,
-            0xb7 => 2,
-            0xb8 => 1,
-            0xb9 => 3,
-            0xba => 1,
-            0xbb => 3,
-            0xbc => 3,
-            0xbd => 3,
-            0xbe => 3,
-            0xbf => 3,
-            0xc0 => 2,
-            0xc1 => 2,
-            0xc3 => 2,
-            0xc4 => 2,
-            0xc5 => 2,
-            0xc6 => 2,
-            0xc7 => 2,
-            0xc8 => 1,
-            0xc9 => 2,
-            0xca => 1,
-            0xcb => 2,
-            0xcc => 3,
-            0xcd => 3,
-            0xce => 3,
-            0xcf => 3,
-            0xd0 => 2,
-            0xd1 => 2,
-            0xd3 => 2,
-            0xd5 => 2,
-            0xd6 => 2,
-            0xd7 => 2,
-            0xd8 => 1,
-            0xd9 => 3,
-            0xdb => 3,
-            0xdd => 3,
-            0xde => 3,
-            0xdf => 3,
-            0xe0 => 2,
-            0xe1 => 2,
-            0xe3 => 2,
-            0xe4 => 2,
-            0xe5 => 2,
-            0xe6 => 2,
-            0xe7 => 2,
-            0xe8 => 1,
-            0xe9 => 2,
-            0xea => 1,
-            0xec => 3,
-            0xed => 3,
-            0xee => 3,
-            0xef => 3,
-            0xf0 => 2,
-            0xf1 => 2,
-            0xf3 => 2,
-            0xf5 => 2,
-            0xf6 => 2,
-            0xf7 => 2,
-            0xf8 => 1,
-            0xf9 => 3,
-            0xfb => 3,
-            0xfd => 3,
-            0xfe => 3,
-            0xff => 3,
+            0x04 | 0x64 | 0x74 | 0x72 | 0x32 | 0xd2 | 0x52 | 0xb2 | 0x12 | 0xf2 | 0x92 | 0x14 => 2,
+            0x01 | 0x03 | 0x34 | 0x89 | 0x80 | 0x05..=0x07 | 0x09 | 0x0b | 0x10 | 0x11 | 0x13 => 2,
+            0x0c | 0x1c | 0x3c | 0x3a | 0x7c | 0x0d | 0x0e | 0x0f | 0x19 | 0x1b | 0x1d..=0x20 => 3,
+            0x15..=0x17 | 0x21 | 0x23..=0x27 | 0x29 | 0x2b | 0x30 | 0x31 | 0x33 | 0x35..=0x37 => 2,
+            0xda | 0x5a | 0xfa | 0x7a | 0x1a | 0x00 | 0x08 | 0x0a | 0x18 | 0x28 | 0x2a | 0x38 => 1,
+            0x2c..=0x2f | 0x39 | 0x3b | 0x3d..=0x3f | 0x4c | 0x4d..=0x4f | 0x59 | 0x5b | 0x79 => 3,
+            0x41 | 0x43 | 0x45..=0x47 | 0x49 | 0x4b | 0x50 | 0x51 | 0x53 | 0x55..=0x57 | 0x61 => 2,
+            0x63 | 0x65..=0x67 | 0x69 | 0x6b | 0x70 | 0x71 | 0x73 | 0x75..=0x77 | 0x81 | 0x83 => 2,
+            0x40 | 0x48 | 0x4a | 0x58 | 0x60 | 0x68 | 0x6a | 0x78 | 0x88 | 0x8a | 0x98 | 0x9a => 1,
+            0x6c | 0x6d..=0x6f | 0x5d..=0x5f | 0x7b | 0x7d..=0x7f | 0x8c..=0x8f | 0x9b..=0x9f => 3,
+            0x84..=0x87 | 0x8b | 0x90 | 0x91 | 0x93..=0x97 | 0xa0..=0xa7 | 0xa9 | 0xab | 0xb0 => 2,
+            0xb1 | 0xb3..=0xb7 | 0xc0 | 0xc1 | 0xc3..=0xc7 | 0xc9 | 0xcb | 0xd0 | 0xd1 | 0xd3 => 2,
+            0x99 | 0xac | 0xad..=0xaf | 0xb9 | 0xbb..=0xbf | 0xcc..=0xcf | 0xd9 | 0xdb | 0xec => 3,
+            0xd5..=0xd7 | 0xe0 | 0xe1 | 0xe3..=0xe7 | 0xe9 | 0xf0 | 0xf1 | 0xf3 | 0xf5..=0xf7 => 2,
+            0xa8 | 0xaa | 0xb8 | 0xba | 0xc8 | 0xca | 0xd8 | 0xe8 | 0xea | 0xf8 => 1,
+            0xdd..=0xdf | 0xed | 0xee | 0xef | 0xf9 | 0xfb | 0xfd..=0xff => 3,
             _ => 0,
         }
     }
@@ -1653,5 +1163,28 @@ mod test {
         let cand = Candidate::new(vec![insn]);
         let vars = VariablesInMemory::from(&cand);
         assert_eq!(vars.reads[0], 0x45);
+    }
+
+    #[test]
+    fn safe_bet() {
+        use crate::mos6502::instruction_set::Mos6502Compatibility;
+        use crate::mos6502::Cmos6502Instruction;
+        use crate::mos6502::Nmos6502Instruction;
+
+        for i in 0..=255 {
+            let nmos = Nmos6502Instruction {
+                encoding: [i, 0, 0],
+            };
+            let cmos = Cmos6502Instruction {
+                encoding: [i, 0, 0],
+            };
+
+            if nmos.safe_bet().is_okay() {
+                assert_eq!(format!("{}", nmos), format!("{}", cmos));
+            }
+            if cmos.safe_bet().is_okay() {
+                assert_eq!(format!("{}", nmos), format!("{}", cmos));
+            }
+        }
     }
 }

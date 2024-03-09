@@ -1,5 +1,3 @@
-use strop::InstructionSet;
-
 // A program to generate the arpa/inet.h library for the Z80.
 
 fn htonl(val: u32) -> Option<u32> {
@@ -19,25 +17,39 @@ fn ntohs(val: u16) -> Option<u16> {
 }
 
 fn bruteforce32(label: &'static str, func: fn(u32) -> Option<u32>) {
-    let program = strop::z80::z80()
-        .stochastic_search()
-        .z88dkfastcall(func)
-        .next()
-        .unwrap();
+    use strop::z80::instruction_set::Z80Instruction;
+    use strop::z80::IntoZ80Search;
+    use strop::z80::ZilogZ80;
+    use strop::SearchAlgorithm;
+    use strop::Stochastic;
 
     println!("{}:", label);
-    program.disassemble();
+    Z80Instruction::stochastic_search()
+        .compatibility(ZilogZ80)
+        .z80()
+        .z88dkfastcall(func)
+        .iter()
+        .next()
+        .unwrap()
+        .disassemble();
 }
 
 fn bruteforce16(label: &'static str, func: fn(u16) -> Option<u16>) {
-    let program = strop::z80::z80()
-        .stochastic_search()
-        .z88dkfastcall(func)
-        .next()
-        .unwrap();
+    use strop::z80::instruction_set::Z80Instruction;
+    use strop::z80::IntoZ80Search;
+    use strop::z80::ZilogZ80;
+    use strop::SearchAlgorithm;
+    use strop::Stochastic;
 
     println!("{}:", label);
-    program.disassemble();
+    Z80Instruction::stochastic_search()
+        .compatibility(ZilogZ80)
+        .z80()
+        .z88dkfastcall(func)
+        .iter()
+        .next()
+        .unwrap()
+        .disassemble();
 }
 
 fn main() {
