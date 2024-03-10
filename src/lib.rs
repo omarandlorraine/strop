@@ -45,6 +45,14 @@ pub trait Stochastic: Instruction {
     fn stochastic_search() -> StochasticSearch<Self>;
 }
 
+/// Trait enabling an exhaustive search over instruction sequences
+pub trait Bruteforce: Instruction + PartialOrd {
+    /// Builds a [StochasticSearch] object for the given instruction set
+    fn bruteforce_search() -> BruteForceSearch<Self> {
+        BruteForceSearch::<Self>::new()
+    }
+}
+
 /// Type used to feed back to the SearchAlgorithms. The search algorithms are made to react to this
 /// to cull the search space by disallowing certain instructions, and to make sure that generated
 /// programs pass static analysis passes.
