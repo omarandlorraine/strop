@@ -8,6 +8,11 @@ use crate::mos6502::instruction_set::Nmos6502Instruction;
 use crate::Compatibility;
 use crate::SearchCull;
 
+impl crate::Bruteforce for Nmos6502Instruction {}
+impl crate::Bruteforce for Cmos6502Instruction {}
+impl crate::Stochastic for Nmos6502Instruction {}
+impl crate::Stochastic for Cmos6502Instruction {}
+
 struct RevisionA;
 
 fn nmos_skip_jump_bug(instruction: &Nmos6502Instruction) -> SearchCull<Nmos6502Instruction> {

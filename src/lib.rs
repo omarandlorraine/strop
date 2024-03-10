@@ -42,7 +42,9 @@ use std::convert::TryInto;
 /// Trait enabling a stochastic search over instruction sequences
 pub trait Stochastic: Instruction {
     /// Builds a [StochasticSearch] object for the given instruction set
-    fn stochastic_search() -> StochasticSearch<Self>;
+    fn stochastic_search() -> StochasticSearch<Self> {
+        StochasticSearch::<Self>::new()
+    }
 }
 
 /// Trait enabling an exhaustive search over instruction sequences
