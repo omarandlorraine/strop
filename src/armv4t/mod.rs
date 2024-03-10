@@ -4,7 +4,6 @@ pub mod emulators;
 pub mod instruction_set;
 pub mod testers;
 
-
 use crate::Compatibility;
 
 use crate::SearchAlgorithm;
