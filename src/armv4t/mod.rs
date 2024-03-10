@@ -4,9 +4,8 @@ pub mod emulators;
 pub mod instruction_set;
 pub mod testers;
 
-use crate::Candidate;
 use crate::Compatibility;
-use crate::Fitness;
+
 use crate::SearchAlgorithm;
 
 use crate::armv4t::instruction_set::Thumb;
