@@ -17,57 +17,17 @@ use rand::prelude::Distribution;
 use crate::HammingDistance;
 
 /// A trait for building [Z80Search] objects
-pub trait IntoZ80Search<S: SearchAlgorithm<Item = Z80Instruction>> {
-    /// Builds and returns a [Z80Search] object
-    fn z80(self) -> Z80Search<Self>
-    where
-        Self: Sized,
-        Self: SearchAlgorithm<Item = Z80Instruction>,
-    {
-        Z80Search::new(self)
-    }
-}
-
-impl<S: SearchAlgorithm<Item = Z80Instruction>> IntoZ80Search<S>
-    for crate::StochasticSearch<Z80Instruction>
-{
-}
-impl<S: SearchAlgorithm<Item = Z80Instruction>> IntoZ80Search<S>
-    for crate::BruteForceSearch<Z80Instruction>
-{
-}
-impl<S: SearchAlgorithm<Item = Z80Instruction>> IntoZ80Search<S>
-    for crate::LengthLimitedSearch<S, Z80Instruction>
-{
-}
-impl<
-        S: SearchAlgorithm<Item = Z80Instruction>,
-        C: Compatibility<instruction_set::Z80Instruction>,
-    > IntoZ80Search<S> for crate::CompatibilitySearch<S, Z80Instruction, C>
-{
-}
-
-/// An object having methods for building search algorithms yielding Z80 specific programs, such as
-/// subroutines, IRQ handlers, NMI handlers, etc.
-#[derive(Debug)]
-pub struct Z80Search<S: SearchAlgorithm<Item = Z80Instruction>>(S);
-
-impl<S: SearchAlgorithm<Item = Z80Instruction>> Z80Search<S> {
-    /// Constructs a new Z80Search
-    pub fn new(inner: S) -> Self {
-        Self(inner)
-    }
-
+pub trait Z80Search {
     /// returns an iterator yielding functions complying with the __z88dk_fastcall calling
     /// convention, and computing the provided functions.
     ///
     /// `func` should be a function returning an `Option<i32>`. For inputs where `func` returns
     /// `Some(x)`, the generated function returns `x`. But for inputs where `func` returns `None`,
     /// the behavior of the generated function is undefined.
-    pub fn z88dkfastcall<Operand, Return>(
+    fn z88dkfastcall<Operand, Return>(
         self,
         func: fn(Operand) -> Option<Return>,
-    ) -> testers::Z88dkfastcall<S, Operand, Return>
+    ) -> testers::Z88dkfastcall<Self, Operand, Return>
     where
         u32: HammingDistance<Return>,
         u32: AsPrimitive<Operand>,
@@ -75,9 +35,23 @@ impl<S: SearchAlgorithm<Item = Z80Instruction>> Z80Search<S> {
         Standard: Distribution<Operand>,
         Operand: std::marker::Copy + num::traits::AsPrimitive<u32>,
         Return: num::traits::AsPrimitive<u32>,
+        Self: Sized + SearchAlgorithm<Item = Z80Instruction>,
     {
-        testers::Z88dkfastcall::new(self.0, func)
+        testers::Z88dkfastcall::new(self, func)
     }
+}
+
+impl Z80Search for crate::StochasticSearch<Z80Instruction> {}
+impl Z80Search for crate::BruteForceSearch<Z80Instruction> {}
+impl<S> Z80Search for crate::LengthLimitedSearch<S, Z80Instruction> where
+    S: SearchAlgorithm<Item = Z80Instruction>
+{
+}
+impl<
+        S: SearchAlgorithm<Item = Z80Instruction>,
+        C: Compatibility<instruction_set::Z80Instruction>,
+    > Z80Search for crate::CompatibilitySearch<S, Z80Instruction, C>
+{
 }
 
 /// A type representing the Zilog Z80. Useful for a `CompatibilitySearch` for example.

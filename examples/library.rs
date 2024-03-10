@@ -17,16 +17,14 @@ fn salt(a: i32, b: i32) -> Option<i32> {
 
 fn stochastic_search(label: &'static str, func: fn(i32, i32) -> Option<i32>) {
     use strop::armv4t::instruction_set::Thumb;
-    use strop::armv4t::IntoThumbSearch;
+    use strop::armv4t::ThumbSearch;
     use strop::Stochastic;
 
-    let p: StochasticSearch<Thumb> = Thumb::stochastic_search();
-    let q = <StochasticSearch<Thumb> as IntoThumbSearch<StochasticSearch<Thumb>>>::thumb(p);
-
-    let r = q.aapcs32(func).iter().next().unwrap();
+    //let p= Thumb::stochastic_search().aapcs32(func).iter().next().unwrap();
+    let p = <StochasticSearch<Thumb> as ThumbSearch<S>>::aapcs32(Thumb::stochastic_search(), func);
 
     println!("{}:", label);
-    r.disassemble();
+    p.disassemble();
     println!("\tmov pc, lr"); // this should do the trick.
 }
 
