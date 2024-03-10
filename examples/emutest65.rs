@@ -1,5 +1,5 @@
 use strop::mos6502::instruction_set::Nmos6502Instruction;
-use strop::BruteForceSearch;
+use strop::Bruteforce;
 use strop::Emulator;
 use strop::SearchAlgorithm;
 
@@ -15,7 +15,7 @@ fn main() {
     println!("emulators. This is intended to find bugs in the third-party emulators and in");
     println!("the static analysis passes that strop also includes.");
 
-    let mut bruteforce = BruteForceSearch::<Nmos6502Instruction>::new().compatibility(SafeBet);
+    let mut bruteforce = Nmos6502Instruction::bruteforce_search().compatibility(SafeBet);
     for candidate in bruteforce.iter() {
         let mut mos6502 = strop::mos6502::emulators::Mos6502::default();
         let mut nmos6502 = strop::robo6502::emulators::Nmos6502::default();
