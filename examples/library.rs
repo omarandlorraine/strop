@@ -20,12 +20,11 @@ fn stochastic_search(label: &'static str, func: fn(i32, i32) -> Option<i32>) {
     use strop::armv4t::ThumbSearch;
     use strop::Stochastic;
 
-    let p = Thumb::stochastic_search().aapcs32(
-        func
-    )
-    .iter()
-    .next()
-    .unwrap();
+    let p = Thumb::stochastic_search()
+        .aapcs32(func)
+        .iter()
+        .next()
+        .unwrap();
 
     println!("{}:", label);
     p.disassemble();

@@ -29,13 +29,11 @@ pub trait ThumbSearch {
 
 impl ThumbSearch for crate::StochasticSearch<Thumb> {}
 impl ThumbSearch for crate::BruteForceSearch<Thumb> {}
-impl<S> ThumbSearch for crate::LengthLimitedSearch<S, Thumb>
-where S: SearchAlgorithm<Item = Thumb>
-{
-}
+impl<S> ThumbSearch for crate::LengthLimitedSearch<S, Thumb> where S: SearchAlgorithm<Item = Thumb> {}
 impl<S, C: Compatibility<instruction_set::Thumb>> ThumbSearch
     for crate::CompatibilitySearch<S, Thumb, C>
-where S: SearchAlgorithm<Item = Thumb>
+where
+    S: SearchAlgorithm<Item = Thumb>,
 {
 }
 
