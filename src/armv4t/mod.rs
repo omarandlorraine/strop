@@ -12,7 +12,7 @@ use crate::armv4t::instruction_set::Thumb;
 
 /// A trait having methods for building search algorithms yielding ARM specific programs, such as
 /// subroutines, IRQ handlers, FIQ handlers, etc.
-pub trait ThumbSearch<S: SearchAlgorithm<Item = Thumb>> {
+pub trait ThumbSearch {
     /// returns an iterator yielding functions complying with the AAPCS32 calling conventions, and
     /// computing the provided functions.
     ///
@@ -27,11 +27,15 @@ pub trait ThumbSearch<S: SearchAlgorithm<Item = Thumb>> {
     }
 }
 
-impl<S: SearchAlgorithm<Item = Thumb>> ThumbSearch<S> for crate::StochasticSearch<Thumb> {}
-impl<S: SearchAlgorithm<Item = Thumb>> ThumbSearch<S> for crate::BruteForceSearch<Thumb> {}
-impl<S: SearchAlgorithm<Item = Thumb>> ThumbSearch<S> for crate::LengthLimitedSearch<S, Thumb> {}
-impl<S: SearchAlgorithm<Item = Thumb>, C: Compatibility<instruction_set::Thumb>> ThumbSearch<S>
+impl ThumbSearch for crate::StochasticSearch<Thumb> {}
+impl ThumbSearch for crate::BruteForceSearch<Thumb> {}
+impl<S> ThumbSearch for crate::LengthLimitedSearch<S, Thumb>
+where S: SearchAlgorithm<Item = Thumb>
+{
+}
+impl<S, C: Compatibility<instruction_set::Thumb>> ThumbSearch
     for crate::CompatibilitySearch<S, Thumb, C>
+where S: SearchAlgorithm<Item = Thumb>
 {
 }
 
