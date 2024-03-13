@@ -3,7 +3,6 @@
 // but this has not been tested.
 
 use strop::SearchAlgorithm;
-use strop::StochasticSearch;
 
 fn pepper(a: i32, _b: i32) -> Option<i32> {
     // Increments the lower 4 bits of a
@@ -28,7 +27,6 @@ fn stochastic_search(label: &'static str, func: fn(i32, i32) -> Option<i32>) {
 
     println!("{}:", label);
     p.disassemble();
-    println!("\tmov pc, lr"); // this should do the trick.
 }
 
 fn main() {
