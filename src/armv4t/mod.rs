@@ -2,13 +2,15 @@
 
 pub mod emulators;
 pub mod instruction_set;
+pub mod linkages;
 pub mod testers;
 
 use crate::Compatibility;
-
+use crate::LinkageSearch;
 use crate::SearchAlgorithm;
 
 use crate::armv4t::instruction_set::Thumb;
+use crate::armv4t::linkages::InterworkingSubroutine;
 
 /// A trait having methods for building search algorithms yielding ARM specific programs, such as
 /// subroutines, IRQ handlers, FIQ handlers, etc.
@@ -19,11 +21,14 @@ pub trait ThumbSearch {
     /// `func` should be a function returning an `Option<i32>`. For inputs where `func` returns
     /// `Some(x)`, the generated function returns `x`. But for inputs where `func` returns `None`,
     /// the behavior of the generated function is undefined.
-    fn aapcs32(self, func: fn(i32, i32) -> Option<i32>) -> testers::Aapcs32<Self>
+    fn aapcs32(
+        self,
+        func: fn(i32, i32) -> Option<i32>,
+    ) -> testers::Aapcs32<LinkageSearch<Self, Thumb, InterworkingSubroutine>>
     where
         Self: SearchAlgorithm<Item = Thumb> + Sized,
     {
-        testers::Aapcs32::new(self, func)
+        testers::Aapcs32::new(self.linkage(InterworkingSubroutine), func)
     }
 }
 
