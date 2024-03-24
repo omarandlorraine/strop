@@ -99,12 +99,9 @@ fn fixup_last_instruction<S: SearchAlgorithm<Item = Z80Instruction>>(
     candidate: &Candidate<Z80Instruction>,
     instruction: Z80Instruction,
 ) -> bool {
-    let len = candidate.instructions.len();
-    if len < 1 {
-        // not long enough to even contain a `ret` instruction or anything.
-        return false;
-    }
-    let offset = len - 1;
+    if !check_last_instruction(candidate, instruction) { return false;}
+
+    let offset = candidate.instructions.len() - 1;
 
     let last_instruction = candidate.instructions[offset];
 
