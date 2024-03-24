@@ -269,6 +269,19 @@ pub trait HammingDistance<T> {
     fn hamming_distance(self, other: T) -> f32;
 }
 
+pub trait Scalar: num::cast::AsPrimitive<u32> {
+    //! Trait for scalar values that may be a function's parameter, or return value, or something.
+
+    /// Returns a random value
+    fn random() -> Self;
+
+    /// Converts the value to i32
+    fn as_i32(self) -> i32;
+
+    /// Calculates the hamming distance to another value, after truncating both to the same width.
+    fn hamming<T: num::cast::AsPrimitive<u32>>(self, other: T) -> u32;
+}
+
 /// After finding a valid solution, we might want to optimize it further. To that end, we want to
 /// propose a mutation to the valid but suboptimal solution, and see if it still passes static
 /// analysis and still computes the function as expected. This enum is for answering that question.

@@ -7,6 +7,7 @@ pub mod testers;
 
 use crate::Compatibility;
 use crate::LinkageSearch;
+use crate::Scalar;
 use crate::SearchAlgorithm;
 
 use crate::armv4t::instruction_set::Thumb;
@@ -21,12 +22,15 @@ pub trait ThumbSearch {
     /// `func` should be a function returning an `Option<i32>`. For inputs where `func` returns
     /// `Some(x)`, the generated function returns `x`. But for inputs where `func` returns `None`,
     /// the behavior of the generated function is undefined.
-    fn aapcs32(
+    fn aapcs32<T, U, V>(
         self,
-        func: fn(i32, i32) -> Option<i32>,
-    ) -> testers::Aapcs32<LinkageSearch<Self, Thumb, InterworkingSubroutine>>
+        func: fn(T, U) -> Option<V>,
+    ) -> testers::Aapcs32<LinkageSearch<Self, Thumb, InterworkingSubroutine>, T, U, V>
     where
         Self: SearchAlgorithm<Item = Thumb> + Sized,
+        T: Scalar,
+        U: Scalar,
+        V: Scalar,
     {
         testers::Aapcs32::new(self.linkage(InterworkingSubroutine), func)
     }
