@@ -10,11 +10,8 @@ use crate::Linkage;
 use crate::SearchAlgorithm;
 use crate::SearchCull;
 use instruction_set::Z80Instruction;
-use num::cast::AsPrimitive;
-use rand::distributions::Standard;
-use rand::prelude::Distribution;
 
-use crate::HammingDistance;
+use crate::Scalar;
 
 /// A trait for building [Z80Search] objects
 pub trait Z80Search {
@@ -29,12 +26,8 @@ pub trait Z80Search {
         func: fn(Operand) -> Option<Return>,
     ) -> testers::Z88dkfastcall<Self, Operand, Return>
     where
-        u32: HammingDistance<Return>,
-        u32: AsPrimitive<Operand>,
-        u32: From<Operand>,
-        Standard: Distribution<Operand>,
-        Operand: std::marker::Copy + num::traits::AsPrimitive<u32>,
-        Return: num::traits::AsPrimitive<u32>,
+        Return: Scalar,
+        Operand: Scalar,
         Self: Sized + SearchAlgorithm<Item = Z80Instruction>,
     {
         testers::Z88dkfastcall::new(self, func)
