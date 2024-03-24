@@ -3,13 +3,9 @@ use crate::z80::instruction_set::Z80Instruction;
 use crate::z80::Subroutine;
 use crate::Candidate;
 use crate::Fitness;
-use crate::HammingDistance;
 use crate::LinkageSearch;
+use crate::Scalar;
 use crate::SearchAlgorithm;
-
-use num::cast::AsPrimitive;
-use rand::distributions::Standard;
-use rand::prelude::Distribution;
 
 /// Tests the programs visited by a search strategy and yields those which compute the given
 /// function and conform to the `__z88dk_fast_call` calling convention (i.e. equivalent to a
@@ -30,7 +26,7 @@ where
     Operand: num::cast::AsPrimitive<u32>,
 {
     func: fn(Operand) -> Option<Return>,
-    inputs: Vec<(u32, Return)>,
+    inputs: Vec<(Operand, Return)>,
     search: LinkageSearch<S, Z80Instruction, Subroutine>,
 }
 
@@ -40,10 +36,8 @@ impl<
         Return: num::cast::AsPrimitive<u32>,
     > Z88dkfastcall<S, Operand, Return>
 where
-    u32: HammingDistance<Return>,
-    u32: AsPrimitive<Operand>,
-    u32: From<Operand>,
-    Standard: Distribution<Operand>,
+    Return: Scalar,
+    Operand: Scalar,
 {
     /// Returns a new Z88dkfastcall struct.
     pub fn new(search: S, func: fn(Operand) -> Option<Return>) -> Self {
@@ -55,17 +49,17 @@ where
         }
     }
 
-    fn test1(&self, candidate: &Candidate<Z80Instruction>, a: u32) -> f32 {
+    fn test1(&self, candidate: &Candidate<Z80Instruction>, a: Operand) -> f32 {
         use crate::z80::emulators::Z80;
 
-        if let Some(result) = (self.func)(a.as_()) {
+        if let Some(result) = (self.func)(a) {
             let mut emu = Z80::default();
-            emu.set_dehl(a);
+            emu.set_dehl(a.as_i32());
             emu.set_sp(0x3000);
             emu.run_subroutine(0x8000, 0x4000, candidate);
-            emu.get_dehl().hamming_distance(result)
-                + emu.get_sp().hamming_distance(0x3000)
-                + emu.get_pc().hamming_distance(0x4003)
+            (emu.get_dehl().hamming(result)
+                + emu.get_sp().hamming(0x3000)
+                + emu.get_pc().hamming(0x4003)) as f32
         } else {
             0.0
         }
@@ -77,10 +71,10 @@ where
 
         if let Some(result) = (self.func)(a) {
             let mut emu = Z80::default();
-            emu.set_dehl(a.into());
+            emu.set_dehl(a);
             emu.run(0x8000, candidate);
-            if emu.get_dehl().hamming_distance(result) != 0.0 {
-                self.inputs.push((a.into(), result));
+            if emu.get_dehl().hamming(result) != 0 {
+                self.inputs.push((a, result));
             }
         }
     }
@@ -95,8 +89,6 @@ where
     }
 
     fn test(&mut self, candidate: &Candidate<Z80Instruction>) -> f32 {
-        use rand::random;
-
         let mut score = self.correctness(candidate);
         if score > 0.0 {
             return score;
@@ -105,9 +97,9 @@ where
         // Try ten more random value pairs across a small range to see if we discover any other values where the
         // function returns something different from the generated program
         for _ in 0..10 {
-            let a: Operand = random();
+            let a = Operand::random();
             self.possible_test_case(candidate, a);
-            score += self.test1(candidate, a.into());
+            score += self.test1(candidate, a);
         }
         score
     }
@@ -116,11 +108,8 @@ where
 impl<S: SearchAlgorithm<Item = Z80Instruction>, Operand: num::cast::AsPrimitive<u32>, Return>
     SearchAlgorithm for Z88dkfastcall<S, Operand, Return>
 where
-    u32: HammingDistance<Return>,
-    u32: AsPrimitive<Operand>,
-    u32: From<Operand>,
-    Standard: Distribution<Operand>,
-    Return: num::cast::AsPrimitive<u32>,
+    Return: Scalar,
+    Operand: Scalar,
 {
     type Item = Z80Instruction;
 

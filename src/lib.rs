@@ -260,15 +260,6 @@ pub trait SearchAlgorithm {
     }
 }
 
-pub trait HammingDistance<T> {
-    //! Trait for calculating the hamming distance of two values, even if they have different
-    //! widths.
-
-    /// Returns the values' hamming distance. This is a commutative operations, so
-    /// `x.hamming_distance(y)` is equivalent to `y.hamming_distance(x)`.
-    fn hamming_distance(self, other: T) -> f32;
-}
-
 pub trait Scalar: num::cast::AsPrimitive<u32> {
     //! Trait for scalar values that may be a function's parameter, or return value, or something.
 

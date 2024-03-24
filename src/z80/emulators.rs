@@ -120,7 +120,8 @@ impl Z80 {
     }
 
     /// Writes a 32-bit value to the emulated CPU's D, E, H and L registers.
-    pub fn set_dehl(&mut self, val: u32) {
+    pub fn set_dehl<T: num::cast::AsPrimitive<u32>>(&mut self, val: T) {
+        let val: u32 = val.as_();
         let bytes = val.to_le_bytes();
         self.cpu.registers().set8(iz80::Reg8::D, bytes[3]);
         self.cpu.registers().set8(iz80::Reg8::E, bytes[2]);
