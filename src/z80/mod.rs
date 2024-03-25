@@ -78,41 +78,41 @@ impl Compatibility<Z80Instruction> for Intel8080 {
     }
 }
 
+fn get_last_instruction(
+    candidate: &Candidate<Z80Instruction>) -> Option<Z80Instruction> {
+    let len = candidate.instructions.len();
+    if len < 1 {
+        None
+    } else {
+        Some( candidate.instructions[len - 1])
+    }
+}
+
 fn check_last_instruction(
     candidate: &Candidate<Z80Instruction>,
     instruction: Z80Instruction,
 ) -> bool {
-    let len = candidate.instructions.len();
-    if len < 1 {
-        // not long enough to even contain a `ret` instruction or anything.
-        return false;
-    }
-    let offset = len - 1;
-
-    let last_instruction = candidate.instructions[offset];
-
-    last_instruction != instruction
+    get_last_instruction(candidate) == Some(instruction)
 }
 
 fn fixup_last_instruction<S: SearchAlgorithm<Item = Z80Instruction>>(
     search: &mut S,
     candidate: &Candidate<Z80Instruction>,
     instruction: Z80Instruction,
-) -> bool {
-    if !check_last_instruction(candidate, instruction) { return false;}
-
-    let offset = candidate.instructions.len() - 1;
-
-    let last_instruction = candidate.instructions[offset];
-
-    if last_instruction < instruction {
-        search.replace(offset, Some(instruction));
-        false
-    } else if last_instruction > instruction {
-        search.replace(offset, None);
-        false
+    ) -> bool {
+    if let Some(insn) = get_last_instruction(candidate) {
+        let offset = candidate.instructions.len() - 1;
+        if insn < instruction {
+            search.replace(offset, Some(instruction));
+            false
+        } else if insn > instruction {
+            search.replace(offset, None);
+            false
+        } else {
+            true
+        }
     } else {
-        true
+        false
     }
 }
 
