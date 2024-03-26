@@ -111,30 +111,6 @@ impl Nmos6502 {
         use robo6502::Cpu;
         self.cpu.a()
     }
-
-    #[cfg(test)]
-    pub fn run_one_instruction(
-        &mut self,
-        insn: crate::mos6502::instruction_set::Nmos6502Instruction,
-    ) -> usize {
-        use robo6502::Cpu;
-        use robo6502::Sys;
-        let encoding = insn.encode();
-        let org: u16 = 0x0200;
-
-        let mut pointer = org;
-        for byte in encoding {
-            self.mem.write(pointer, byte);
-            pointer += 1;
-        }
-        self.cpu.set_pc(org);
-
-        self.cpu
-            .run_instruction(&mut self.mem)
-            .unwrap_or_else(|| panic!("Could not execute instruction {}", insn));
-
-        self.cpu.pc().wrapping_sub(org) as usize
-    }
 }
 
 /// This emulates the original 6502, as found in the Commodore 64. Illegal instructions are
@@ -193,29 +169,5 @@ impl Cmos6502 {
     pub fn a(&self) -> u8 {
         use robo6502::Cpu;
         self.cpu.a()
-    }
-
-    #[cfg(test)]
-    pub fn run_one_instruction(
-        &mut self,
-        insn: crate::mos6502::instruction_set::Cmos6502Instruction,
-    ) -> usize {
-        use robo6502::Cpu;
-        use robo6502::Sys;
-        let encoding = insn.encode();
-        let org: u16 = 0x0200;
-
-        let mut pointer = org;
-        for byte in encoding {
-            self.mem.write(pointer, byte);
-            pointer += 1;
-        }
-        self.cpu.set_pc(org);
-
-        self.cpu
-            .run_instruction(&mut self.mem)
-            .unwrap_or_else(|| panic!("Could not execute instruction {}", insn));
-
-        self.cpu.pc().wrapping_sub(org) as usize
     }
 }
