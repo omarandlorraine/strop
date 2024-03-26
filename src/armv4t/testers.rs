@@ -9,7 +9,7 @@ use crate::Candidate;
 use crate::Scalar;
 use crate::SearchAlgorithm;
 
-/// Tests the candidate programs visited by a search stategy to see if they compute the given
+/// Tests the candidate programs visited by a search strategy to see if they compute the given
 /// function, taking two 32-bit integers and return one 32-bit integer, and also match the AAPCS32
 /// calling convention.
 #[derive(Debug)]

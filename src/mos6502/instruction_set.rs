@@ -338,7 +338,7 @@ pub struct ExcludeIllegalInstructions;
 pub struct VariablesInMemory {
     /// All addresses the instructions may read from
     pub reads: Vec<u16>,
-    /// All addressess the instructions may write to
+    /// All addresses the instructions may write to
     pub writes: Vec<u16>,
 }
 
