@@ -78,13 +78,12 @@ impl Compatibility<Z80Instruction> for Intel8080 {
     }
 }
 
-fn get_last_instruction(
-    candidate: &Candidate<Z80Instruction>) -> Option<Z80Instruction> {
+fn get_last_instruction(candidate: &Candidate<Z80Instruction>) -> Option<Z80Instruction> {
     let len = candidate.instructions.len();
     if len < 1 {
         None
     } else {
-        Some( candidate.instructions[len - 1])
+        Some(candidate.instructions[len - 1])
     }
 }
 
@@ -99,7 +98,7 @@ fn fixup_last_instruction<S: SearchAlgorithm<Item = Z80Instruction>>(
     search: &mut S,
     candidate: &Candidate<Z80Instruction>,
     instruction: Z80Instruction,
-    ) -> bool {
+) -> bool {
     if let Some(insn) = get_last_instruction(candidate) {
         let offset = candidate.instructions.len() - 1;
         if insn < instruction {
