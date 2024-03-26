@@ -1,4 +1,4 @@
-//! Backend targetting the ARMv4 CPUs (for example, the ARM7TDMI)
+//! Backend targeting the ARMv4 CPUs (for example, the ARM7TDMI)
 
 use crate::Candidate;
 use crate::Linkage;

@@ -95,7 +95,7 @@ pub trait Instruction: Copy + Clone + std::marker::Send + std::fmt::Display + Si
 
     /// Mutates a machine instruction. This consumes self, and returns another machine instruction
     /// which is similar, but may be different. The difference will of course depend on the
-    /// targetted machine; but differences could include a changed operand, or swapping an
+    /// targeted machine; but differences could include a changed operand, or swapping an
     /// increment for a decrement, etc.
     fn mutate(self) -> Self;
 
