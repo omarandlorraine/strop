@@ -122,8 +122,11 @@ pub trait Instruction: Copy + Clone + std::marker::Send + std::fmt::Display + Si
     /// ```
     ///
     /// then the first instruction, `sec`, is effectively dead code, and this function proposes to
-    /// replace it by `and something, y`, the numerically next opcode. 
-    fn peephole(block: &[Self]) -> SearchCull<Self>  where Self: PartialEq {
+    /// replace it by `and something, y`, the numerically next opcode.
+    fn peephole(_block: &[Self]) -> SearchCull<Self>
+    where
+        Self: PartialEq,
+    {
         SearchCull::Okay
     }
 
@@ -147,7 +150,10 @@ pub trait Instruction: Copy + Clone + std::marker::Send + std::fmt::Display + Si
     /// then those instructions may be swapped around and the program would be equivalent, and the
     /// equivalent program has already been proposed. Therefore this function will again propose to
     /// replace the first instruction with something else.
-    fn commutative(first: &Self, second: &Self) -> SearchCull<Self>  where Self: PartialEq {
+    fn commutative(_first: &Self, _second: &Self) -> SearchCull<Self>
+    where
+        Self: PartialEq,
+    {
         SearchCull::Okay
     }
 }
