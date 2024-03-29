@@ -3,6 +3,7 @@
 use crate::Compatibility;
 use crate::Fitness;
 use crate::Linkage;
+use crate::Peephole;
 use crate::SearchAlgorithm;
 use crate::{Candidate, Instruction};
 
@@ -35,6 +36,37 @@ impl<I: Instruction + std::cmp::PartialOrd> SearchAlgorithm for BruteForceSearch
     }
 }
 
+impl<S: SearchAlgorithm<Item = I>, I: PartialOrd + Instruction> BruteForce<I>
+    for LengthLimitedSearch<S, I>
+{
+}
+impl<S: SearchAlgorithm<Item = I>, I: PartialOrd + Instruction> BruteForce<I>
+    for PeepholeOptimizedBruteForceSearch<S, I>
+{
+}
+
+trait BruteForce<I: Instruction + std::cmp::PartialOrd + std::cmp::PartialEq> {
+    /// Limits the length of the generated programs
+    fn limit_length(self, length: usize) -> LengthLimitedSearch<Self, I>
+    where
+        Self: SearchAlgorithm<Item = I> + Sized,
+    {
+        LengthLimitedSearch {
+            inner: self,
+            length,
+        }
+    }
+
+    /// Adds peephole optimization; culls the search space
+    fn peephole(self) -> PeepholeOptimizedBruteForceSearch<Self, I>
+    where
+        I: Peephole,
+        Self: SearchAlgorithm<Item = I> + Sized,
+    {
+        PeepholeOptimizedBruteForceSearch { inner: self }
+    }
+}
+
 impl<I: Instruction + std::cmp::PartialOrd + std::cmp::PartialEq> BruteForceSearch<I> {
     /// Returns a new BruteForceSearch<I>
     pub fn new() -> Self {
@@ -60,14 +92,6 @@ impl<I: Instruction + std::cmp::PartialOrd + std::cmp::PartialEq> BruteForceSear
 
     fn candidate(&self) -> Candidate<I> {
         Candidate::new(self.curr.clone())
-    }
-
-    /// Limits the length of the generated programs
-    pub fn limit_length(self, length: usize) -> LengthLimitedSearch<Self, I> {
-        LengthLimitedSearch {
-            inner: self,
-            length,
-        }
     }
 }
 
@@ -106,6 +130,49 @@ impl<S: SearchAlgorithm<Item = I>, I: Instruction> SearchAlgorithm for LengthLim
 impl<I: Instruction + PartialOrd + PartialEq> Default for BruteForceSearch<I> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// A static analysis pass which selects instructions for compatibility with particular CPU
+/// variants.
+#[derive(Debug)]
+pub struct PeepholeOptimizedBruteForceSearch<S: SearchAlgorithm<Item = I>, I: Instruction>
+where
+    I: PartialEq,
+{
+    inner: S,
+}
+
+impl<S, I> SearchAlgorithm for PeepholeOptimizedBruteForceSearch<S, I>
+where
+    S: Sized + SearchAlgorithm<Item = I>,
+    I: Instruction + PartialEq + Peephole,
+{
+    type Item = I;
+
+    fn fitness(&mut self, candidate: &Candidate<I>) -> Fitness {
+        self.inner.fitness(candidate)
+    }
+
+    fn score(&mut self, score: f32) {
+        self.inner.score(score);
+    }
+
+    fn replace(&mut self, offset: usize, instruction: Option<I>) {
+        self.inner.replace(offset, instruction)
+    }
+
+    fn generate(&mut self) -> Option<Candidate<I>> {
+        use crate::SearchCull;
+
+        loop {
+            let candidate = self.inner.generate()?;
+            let (offs, cull) = I::peephole(&candidate);
+            match cull {
+                SearchCull::Okay => return Some(candidate),
+                SearchCull::SkipTo(something) => self.replace(offs, something),
+            }
+        }
     }
 }
 

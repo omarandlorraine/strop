@@ -109,7 +109,9 @@ pub trait Instruction: Copy + Clone + std::marker::Send + std::fmt::Display + Si
 
     /// Increments the instruction's encoding by one, and then returns a clone of self.
     fn increment(&mut self) -> Option<Self>;
+}
 
+trait Peephole {
     /// Considers a slice of instructions to see if the first instruction can be optimized away.
     /// This function considers only the first instruction, because the exhaustive search algorithm
     /// uses this method to cull the search space.
@@ -122,25 +124,8 @@ pub trait Instruction: Copy + Clone + std::marker::Send + std::fmt::Display + Si
     /// ```
     ///
     /// then the first instruction, `sec`, is effectively dead code, and this function proposes to
-    /// replace it by `and something, y`, the numerically next opcode.
-    fn peephole(_block: &[Self]) -> SearchCull<Self>
-    where
-        Self: PartialEq,
-    {
-        SearchCull::Okay
-    }
-
-    /// Checks two instructions to check if the exhaustive search needs to consider sequences
-    /// containing these two adjacently. For example, if the exhaustive search is proposing the
-    /// following sequence for 6502:
-    ///
-    /// ```
-    ///     sec
-    ///     clc
-    /// ```
-    ///
-    /// then the first instruction, `sec`, is effectively dead code, and this function proposes to
-    /// replace it. Or if the exhaustive search is proposing the following sequence:
+    /// replace it by `and 0, y`, numerically the next opcode. Or if the exhaustive search is
+    /// proposing the following sequence:
     ///
     /// ```
     ///     tax
@@ -150,11 +135,12 @@ pub trait Instruction: Copy + Clone + std::marker::Send + std::fmt::Display + Si
     /// then those instructions may be swapped around and the program would be equivalent, and the
     /// equivalent program has already been proposed. Therefore this function will again propose to
     /// replace the first instruction with something else.
-    fn commutative(_first: &Self, _second: &Self) -> SearchCull<Self>
+    fn peephole(_candidate: &Candidate<Self>) -> (usize, SearchCull<Self>)
     where
         Self: PartialEq,
+        Self: Instruction,
     {
-        SearchCull::Okay
+        (0, SearchCull::Okay)
     }
 }
 
