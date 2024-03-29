@@ -49,6 +49,14 @@ const CMOS_OPCODES: [u8; 178] = [
     0xfd, 0xfe,
 ];
 
+fn next_cmos_opcode(opcode: u8) -> Option<u8> {
+    let index = CMOS_OPCODES.iter().position(|&r| r == opcode)? + 1;
+    if index > CMOS_OPCODES.len() {
+        return None;
+    }
+
+    Some(NMOS_OPCODES[index])
+}
 const COMMON_OPCODES: [u8; 149] = [
     0x00, 0x01, 0x05, 0x06, 0x08, 0x09, 0x0a, 0x0d, 0x0e, 0x10, 0x11, 0x15, 0x16, 0x18, 0x19, 0x1d,
     0x1e, 0x20, 0x21, 0x24, 0x25, 0x26, 0x28, 0x29, 0x2a, 0x2c, 0x2d, 0x2e, 0x30, 0x31, 0x35, 0x36,
@@ -502,12 +510,7 @@ impl Instruction for Cmos6502Instruction {
         let length = self.length();
 
         fn next_opcode(insn: &mut Cmos6502Instruction) -> Option<Cmos6502Instruction> {
-            let index = CMOS_OPCODES.iter().position(|&r| r == insn.encoding[0])? + 1;
-            if index > CMOS_OPCODES.len() {
-                return None;
-            }
-
-            insn.encoding[0] = CMOS_OPCODES[index];
+            insn.encoding[0] = next_cmos_opcode(insn.encoding[0])?;
             Some(Cmos6502Instruction::new(insn.encoding))
         }
 
