@@ -116,25 +116,13 @@ trait Peephole {
     /// This function considers only the first instruction, because the exhaustive search algorithm
     /// uses this method to cull the search space.
     ///
-    /// For example, if the exhaustive search algorithm is proposing the following sequence for
-    /// 6502:
-    /// ```
-    ///     sec
-    ///     clc
-    /// ```
-    ///
-    /// then the first instruction, `sec`, is effectively dead code, and this function proposes to
-    /// replace it by `and 0, y`, numerically the next opcode. Or if the exhaustive search is
-    /// proposing the following sequence:
-    ///
-    /// ```
-    ///     tax
-    ///     sec
-    /// ```
-    ///
-    /// then those instructions may be swapped around and the program would be equivalent, and the
-    /// equivalent program has already been proposed. Therefore this function will again propose to
-    /// replace the first instruction with something else.
+    /// For example, if the exhaustive search algorithm is proposing the sequence `sec; clc` for
+    /// the 6502, then the first instruction, `sec`, is effectively dead code, and this function
+    /// proposes to replace it by `and 0, y`, numerically the next opcode. Or if the exhaustive
+    /// search is proposing the sequence `tax; sec`, then those instructions may be swapped around
+    /// and the program would be equivalent, and the equivalent program has already been proposed.
+    /// Therefore this function will again propose to replace the first instruction with something
+    /// else.
     fn peephole(_candidate: &Candidate<Self>) -> (usize, SearchCull<Self>)
     where
         Self: PartialEq,
