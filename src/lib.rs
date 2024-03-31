@@ -111,7 +111,7 @@ pub trait Instruction: Copy + Clone + std::marker::Send + std::fmt::Display + Si
     fn increment(&mut self) -> Option<Self>;
 }
 
-trait Peephole {
+pub trait Peephole {
     /// Considers a slice of instructions to see if the first instruction can be optimized away.
     /// This function considers only the first instruction, because the exhaustive search algorithm
     /// uses this method to cull the search space.

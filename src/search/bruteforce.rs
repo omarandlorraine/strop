@@ -40,12 +40,18 @@ impl<S: SearchAlgorithm<Item = I>, I: PartialOrd + Instruction> BruteForce<I>
     for LengthLimitedSearch<S, I>
 {
 }
+
 impl<S: SearchAlgorithm<Item = I>, I: PartialOrd + Instruction> BruteForce<I>
     for PeepholeOptimizedBruteForceSearch<S, I>
 {
 }
 
-trait BruteForce<I: Instruction + std::cmp::PartialOrd + std::cmp::PartialEq> {
+impl<I: PartialOrd + Instruction> BruteForce<I>
+    for BruteForceSearch<I>
+{
+}
+
+pub trait BruteForce<I: Instruction + std::cmp::PartialOrd + std::cmp::PartialEq> {
     /// Limits the length of the generated programs
     fn limit_length(self, length: usize) -> LengthLimitedSearch<Self, I>
     where

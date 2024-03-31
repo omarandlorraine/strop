@@ -8,4 +8,5 @@ pub use bruteforce::CompatibilitySearch;
 pub use bruteforce::LengthLimitedSearch;
 pub use bruteforce::LinkageSearch;
 pub use bruteforce::SearchTrace;
+pub use bruteforce::BruteForce;
 pub use stochastic::StochasticSearch;

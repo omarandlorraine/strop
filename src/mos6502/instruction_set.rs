@@ -70,12 +70,13 @@ const COMMON_OPCODES: [u8; 149] = [
     0xf5, 0xf6, 0xf9, 0xfd, 0xfe,
 ];
 
-trait Mos6502Compatibility
+pub trait Mos6502Compatibility
 where
     Self: PartialEq + Instruction,
 {
     fn cmos_compatible(&self) -> SearchCull<Self>;
     fn safe_bet(&self) -> SearchCull<Self>;
+    fn next_opcode(&self) -> SearchCull<Self>;
 }
 
 impl Mos6502Compatibility for Nmos6502Instruction {
@@ -105,6 +106,10 @@ impl Mos6502Compatibility for Nmos6502Instruction {
             )
         }
     }
+
+    fn next_opcode(&self) -> SearchCull<Self> {
+        SearchCull::SkipTo(next_nmos_opcode(self.encoding[0]).map(|op| Self::new([op, 0, 0])))
+    }
 }
 
 impl Mos6502Compatibility for Cmos6502Instruction {
@@ -124,6 +129,10 @@ impl Mos6502Compatibility for Cmos6502Instruction {
                     .map(|op| Cmos6502Instruction::new([*op, 0, 0])),
             )
         }
+    }
+
+    fn next_opcode(&self) -> SearchCull<Self> {
+        SearchCull::SkipTo(next_cmos_opcode(self.encoding[0]).map(|op| Self::new([op, 0, 0])))
     }
 }
 
