@@ -121,7 +121,7 @@ impl Peephole for Cmos6502Instruction {
 #[cfg(test)]
 mod test {
     #[test]
-    #[ignored] // the test takes too long, because I don't have other ways to cull bruteforce searches (yet)
+    #[ignore] // the test takes too long, because I don't have other ways to cull bruteforce searches (yet)
     fn t() {
         use crate::Bruteforce;
         use crate::search::BruteForce;
