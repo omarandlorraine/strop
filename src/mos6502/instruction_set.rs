@@ -70,12 +70,19 @@ const COMMON_OPCODES: [u8; 149] = [
     0xf5, 0xf6, 0xf9, 0xfd, 0xfe,
 ];
 
+/// Trait for the various 6502 instruction set variants
 pub trait Mos6502Compatibility
 where
     Self: PartialEq + Instruction,
 {
+    /// Returns SearchCull::Okay iff the instruction is compatible with the 65C02
     fn cmos_compatible(&self) -> SearchCull<Self>;
+
+    /// Returns SearchCull::Okay iff the instruction is compatible with the 65C02, 6502 and doesn't
+    /// use decimal mode
     fn safe_bet(&self) -> SearchCull<Self>;
+
+    /// Proposes the next opcode
     fn next_opcode(&self) -> SearchCull<Self>;
 }
 

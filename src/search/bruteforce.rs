@@ -46,11 +46,9 @@ impl<S: SearchAlgorithm<Item = I>, I: PartialOrd + Instruction> BruteForce<I>
 {
 }
 
-impl<I: PartialOrd + Instruction> BruteForce<I>
-    for BruteForceSearch<I>
-{
-}
+impl<I: PartialOrd + Instruction> BruteForce<I> for BruteForceSearch<I> {}
 
+/// Trait for constructing bruteforce searches
 pub trait BruteForce<I: Instruction + std::cmp::PartialOrd + std::cmp::PartialEq> {
     /// Limits the length of the generated programs
     fn limit_length(self, length: usize) -> LengthLimitedSearch<Self, I>
