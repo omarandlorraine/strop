@@ -74,7 +74,7 @@ pub trait BruteForce<I: Instruction + std::cmp::PartialOrd + std::cmp::PartialEq
 }
 
 impl<I: Instruction + std::cmp::PartialOrd + std::cmp::PartialEq> BruteForceSearch<I> {
-    /// Returns a new BruteForceSearch<I>
+    /// Returns a new `BruteForceSearch<I>`
     pub fn new() -> Self {
         Self { curr: vec![] }
     }
