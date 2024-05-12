@@ -17,20 +17,14 @@ fn ntohs(val: u16) -> Option<u16> {
 }
 
 fn bruteforce<T: strop::Scalar>(label: &'static str, func: fn(T) -> Option<T>) {
-    use strop::z80::instruction_set::Z80Instruction;
-    use strop::z80::Z80Search;
-    use strop::z80::ZilogZ80;
-    use strop::SearchAlgorithm;
-    use strop::Stochastic;
+    use strop::z80::*;
+    use strop::StochasticSearch;
+
+    let search = Z88dkFastCall::new(StochasticSearch::new(), func);
+    let program = search.iter().next().unwrap();
 
     println!("{}:", label);
-    Z80Instruction::stochastic_search()
-        .compatibility(ZilogZ80)
-        .z88dkfastcall(func)
-        .iter()
-        .next()
-        .unwrap()
-        .disassemble();
+    program.disassemble();
 }
 
 fn main() {

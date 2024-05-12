@@ -1,61 +1,34 @@
 //! Backend targeting the ARMv4 CPUs (for example, the ARM7TDMI)
 
-use crate::Candidate;
-use crate::Linkage;
-use crate::SearchAlgorithm;
+use crate::Fixup;
 
 use crate::armv4t::instruction_set::Thumb;
 
-fn check_last_instruction(candidate: &Candidate<Thumb>, instruction: Thumb) -> bool {
-    let len = candidate.instructions.len();
-    if len < 1 {
-        // not long enough to even contain a `ret` instruction or anything.
-        return false;
-    }
-    let offset = len - 1;
-
-    let last_instruction = candidate.instructions[offset];
-
-    last_instruction != instruction
-}
-
-fn fixup_last_instruction<S: SearchAlgorithm<Item = Thumb>>(
-    search: &mut S,
-    candidate: &Candidate<Thumb>,
-    instruction: Thumb,
-) -> bool {
-    let len = candidate.instructions.len();
-    if len < 1 {
-        // not long enough to even contain a `ret` instruction or anything.
-        return false;
-    }
-    let offset = len - 1;
-
-    let last_instruction = candidate.instructions[offset];
-
-    if last_instruction < instruction {
-        search.replace(offset, Some(instruction));
-        false
-    } else if last_instruction > instruction {
-        search.replace(offset, None);
-        false
+fn put_back_to(insn: Thumb, should_be: Thumb) -> Option<Thumb> {
+    if insn < should_be {
+        Some(should_be)
     } else {
-        true
+        None
     }
 }
 
-/// A type representing the Thumb-encoded interworking subroutine. This is a subroutine which uses
-/// the `bx lr` instruction to return. This means that the subroutine will return to either Thumb
-/// or ARM code, as appropriate.
+/// A fixup setting the instruction (back) to `bx lr`. This is the instruction necessary to return
+/// from a subroutine, and so a static analysis pass may use this to make sure that the Candidate
+/// at least ends in a return instruction.
 #[derive(Debug)]
-pub struct InterworkingSubroutine;
+pub struct BxLr;
 
-impl<S: SearchAlgorithm<Item = Thumb>> Linkage<S, Thumb> for InterworkingSubroutine {
-    fn fixup(&self, search: &mut S, candidate: &Candidate<Thumb>) -> bool {
-        fixup_last_instruction(search, candidate, Thumb(0x4770))
+impl Fixup<Thumb> for BxLr {
+    fn random(&self, _insn: Thumb) -> Thumb {
+        Thumb(0x4770)
     }
-    fn check(&self, candidate: &Candidate<Thumb>) -> bool {
-        check_last_instruction(candidate, Thumb(0x4770))
+
+    fn next(&self, insn: Thumb) -> Option<Thumb> {
+        put_back_to(insn, Thumb(0x4770))
+    }
+
+    fn check(&self, insn: Thumb) -> bool {
+        insn != Thumb(0x4770)
     }
 }
 

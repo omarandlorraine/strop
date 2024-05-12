@@ -1,21 +1,21 @@
 //! Module defining the stochastic search algorithm
-//!
-use crate::Stochastic;
 
 use crate::Candidate;
 use crate::Fitness;
+use crate::Instruction;
 use crate::SearchAlgorithm;
+use crate::Fixup;
 
 /// Generates a program by stochastic approximation to a correctness function
 #[derive(Clone, Debug)]
-pub struct StochasticSearch<I: Stochastic> {
+pub struct StochasticSearch<I: Instruction> {
     parent: Candidate<I>,
     child: Candidate<I>,
     parent_score: f32,
     child_score: f32,
 }
 
-impl<I: Stochastic> SearchAlgorithm for StochasticSearch<I> {
+impl<I: Instruction> SearchAlgorithm for StochasticSearch<I> {
     type Item = I;
 
     fn fitness(&mut self, _cand: &Candidate<Self::Item>) -> Fitness {
@@ -26,12 +26,10 @@ impl<I: Stochastic> SearchAlgorithm for StochasticSearch<I> {
         self.child_score = score.abs();
     }
 
-    fn replace(&mut self, offset: usize, instruction: Option<I>) {
-        use rand::random;
-        self.child.instructions[offset] = if random() {
-            instruction.unwrap_or_else(I::random)
-        } else {
-            I::random()
+    fn replace<F: Fixup<I>>(&mut self, offset: usize, fixup: F) {
+        let orig = self.child.instructions[offset];
+        if fixup.check(orig) {
+            self.child.instructions[offset] = fixup.random(orig);
         }
     }
 
@@ -57,7 +55,7 @@ impl<I: Stochastic> SearchAlgorithm for StochasticSearch<I> {
     }
 }
 
-impl<I: Stochastic> StochasticSearch<I> {
+impl<I: Instruction> StochasticSearch<I> {
     /// returns a new `Candidate`
     pub fn new() -> Self {
         // Empty list of instructions
@@ -145,7 +143,7 @@ impl<I: Stochastic> StochasticSearch<I> {
     }
 }
 
-impl<I: Stochastic> Default for StochasticSearch<I> {
+impl<I: Instruction> Default for StochasticSearch<I> {
     fn default() -> Self {
         Self::new()
     }

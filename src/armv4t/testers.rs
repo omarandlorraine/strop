@@ -1,6 +1,5 @@
 //! Module containing testers for ARM. A tester in this context means a filter over a bruteforce
 //! search, which filters only the candidate programs that correctly compute the given function.
-use crate::Fitness;
 
 use crate::armv4t::emulators::ArmV4T;
 use crate::armv4t::instruction_set::Thumb;
@@ -8,6 +7,8 @@ use crate::armv4t::instruction_set::Thumb;
 use crate::Candidate;
 use crate::Scalar;
 use crate::SearchAlgorithm;
+use crate::Fitness;
+use crate::Fixup;
 
 /// Tests the candidate programs visited by a search strategy to see if they compute the given
 /// function, taking two 32-bit integers and return one 32-bit integer, and also match the AAPCS32
@@ -120,8 +121,8 @@ impl<S: SearchAlgorithm<Item = Thumb>, T: Scalar, U: Scalar, V: Scalar> SearchAl
         self.search.score(score);
     }
 
-    fn replace(&mut self, offset: usize, instruction: Option<Self::Item>) {
-        self.search.replace(offset, instruction);
+    fn replace<F: Fixup<Self::Item>>(&mut self, offset: usize, fixup: F) {
+        self.search.replace(offset, fixup);
     }
 
     fn generate(&mut self) -> Option<Candidate<Self::Item>> {

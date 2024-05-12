@@ -20,8 +20,6 @@ pub mod armv4t;
 #[cfg(feature = "mos6502")]
 pub mod mos6502;
 
-#[cfg(feature = "mos6502")]
-pub mod robo6502;
 pub mod search;
 
 #[cfg(feature = "z80")]
@@ -29,63 +27,103 @@ pub mod z80;
 
 mod hamming;
 
-pub use crate::search::BruteForceSearch;
-pub use crate::search::CompatibilitySearch;
-pub use crate::search::LengthLimitedSearch;
-pub use crate::search::LinkageSearch;
 pub use crate::search::SearchTrace;
 pub use crate::search::StochasticSearch;
+pub use crate::search::BruteForceSearch;
 
 use rand::Rng;
 use std::convert::TryInto;
 
-/// Trait enabling a stochastic search over instruction sequences
-pub trait Stochastic: Instruction {
-    /// Builds a [StochasticSearch] object for the given instruction set
-    fn stochastic_search() -> StochasticSearch<Self> {
-        StochasticSearch::<Self>::new()
+/// An object implementing this trait is a static analysis on the instruction level. Usefully culls
+/// the search space by eliminating instructions not present on a particular model, or instructions
+/// accessing memory outside of permissible ranges, or any instruction that's not a "return from
+/// subroutine" instruction, or ...
+pub trait Fixup<I: Instruction>: std::fmt::Debug {
+    /// Fixes an instruction up by randomly selecting a different instruction
+    fn random(&self, insn: I) -> I;
+    /// Fixes an instruction up by iterating to the next instruction
+    fn next(&self, insn: I) -> Option<I>;
+    /// Checks whether this fixup needs to alter this instruction
+    fn check(&self, insn: I) -> bool;
+}
+
+/// A fixup (see the Fixup trait) which yields exactly one instruction. Useful for ensuring that,
+/// for example, an interrupt handler ends in that architecture's "Return From Interrupt"
+/// instruction.
+#[derive(Debug)]
+pub struct SingleInstruction<I: Instruction>(I);
+
+impl<I: Instruction> crate::Fixup<I> for SingleInstruction<I> {
+    fn check(&self, insn: I) -> bool {
+        insn != self.0
+    }
+
+    fn next(&self, insn: I) -> Option<I> {
+        if insn < self.0 {
+            Some(self.0)
+        } else {
+            None
+        }
+    }
+
+    fn random(&self, _insn: I) -> I {
+        self.0
     }
 }
 
-/// Trait enabling an exhaustive search over instruction sequences
-pub trait Bruteforce: Instruction + PartialOrd {
-    /// Builds a [StochasticSearch] object for the given instruction set
-    fn bruteforce_search() -> BruteForceSearch<Self> {
-        BruteForceSearch::<Self>::new()
+/// A fixup (see the Fixup trait) which calls any number of fixups.
+pub struct FixupGroup<I: Instruction>(Vec<Box<dyn Fixup<I>>>);
+
+impl<I: Instruction> std::fmt::Debug for FixupGroup<I> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use std::fmt::Write;
+        write!(f, "FixupGroup {{{}}}", 
+            self.0.iter().fold(String::new(), |mut output, f| {
+                let _ = write!(output, "{:?}, ", f);
+                output
+            }))
     }
 }
 
-/// Type used to feed back to the SearchAlgorithms. The search algorithms are made to react to this
-/// to cull the search space by disallowing certain instructions, and to make sure that generated
-/// programs pass static analysis passes.
-#[derive(Debug, PartialEq)]
-pub enum SearchCull<I: Instruction + PartialEq> {
-    /// This instruction is okay, no need to cull the search space.
-    Okay,
-
-    /// The instruction is filtered away, and in so doing we want to suggest an instruction that
-    /// wouldn't be filtered away. So this is like calling `instruction.increment()` until the
-    /// condition to filter for no longer holds. In this way, the exhaustive search can cull huge
-    /// swathes of of the search space by static analysis.
-    SkipTo(Option<I>),
-}
-
-impl<I: Instruction + PartialEq> SearchCull<I> {
-    /// Returns true if the SearchCull is okay
-    pub fn is_okay(&self) -> bool {
-        matches!(self, SearchCull::<I>::Okay)
+impl<I: Instruction + std::fmt::Debug> crate::Fixup<I> for FixupGroup<I> {
+    fn check(&self, insn: I) -> bool {
+        self.0.iter().any(|f| f.check(insn))
     }
 
-    /// Returns the suggested instruction if it exists
-    pub fn suggestion(&self) -> Option<I> {
-        match self {
-            SearchCull::<I>::SkipTo(s) => *s,
-            _ => None,
+    fn random(&self, insn: I) -> I {
+        let mut changed = false;
+        let mut insn = insn;
+        for f in &self.0 {
+            if f.check(insn) {
+                changed = true;
+                insn = f.random(insn);
+            }
+        }
+        if changed {
+            self.random(insn)
+        } else {
+            insn
+        }
+    }
+
+    fn next(&self, insn: I) -> Option<I> {
+        let mut changed = false;
+        let mut insn = insn;
+        for f in &self.0 {
+            if f.check(insn) {
+                changed = true;
+                insn = f.next(insn)?;
+            }
+        }
+        if changed {
+            self.next(insn)
+        } else {
+            Some(insn)
         }
     }
 }
 
-pub trait Instruction: Copy + Clone + std::marker::Send + std::fmt::Display + Sized {
+pub trait Instruction: std::cmp::PartialOrd + Copy + Clone + std::marker::Send + std::fmt::Display + Sized + std::fmt::Debug {
     //! A trait for any kind of machine instruction. The searches use this trait to mutate
     //! candidate programs, the emulators use this trait to get at a byte stream encoding a
     //! candidate program.
@@ -182,22 +220,6 @@ where
     }
 }
 
-/// Selects instructions to ensure compatibility with CPU variants.
-pub trait Compatibility<I: Instruction + PartialEq> {
-    /// Returns a `SearchCull` to either say the instruction is okay, or to say it's not okay and
-    /// perhaps get a suggestion to the search algorithm.
-    fn check(&self, instruction: &I) -> SearchCull<I>;
-}
-
-/// Selects instructions to ensure the program begins and ends with the correct instructions.
-pub trait Linkage<S: SearchAlgorithm, I: Instruction> {
-    /// Returns `true` iff the candidate fits the linkage
-    fn check(&self, instruction: &Candidate<I>) -> bool;
-
-    /// Gives hints to the search algorithm to get the next candidate to fit the linkage
-    fn fixup(&self, search: &mut S, instruction: &Candidate<I>) -> bool;
-}
-
 pub trait SearchAlgorithm {
     //! You can use this to guide the search algorithm.
 
@@ -210,37 +232,12 @@ pub trait SearchAlgorithm {
     /// Test a given candidate for suitability.
     fn fitness(&mut self, candidate: &Candidate<Self::Item>) -> Fitness;
 
-    /// Tell the search algorithm that an instruction is incorrect; also propose a correction (this
-    /// is to make sure that all proposed programs pass static analysis, for example)
-    fn replace(&mut self, offset: usize, instruction: Option<Self::Item>);
+    /// Tell the search algorithm that an instruction is incorrectly placed; the `fixup` object may
+    /// be queried for correct instructions at this offset.
+    fn replace<F: Fixup<Self::Item>>(&mut self, offset: usize, fixup: F);
 
     /// Get the next Candidate
     fn generate(&mut self) -> Option<Candidate<Self::Item>>;
-
-    /// Adorns the search algorithm with a static analysis pass ensuring compatibility with a given
-    /// model.
-    fn compatibility<C: Compatibility<Self::Item>>(
-        self,
-        compatibility: C,
-    ) -> CompatibilitySearch<Self, <Self as SearchAlgorithm>::Item, C>
-    where
-        Self: Sized,
-        Self::Item: PartialEq,
-    {
-        CompatibilitySearch::new(self, compatibility)
-    }
-
-    /// Adorns the search algorithm with a static analysis pass which ensures the program's
-    /// linkage. For example, it could yield only subroutines, or only interrupt handlers, or ...
-    fn linkage<L: Linkage<Self, Self::Item>>(
-        self,
-        linkage: L,
-    ) -> LinkageSearch<Self, <Self as SearchAlgorithm>::Item, L>
-    where
-        Self: Sized,
-    {
-        LinkageSearch::new(self, linkage)
-    }
 
     /// Calls the supplied function on each generated program
     fn trace(
