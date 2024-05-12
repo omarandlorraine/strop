@@ -8,9 +8,6 @@ pub struct Z80Instruction {
     mc: [u8; 5],
 }
 
-impl crate::Stochastic for Z80Instruction {}
-impl crate::Bruteforce for Z80Instruction {}
-
 impl std::fmt::Debug for Z80Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(
@@ -23,7 +20,7 @@ impl std::fmt::Debug for Z80Instruction {
 
 impl Z80Instruction {
     /// Constructs a new Z80Instruction from five bytes.
-    pub fn new(mc: [u8; 5]) -> Self {
+    pub const fn new(mc: [u8; 5]) -> Self {
         Self { mc }
     }
 

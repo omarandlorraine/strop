@@ -11,9 +11,6 @@ pub struct Thumb(pub u16);
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Arm(pub u32);
 
-impl crate::Stochastic for Thumb {}
-impl crate::Bruteforce for Thumb {}
-
 impl Instruction for Thumb {
     fn random() -> Self {
         use rand::random;
