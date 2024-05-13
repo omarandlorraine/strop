@@ -20,7 +20,7 @@ impl<I: Instruction + std::cmp::PartialOrd> SearchAlgorithm for BruteForceSearch
         Fitness::Passes(0.0)
     }
 
-    fn replace<F: Fixup<I>>(&mut self, offset: usize, fixup: F) {
+    fn replace<F: Fixup<I>>(&mut self, offset: usize, fixup: F)  -> bool {
         let orig = self.curr[offset];
         if fixup.check(orig) {
             if let Some(next) = fixup.next(orig){
@@ -30,6 +30,9 @@ impl<I: Instruction + std::cmp::PartialOrd> SearchAlgorithm for BruteForceSearch
                 self.curr[offset] = I::first();
                 self.curr.push(I::first());
             }
+            true
+        } else {
+            false
         }
     }
 

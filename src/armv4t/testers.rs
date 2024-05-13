@@ -121,8 +121,8 @@ impl<S: SearchAlgorithm<Item = Thumb>, T: Scalar, U: Scalar, V: Scalar> SearchAl
         self.search.score(score);
     }
 
-    fn replace<F: Fixup<Self::Item>>(&mut self, offset: usize, fixup: F) {
-        self.search.replace(offset, fixup);
+    fn replace<F: Fixup<Self::Item>>(&mut self, offset: usize, fixup: F) -> bool {
+        self.search.replace(offset, fixup)
     }
 
     fn generate(&mut self) -> Option<Candidate<Self::Item>> {

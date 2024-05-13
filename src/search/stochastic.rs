@@ -26,10 +26,13 @@ impl<I: Instruction> SearchAlgorithm for StochasticSearch<I> {
         self.child_score = score.abs();
     }
 
-    fn replace<F: Fixup<I>>(&mut self, offset: usize, fixup: F) {
+    fn replace<F: Fixup<I>>(&mut self, offset: usize, fixup: F) -> bool {
         let orig = self.child.instructions[offset];
         if fixup.check(orig) {
             self.child.instructions[offset] = fixup.random(orig);
+            true
+        } else {
+            false
         }
     }
 
@@ -139,6 +142,9 @@ impl<I: Instruction> StochasticSearch<I> {
             3 => self.replace(),
             4 => self.mutate(),
             _ => panic!(),
+        }
+        if self.child.length() == 0 {
+            self.random_mutation();
         }
     }
 }

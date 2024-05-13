@@ -37,7 +37,7 @@ where
         self.inner.score(score);
     }
 
-    fn replace<F: Fixup<I>>(&mut self, offset: usize, fixup: F) {
+    fn replace<F: Fixup<I>>(&mut self, offset: usize, fixup: F) -> bool {
         self.inner.replace(offset, fixup)
     }
 
