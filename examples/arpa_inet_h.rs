@@ -20,7 +20,7 @@ fn bruteforce<T: strop::Scalar>(label: &'static str, func: fn(T) -> Option<T>) {
     use strop::z80::*;
     use strop::StochasticSearch;
 
-    let search = Z88dkFastCall::new(StochasticSearch::new(), func);
+    let mut search = Z88dkFastCall::new(StochasticSearch::new(), func);
     let program = search.iter().next().unwrap();
 
     println!("{}:", label);

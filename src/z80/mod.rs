@@ -3,12 +3,14 @@
 
 pub mod emulators;
 pub mod instruction_set;
+pub mod testers;
 
-use crate::SingleInstruction;
-use instruction_set::Z80Instruction;
-
-
+pub use crate::SingleInstruction;
+pub use instruction_set::Z80Instruction;
+pub use testers::Z88dkFastCall;
+pub use crate::SearchAlgorithm;
 
 const RET: SingleInstruction<Z80Instruction> = SingleInstruction(Z80Instruction::new([0xc9, 0, 0, 0, 0]));
 const RETI: SingleInstruction<Z80Instruction> = SingleInstruction(Z80Instruction::new([0xed, 0x4d, 0, 0, 0]));
 const RETN: SingleInstruction<Z80Instruction> = SingleInstruction(Z80Instruction::new([0xed, 0x45, 0, 0, 0]));
+
