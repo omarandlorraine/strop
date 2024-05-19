@@ -245,9 +245,6 @@ pub trait SearchAlgorithm {
     /// Tell the search algorithm about how close it's getting
     fn score(&mut self, score: f32);
 
-    /// Test a given candidate for suitability.
-    fn fitness(&mut self, candidate: &Candidate<Self::Item>) -> Fitness;
-
     /// Tell the search algorithm that an instruction is incorrectly placed; the `fixup` object may
     /// be queried for correct instructions at this offset. Returns `true` if the instruction was
     /// replaced, and false otherwise.
@@ -285,17 +282,4 @@ pub trait Scalar: num::cast::AsPrimitive<u32> {
 
     /// Calculates the hamming distance to another value, after truncating both to the same width.
     fn hamming<T: num::cast::AsPrimitive<u32>>(self, other: T) -> u32;
-}
-
-/// After finding a valid solution, we might want to optimize it further. To that end, we want to
-/// propose a mutation to the valid but suboptimal solution, and see if it still passes static
-/// analysis and still computes the function as expected. This enum is for answering that question.
-#[derive(Clone, Copy, Debug)]
-pub enum Fitness {
-    /// The solution can be rejected for failing static analysis
-    FailsStaticAnalysis,
-
-    /// The solution passes static analysis and was run in the emulator; it's fitness score is
-    /// supplied.
-    Passes(f32),
 }
