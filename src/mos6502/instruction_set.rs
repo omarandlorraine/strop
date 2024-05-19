@@ -11,7 +11,9 @@ type Encoding6502 = [u8; 3];
 /// operand.
 pub fn randomize_operand(instruction: Cmos6502Instruction) -> Cmos6502Instruction {
     let opcode = instruction.encode()[0];
-    Cmos6502Instruction{encoding: [opcode, random(), random()]}
+    Cmos6502Instruction {
+        encoding: [opcode, random(), random()],
+    }
 }
 
 /// Takes an instruction, and increments the operand.
@@ -28,7 +30,9 @@ fn increment_opcode(instruction: Cmos6502Instruction) -> Option<Cmos6502Instruct
         return None;
     }
 
-    Some(Cmos6502Instruction{encoding: [CMOS_OPCODES[index], 0, 0]})
+    Some(Cmos6502Instruction {
+        encoding: [CMOS_OPCODES[index], 0, 0],
+    })
 }
 
 const CMOS_OPCODES: [u8; 178] = [

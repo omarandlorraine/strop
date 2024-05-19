@@ -5,9 +5,9 @@ use crate::armv4t::emulators::ArmV4T;
 use crate::armv4t::instruction_set::Thumb;
 
 use crate::Candidate;
+use crate::Fixup;
 use crate::Scalar;
 use crate::SearchAlgorithm;
-use crate::Fixup;
 
 /// Tests the candidate programs visited by a search strategy to see if they compute the given
 /// function, taking two 32-bit integers and return one 32-bit integer, and also match the AAPCS32
@@ -128,5 +128,9 @@ impl<S: SearchAlgorithm<Item = Thumb>, T: Scalar, U: Scalar, V: Scalar> SearchAl
             }
         }
         None
+    }
+
+    fn peek(&self) -> &Candidate<Thumb> {
+        self.search.peek()
     }
 }

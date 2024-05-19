@@ -22,7 +22,7 @@ pub struct IndirectJmp;
 pub struct SafeBet;
 
 impl Fixup<Cmos6502Instruction> for IndirectJmp {
-    fn check(&self, insn: Cmos6502Instruction) -> bool{
+    fn check(&self, insn: Cmos6502Instruction) -> bool {
         use crate::Instruction;
         let enc = insn.encode();
         (enc[0], enc[1]) != (0x6c, 0xff)

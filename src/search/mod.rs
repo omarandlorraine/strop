@@ -1,11 +1,11 @@
 //! Module containing miscellaneous search algorithms that are generic across instruction sets.
 //! Also contains some static analysis passes.
-mod stochastic;
 mod bruteforce;
+mod stochastic;
 
-pub use stochastic::StochasticSearch;
+use crate::{Candidate, Fixup, Instruction, SearchAlgorithm};
 pub use bruteforce::BruteForceSearch;
-use crate::{Instruction, Fixup, SearchAlgorithm, Candidate};
+pub use stochastic::StochasticSearch;
 
 /// A convenience for calling a function with every putative program
 #[derive(Debug)]
@@ -41,5 +41,9 @@ where
         let candidate = self.inner.generate()?;
         (self.func)(&candidate);
         Some(candidate)
+    }
+
+    fn peek(&self) -> &Candidate<I> {
+        self.inner.peek()
     }
 }

@@ -1,9 +1,10 @@
 //! Z80 testers.
 use crate::z80::instruction_set::Z80Instruction;
+use crate::z80::Subroutine;
 use crate::Candidate;
+use crate::Fixup;
 use crate::Scalar;
 use crate::SearchAlgorithm;
-use crate::Fixup;
 
 /// Tests the programs visited by a search strategy and yields those which compute the given
 /// function and conform to the `__z88dk_fast_call` calling convention (i.e. equivalent to a
@@ -25,7 +26,7 @@ where
 {
     func: fn(Operand) -> Option<Return>,
     inputs: Vec<(Operand, Return)>,
-    search: S
+    search: Subroutine<S>,
 }
 
 impl<
@@ -39,6 +40,7 @@ where
 {
     /// Returns a new Z88dkFastCall struct.
     pub fn new(search: S, func: fn(Operand) -> Option<Return>) -> Self {
+        let search = Subroutine::new(search);
         Self {
             inputs: vec![],
             search,
@@ -100,6 +102,27 @@ where
         }
         score
     }
+
+    fn internal_generate(&mut self) -> Option<Candidate<Z80Instruction>> {
+        while let Some(candidate) = self.search.generate() {
+            let score = self.test(&candidate);
+            self.search.score(score);
+            if score == 0.0 {
+                // We've found a program that passes the test cases we've found; let's optimize the
+                // program.
+                return Some(self.internal_optimize(candidate));
+            }
+        }
+        None
+    }
+
+    fn internal_optimize(
+        &mut self,
+        candidate: Candidate<Z80Instruction>,
+    ) -> Candidate<Z80Instruction> {
+        // TODO: optimize the candidate here.
+        candidate
+    }
 }
 
 impl<S: SearchAlgorithm<Item = Z80Instruction>, Operand: num::cast::AsPrimitive<u32>, Return>
@@ -119,17 +142,13 @@ where
     }
 
     fn generate(&mut self) -> Option<Candidate<Self::Item>> {
-        while let Some(candidate) = self.search.generate() {
-            if !self.search.replace(candidate.last_offset(), crate::z80::RET) {
-                let score = self.test(&candidate);
-                self.search.score(score);
-                if score == 0.0 {
-                    // We've found a program that passes the test cases we've found; let's optimize the
-                    // program.
-                    return Some(candidate);
-                }
-            }
+        while let Some(candidate) = self.internal_generate() {
+            return Some(self.internal_optimize(candidate));
         }
         None
+    }
+
+    fn peek(&self) -> &Candidate<Z80Instruction> {
+        self.search.peek()
     }
 }
