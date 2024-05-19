@@ -1,7 +1,6 @@
 //! Z80 testers.
 use crate::z80::instruction_set::Z80Instruction;
 use crate::Candidate;
-use crate::Fitness;
 use crate::Scalar;
 use crate::SearchAlgorithm;
 use crate::Fixup;
@@ -110,13 +109,6 @@ where
     Operand: Scalar,
 {
     type Item = Z80Instruction;
-
-    fn fitness(&mut self, candidate: &Candidate<Z80Instruction>) -> Fitness {
-        match self.search.fitness(candidate) {
-            Fitness::FailsStaticAnalysis => Fitness::FailsStaticAnalysis,
-            Fitness::Passes(_) => Fitness::Passes(self.test(candidate)),
-        }
-    }
 
     fn score(&mut self, score: f32) {
         self.search.score(score);

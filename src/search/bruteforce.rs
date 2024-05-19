@@ -1,7 +1,6 @@
 //! Module containing definitions of miscellaneous search strategies.
 
 use crate::Fixup;
-use crate::Fitness;
 use crate::SearchAlgorithm;
 use crate::{Candidate, Instruction};
 
@@ -15,10 +14,6 @@ pub struct BruteForceSearch<I: Instruction + PartialOrd + PartialEq> {
 impl<I: Instruction + std::cmp::PartialOrd> SearchAlgorithm for BruteForceSearch<I> {
     type Item = I;
     fn score(&mut self, _: f32) {}
-
-    fn fitness(&mut self, _cand: &Candidate<Self::Item>) -> Fitness {
-        Fitness::Passes(0.0)
-    }
 
     fn replace<F: Fixup<I>>(&mut self, offset: usize, fixup: F)  -> bool {
         let orig = self.curr[offset];

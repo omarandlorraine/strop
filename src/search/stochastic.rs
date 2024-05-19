@@ -1,7 +1,6 @@
 //! Module defining the stochastic search algorithm
 
 use crate::Candidate;
-use crate::Fitness;
 use crate::Instruction;
 use crate::SearchAlgorithm;
 use crate::Fixup;
@@ -17,10 +16,6 @@ pub struct StochasticSearch<I: Instruction> {
 
 impl<I: Instruction> SearchAlgorithm for StochasticSearch<I> {
     type Item = I;
-
-    fn fitness(&mut self, _cand: &Candidate<Self::Item>) -> Fitness {
-        Fitness::Passes(0.0)
-    }
 
     fn score(&mut self, score: f32) {
         self.child_score = score.abs();

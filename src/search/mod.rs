@@ -5,7 +5,7 @@ mod bruteforce;
 
 pub use stochastic::StochasticSearch;
 pub use bruteforce::BruteForceSearch;
-use crate::{Instruction, Fixup, SearchAlgorithm, Candidate, Fitness};
+use crate::{Instruction, Fixup, SearchAlgorithm, Candidate};
 
 /// A convenience for calling a function with every putative program
 #[derive(Debug)]
@@ -28,10 +28,6 @@ where
     I: Instruction,
 {
     type Item = I;
-
-    fn fitness(&mut self, candidate: &Candidate<I>) -> Fitness {
-        self.inner.fitness(candidate)
-    }
 
     fn score(&mut self, score: f32) {
         self.inner.score(score);
