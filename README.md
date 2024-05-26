@@ -10,12 +10,8 @@ search or a bruteforce search.
 
 ### Examples
 
-If you're wondering what this could be used for, here are some examples:
+If you're wondering what this could be used for, here is an example:
 
-* [emutest65](examples/emutest65.md), which searches for programs behaving
-  differently on different emulators, exposing bugs
-* [library](examples/library.md), which produces a small library of
-  miscellaneous functions, in Thumb assembly, all callable from C.
 * [arpa_inet_h](examples/arpa_inet_h.md), which emits the functions in
   `arpa/inet.h` in Z80 assembler.
 
