@@ -194,7 +194,6 @@ impl<I: Instruction> StochasticDeadCodeEliminator<I> {
     fn forward(&mut self) {
         // call this when the search has provably made some progress
         self.parent = self.child.clone();
-        self.parent.disassemble();
     }
 }
 
