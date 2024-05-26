@@ -5,7 +5,7 @@ use crate::SearchAlgorithm;
 use crate::{Candidate, Instruction};
 
 /// Iterates across the entire search space, shortest programs first.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct BruteForceSearch<I: Instruction + PartialOrd + PartialEq> {
     curr: Candidate<I>,
     max_length: usize,
@@ -42,6 +42,10 @@ impl<I: Instruction + std::cmp::PartialOrd> SearchAlgorithm for BruteForceSearch
 
     fn peek(&self) -> &Candidate<I> {
         &self.curr
+    }
+
+    fn start_from(&mut self, point: &Candidate<I>) {
+        self.curr = point.clone();
     }
 }
 

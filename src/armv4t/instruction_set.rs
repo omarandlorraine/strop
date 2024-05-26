@@ -4,7 +4,7 @@ use crate::Instruction;
 
 /// Type representing the Thumb instruction (no Thumb2 instructions are present here. It's just the
 /// first, fixed-width version).
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Default, Debug, PartialEq, PartialOrd)]
 pub struct Thumb(pub u16);
 
 /// Type representing the full-width ARM instruction.
@@ -17,12 +17,10 @@ impl Instruction for Thumb {
         Self(random())
     }
 
-    fn mutate(self) -> Self {
+    fn mutate(&mut self) {
         use rand::Rng;
         let bit = rand::thread_rng().gen_range(0..16);
-        let encoding = self.0 ^ (1 << bit);
-
-        Self(encoding)
+        self.0 ^= 1 << bit;
     }
 
     fn encode(self) -> Vec<u8> {

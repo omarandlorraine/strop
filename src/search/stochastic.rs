@@ -5,6 +5,86 @@ use crate::Fixup;
 use crate::Instruction;
 use crate::SearchAlgorithm;
 
+fn random_mutation<I: Instruction>(candidate: &mut Candidate<I>) {
+    fn random_offset<I: Instruction>(candidate: &Candidate<I>) -> usize {
+        use rand::Rng;
+        rand::thread_rng().gen_range(0..candidate.instructions.len())
+    }
+
+    fn delete<I: Instruction>(candidate: &mut Candidate<I>) {
+        // If the list of instructions contains at least one instruction, then delete one at
+        // random.
+        if !candidate.instructions.is_empty() {
+            let offset = random_offset(candidate);
+            candidate.instructions.remove(offset);
+        }
+    }
+
+    fn insert<I: Instruction>(candidate: &mut Candidate<I>) {
+        // Insert a randomly generated instruction at a random location in the program.
+        let offset = if candidate.instructions.is_empty() {
+            0
+        } else {
+            random_offset(candidate)
+        };
+        candidate.instructions.insert(offset, I::random());
+    }
+
+    fn swap<I: Instruction>(candidate: &mut Candidate<I>) {
+        // If the program contains at least two instructions, then pick two at random and swap them
+        // over.
+        if candidate.instructions.len() > 2 {
+            let offset_a = random_offset(candidate);
+            let offset_b = random_offset(candidate);
+            let instruction_a = candidate.instructions[offset_a];
+            let instruction_b = candidate.instructions[offset_b];
+            candidate.instructions[offset_a] = instruction_b;
+            candidate.instructions[offset_b] = instruction_a;
+        }
+    }
+
+    fn replace<I: Instruction>(candidate: &mut Candidate<I>) {
+        // If the list of instructions contains at least one instruction, then pick one at random
+        // and swap it for something totally different.
+        if !candidate.instructions.is_empty() {
+            let offset = random_offset(candidate);
+            candidate.instructions[offset] = I::random();
+        }
+    }
+
+    fn mutate<I: Instruction>(candidate: &mut Candidate<I>) {
+        // If the list of instructions contains at least one instruction, then pick one at random
+        // and call its `mutate` method.
+        if !candidate.instructions.is_empty() {
+            let offset = random_offset(candidate);
+            candidate.instructions[offset].mutate();
+        }
+    }
+
+    use rand::Rng;
+    let choice = rand::thread_rng().gen_range(0..5);
+
+    match choice {
+        /*
+        0 => {println!("delete");delete(candidate);}
+        1 => {println!("insert");insert(candidate);}
+        2 => {println!("swap");swap(candidate);}
+        3 => {println!("replace");replace(candidate);}
+        4 => {println!("mutate");mutate(candidate);}
+        */
+        0 => {delete(candidate);}
+        1 => {insert(candidate);}
+        2 => {swap(candidate);}
+        3 => {replace(candidate);}
+        4 => {mutate(candidate);}
+        _ => panic!(),
+    }
+    if candidate.length() == 0 {
+        random_mutation(candidate);
+    }
+}
+
+
 /// Generates a program by stochastic approximation to a correctness function
 #[derive(Clone, Debug)]
 pub struct StochasticSearch<I: Instruction> {
@@ -16,6 +96,11 @@ pub struct StochasticSearch<I: Instruction> {
 
 impl<I: Instruction> SearchAlgorithm for StochasticSearch<I> {
     type Item = I;
+
+    fn start_from(&mut self, point: &Candidate<Self::Item>) {
+        self.parent = point.clone();
+        self.child = point.clone();
+    }
 
     fn score(&mut self, score: f32) {
         self.child_score = score.abs();
@@ -50,7 +135,7 @@ impl<I: Instruction> SearchAlgorithm for StochasticSearch<I> {
                 self.child_score = self.parent_score;
             }
         }
-        self.random_mutation();
+        random_mutation(&mut self.child);
         Some(r)
     }
 
@@ -75,79 +160,6 @@ impl<I: Instruction> StochasticSearch<I> {
             child_score,
         }
     }
-
-    fn random_offset(&mut self) -> usize {
-        use rand::Rng;
-        rand::thread_rng().gen_range(0..self.child.instructions.len())
-    }
-
-    fn delete(&mut self) {
-        // If the list of instructions contains at least one instruction, then delete one at
-        // random.
-        if !self.child.instructions.is_empty() {
-            let offset = self.random_offset();
-            self.child.instructions.remove(offset);
-        }
-    }
-
-    fn insert(&mut self) {
-        // Insert a randomly generated instruction at a random location in the program.
-        let offset = if self.child.instructions.is_empty() {
-            0
-        } else {
-            self.random_offset()
-        };
-        self.child.instructions.insert(offset, I::random());
-    }
-
-    fn swap(&mut self) {
-        // If the program contains at least two instructions, then pick two at random and swap them
-        // over.
-        if self.child.instructions.len() > 2 {
-            let offset_a = self.random_offset();
-            let offset_b = self.random_offset();
-            let instruction_a = self.child.instructions[offset_a];
-            let instruction_b = self.child.instructions[offset_b];
-            self.child.instructions[offset_a] = instruction_b;
-            self.child.instructions[offset_b] = instruction_a;
-        }
-    }
-
-    fn replace(&mut self) {
-        // If the list of instructions contains at least one instruction, then pick one at random
-        // and swap it for something totally different.
-        if !self.child.instructions.is_empty() {
-            let offset = self.random_offset();
-            self.child.instructions[offset] = I::random();
-        }
-    }
-
-    fn mutate(&mut self) {
-        // If the list of instructions contains at least one instruction, then pick one at random
-        // and call its `mutate` method.
-        if !self.child.instructions.is_empty() {
-            let offset = self.random_offset();
-            self.child.instructions[offset].mutate();
-        }
-    }
-
-    /// Randomly mutates the `Candidate`
-    pub fn random_mutation(&mut self) {
-        use rand::Rng;
-        let choice = rand::thread_rng().gen_range(0..5);
-
-        match choice {
-            0 => self.delete(),
-            1 => self.insert(),
-            2 => self.swap(),
-            3 => self.replace(),
-            4 => self.mutate(),
-            _ => panic!(),
-        }
-        if self.child.length() == 0 {
-            self.random_mutation();
-        }
-    }
 }
 
 impl<I: Instruction> Default for StochasticSearch<I> {
@@ -157,24 +169,54 @@ impl<I: Instruction> Default for StochasticSearch<I> {
 }
 
 /// Generates a program by stochastic approximation to a correctness function
-#[derive(Clone, Debug)]
-pub struct StochasticOptimizer<I: Instruction> {
+#[derive(Clone, Default, Debug)]
+pub struct StochasticDeadCodeEliminator<I: Instruction> {
     parent: Candidate<I>,
     child: Candidate<I>,
-    error_margin: f32,
-    parent_opt: f32,
-    child_opt: f32,
 }
 
-impl<I: Instruction> SearchAlgorithm for StochasticOptimizer<I> {
+impl<I: Instruction> StochasticDeadCodeEliminator<I> {
+    /// Creates a new `StochasticDeadCodeEliminator`
+    pub fn new() -> Self {
+        Self {
+            parent: Candidate::<I>::default(),
+            child: Candidate::<I>::default(),
+        }
+    }
+
+    fn reset(&mut self) {
+        // call this when the search has probably wondered off into the weeds and needs to restart
+        self.child = self.parent.clone();
+    }
+
+    fn forward(&mut self) {
+        // call this when the search has provably made some progress
+        self.parent = self.child.clone();
+        println!("forward!");
+        self.parent.disassemble();
+    }
+}
+
+impl<I: Instruction> SearchAlgorithm for StochasticDeadCodeEliminator<I> {
     type Item = I;
 
+    fn start_from(&mut self, original: &Candidate<I>) {
+        //println!("StochasticDeadCodeEliminator.starts_from");
+        //original.disassemble();
+        self. parent = original.clone();
+        self. child = original.clone();
+    }
+
     fn score(&mut self, score: f32) {
-        if score > self.error_margin {
-            // Maybe the search has wandered off into the weeds. Try going back to the parent
-            self.child = self.parent.clone();
-            self.child_opt = self.parent_opt;
+        if score != 0.0 {
+            self.reset();
+        } else {
+            self.forward();
         }
+    }
+
+    fn peek(&self) -> &Candidate<Self::Item> {
+        &self.child
     }
 
     fn replace<F: Fixup<I>>(&mut self, offset: usize, fixup: F) -> bool {
@@ -188,104 +230,24 @@ impl<I: Instruction> SearchAlgorithm for StochasticOptimizer<I> {
     }
 
     fn generate(&mut self) -> Option<Candidate<I>> {
+        use rand::Rng; 
+        //println!("StochasticDeadCodeEliminator.generate");
         let r = self.child.clone();
-        self.random_mutation();
-        Some(r)
-    }
 
-    fn peek(&self) -> &Candidate<I> {
-        &self.child
-    }
-}
-
-impl<I: Instruction> StochasticOptimizer<I> {
-    /// returns a new `Candidate`
-    pub fn new(original: &Candidate<I>) -> Self {
-        // Empty list of instructions
-        let parent = original.clone();
-        let child = original.clone();
-        let parent_opt = f32::MAX;
-        let child_opt = f32::MAX;
-
-        Self {
-            parent,
-            parent_opt,
-            child,
-            child_opt,
-            error_margin: 0.0,
+        for _ in 0..rand::thread_rng().gen_range(0..=5) {
+        //println!("StochasticDeadCodeEliminator.generate mutates");
+        //self.child.disassemble();
+            random_mutation(&mut self.child);
         }
-    }
+        //println!("StochasticDeadCodeEliminator.done for now");
+        //self.child.disassemble();
 
-    fn random_offset(&mut self) -> usize {
-        use rand::Rng;
-        rand::thread_rng().gen_range(0..self.child.instructions.len())
-    }
 
-    fn delete(&mut self) {
-        // If the list of instructions contains at least one instruction, then delete one at
-        // random.
-        if !self.child.instructions.is_empty() {
-            let offset = self.random_offset();
-            self.child.instructions.remove(offset);
+        // if the child is now not shorter, then go back to the parent
+        if self.child.encode().len() > self.parent.encode().len() {
+            self.reset();
         }
-    }
 
-    fn insert(&mut self) {
-        // Insert a randomly generated instruction at a random location in the program.
-        let offset = if self.child.instructions.is_empty() {
-            0
-        } else {
-            self.random_offset()
-        };
-        self.child.instructions.insert(offset, I::random());
-    }
-
-    fn swap(&mut self) {
-        // If the program contains at least two instructions, then pick two at random and swap them
-        // over.
-        if self.child.instructions.len() > 2 {
-            let offset_a = self.random_offset();
-            let offset_b = self.random_offset();
-            let instruction_a = self.child.instructions[offset_a];
-            let instruction_b = self.child.instructions[offset_b];
-            self.child.instructions[offset_a] = instruction_b;
-            self.child.instructions[offset_b] = instruction_a;
-        }
-    }
-
-    fn replace(&mut self) {
-        // If the list of instructions contains at least one instruction, then pick one at random
-        // and swap it for something totally different.
-        if !self.child.instructions.is_empty() {
-            let offset = self.random_offset();
-            self.child.instructions[offset] = I::random();
-        }
-    }
-
-    fn mutate(&mut self) {
-        // If the list of instructions contains at least one instruction, then pick one at random
-        // and call its `mutate` method.
-        if !self.child.instructions.is_empty() {
-            let offset = self.random_offset();
-            self.child.instructions[offset].mutate();
-        }
-    }
-
-    /// Randomly mutates the `Candidate`
-    pub fn random_mutation(&mut self) {
-        use rand::Rng;
-        let choice = rand::thread_rng().gen_range(0..5);
-
-        match choice {
-            0 => self.delete(),
-            1 => self.insert(),
-            2 => self.swap(),
-            3 => self.replace(),
-            4 => self.mutate(),
-            _ => panic!(),
-        }
-        if self.child.length() == 0 {
-            self.random_mutation();
-        }
+        Some(self.child.clone())
     }
 }

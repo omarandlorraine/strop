@@ -12,7 +12,7 @@ use crate::SearchAlgorithm;
 /// Tests the candidate programs visited by a search strategy to see if they compute the given
 /// function, taking two 32-bit integers and return one 32-bit integer, and also match the AAPCS32
 /// calling convention.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Aapcs32<S, T, U, V>
 where
     S: SearchAlgorithm<Item = Thumb>,
@@ -132,5 +132,9 @@ impl<S: SearchAlgorithm<Item = Thumb>, T: Scalar, U: Scalar, V: Scalar> SearchAl
 
     fn peek(&self) -> &Candidate<Thumb> {
         self.search.peek()
+    }
+
+    fn start_from(&mut self, point: &Candidate<Thumb>) {
+        self.search.start_from(point);
     }
 }

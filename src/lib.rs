@@ -134,6 +134,7 @@ pub trait Instruction:
     + std::fmt::Display
     + Sized
     + std::fmt::Debug
+    + Default
 {
     //! A trait for any kind of machine instruction. The searches use this trait to mutate
     //! candidate programs, the emulators use this trait to get at a byte stream encoding a
@@ -142,11 +143,10 @@ pub trait Instruction:
     /// Return a random machine instruction
     fn random() -> Self;
 
-    /// Mutates a machine instruction. This consumes self, and returns another machine instruction
-    /// which is similar, but may be different. The difference will of course depend on the
+    /// Mutates a machine instruction in place. The mutation will of course depend on the
     /// targeted machine; but differences could include a changed operand, or swapping an
     /// increment for a decrement, etc.
-    fn mutate(self) -> Self;
+    fn mutate(&mut self);
 
     /// Returns the machine instruction's encoding (i.e., what to write into the emulator's memory
     /// in order to execute this instruction)
@@ -246,7 +246,7 @@ where
     }
 }
 
-pub trait SearchAlgorithm {
+pub trait SearchAlgorithm: Clone {
     //! You can use this to guide the search algorithm.
 
     /// Which instruction set to use
@@ -277,16 +277,14 @@ pub trait SearchAlgorithm {
     /// Returns a reference to the Candidate which will be generated next
     fn peek(&self) -> &Candidate<Self::Item>;
 
+    /// Starts or restarts the search from the given point in the search space.
+    fn start_from(&mut self, point: &Candidate<Self::Item>);
+
     /// Returns a `SearchAlgorithmIterator`, which can be used to iterate over the generated
     /// candidates.
     fn iter(&mut self) -> SearchAlgorithmIterator<'_, Self> {
         SearchAlgorithmIterator { inner: self }
     }
-}
-
-pub trait Optimizer: SearchAlgorithm {
-    /// How good is this candidate?
-    fn opt(&mut self, score: f32);
 }
 
 pub trait Scalar: num::cast::AsPrimitive<u32> {

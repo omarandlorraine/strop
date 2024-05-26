@@ -10,7 +10,7 @@ mod test {
     #[test]
     fn all_instructions_can_be_executed() {
         use crate::armv4t::emulators::ArmV4T;
-        use crate::armv4t::Thumb;
+        use crate::armv4t::instruction_set::Thumb;
         use crate::BruteForceSearch;
         use crate::Emulator;
         use crate::SearchAlgorithm;
