@@ -44,8 +44,8 @@ impl<I: Instruction + std::cmp::PartialOrd> SearchAlgorithm for BruteForceSearch
         &self.curr
     }
 
-    fn start_from(&mut self, point: &Candidate<I>) {
-        self.curr = point.clone();
+    fn start_from(&mut self, point: Candidate<I>) {
+        self.curr = point;
     }
 }
 

@@ -137,12 +137,12 @@ where
         }
 
         let mut opt = optimizer.clone();
-        opt.start_from(&pessimal);
+        opt.start_from(pessimal.clone());
         let mut opt = Subroutine::new(opt);
         let c = opt.generate().unwrap();
 
         if self.test(&c) > 0.0 {
-            self.internal_optimize(count - 1, pessimal.clone(), opt.0.clone())
+            self.internal_optimize(count - 1, pessimal, opt.0.clone())
         } else {
             self.internal_optimize(count - 1, c.clone(), opt.0.clone())
         }
@@ -165,7 +165,7 @@ where
         self.search.score(score);
     }
 
-    fn start_from(&mut self, point: &Candidate<Z80Instruction>) {
+    fn start_from(&mut self, point: Candidate<Z80Instruction>) {
         self.search.start_from(point);
     }
 

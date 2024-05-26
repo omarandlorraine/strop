@@ -32,7 +32,7 @@ impl<S: SearchAlgorithm<Item = Z80Instruction>> SearchAlgorithm for Subroutine<S
         self.0.replace(offset, fixup)
     }
 
-    fn start_from(&mut self, point: &Candidate<Z80Instruction>) {
+    fn start_from(&mut self, point: Candidate<Z80Instruction>) {
         self.0.start_from(point);
         self.sanity();
     }

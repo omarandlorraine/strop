@@ -48,7 +48,7 @@ where
         self.inner.peek()
     }
 
-    fn start_from(&mut self, point: &Candidate<I>) {
+    fn start_from(&mut self, point: Candidate<I>) {
         self.inner.start_from(point)
     }
 }
