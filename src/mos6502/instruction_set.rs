@@ -51,22 +51,13 @@ const CMOS_OPCODES: [u8; 178] = [
 ];
 
 /// A struct representing one MOS 6502 instruction
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Default, Debug, PartialEq, PartialOrd)]
 pub struct Cmos6502Instruction {
     encoding: Encoding6502,
 }
 
 impl Cmos6502Instruction {
     // TODO: Are these methods used anywhere?
-    #[cfg(test)]
-    fn reva_compatible(&self) -> bool {
-        !matches!(self.encoding[0], 0x66 | 0x6a | 0x6e | 0x76 | 0x7e)
-    }
-
-    #[cfg(test)]
-    fn cmos_compatible(&self) -> bool {
-        CMOS_OPCODES.contains(&self.encoding[0]) && !matches!(self.encoding[0], 0x9c | 0x9e)
-    }
 
     fn is_relative_branch(&self) -> bool {
         matches!(
@@ -278,16 +269,14 @@ impl Instruction for Cmos6502Instruction {
         }
     }
 
-    fn mutate(self) -> Self {
-        let mut insn = self;
+    fn mutate(&mut self) {
         if random() {
             use rand::prelude::SliceRandom;
-            insn.encoding[0] = *CMOS_OPCODES.choose(&mut rand::thread_rng()).unwrap();
+            self.encoding[0] = *CMOS_OPCODES.choose(&mut rand::thread_rng()).unwrap();
         } else {
-            insn.encoding[1] = random();
-            insn.encoding[2] = random();
+            self.encoding[1] = random();
+            self.encoding[2] = random();
         }
-        insn
     }
 
     fn first() -> Self {

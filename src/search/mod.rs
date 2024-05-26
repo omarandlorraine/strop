@@ -6,9 +6,10 @@ mod stochastic;
 use crate::{Candidate, Fixup, Instruction, SearchAlgorithm};
 pub use bruteforce::BruteForceSearch;
 pub use stochastic::StochasticSearch;
+pub use stochastic::StochasticDeadCodeEliminator;
 
 /// A convenience for calling a function with every putative program
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct SearchTrace<S: crate::SearchAlgorithm<Item = I>, I: crate::Instruction> {
     func: fn(&crate::Candidate<I>),
     inner: S,
@@ -45,5 +46,9 @@ where
 
     fn peek(&self) -> &Candidate<I> {
         self.inner.peek()
+    }
+
+    fn start_from(&mut self, point: &Candidate<I>) {
+        self.inner.start_from(point)
     }
 }

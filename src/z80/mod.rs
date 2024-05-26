@@ -18,7 +18,7 @@ const RETI: SingleInstruction<Z80Instruction> =
 const RETN: SingleInstruction<Z80Instruction> =
     SingleInstruction(Z80Instruction::new([0xed, 0x45, 0, 0, 0]));
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct Subroutine<S: SearchAlgorithm<Item = Z80Instruction>>(S);
 
 impl<S: SearchAlgorithm<Item = Z80Instruction>> SearchAlgorithm for Subroutine<S> {
@@ -30,6 +30,11 @@ impl<S: SearchAlgorithm<Item = Z80Instruction>> SearchAlgorithm for Subroutine<S
 
     fn replace<F: crate::Fixup<Self::Item>>(&mut self, offset: usize, fixup: F) -> bool {
         self.0.replace(offset, fixup)
+    }
+
+    fn start_from(&mut self, point: &Candidate<Z80Instruction>) {
+        self.0.start_from(point);
+        self.sanity();
     }
 
     fn generate(&mut self) -> Option<Candidate<Z80Instruction>> {
