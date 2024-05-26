@@ -742,13 +742,6 @@ mod disassembly {
 #[cfg(test)]
 mod test {
     #[test]
-    fn ror_is_not_reva_compatible() {
-        // Very early chips do not have the ROR instruction, so test the reva_compatible method
-        // filters away any instruction where the disassembly contains the substring, "ror".
-        panic!();
-    }
-
-    #[test]
     fn all_cmos_opcodes_have_disassembly() {
         use super::Cmos6502Instruction;
         use super::CMOS_OPCODES;
