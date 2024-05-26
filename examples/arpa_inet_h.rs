@@ -28,8 +28,7 @@ fn bruteforce<T: strop::Scalar>(label: &'static str, func: fn(T) -> Option<T>) {
     );
     let program = search.iter().next().unwrap();
 
-    println!("{}:", label);
-    program.disassemble();
+    program.disassemble(label);
 }
 
 fn main() {

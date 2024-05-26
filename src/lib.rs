@@ -202,7 +202,8 @@ impl<T: Instruction> Candidate<T> {
     }
 
     /// Prints the `Candidate` to stdout
-    pub fn disassemble(&self) {
+    pub fn disassemble(&self, label: &str) {
+        println!("{}:", label);
         for insn in &self.instructions {
             println!("\t{}", insn);
         }

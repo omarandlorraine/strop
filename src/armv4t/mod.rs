@@ -20,7 +20,7 @@ mod test {
                 break; //TODO
             }
             ArmV4T::default().run(0x2000, &candidate);
-            candidate.disassemble();
+            candidate.disassemble("test");
         }
     }
 }
