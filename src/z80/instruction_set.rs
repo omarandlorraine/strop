@@ -4,16 +4,14 @@ use crate::Instruction;
 
 /// Represents a Z80 instruction
 #[derive(Clone, Copy, Default, PartialEq, PartialOrd)]
-pub struct Z80Instruction {
-    mc: [u8; 5],
-}
+pub struct Z80Instruction([u8; 5]);
 
 impl std::fmt::Debug for Z80Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(
             f,
             "{:#04x} {:#04x} {:#04x} {:#04x} {:#04x}",
-            self.mc[0], self.mc[1], self.mc[2], self.mc[3], self.mc[4]
+            self.0[0], self.0[1], self.0[2], self.0[3], self.0[4]
         )
     }
 }
@@ -21,17 +19,17 @@ impl std::fmt::Debug for Z80Instruction {
 impl Z80Instruction {
     /// Constructs a new Z80Instruction from five bytes.
     pub const fn new(mc: [u8; 5]) -> Self {
-        Self { mc }
+        Self(mc)
     }
 
     fn decode(&self) -> dez80::Instruction {
-        let encoding = Vec::<_>::from(self.mc);
+        let encoding = Vec::<_>::from(self.0);
         let e = dez80::Instruction::decode_one(&mut encoding.as_slice());
         match e {
             Ok(e) => e,
             Err(e) => panic!(
                 "couldn't encode {:?}: {:?}",
-                self.mc
+                self.0
                     .iter()
                     .map(|byte| format!("{:02x}", byte))
                     .collect::<Vec<String>>()
@@ -46,12 +44,12 @@ impl Z80Instruction {
         // is unknown, or maybe the prefix bytes aren't right, or whatever, so we need to return a
         // offset to mutate the instruction at.
 
-        match self.mc[0] {
-            0xcb => match self.mc[1] {
+        match self.0[0] {
+            0xcb => match self.0[1] {
                 0x30..=0x37 => Some(1),
                 _ => None,
             },
-            0xdd | 0xfd => match self.mc[1] {
+            0xdd | 0xfd => match self.0[1] {
                 0x00..=0x08 => Some(1),
                 0x0a..=0x18 => Some(1),
                 0x1a..=0x1b => Some(1),
@@ -81,7 +79,7 @@ impl Z80Instruction {
                 0xfa..=0xff => Some(1),
                 _ => None,
             },
-            0xed => match self.mc[1] {
+            0xed => match self.0[1] {
                 0x00..=0x3f => Some(1),
                 0x4c | 0x4e => Some(1),
                 0x55..=0x56 => Some(1),
@@ -104,7 +102,7 @@ impl Z80Instruction {
 impl Instruction for Z80Instruction {
     fn random() -> Self {
         use rand::random;
-        Self { mc: random() }
+        Self { 0: random() }
     }
 
     fn mutate(&mut self) {
@@ -115,14 +113,14 @@ impl Instruction for Z80Instruction {
         if random() {
             // try flipping a bit at random
             let bit = rand::thread_rng().gen_range(0..8);
-            self.mc[offset] ^= 1 << bit;
+            self.0[offset] ^= 1 << bit;
         } else {
             // try straight-up replacing the byte for another
-            self.mc[offset] = random();
+            self.0[offset] = random();
         }
 
         while let Some(invalid) = self.invalid() {
-            self.mc[invalid] = random();
+            self.0[invalid] = random();
         }
     }
 
@@ -131,23 +129,21 @@ impl Instruction for Z80Instruction {
     }
 
     fn first() -> Self {
-        Self {
-            mc: [0, 0, 0, 0, 0],
-        }
+        Self { 0: [0, 0, 0, 0, 0] }
     }
 
     fn increment(&mut self) -> Option<Self> {
-        if self.mc[0] == 0xff {
+        if self.0[0] == 0xff {
             // There's no way to increment this.
             return None;
         }
 
         fn incr_operand(insn: &mut Z80Instruction, offset: usize) -> bool {
-            if let Some(n) = insn.mc[offset].checked_add(1) {
-                insn.mc[offset] = n;
+            if let Some(n) = insn.0[offset].checked_add(1) {
+                insn.0[offset] = n;
                 true
             } else {
-                insn.mc[offset] = 0;
+                insn.0[offset] = 0;
                 incr_operand(insn, offset - 1)
             }
         }
