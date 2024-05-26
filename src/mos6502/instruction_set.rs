@@ -56,95 +56,6 @@ pub struct Cmos6502Instruction {
     encoding: Encoding6502,
 }
 
-impl Cmos6502Instruction {
-    // TODO: Are these methods used anywhere?
-
-    fn is_relative_branch(&self) -> bool {
-        matches!(
-            self.encoding[0],
-            0x10 | 0x30 | 0x50 | 0x70 | 0x90 | 0xB0 | 0xD0 | 0xF0
-        )
-    }
-
-    fn is_control_flow(&self) -> bool {
-        self.is_relative_branch()
-            | matches!(self.encoding[0], 0x00 | 0x20 | 0x40 | 0x4c | 0x60 | 0x6c)
-    }
-
-    /// If the instruction reads from a memory location, then return that memory location
-    fn reads_from(&self) -> Option<u16> {
-        #[allow(clippy::if_same_then_else)]
-        if self.length() == 1 {
-            // The instruction is one byte long and therefore cannot access memory
-            None
-        } else if self.is_control_flow() {
-            // jumps, returns, branches etc. are alos not what we're looking for
-            None
-        } else if matches!(
-            self.encoding[0],
-            0x85 | 0x95 | 0x8d | 0x9d | 0x99 | 0x81 | 0x91
-        ) {
-            // STA instruction is not what we're looking for
-            None
-        } else if matches!(self.encoding[0], 0x86 | 0x96 | 0x8e) {
-            // STX instruction is not what we're looking for
-            None
-        } else if matches!(self.encoding[0], 0x84 | 0x94 | 0x8c) {
-            // STY instruction is not what we're looking for
-            None
-        } else if matches!(self.encoding[0], 0x87 | 0x97 | 0x8f | 0x83) {
-            // SAX instruction is not what we're looking for
-            None
-        } else if matches!(
-            self.encoding[0],
-            0x69 | 0x29 | 0xc9 | 0xe0 | 0xc0 | 0x49 | 0xa9 | 0xa2 | 0xa0 | 0x09 | 0xe9
-        ) {
-            // immediate addressing mode is not what we're looking for
-            // TODO: Make sure I haven't forgotten any immediate-mode illegal instructions.
-            None
-        } else if self.length() == 1 {
-            // It's an instruction that reads from zero-page
-            Some(self.encoding[1].into())
-        } else {
-            // It's an instruction that reads from memory somewhere
-            Some(u16::from_le_bytes([self.encoding[1], self.encoding[2]]))
-        }
-    }
-
-    /// If the instruction writes to a memory location, then return that memory location
-    fn writes_to(&self) -> Option<u16> {
-        #[allow(clippy::if_same_then_else)]
-        if self.length() == 1 {
-            // The instruction is one byte long and therefore cannot access memory
-            None
-        } else if self.is_control_flow() {
-            // jumps, returns, branches etc. are alos not what we're looking for
-            None
-        } else if matches!(
-            self.encoding[0],
-            0xa9 | 0xa5 | 0xb5 | 0xad | 0xbd | 0xb9 | 0xa1 | 0xb1
-        ) {
-            // LDA instruction is not what we're looking for
-            None
-        } else if matches!(self.encoding[0], 0xa2 | 0xa6 | 0xb6 | 0xae | 0xbe) {
-            // LDX instruction is not what we're looking for
-            None
-        } else if matches!(self.encoding[0], 0xa0 | 0xa4 | 0xb4 | 0xac | 0xbc) {
-            // LDY instruction is not what we're looking for
-            None
-        } else if matches!(self.encoding[0], 0xa7 | 0xb7 | 0xaf | 0xbf | 0xa3 | 0xb3) {
-            // LAX instruction is not what w0x84 | 0x94 | 0x8ce're looking for
-            None
-        } else if self.length() == 1 {
-            // It's an instruction that reads from zero-page
-            Some(self.encoding[1].into())
-        } else {
-            // It's an instruction that reads from memory somewhere
-            Some(u16::from_le_bytes([self.encoding[1], self.encoding[2]]))
-        }
-    }
-}
-
 impl std::convert::TryFrom<&[u8]> for Cmos6502Instruction {
     type Error = ();
 
@@ -174,43 +85,6 @@ pub struct BasicBlock;
 /// Static analysis pass for excluding "illegal opcodes"
 #[derive(Debug, Default)]
 pub struct ExcludeIllegalInstructions;
-
-/// A static analysis pass for checking that any memory accesses only happen to/from the correct
-/// memory locations. This might be good for, for example, generating a subroutine which reads its
-/// parameters from these locations and writes its results to those memory locations.
-#[derive(Clone, Debug, Default)]
-pub struct VariablesInMemory {
-    /// All addresses the instructions may read from
-    pub reads: Vec<u16>,
-    /// All addresses the instructions may write to
-    pub writes: Vec<u16>,
-}
-
-impl From<&Candidate<Cmos6502Instruction>> for VariablesInMemory {
-    fn from(other: &Candidate<Cmos6502Instruction>) -> Self {
-        use std::collections::HashSet;
-        // I'm collecting these to a hashset and then iter/collecting to a Vec to deduplicate the
-        // values
-        other.disassemble();
-        let reads: Vec<u16> = other
-            .instructions
-            .clone()
-            .into_iter()
-            .filter_map(|insn| insn.reads_from())
-            .collect::<HashSet<_>>()
-            .into_iter()
-            .collect();
-        let writes: Vec<u16> = other
-            .instructions
-            .clone()
-            .into_iter()
-            .filter_map(|insn| insn.writes_to())
-            .collect::<HashSet<_>>()
-            .into_iter()
-            .collect();
-        Self { reads, writes }
-    }
-}
 
 /// The first 6502s have a hardware bug which means a pointer cannot cross a 256-byte page boundary.
 /// The one instruction that exercises this bug is the JMP instruction with the indirect addressing
