@@ -65,13 +65,6 @@ fn random_mutation<I: Instruction>(candidate: &mut Candidate<I>) {
     let choice = rand::thread_rng().gen_range(0..5);
 
     match choice {
-        /*
-        0 => {println!("delete");delete(candidate);}
-        1 => {println!("insert");insert(candidate);}
-        2 => {println!("swap");swap(candidate);}
-        3 => {println!("replace");replace(candidate);}
-        4 => {println!("mutate");mutate(candidate);}
-        */
         0 => {delete(candidate);}
         1 => {insert(candidate);}
         2 => {swap(candidate);}
@@ -192,7 +185,6 @@ impl<I: Instruction> StochasticDeadCodeEliminator<I> {
     fn forward(&mut self) {
         // call this when the search has provably made some progress
         self.parent = self.child.clone();
-        println!("forward!");
         self.parent.disassemble();
     }
 }
@@ -201,8 +193,6 @@ impl<I: Instruction> SearchAlgorithm for StochasticDeadCodeEliminator<I> {
     type Item = I;
 
     fn start_from(&mut self, original: &Candidate<I>) {
-        //println!("StochasticDeadCodeEliminator.starts_from");
-        //original.disassemble();
         self. parent = original.clone();
         self. child = original.clone();
     }
@@ -231,16 +221,11 @@ impl<I: Instruction> SearchAlgorithm for StochasticDeadCodeEliminator<I> {
 
     fn generate(&mut self) -> Option<Candidate<I>> {
         use rand::Rng; 
-        //println!("StochasticDeadCodeEliminator.generate");
         let r = self.child.clone();
 
         for _ in 0..rand::thread_rng().gen_range(0..=5) {
-        //println!("StochasticDeadCodeEliminator.generate mutates");
-        //self.child.disassemble();
             random_mutation(&mut self.child);
         }
-        //println!("StochasticDeadCodeEliminator.done for now");
-        //self.child.disassemble();
 
 
         // if the child is now not shorter, then go back to the parent
