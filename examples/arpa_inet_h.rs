@@ -17,11 +17,15 @@ fn ntohs(val: u16) -> Option<u16> {
 }
 
 fn bruteforce<T: strop::Scalar>(label: &'static str, func: fn(T) -> Option<T>) {
+    use strop::search::StochasticDeadCodeEliminator;
     use strop::z80::*;
     use strop::StochasticSearch;
-    use strop::search::StochasticDeadCodeEliminator;
 
-    let mut search = Z88dkFastCall::new(StochasticSearch::new(), StochasticDeadCodeEliminator::new(), func);
+    let mut search = Z88dkFastCall::new(
+        StochasticSearch::new(),
+        StochasticDeadCodeEliminator::new(),
+        func,
+    );
     let program = search.iter().next().unwrap();
 
     println!("{}:", label);

@@ -65,18 +65,27 @@ fn random_mutation<I: Instruction>(candidate: &mut Candidate<I>) {
     let choice = rand::thread_rng().gen_range(0..5);
 
     match choice {
-        0 => {delete(candidate);}
-        1 => {insert(candidate);}
-        2 => {swap(candidate);}
-        3 => {replace(candidate);}
-        4 => {mutate(candidate);}
+        0 => {
+            delete(candidate);
+        }
+        1 => {
+            insert(candidate);
+        }
+        2 => {
+            swap(candidate);
+        }
+        3 => {
+            replace(candidate);
+        }
+        4 => {
+            mutate(candidate);
+        }
         _ => panic!(),
     }
     if candidate.length() == 0 {
         random_mutation(candidate);
     }
 }
-
 
 /// Generates a program by stochastic approximation to a correctness function
 #[derive(Clone, Debug)]
@@ -193,8 +202,8 @@ impl<I: Instruction> SearchAlgorithm for StochasticDeadCodeEliminator<I> {
     type Item = I;
 
     fn start_from(&mut self, original: &Candidate<I>) {
-        self. parent = original.clone();
-        self. child = original.clone();
+        self.parent = original.clone();
+        self.child = original.clone();
     }
 
     fn score(&mut self, score: f32) {
@@ -220,13 +229,11 @@ impl<I: Instruction> SearchAlgorithm for StochasticDeadCodeEliminator<I> {
     }
 
     fn generate(&mut self) -> Option<Candidate<I>> {
-        use rand::Rng; 
-        let r = self.child.clone();
+        use rand::Rng;
 
         for _ in 0..rand::thread_rng().gen_range(0..=5) {
             random_mutation(&mut self.child);
         }
-
 
         // if the child is now not shorter, then go back to the parent
         if self.child.encode().len() > self.parent.encode().len() {

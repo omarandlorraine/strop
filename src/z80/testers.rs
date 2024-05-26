@@ -28,7 +28,7 @@ where
     func: fn(Operand) -> Option<Return>,
     inputs: Vec<(Operand, Return)>,
     search: Subroutine<S>,
-    opt: O
+    opt: O,
 }
 
 impl<
@@ -44,7 +44,7 @@ where
     /// Returns a new Z88dkFastCall struct.
     pub fn new(search: S, opt: O, func: fn(Operand) -> Option<Return>) -> Self {
         let search = Subroutine::new(search);
-        let opt= opt;
+        let opt = opt;
         Self {
             inputs: vec![],
             search,
@@ -149,8 +149,12 @@ where
     }
 }
 
-impl<S: SearchAlgorithm<Item = Z80Instruction>,O: SearchAlgorithm<Item = Z80Instruction>, Operand: num::cast::AsPrimitive<u32>, Return>
-    SearchAlgorithm for Z88dkFastCall<S,  O,Operand, Return>
+impl<
+        S: SearchAlgorithm<Item = Z80Instruction>,
+        O: SearchAlgorithm<Item = Z80Instruction>,
+        Operand: num::cast::AsPrimitive<u32>,
+        Return,
+    > SearchAlgorithm for Z88dkFastCall<S, O, Operand, Return>
 where
     Return: Scalar,
     Operand: Scalar,
