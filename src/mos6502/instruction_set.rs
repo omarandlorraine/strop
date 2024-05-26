@@ -1,7 +1,6 @@
 //! A module representing the MOS 6502's instruction set in a way that facilitates its use by
 //! strop.
 
-use crate::Candidate;
 use crate::Instruction;
 use rand::random;
 
