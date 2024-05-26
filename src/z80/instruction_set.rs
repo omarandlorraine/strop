@@ -29,7 +29,15 @@ impl Z80Instruction {
         let e = dez80::Instruction::decode_one(&mut encoding.as_slice());
         match e {
             Ok(e) => e,
-            Err(e) => panic!("couldn't encode {:?}: {:?}", self.mc.iter().map(|byte| format!("{:02x}", byte)).collect::<Vec<String>>().join(" "), e)
+            Err(e) => panic!(
+                "couldn't encode {:?}: {:?}",
+                self.mc
+                    .iter()
+                    .map(|byte| format!("{:02x}", byte))
+                    .collect::<Vec<String>>()
+                    .join(" "),
+                e
+            ),
         }
     }
 
@@ -42,7 +50,7 @@ impl Z80Instruction {
             0xcb => match self.mc[1] {
                 0x30..=0x37 => Some(1),
                 _ => None,
-            }
+            },
             0xdd | 0xfd => match self.mc[1] {
                 0x00..=0x08 => Some(1),
                 0x0a..=0x18 => Some(1),
@@ -57,22 +65,22 @@ impl Z80Instruction {
                 0x57..=0x5b => Some(1),
                 0x5f => Some(1),
                 0x76..=0x7b => Some(1),
-                0x7f..=0x83 => Some(1), 
-                0x87..=0x8b => Some(1), 
-                0x8f..=0x93 => Some(1), 
-                0x97..=0x9b => Some(1), 
-                0x9f..=0xa3 => Some(1), 
-                0xa7..=0xab => Some(1), 
-                0xaf..=0xb3 => Some(1), 
-                0xb7..=0xbb => Some(1), 
-                0xbf..=0xca => Some(1), 
-                0xcc..=0xe1 => Some(1), 
+                0x7f..=0x83 => Some(1),
+                0x87..=0x8b => Some(1),
+                0x8f..=0x93 => Some(1),
+                0x97..=0x9b => Some(1),
+                0x9f..=0xa3 => Some(1),
+                0xa7..=0xab => Some(1),
+                0xaf..=0xb3 => Some(1),
+                0xb7..=0xbb => Some(1),
+                0xbf..=0xca => Some(1),
+                0xcc..=0xe1 => Some(1),
                 0xe2 | 0xe4 => Some(1),
                 0xe6..=0xe8 => Some(1),
                 0xea..=0xf8 => Some(1),
                 0xfa..=0xff => Some(1),
                 _ => None,
-            }
+            },
             0xed => match self.mc[1] {
                 0x00..=0x3f => Some(1),
                 0x4c | 0x4e => Some(1),
@@ -87,7 +95,7 @@ impl Z80Instruction {
                 0xb4..=0xb7 => Some(1),
                 0xbc..=0xff => Some(1),
                 _ => None,
-            }
+            },
             _ => None,
         }
     }
@@ -129,7 +137,6 @@ impl Instruction for Z80Instruction {
     }
 
     fn increment(&mut self) -> Option<Self> {
-
         if self.mc[0] == 0xff {
             // There's no way to increment this.
             return None;
@@ -147,9 +154,9 @@ impl Instruction for Z80Instruction {
 
         // The length of the instruction
         let offset = self.encode().len();
-        incr_operand(self, offset - 1) ;
+        incr_operand(self, offset - 1);
         while let Some(offs) = self.invalid() {
-            incr_operand(self, offs) ;
+            incr_operand(self, offs);
         }
 
         Some(*self)
@@ -184,9 +191,8 @@ mod test {
         let mut previous = super::Z80Instruction::first();
         let mut next = previous;
         while let Some(n) = next.increment() {
-
             if !n.decode().ignored_prefixes.is_empty() {
-                let mut to = n.clone() ;
+                let mut to = n;
                 let mut tof = format!("{:?}", to);
 
                 while !to.decode().ignored_prefixes.is_empty() {
@@ -196,7 +202,11 @@ mod test {
                 panic!("{:?} to {} have ignored prefixes", n, tof);
             }
 
-            assert!(!format!("{}", n).starts_with(';'), "invalid encoding, {:?}", n);
+            assert!(
+                !format!("{}", n).starts_with(';'),
+                "invalid encoding, {:?}",
+                n
+            );
             assert!(n > previous);
             previous = next
         }
