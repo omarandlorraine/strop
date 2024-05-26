@@ -102,7 +102,7 @@ impl Z80Instruction {
 impl Instruction for Z80Instruction {
     fn random() -> Self {
         use rand::random;
-        Self { 0: random() }
+        Self(random())
     }
 
     fn mutate(&mut self) {
@@ -129,7 +129,7 @@ impl Instruction for Z80Instruction {
     }
 
     fn first() -> Self {
-        Self { 0: [0, 0, 0, 0, 0] }
+        Self([0, 0, 0, 0, 0])
     }
 
     fn increment(&mut self) -> Option<Self> {
