@@ -134,7 +134,7 @@ impl<S: SearchAlgorithm<Item = Thumb>, T: Scalar, U: Scalar, V: Scalar> SearchAl
         self.search.peek()
     }
 
-    fn start_from(&mut self, point: &Candidate<Thumb>) {
+    fn start_from(&mut self, point: Candidate<Thumb>) {
         self.search.start_from(point);
     }
 }

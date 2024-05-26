@@ -99,9 +99,9 @@ pub struct StochasticSearch<I: Instruction> {
 impl<I: Instruction> SearchAlgorithm for StochasticSearch<I> {
     type Item = I;
 
-    fn start_from(&mut self, point: &Candidate<Self::Item>) {
+    fn start_from(&mut self, point: Candidate<Self::Item>) {
         self.parent = point.clone();
-        self.child = point.clone();
+        self.child = point;
     }
 
     fn score(&mut self, score: f32) {
@@ -201,9 +201,9 @@ impl<I: Instruction> StochasticDeadCodeEliminator<I> {
 impl<I: Instruction> SearchAlgorithm for StochasticDeadCodeEliminator<I> {
     type Item = I;
 
-    fn start_from(&mut self, original: &Candidate<I>) {
+    fn start_from(&mut self, original: Candidate<I>) {
         self.parent = original.clone();
-        self.child = original.clone();
+        self.child = original;
     }
 
     fn score(&mut self, score: f32) {

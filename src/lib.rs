@@ -278,7 +278,7 @@ pub trait SearchAlgorithm: Clone {
     fn peek(&self) -> &Candidate<Self::Item>;
 
     /// Starts or restarts the search from the given point in the search space.
-    fn start_from(&mut self, point: &Candidate<Self::Item>);
+    fn start_from(&mut self, point: Candidate<Self::Item>);
 
     /// Returns a `SearchAlgorithmIterator`, which can be used to iterate over the generated
     /// candidates.
