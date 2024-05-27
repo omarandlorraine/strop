@@ -77,20 +77,6 @@ impl std::convert::TryFrom<&[u8]> for Cmos6502Instruction {
     }
 }
 
-/// Static analysis pass for excluding anything that's disallowed in a basic block
-#[derive(Debug, Default)]
-pub struct BasicBlock;
-
-/// Static analysis pass for excluding "illegal opcodes"
-#[derive(Debug, Default)]
-pub struct ExcludeIllegalInstructions;
-
-/// The first 6502s have a hardware bug which means a pointer cannot cross a 256-byte page boundary.
-/// The one instruction that exercises this bug is the JMP instruction with the indirect addressing
-/// mode. This static analysis pass excludes such instructions from consideration.
-#[derive(Debug, Default)]
-pub struct IndirectJumpBug;
-
 impl Cmos6502Instruction {
     /// Returns the length of the instruction in bytes. And a 6502 instruction is always either 1,
     /// 2 or 3 bytes.
