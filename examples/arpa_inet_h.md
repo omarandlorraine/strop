@@ -11,12 +11,11 @@ htons:
 	EX DE, HL
 	RET
 htonl:
+	RET
 ntohl:
 	RET
 ntohs:
-	LD E, H
-	LD D, E
-	LD E, L
+	EX DE, HL
 	RET
 ```
 
