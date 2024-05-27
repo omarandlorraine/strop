@@ -4,15 +4,11 @@
 use crate::Instruction;
 use rand::random;
 
-type Encoding6502 = [u8; 3];
-
 /// Takes an instruction, and returns another instruction with the same opcode, but a random
 /// operand.
 pub fn randomize_operand(instruction: Cmos6502Instruction) -> Cmos6502Instruction {
     let opcode = instruction.encode()[0];
-    Cmos6502Instruction {
-        encoding: [opcode, random(), random()],
-    }
+    Cmos6502Instruction([opcode, random(), random()])
 }
 
 /// Takes an instruction, and increments the operand.
@@ -29,9 +25,7 @@ fn increment_opcode(instruction: Cmos6502Instruction) -> Option<Cmos6502Instruct
         return None;
     }
 
-    Some(Cmos6502Instruction {
-        encoding: [CMOS_OPCODES[index], 0, 0],
-    })
+    Some(Cmos6502Instruction([CMOS_OPCODES[index], 0, 0]))
 }
 
 const CMOS_OPCODES: [u8; 178] = [
@@ -51,27 +45,17 @@ const CMOS_OPCODES: [u8; 178] = [
 
 /// A struct representing one MOS 6502 instruction
 #[derive(Clone, Copy, Default, Debug, PartialEq, PartialOrd)]
-pub struct Cmos6502Instruction {
-    encoding: Encoding6502,
-}
+pub struct Cmos6502Instruction([u8; 3]);
 
 impl std::convert::TryFrom<&[u8]> for Cmos6502Instruction {
     type Error = ();
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        let temp = Self {
-            encoding: [value[0], 0, 0],
-        };
+        let temp = Self([value[0], 0, 0]);
         match temp.length() {
-            1 => Ok(Self {
-                encoding: [value[0], 0, 0],
-            }),
-            2 => Ok(Self {
-                encoding: [value[0], value[1], 0],
-            }),
-            3 => Ok(Self {
-                encoding: [value[0], value[1], value[2]],
-            }),
+            1 => Ok(Self([value[0], 0, 0])),
+            2 => Ok(Self([value[0], value[1], 0])),
+            3 => Ok(Self([value[0], value[1], value[2]])),
             _ => Err(()),
         }
     }
@@ -81,7 +65,7 @@ impl Cmos6502Instruction {
     /// Returns the length of the instruction in bytes. And a 6502 instruction is always either 1,
     /// 2 or 3 bytes.
     pub fn length(&self) -> usize {
-        match self.encoding[0] {
+        match self.0[0] {
             0x04 | 0x64 | 0x74 | 0x72 | 0x32 | 0xd2 | 0x52 | 0xb2 | 0x12 | 0xf2 | 0x92 | 0x14 => 2,
             0x01 | 0x03 | 0x34 | 0x89 | 0x80 | 0x05..=0x07 | 0x09 | 0x0b | 0x10 | 0x11 | 0x13 => 2,
             0x0c | 0x1c | 0x3c | 0x3a | 0x7c | 0x0d | 0x0e | 0x0f | 0x19 | 0x1b | 0x1d..=0x20 => 3,
@@ -104,26 +88,25 @@ impl Cmos6502Instruction {
 
     /// Returns a new Cmos6502Instruction, from the encoding
     pub fn new(encoding: [u8; 3]) -> Self {
-        Self { encoding }
+        Self(encoding)
     }
 }
 
 impl Instruction for Cmos6502Instruction {
     fn random() -> Self {
-        use rand::seq::SliceRandom;
-        let encoding: [u8; 3] = [
+        use rand::prelude::SliceRandom;
+        Self([
             *CMOS_OPCODES.choose(&mut rand::thread_rng()).unwrap(),
             random(),
             random(),
-        ];
-        Self { encoding }
+        ])
     }
 
     fn encode(self) -> Vec<u8> {
         match self.length() {
-            1 => vec![self.encoding[0]],
-            2 => vec![self.encoding[0], self.encoding[1]],
-            3 => vec![self.encoding[0], self.encoding[1], self.encoding[2]],
+            1 => vec![self.0[0]],
+            2 => vec![self.0[0], self.0[1]],
+            3 => vec![self.0[0], self.0[1], self.0[2]],
             _ => panic!(),
         }
     }
@@ -131,17 +114,15 @@ impl Instruction for Cmos6502Instruction {
     fn mutate(&mut self) {
         if random() {
             use rand::prelude::SliceRandom;
-            self.encoding[0] = *CMOS_OPCODES.choose(&mut rand::thread_rng()).unwrap();
+            self.0[0] = *CMOS_OPCODES.choose(&mut rand::thread_rng()).unwrap();
         } else {
-            self.encoding[1] = random();
-            self.encoding[2] = random();
+            self.0[1] = random();
+            self.0[2] = random();
         }
     }
 
     fn first() -> Self {
-        Self {
-            encoding: [0, 0, 0],
-        }
+        Self([0, 0, 0])
     }
 
     fn increment(&mut self) -> Option<Self> {
@@ -152,20 +133,20 @@ impl Instruction for Cmos6502Instruction {
         }
 
         fn next_lobyte(insn: &mut Cmos6502Instruction) -> Option<Cmos6502Instruction> {
-            insn.encoding[1] = insn.encoding[1].wrapping_add(1); // ready for next call
-            if insn.encoding[1] == 0 {
+            insn.0[1] = insn.0[1].wrapping_add(1); // ready for next call
+            if insn.0[1] == 0 {
                 next_opcode(insn)
             } else {
-                Some(Cmos6502Instruction::new(insn.encoding))
+                Some(Cmos6502Instruction::new(insn.0))
             }
         }
 
         fn next_hibyte(insn: &mut Cmos6502Instruction) -> Option<Cmos6502Instruction> {
-            insn.encoding[2] = insn.encoding[2].wrapping_add(1); // ready for next call
-            if insn.encoding[2] == 0 {
+            insn.0[2] = insn.0[2].wrapping_add(1); // ready for next call
+            if insn.0[2] == 0 {
                 next_lobyte(insn)
             } else {
-                Some(Cmos6502Instruction::new(insn.encoding))
+                Some(Cmos6502Instruction::new(insn.0))
             }
         }
 
@@ -175,7 +156,7 @@ impl Instruction for Cmos6502Instruction {
             3 => next_hibyte(self),
             _ => unreachable!(
                 "Opcode {}, whose opcode is ${:02x}, has length {}",
-                self, self.encoding[0], length
+                self, self.0[0], length
             ),
         }
     }
@@ -558,41 +539,41 @@ mod disassembly {
 
     impl std::fmt::Display for Cmos6502Instruction {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-            match self.encoding[0] {
-                0x72 => zpi(f, "adc", self.encoding),
-                0x32 => zpi(f, "and", self.encoding),
-                0xd2 => zpi(f, "cmp", self.encoding),
-                0x52 => zpi(f, "eor", self.encoding),
-                0xb2 => zpi(f, "lda", self.encoding),
-                0x12 => zpi(f, "ora", self.encoding),
-                0xf2 => zpi(f, "sbc", self.encoding),
-                0x92 => zpi(f, "sta", self.encoding),
+            match self.0[0] {
+                0x72 => zpi(f, "adc", self.0),
+                0x32 => zpi(f, "and", self.0),
+                0xd2 => zpi(f, "cmp", self.0),
+                0x52 => zpi(f, "eor", self.0),
+                0xb2 => zpi(f, "lda", self.0),
+                0x12 => zpi(f, "ora", self.0),
+                0xf2 => zpi(f, "sbc", self.0),
+                0x92 => zpi(f, "sta", self.0),
 
-                0x04 => zp(f, "tsb", self.encoding),
-                0x14 => zp(f, "trb", self.encoding),
-                0x0c => abs(f, "tsb", self.encoding),
-                0x1c => abs(f, "trb", self.encoding),
+                0x04 => zp(f, "tsb", self.0),
+                0x14 => zp(f, "trb", self.0),
+                0x0c => abs(f, "tsb", self.0),
+                0x1c => abs(f, "trb", self.0),
 
-                0x3a => acc(f, "dec", self.encoding),
-                0x1a => acc(f, "inc", self.encoding),
+                0x3a => acc(f, "dec", self.0),
+                0x1a => acc(f, "inc", self.0),
 
-                0x34 => zpx(f, "bit", self.encoding),
-                0x3c => absx(f, "bit", self.encoding),
+                0x34 => zpx(f, "bit", self.0),
+                0x3c => absx(f, "bit", self.0),
 
-                0xda => implied(f, "phx", self.encoding),
-                0x5a => implied(f, "phy", self.encoding),
-                0xfa => implied(f, "plx", self.encoding),
-                0x7a => implied(f, "ply", self.encoding),
+                0xda => implied(f, "phx", self.0),
+                0x5a => implied(f, "phy", self.0),
+                0xfa => implied(f, "plx", self.0),
+                0x7a => implied(f, "ply", self.0),
 
-                0x64 => zp(f, "stz", self.encoding),
-                0x74 => zpx(f, "stz", self.encoding),
-                0x9c => abs(f, "stz", self.encoding),
-                0x9e => absx(f, "stz", self.encoding),
-                0x7c => absix(f, "jmp", self.encoding),
-                0x80 => relative(f, "bra", self.encoding),
-                0x89 => imm(f, "bit", self.encoding),
+                0x64 => zp(f, "stz", self.0),
+                0x74 => zpx(f, "stz", self.0),
+                0x9c => abs(f, "stz", self.0),
+                0x9e => absx(f, "stz", self.0),
+                0x7c => absix(f, "jmp", self.0),
+                0x80 => relative(f, "bra", self.0),
+                0x89 => imm(f, "bit", self.0),
 
-                _ => common_disassembly(f, self.encoding),
+                _ => common_disassembly(f, self.0),
             }
         }
     }
