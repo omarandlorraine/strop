@@ -25,7 +25,7 @@ pub mod search;
 #[cfg(feature = "z80")]
 pub mod z80;
 
-mod hamming;
+mod scalar;
 
 pub use crate::search::BruteForceSearch;
 pub use crate::search::SearchTrace;
