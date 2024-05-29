@@ -15,10 +15,9 @@ iz80 = {version="0.4.0", optional=true}
 mos6502 = {version="0.5.0", optional=true}
 num = "0.4.1"
 rand = "0.8.5"
-robo6502 = {version="0.3.2", optional=true}
 
 [features]
 default=["armv4t", "mos6502", "z80"]
 armv4t=["armv4t_emu"]
-mos6502=["dep:mos6502", "robo6502"]
+mos6502=["dep:mos6502"]
 z80=["dez80", "iz80"]
