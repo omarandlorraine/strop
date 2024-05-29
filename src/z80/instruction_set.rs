@@ -97,6 +97,12 @@ impl Z80Instruction {
             _ => None,
         }
     }
+
+    /// Gets the next instruction by incrementing the first byte (which would normally be the
+    /// opcode, but could also be a prefix).
+    pub fn increment_opcode(&self) -> Option<Self> {
+        Some(Z80Instruction([self.0[0].checked_add(1)?, 0, 0, 0, 0]))
+    }
 }
 
 impl Instruction for Z80Instruction {
