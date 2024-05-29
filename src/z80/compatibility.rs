@@ -1,6 +1,5 @@
 use crate::z80::Z80Instruction;
 use crate::Fixup;
-use crate::Instruction;
 
 /// Fixup ensuring that the Z80 instruction is present on the Intel 8080
 #[derive(Debug)]
