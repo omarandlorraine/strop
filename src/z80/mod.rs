@@ -1,6 +1,7 @@
 //! The Z80 backend (can of course also be used to generate code for the Intel 8080 or the SM83).
 #![allow(dead_code)] // TODO: enable this lint
 
+mod compatibility;
 pub mod emulators;
 pub mod instruction_set;
 pub mod testers;
@@ -17,6 +18,9 @@ const RETI: SingleInstruction<Z80Instruction> =
     SingleInstruction(Z80Instruction::new([0xed, 0x4d, 0, 0, 0]));
 const RETN: SingleInstruction<Z80Instruction> =
     SingleInstruction(Z80Instruction::new([0xed, 0x45, 0, 0, 0]));
+
+pub use compatibility::I8080Compatibility;
+pub use compatibility::Sm83Compatibility;
 
 #[derive(Clone, Debug)]
 struct Subroutine<S: SearchAlgorithm<Item = Z80Instruction>>(S);
