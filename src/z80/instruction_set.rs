@@ -103,6 +103,120 @@ impl Z80Instruction {
     pub fn increment_opcode(&self) -> Option<Self> {
         Some(Z80Instruction([self.0[0].checked_add(1)?, 0, 0, 0, 0]))
     }
+
+    /// Returns true if the opcode is present on the Intel 8080
+    pub fn opcode_present_on_8080(&self) -> bool {
+        // excludes the opcodes:
+        //  - `ex af,af'` and `exx`
+        //  - the relative jumps
+        //  - `djnz`
+        !matches!(
+            self.0[0],
+            0x08 | 0x10 | 0x18 | 0x20 | 0x28 | 0x30 | 0x38 | 0xd9 | 0xcb | 0xed | 0xdd | 0xfd
+        )
+    }
+
+    /// Returns true if the opcode is present on the SM83
+    pub fn opcode_present_on_sm83(&self) -> bool {
+        // this information is sourced from https://gbdev.io/pandocs/CPU_Comparison_with_Z80.html
+        // excludes the opcodes:
+        // 08	ex af,af
+        // 10	djnz pc+dd
+        // 22	ld (nn),hl
+        // 2A	ld hl,(nn)
+        // 32	ld (nn),a
+        // 3A	ld a,(nn)
+        // D3	out (n),a
+        // D9	exx
+        // DB	in a,(n)
+        // DD	<IX> prefix
+        // E0	ret po
+        // E2	jp po,nn
+        // E3	ex (sp),hl
+        // E4	call p0,nn
+        // E8	ret pe
+        // EA	jp pe,nn
+        // EB	ex de,hl
+        // EC	call pe,nn
+        // ED	<prefix>
+        // F0	ret p
+        // F2	jp p,nn
+        // F4	call p,nn
+        // F8	ret m
+        // FA	jp m,nn
+        // FC	call m,nn
+        // FD	<IY> prefix
+        // CB 3X	sll <something>
+        match self.0[0] {
+            0x08 | 0x10 | 0x22 | 0x2a | 0x32 | 0x3a | 0xd3 | 0xd9 | 0xdb | 0xdd | 0xe0 | 0xe2
+            | 0xe3 | 0xe4 | 0xe8 | 0xea | 0xeb | 0xec | 0xed | 0xf0 | 0xf2 | 0xf4 | 0xf8 | 0xfa
+            | 0xfc | 0xfd => false,
+            0xcb => self.0[1] & 0xf0 != 0x30,
+            _ => true,
+        }
+    }
+
+    /// returns true if the instruction is documented by Zilog (i.e., it is not an undocumented
+    /// instruction)
+    pub fn opcode_is_documented(&self) -> bool {
+        // this information is sourced from http://www.z80.info/z80undoc.htm
+        if matches!(self.0[0], 0xdd | 0xfd) {
+            if matches!(
+                self.0[1],
+                0x24 | 0x25
+                    | 0x26
+                    | 0x2c
+                    | 0x2d
+                    | 0x2e
+                    | 0x44
+                    | 0x45
+                    | 0x4c
+                    | 0x4d
+                    | 0x54
+                    | 0x55
+                    | 0x5c
+                    | 0x5d
+                    | 0x60
+                    | 0x61
+                    | 0x62
+                    | 0x63
+                    | 0x64
+                    | 0x65
+                    | 0x67
+                    | 0x68
+                    | 0x69
+                    | 0x6a
+                    | 0x6b
+                    | 0x6c
+                    | 0x6d
+                    | 0x6f
+                    | 0x7c
+                    | 0x7d
+                    | 0x84
+                    | 0x85
+                    | 0x8c
+                    | 0x8d
+                    | 0x94
+                    | 0x95
+                    | 0x9c
+                    | 0x9d
+                    | 0xa4
+                    | 0xa5
+                    | 0xac
+                    | 0xad
+                    | 0xb4
+                    | 0xb5
+                    | 0xbc
+                    | 0xbd
+            ) {
+                // it's an instruction which uses the individual halves of the IX and IY register
+                // these instructions trap on an HD64180 IIRC
+                return false;
+            }
+        }
+        // TODO: There's more to come here.
+        true
+    }
 }
 
 impl Instruction for Z80Instruction {
