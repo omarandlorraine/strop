@@ -159,55 +159,14 @@ impl Z80Instruction {
     /// returns true if the instruction is documented by Zilog (i.e., it is not an undocumented
     /// instruction)
     pub fn opcode_is_documented(&self) -> bool {
+        #[allow(clippy::collapsible_if)]
         // this information is sourced from http://www.z80.info/z80undoc.htm
         if matches!(self.0[0], 0xdd | 0xfd) {
             if matches!(
                 self.0[1],
-                0x24 | 0x25
-                    | 0x26
-                    | 0x2c
-                    | 0x2d
-                    | 0x2e
-                    | 0x44
-                    | 0x45
-                    | 0x4c
-                    | 0x4d
-                    | 0x54
-                    | 0x55
-                    | 0x5c
-                    | 0x5d
-                    | 0x60
-                    | 0x61
-                    | 0x62
-                    | 0x63
-                    | 0x64
-                    | 0x65
-                    | 0x67
-                    | 0x68
-                    | 0x69
-                    | 0x6a
-                    | 0x6b
-                    | 0x6c
-                    | 0x6d
-                    | 0x6f
-                    | 0x7c
-                    | 0x7d
-                    | 0x84
-                    | 0x85
-                    | 0x8c
-                    | 0x8d
-                    | 0x94
-                    | 0x95
-                    | 0x9c
-                    | 0x9d
-                    | 0xa4
-                    | 0xa5
-                    | 0xac
-                    | 0xad
-                    | 0xb4
-                    | 0xb5
-                    | 0xbc
-                    | 0xbd
+                0x24..=0x26 | 0x2c..=0x2e | 0x44..=0x45 | 0x4c | 0x4d | 0x54 | 0x55 | 0x5c | 0x5d
+                | 0x60..=0x65 | 0x67..=0x6d | 0x6f | 0x7c | 0x7d | 0x84 | 0x85 | 0x8c | 0x8d | 0x94 | 0x95
+                | 0x9c | 0x9d | 0xa4 | 0xa5 | 0xac | 0xad | 0xb4 | 0xb5 | 0xbc | 0xbd
             ) {
                 // it's an instruction which uses the individual halves of the IX and IY register
                 // these instructions trap on an HD64180 IIRC
