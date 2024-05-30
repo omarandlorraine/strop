@@ -1,7 +1,7 @@
 //! Superoptimizer written in Rust
 //! ------------------------------
 //! This program stochastically generates assembly language programs that compute a given function.
-//! Strop provides mechanisms for generating programs, and mutating them is ways that
+//! Strop provides mechanisms for generating programs, and mutating them in ways that
 //! stochastically approach the desired output.
 //!
 //! Another way to describe strop, is that it randomly generates pretty good assembly programs.
@@ -20,12 +20,11 @@ pub mod armv4t;
 #[cfg(feature = "mos6502")]
 pub mod mos6502;
 
-pub mod search;
-
 #[cfg(feature = "z80")]
 pub mod z80;
 
 mod scalar;
+pub mod search;
 
 pub use crate::search::BruteForceSearch;
 pub use crate::search::SearchTrace;
