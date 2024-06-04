@@ -32,6 +32,7 @@ pub use crate::search::StochasticSearch;
 
 use rand::Rng;
 use std::convert::TryInto;
+mod range;
 
 /// An object implementing this trait is a static analysis on the instruction level. Usefully culls
 /// the search space by eliminating instructions not present on a particular model, or instructions
@@ -123,6 +124,19 @@ impl<I: Instruction + std::fmt::Debug> crate::Fixup<I> for FixupGroup<I> {
             Some(insn)
         }
     }
+}
+
+/// A trait for describing ranges. (This is part of the static analysis making sure that a program
+/// does not access memory or other address spaces outside of a specified range).
+pub trait Range<T> {
+    /// Returns a random T from the range
+    fn random(&self) -> T;
+
+    /// Returns the smallest `T` in the range that's greater than `t`.
+    fn next(&self, t: T) -> Option<T>;
+
+    /// returns `true` iff `t` is in the Range
+    fn check(&self, t: T) -> bool;
 }
 
 pub trait Instruction:
