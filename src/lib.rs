@@ -47,6 +47,25 @@ pub trait Fixup<I: Instruction>: std::fmt::Debug {
     fn check(&self, insn: I) -> bool;
 }
 
+/// A fixup that doesn't do anything.
+#[derive(Clone, Debug)]
+pub struct DummyFixup;
+
+impl<I: Instruction> crate::Fixup<I> for DummyFixup {
+    fn check(&self, _insn: I) -> bool {
+        false
+    }
+
+    fn next(&self, insn: I) -> Option<I> {
+        let mut copy = insn;
+        copy.increment()
+    }
+
+    fn random(&self, _insn: I) -> I {
+        I::random()
+    }
+}
+
 /// A fixup (see the Fixup trait) which yields exactly one instruction. Useful for ensuring that,
 /// for example, an interrupt handler ends in that architecture's "Return From Interrupt"
 /// instruction.

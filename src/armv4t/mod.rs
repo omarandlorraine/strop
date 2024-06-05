@@ -14,8 +14,9 @@ mod test {
         use crate::BruteForceSearch;
         use crate::Emulator;
         use crate::SearchAlgorithm;
+        use crate::DummyFixup;
 
-        for candidate in BruteForceSearch::<Thumb>::new().iter() {
+        for candidate in BruteForceSearch::<Thumb, DummyFixup>::new(DummyFixup).iter() {
             if candidate.length() > 1 {
                 break; //TODO
             }
