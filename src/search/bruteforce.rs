@@ -12,7 +12,9 @@ pub struct BruteForceSearch<I: Instruction + PartialOrd + PartialEq, F: Fixup<I>
     fixup: F,
 }
 
-impl<I: Instruction + std::cmp::PartialOrd, F: Fixup<I> + Clone> SearchAlgorithm for BruteForceSearch<I, F> {
+impl<I: Instruction + std::cmp::PartialOrd, F: Fixup<I> + Clone> SearchAlgorithm
+    for BruteForceSearch<I, F>
+{
     type Item = I;
     fn score(&mut self, _: f32) {}
 
@@ -50,7 +52,9 @@ impl<I: Instruction + std::cmp::PartialOrd, F: Fixup<I> + Clone> SearchAlgorithm
     }
 }
 
-impl<I: Instruction + std::cmp::PartialOrd + std::cmp::PartialEq, F: Fixup<I> + Clone> BruteForceSearch<I, F> {
+impl<I: Instruction + std::cmp::PartialOrd + std::cmp::PartialEq, F: Fixup<I> + Clone>
+    BruteForceSearch<I, F>
+{
     /// Returns a new `BruteForceSearch<I>`
     pub fn new(fixup: F) -> Self {
         Self {

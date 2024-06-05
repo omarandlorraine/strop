@@ -2,7 +2,7 @@ use crate::Range;
 use rand::prelude::SliceRandom;
 use rand::Rng;
 
-impl<T: std::cmp::PartialOrd + Ord + Copy> Range<T> for Vec<T> {
+impl<T: std::cmp::PartialOrd + Ord + Copy + std::fmt::Display> Range<T> for Vec<T> {
     fn random(&self) -> T {
         *self.choose(&mut rand::thread_rng()).unwrap()
     }
