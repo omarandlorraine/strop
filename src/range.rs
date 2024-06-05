@@ -12,7 +12,7 @@ impl<T: std::cmp::PartialOrd + Ord + Copy> Range<T> for Vec<T> {
     }
 
     fn check(&self, t: T) -> bool {
-        self.contains(&t)
+        !self.contains(&t)
     }
 }
 

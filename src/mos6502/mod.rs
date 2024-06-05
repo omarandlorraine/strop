@@ -3,7 +3,7 @@
 pub mod emulators;
 pub mod instruction_set;
 
-use crate::mos6502::instruction_set::Cmos6502Instruction;
+pub use crate::mos6502::instruction_set::Cmos6502Instruction;
 use crate::Fixup;
 
 /// A fixup ensuring compatibility with the very early chips, before the ROR instruction was
