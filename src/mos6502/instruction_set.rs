@@ -420,7 +420,7 @@ impl Instruction for Cmos6502Instruction {
                 let le_bytes = new_operand.to_le_bytes();
                 insn.0[1] = le_bytes[0];
                 insn.0[2] = le_bytes[1];
-                Some(insn.clone())
+                Some(*insn)
             } else {
                 next_opcode(insn)
             }
