@@ -301,6 +301,8 @@ impl Cmos6502Instruction {
     }
 }
 
+/// A fixup for making sure that the instruction, if it writes to memory, has an operand in the
+/// specified range.
 #[derive(Clone, Debug)]
 pub struct Writes<T: Range<u16> + std::fmt::Debug>(pub T);
 
@@ -333,6 +335,8 @@ impl<T: Range<u16> + std::fmt::Debug> Fixup<Cmos6502Instruction> for Writes<T> {
     }
 }
 
+/// A fixup for making sure that the instruction, if it reads from memory, has an operand in the
+/// specified range.
 #[derive(Clone, Debug)]
 pub struct Reads<T: Range<u16> + std::fmt::Debug>(pub T);
 
