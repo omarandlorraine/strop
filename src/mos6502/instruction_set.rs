@@ -894,6 +894,7 @@ mod test {
         use crate::mos6502::instruction_set::Cmos6502Instruction;
         use crate::mos6502::instruction_set::Reads;
         use crate::Fixup;
+        assert!(!Reads(vec![0]).check(Cmos6502Instruction([0x84, 0, 0])));
         assert!(!Reads(vec![0]).check(Cmos6502Instruction([0xa5, 0, 0])));
         assert!(!Reads(vec![1]).check(Cmos6502Instruction([0x1, 1, 0])));
         assert!(Reads(vec![5]).check(Cmos6502Instruction([0x1, 1, 0])));
