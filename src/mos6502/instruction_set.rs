@@ -1,8 +1,209 @@
 //! A module representing the MOS 6502's instruction set in a way that facilitates its use by
 //! strop.
 
+use crate::Fixup;
 use crate::Instruction;
+use crate::Range;
 use rand::random;
+
+fn take_apart(
+    cmos_insn: Cmos6502Instruction,
+) -> Option<(
+    mos6502::instruction::Instruction,
+    mos6502::instruction::AddressingMode,
+)> {
+    use mos6502::Variant;
+    mos6502::instruction::Nmos6502::decode(cmos_insn.encode()[0])
+}
+
+fn instruction_writes(
+    i: Cmos6502Instruction,
+    insn: (
+        mos6502::instruction::Instruction,
+        mos6502::instruction::AddressingMode,
+    ),
+) -> Option<u16> {
+    use mos6502::instruction::AddressingMode;
+    use mos6502::instruction::Instruction;
+
+    let (instruction, operand) = insn;
+    match (instruction, operand) {
+        (Instruction::ADC, _) => None,
+        (Instruction::ADCnd, _) => None,
+        (Instruction::AND, _) => None,
+        (Instruction::BIT, _) => None,
+        (Instruction::BCC, _) => None,
+        (Instruction::BCS, _) => None,
+        (Instruction::BEQ, _) => None,
+        (Instruction::BMI, _) => None,
+        (Instruction::BPL, _) => None,
+        (Instruction::BNE, _) => None,
+        (Instruction::BRK, _) => None,
+        (Instruction::BVC, _) => None,
+        (Instruction::BVS, _) => None,
+        (Instruction::CMP, _) => None,
+        (Instruction::CPX, _) => None,
+        (Instruction::CPY, _) => None,
+        (Instruction::CLC, _) => None,
+        (Instruction::CLD, _) => None,
+        (Instruction::CLI, _) => None,
+        (Instruction::SEC, _) => None,
+        (Instruction::SED, _) => None,
+        (Instruction::SEI, _) => None,
+        (Instruction::CLV, _) => None,
+        (Instruction::DEX, _) => None,
+        (Instruction::DEY, _) => None,
+        (Instruction::EOR, _) => None,
+        (Instruction::INX, _) => None,
+        (Instruction::INY, _) => None,
+        (Instruction::JMP, _) => None,
+        (Instruction::JSR, _) => None,
+        (Instruction::LDA, _) => None,
+        (Instruction::LDX, _) => None,
+        (Instruction::LDY, _) => None,
+        (Instruction::NOP, _) => None,
+        (Instruction::PHA, _) => None,
+        (Instruction::PHP, _) => None,
+        (Instruction::PLA, _) => None,
+        (Instruction::PLP, _) => None,
+        (Instruction::RTI, _) => None,
+        (Instruction::RTS, _) => None,
+        (Instruction::SBC, _) => None,
+        (Instruction::SBCnd, _) => None,
+        (Instruction::TAY, _) => None,
+        (Instruction::TAX, _) => None,
+        (Instruction::TSX, _) => None,
+        (Instruction::TXA, _) => None,
+        (Instruction::TYA, _) => None,
+        (Instruction::TXS, _) => None,
+        (Instruction::ORA, _) => None,
+        (
+            Instruction::STA
+            | Instruction::STX
+            | Instruction::STY
+            | Instruction::ASL
+            | Instruction::DEC
+            | Instruction::INC
+            | Instruction::LSR
+            | Instruction::ROL
+            | Instruction::ROR,
+            operand,
+        ) => {
+            let encoding = i.encode();
+            let one = [encoding[1], 0];
+            let two = [encoding[1], encoding[2]];
+            match operand {
+                AddressingMode::Absolute => Some(u16::from_le_bytes(two)),
+                AddressingMode::AbsoluteX => Some(u16::from_le_bytes(two)),
+                AddressingMode::AbsoluteY => Some(u16::from_le_bytes(two)),
+                AddressingMode::Accumulator => None,
+                AddressingMode::Immediate => None,
+                AddressingMode::Indirect => None,
+                AddressingMode::IndexedIndirectX => Some(u16::from_le_bytes(one)),
+                AddressingMode::IndirectIndexedY => Some(u16::from_le_bytes(one)),
+                AddressingMode::Implied => None,
+                AddressingMode::Relative => None,
+                AddressingMode::ZeroPage => Some(u16::from_le_bytes(one)),
+                AddressingMode::ZeroPageX => Some(u16::from_le_bytes(one)),
+                AddressingMode::ZeroPageY => Some(u16::from_le_bytes(one)),
+            }
+        }
+    }
+}
+
+fn instruction_reads(
+    i: Cmos6502Instruction,
+    insn: (
+        mos6502::instruction::Instruction,
+        mos6502::instruction::AddressingMode,
+    ),
+) -> Option<u16> {
+    use mos6502::instruction::AddressingMode;
+    use mos6502::instruction::Instruction;
+
+    let (instruction, operand) = insn;
+    match (instruction, operand) {
+        (Instruction::STA, _) => None,
+        (Instruction::STX, _) => None,
+        (Instruction::STY, _) => None,
+        (Instruction::BCC, _) => None,
+        (Instruction::BCS, _) => None,
+        (Instruction::BEQ, _) => None,
+        (Instruction::BMI, _) => None,
+        (Instruction::BPL, _) => None,
+        (Instruction::BNE, _) => None,
+        (Instruction::BRK, _) => None,
+        (Instruction::BVC, _) => None,
+        (Instruction::BVS, _) => None,
+        (Instruction::CLC, _) => None,
+        (Instruction::CLD, _) => None,
+        (Instruction::CLI, _) => None,
+        (Instruction::SEC, _) => None,
+        (Instruction::SED, _) => None,
+        (Instruction::SEI, _) => None,
+        (Instruction::CLV, _) => None,
+        (Instruction::DEX, _) => None,
+        (Instruction::DEY, _) => None,
+        (Instruction::INX, _) => None,
+        (Instruction::INY, _) => None,
+        (Instruction::JMP, _) => None,
+        (Instruction::JSR, _) => None,
+        (Instruction::NOP, _) => None,
+        (Instruction::PHA, _) => None,
+        (Instruction::PHP, _) => None,
+        (Instruction::PLA, _) => None,
+        (Instruction::PLP, _) => None,
+        (Instruction::RTI, _) => None,
+        (Instruction::RTS, _) => None,
+        (Instruction::TAY, _) => None,
+        (Instruction::TAX, _) => None,
+        (Instruction::TSX, _) => None,
+        (Instruction::TXA, _) => None,
+        (Instruction::TYA, _) => None,
+        (Instruction::TXS, _) => None,
+        (
+            Instruction::ADC
+            | Instruction::ADCnd
+            | Instruction::AND
+            | Instruction::ASL
+            | Instruction::BIT
+            | Instruction::CMP
+            | Instruction::CPX
+            | Instruction::CPY
+            | Instruction::DEC
+            | Instruction::EOR
+            | Instruction::INC
+            | Instruction::LDA
+            | Instruction::LDX
+            | Instruction::LDY
+            | Instruction::LSR
+            | Instruction::ROL
+            | Instruction::ROR
+            | Instruction::SBC
+            | Instruction::SBCnd
+            | Instruction::ORA,
+            operand,
+        ) => {
+            let one = [i.0[1], 0];
+            let two = [i.0[1], i.0[2]];
+            match operand {
+                AddressingMode::Absolute => Some(u16::from_le_bytes(two)),
+                AddressingMode::AbsoluteX => Some(u16::from_le_bytes(two)),
+                AddressingMode::AbsoluteY => Some(u16::from_le_bytes(two)),
+                AddressingMode::Accumulator => None,
+                AddressingMode::Immediate => None,
+                AddressingMode::Indirect => None,
+                AddressingMode::IndexedIndirectX => Some(u16::from_le_bytes(one)),
+                AddressingMode::IndirectIndexedY => Some(u16::from_le_bytes(one)),
+                AddressingMode::Implied => None,
+                AddressingMode::Relative => None,
+                AddressingMode::ZeroPage => Some(u16::from_le_bytes(one)),
+                AddressingMode::ZeroPageX => Some(u16::from_le_bytes(one)),
+                AddressingMode::ZeroPageY => Some(u16::from_le_bytes(one)),
+            }
+        }
+    }
+}
 
 /// Takes an instruction, and returns another instruction with the same opcode, but a random
 /// operand.
@@ -90,6 +291,82 @@ impl Cmos6502Instruction {
     pub fn new(encoding: [u8; 3]) -> Self {
         Self(encoding)
     }
+
+    fn reads_from(self) -> Option<u16> {
+        instruction_reads(self, take_apart(self)?)
+    }
+
+    fn writes_to(self) -> Option<u16> {
+        instruction_writes(self, take_apart(self)?)
+    }
+}
+
+/// A fixup for making sure that the instruction, if it writes to memory, has an operand in the
+/// specified range.
+#[derive(Clone, Debug)]
+pub struct Writes<T: Range<u16> + std::fmt::Debug>(pub T);
+
+impl<T: Range<u16> + std::fmt::Debug> Fixup<Cmos6502Instruction> for Writes<T> {
+    fn check(&self, insn: Cmos6502Instruction) -> bool {
+        if let Some(addr) = insn.writes_to() {
+            self.0.check(addr)
+        } else {
+            // this instruction doesn't read from anywhere, so there's nothing to fix up
+            false
+        }
+    }
+
+    fn random(&self, insn: Cmos6502Instruction) -> Cmos6502Instruction {
+        let [lo, hi] = self.0.random().to_le_bytes();
+        Cmos6502Instruction([insn.0[0], lo, hi])
+    }
+
+    fn next(&self, insn: Cmos6502Instruction) -> Option<Cmos6502Instruction> {
+        if let Some(addr) = insn.reads_from() {
+            if let Some(addr) = self.0.next(addr) {
+                let [lo, hi] = addr.to_le_bytes();
+                Some(Cmos6502Instruction([insn.0[0], lo, hi]))
+            } else {
+                self.next(increment_opcode(insn)?)
+            }
+        } else {
+            self.next(increment_opcode(insn)?)
+        }
+    }
+}
+
+/// A fixup for making sure that the instruction, if it reads from memory, has an operand in the
+/// specified range.
+#[derive(Clone, Debug)]
+pub struct Reads<T: Range<u16> + std::fmt::Debug>(pub T);
+
+impl<T: Range<u16> + std::fmt::Debug> Fixup<Cmos6502Instruction> for Reads<T> {
+    fn check(&self, insn: Cmos6502Instruction) -> bool {
+        if let Some(addr) = insn.reads_from() {
+            self.0.check(addr)
+        } else {
+            // this instruction doesn't read from anywhere, so there's nothing to fix up
+            false
+        }
+    }
+
+    fn random(&self, insn: Cmos6502Instruction) -> Cmos6502Instruction {
+        let [lo, hi] = self.0.random().to_le_bytes();
+        Cmos6502Instruction([insn.0[0], lo, hi])
+    }
+
+    fn next(&self, insn: Cmos6502Instruction) -> Option<Cmos6502Instruction> {
+        if let Some(addr) = insn.reads_from() {
+            if let Some(addr) = self.0.next(addr) {
+                let [lo, hi] = addr.to_le_bytes();
+                Some(Cmos6502Instruction([insn.0[0], lo, hi]))
+            } else {
+                self.next(increment_opcode(insn)?)
+            }
+        } else {
+            self.next(increment_opcode(insn)?)
+        }
+    }
 }
 
 impl Instruction for Cmos6502Instruction {
@@ -132,7 +409,7 @@ impl Instruction for Cmos6502Instruction {
             increment_opcode(*insn)
         }
 
-        fn next_lobyte(insn: &mut Cmos6502Instruction) -> Option<Cmos6502Instruction> {
+        fn next2(insn: &mut Cmos6502Instruction) -> Option<Cmos6502Instruction> {
             insn.0[1] = insn.0[1].wrapping_add(1); // ready for next call
             if insn.0[1] == 0 {
                 next_opcode(insn)
@@ -141,19 +418,22 @@ impl Instruction for Cmos6502Instruction {
             }
         }
 
-        fn next_hibyte(insn: &mut Cmos6502Instruction) -> Option<Cmos6502Instruction> {
-            insn.0[2] = insn.0[2].wrapping_add(1); // ready for next call
-            if insn.0[2] == 0 {
-                next_lobyte(insn)
+        fn next3(insn: &mut Cmos6502Instruction) -> Option<Cmos6502Instruction> {
+            let operand = u16::from_le_bytes([insn.0[1], insn.0[2]]);
+            if let Some(new_operand) = operand.checked_add(1) {
+                let le_bytes = new_operand.to_le_bytes();
+                insn.0[1] = le_bytes[0];
+                insn.0[2] = le_bytes[1];
+                Some(*insn)
             } else {
-                Some(Cmos6502Instruction::new(insn.0))
+                next_opcode(insn)
             }
         }
 
         match length {
             1 => next_opcode(self),
-            2 => next_lobyte(self),
-            3 => next_hibyte(self),
+            2 => next2(self),
+            3 => next3(self),
             _ => unreachable!(
                 "Opcode {}, whose opcode is ${:02x}, has length {}",
                 self, self.0[0], length
@@ -603,5 +883,24 @@ mod test {
                 panic!("Disassembly for {} has no semicolon", dasm);
             }
         }
+    }
+
+    #[test]
+    fn indx_reads_from() {
+        use crate::mos6502::instruction_set::Cmos6502Instruction;
+        assert_eq!(Cmos6502Instruction([0xa5, 0, 0]).reads_from(), Some(0));
+        assert_eq!(Cmos6502Instruction([0x1, 1, 0]).reads_from(), Some(1));
+        assert_eq!(Cmos6502Instruction([0x1, 5, 0]).reads_from(), Some(5));
+    }
+
+    #[test]
+    fn reads_from() {
+        use crate::mos6502::instruction_set::Cmos6502Instruction;
+        use crate::mos6502::instruction_set::Reads;
+        use crate::Fixup;
+        assert!(!Reads(vec![0]).check(Cmos6502Instruction([0x84, 0, 0])));
+        assert!(!Reads(vec![0]).check(Cmos6502Instruction([0xa5, 0, 0])));
+        assert!(!Reads(vec![1]).check(Cmos6502Instruction([0x1, 1, 0])));
+        assert!(Reads(vec![5]).check(Cmos6502Instruction([0x1, 1, 0])));
     }
 }

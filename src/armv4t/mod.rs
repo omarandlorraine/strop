@@ -12,10 +12,11 @@ mod test {
         use crate::armv4t::emulators::ArmV4T;
         use crate::armv4t::instruction_set::Thumb;
         use crate::BruteForceSearch;
+        use crate::DummyFixup;
         use crate::Emulator;
         use crate::SearchAlgorithm;
 
-        for candidate in BruteForceSearch::<Thumb>::new().iter() {
+        for candidate in BruteForceSearch::<Thumb, DummyFixup>::new(DummyFixup).iter() {
             if candidate.length() > 1 {
                 break; //TODO
             }

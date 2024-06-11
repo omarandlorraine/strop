@@ -1,7 +1,7 @@
 //! Superoptimizer written in Rust
 //! ------------------------------
 //! This program stochastically generates assembly language programs that compute a given function.
-//! Strop provides mechanisms for generating programs, and mutating them is ways that
+//! Strop provides mechanisms for generating programs, and mutating them in ways that
 //! stochastically approach the desired output.
 //!
 //! Another way to describe strop, is that it randomly generates pretty good assembly programs.
@@ -20,12 +20,11 @@ pub mod armv4t;
 #[cfg(feature = "mos6502")]
 pub mod mos6502;
 
-pub mod search;
-
 #[cfg(feature = "z80")]
 pub mod z80;
 
 mod scalar;
+pub mod search;
 
 pub use crate::search::BruteForceSearch;
 pub use crate::search::SearchTrace;
@@ -33,6 +32,7 @@ pub use crate::search::StochasticSearch;
 
 use rand::Rng;
 use std::convert::TryInto;
+mod range;
 
 /// An object implementing this trait is a static analysis on the instruction level. Usefully culls
 /// the search space by eliminating instructions not present on a particular model, or instructions
@@ -45,6 +45,25 @@ pub trait Fixup<I: Instruction>: std::fmt::Debug {
     fn next(&self, insn: I) -> Option<I>;
     /// Checks whether this fixup needs to alter this instruction
     fn check(&self, insn: I) -> bool;
+}
+
+/// A fixup that doesn't do anything.
+#[derive(Clone, Debug)]
+pub struct DummyFixup;
+
+impl<I: Instruction> crate::Fixup<I> for DummyFixup {
+    fn check(&self, _insn: I) -> bool {
+        false
+    }
+
+    fn next(&self, insn: I) -> Option<I> {
+        let mut copy = insn;
+        copy.increment()
+    }
+
+    fn random(&self, _insn: I) -> I {
+        I::random()
+    }
 }
 
 /// A fixup (see the Fixup trait) which yields exactly one instruction. Useful for ensuring that,
@@ -124,6 +143,19 @@ impl<I: Instruction + std::fmt::Debug> crate::Fixup<I> for FixupGroup<I> {
             Some(insn)
         }
     }
+}
+
+/// A trait for describing ranges. (This is part of the static analysis making sure that a program
+/// does not access memory or other address spaces outside of a specified range).
+pub trait Range<T> {
+    /// Returns a random T from the range
+    fn random(&self) -> T;
+
+    /// Returns the smallest `T` in the range that's greater than `t`.
+    fn next(&self, t: T) -> Option<T>;
+
+    /// returns `true` iff `t` is in the Range
+    fn check(&self, t: T) -> bool;
 }
 
 pub trait Instruction:
