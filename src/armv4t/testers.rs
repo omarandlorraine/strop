@@ -64,21 +64,21 @@ where
         None
     }
 
-    fn test1(&self, candidate: &Candidate<Thumb>, a: T, b: U) -> u32 {
+    fn test1(&self, candidate: &Candidate<Thumb>, a: T, b: U) -> f32 {
         use crate::Emulator;
         if let Some(result) = (self.func)(a, b) {
             let mut emu = ArmV4T::default();
             emu.set_r0(a.as_i32());
             emu.set_r1(b.as_i32());
             emu.run(0x8000, candidate);
-            result.hamming(emu.get_r0())
+            result.cmp(emu.get_r0()) as f32
         } else {
-            0
+            0.0
         }
     }
 
-    fn correctness(&self, candidate: &Candidate<Thumb>) -> u32 {
-        let mut score = 0;
+    fn correctness(&self, candidate: &Candidate<Thumb>) -> f32 {
+        let mut score = 0.0;
         // Try the values that have returned false before
         for inputs in &self.inputs {
             score += self.test1(candidate, inputs.0, inputs.1);
@@ -86,9 +86,9 @@ where
         score
     }
 
-    fn test(&mut self, candidate: &Candidate<Thumb>) -> u32 {
+    fn test(&mut self, candidate: &Candidate<Thumb>) -> f32 {
         let mut score = self.correctness(candidate);
-        if score > 0 {
+        if score > 0.0 {
             return score;
         }
 
@@ -101,6 +101,19 @@ where
             score += self.test1(candidate, a, b);
         }
         score
+    }
+
+    fn internal_generate(&mut self) -> Option<Candidate<Thumb>> {
+        while let Some(candidate) = self.search.generate() {
+            let score = self.test(&candidate);
+            self.search.score(score);
+            if score == 0.0 {
+                // We've found a program that passes the test cases we've found; let's optimize the
+                // program.
+                return Some(candidate);
+            }
+        }
+        None
     }
 }
 
@@ -118,14 +131,8 @@ impl<S: SearchAlgorithm<Item = Thumb>, T: Scalar, U: Scalar, V: Scalar> SearchAl
     }
 
     fn generate(&mut self) -> Option<Candidate<Self::Item>> {
-        while let Some(candidate) = self.search.generate() {
-            let score = self.test(&candidate);
-            self.search.score(score as f32);
-            if score == 0 {
-                // We've found a program that passes the test cases we've found; let's optimize the
-                // program.
-                return Some(candidate);
-            }
+        if let Some(candidate) = self.internal_generate() {
+            return Some(candidate);
         }
         None
     }

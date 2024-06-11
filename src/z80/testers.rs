@@ -61,9 +61,9 @@ where
             emu.set_dehl(a.as_i32());
             emu.set_sp(0x3000);
             emu.run_subroutine(0x8000, 0x4000, candidate);
-            (emu.get_dehl().hamming(result)
-                + emu.get_sp().hamming(0x3000)
-                + emu.get_pc().hamming(0x4003)) as f32
+            (emu.get_dehl().cmp(result)
+                + emu.get_sp().cmp(0x3000)
+                + emu.get_pc().cmp(0x4003)) as f32
         } else {
             0.0
         }
@@ -77,7 +77,7 @@ where
             let mut emu = Z80::default();
             emu.set_dehl(a);
             emu.run(0x8000, candidate);
-            if emu.get_dehl().hamming(result) != 0 {
+            if emu.get_dehl().cmp(result) != 0.0 {
                 self.inputs.push((a, result));
             }
         }

@@ -296,5 +296,5 @@ pub trait Scalar: num::cast::AsPrimitive<u32> {
     fn as_i32(self) -> i32;
 
     /// Calculates the hamming distance to another value, after truncating both to the same width.
-    fn hamming<T: num::cast::AsPrimitive<u32>>(self, other: T) -> u32;
+    fn cmp<T: num::cast::AsPrimitive<u32>>(self, other: T) -> f32;
 }

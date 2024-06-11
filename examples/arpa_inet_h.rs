@@ -1,29 +1,29 @@
 // A program to generate the arpa/inet.h library for the Z80.
 
-fn htonl(val: u32) -> Option<u32> {
+fn htonl(val: u32, _: u32) -> Option<u32> {
     Some(u32::from_be_bytes(val.to_le_bytes()))
 }
 
-fn htons(val: u16) -> Option<u16> {
+fn htons(val: u16, _: u16) -> Option<u16> {
     Some(u16::from_be_bytes(val.to_le_bytes()))
 }
 
-fn ntohl(val: u32) -> Option<u32> {
+fn ntohl(val: u32, _: u32) -> Option<u32> {
     Some(u32::from_be_bytes(val.to_le_bytes()))
 }
 
-fn ntohs(val: u16) -> Option<u16> {
+fn ntohs(val: u16, _: u16) -> Option<u16> {
     Some(u16::from_be_bytes(val.to_le_bytes()))
 }
 
-fn bruteforce<T: strop::Scalar>(label: &'static str, func: fn(T) -> Option<T>) {
+fn bruteforce<T: strop::Scalar>(label: &'static str, func: fn(T, T) -> Option<T>) {
     use strop::search::StochasticDeadCodeEliminator;
-    use strop::z80::*;
+    use strop::armv4t::*;
     use strop::StochasticSearch;
+    use strop::SearchAlgorithm;
 
-    let mut search = Z88dkFastCall::new(
+    let mut search = Aapcs32::new(
         StochasticSearch::new(),
-        StochasticDeadCodeEliminator::new(),
         func,
     );
     let program = search.iter().next().unwrap();

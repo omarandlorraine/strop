@@ -5,6 +5,8 @@ pub mod instruction_set;
 pub mod linkages;
 pub mod testers;
 
+pub use testers::Aapcs32;
+
 #[cfg(test)]
 mod test {
     #[test]
