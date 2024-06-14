@@ -2,6 +2,7 @@
 
 pub mod emulators;
 pub mod instruction_set;
+pub mod peephole;
 
 pub use crate::mos6502::instruction_set::Cmos6502Instruction;
 use crate::Fixup;
