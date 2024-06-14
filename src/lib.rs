@@ -34,6 +34,32 @@ use rand::Rng;
 use std::convert::TryInto;
 mod range;
 
+/// A peephole optimizer that considers adjacent instructions and then optionally returns a `Fixup`
+/// for an instruction at a given offset
+pub trait Peephole {
+    /// Check first few instructions and optionally return a `Fixup` for an instruction at a given
+    /// offset.
+    fn peephole(_insns: &[Self]) -> Option<(Box<dyn Fixup<Self>>, usize)>
+    where
+        Self: Sized,
+    {
+        None
+    }
+
+    /// Check the whole slice of instructions
+    fn peephole_entire_slice(insns: &[Self]) -> Option<(Box<dyn Fixup<Self>>, usize)>
+    where
+        Self: Sized,
+    {
+        for (offset, _thing) in insns.iter().enumerate() {
+            if let Some(answer) = Self::peephole(&insns[offset..]) {
+                return Some((answer.0, answer.1 + offset));
+            }
+        }
+        None
+    }
+}
+
 /// An object implementing this trait is a static analysis on the instruction level. Usefully culls
 /// the search space by eliminating instructions not present on a particular model, or instructions
 /// accessing memory outside of permissible ranges, or any instruction that's not a "return from

@@ -218,17 +218,6 @@ pub fn increment_operand(instruction: Cmos6502Instruction) -> Option<Cmos6502Ins
     insn.increment()
 }
 
-fn increment_opcode(instruction: Cmos6502Instruction) -> Option<Cmos6502Instruction> {
-    let opcode = instruction.encode()[0];
-
-    let index = CMOS_OPCODES.iter().position(|&r| r == opcode)? + 1;
-    if index >= CMOS_OPCODES.len() {
-        return None;
-    }
-
-    Some(Cmos6502Instruction([CMOS_OPCODES[index], 0, 0]))
-}
-
 const CMOS_OPCODES: [u8; 178] = [
     0x00, 0x01, 0x04, 0x05, 0x06, 0x08, 0x09, 0x0a, 0x0c, 0x0d, 0x0e, 0x10, 0x11, 0x12, 0x14, 0x15,
     0x16, 0x18, 0x19, 0x1a, 0x1c, 0x1d, 0x1e, 0x20, 0x21, 0x24, 0x25, 0x26, 0x28, 0x29, 0x2a, 0x2c,
@@ -299,6 +288,18 @@ impl Cmos6502Instruction {
     fn writes_to(self) -> Option<u16> {
         instruction_writes(self, take_apart(self)?)
     }
+
+    /// Returns the instruction having the next instruction, and with an operand of zero
+    pub fn increment_opcode(self) -> Option<Self> {
+        let opcode = self.encode()[0];
+
+        let index = CMOS_OPCODES.iter().position(|&r| r == opcode)? + 1;
+        if index >= CMOS_OPCODES.len() {
+            return None;
+        }
+
+        Some(Cmos6502Instruction([CMOS_OPCODES[index], 0, 0]))
+    }
 }
 
 /// A fixup for making sure that the instruction, if it writes to memory, has an operand in the
@@ -327,10 +328,10 @@ impl<T: Range<u16> + std::fmt::Debug> Fixup<Cmos6502Instruction> for Writes<T> {
                 let [lo, hi] = addr.to_le_bytes();
                 Some(Cmos6502Instruction([insn.0[0], lo, hi]))
             } else {
-                self.next(increment_opcode(insn)?)
+                self.next(insn.increment_opcode()?)
             }
         } else {
-            self.next(increment_opcode(insn)?)
+            self.next(insn.increment_opcode()?)
         }
     }
 }
@@ -361,10 +362,10 @@ impl<T: Range<u16> + std::fmt::Debug> Fixup<Cmos6502Instruction> for Reads<T> {
                 let [lo, hi] = addr.to_le_bytes();
                 Some(Cmos6502Instruction([insn.0[0], lo, hi]))
             } else {
-                self.next(increment_opcode(insn)?)
+                self.next(insn.increment_opcode()?)
             }
         } else {
-            self.next(increment_opcode(insn)?)
+            self.next(insn.increment_opcode()?)
         }
     }
 }
@@ -406,7 +407,7 @@ impl Instruction for Cmos6502Instruction {
         let length = self.length();
 
         fn next_opcode(insn: &mut Cmos6502Instruction) -> Option<Cmos6502Instruction> {
-            increment_opcode(*insn)
+            (*insn).increment_opcode()
         }
 
         fn next2(insn: &mut Cmos6502Instruction) -> Option<Cmos6502Instruction> {
