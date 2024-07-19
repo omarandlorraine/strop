@@ -203,7 +203,7 @@ pub trait Emulator<T: Instruction> {
 /// A candidate program. This is essentially an ordered list of `Instruction`s.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Candidate<T: Instruction> {
-    instructions: Vec<T>,
+    pub instructions: Vec<T>,
 }
 
 impl<T: Instruction> Candidate<T> {
