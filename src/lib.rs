@@ -14,15 +14,6 @@
 #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 #![forbid(unsafe_code)]
 
-#[cfg(feature = "armv4t")]
-pub mod armv4t;
-
-#[cfg(feature = "mos6502")]
-pub mod mos6502;
-
-#[cfg(feature = "z80")]
-pub mod z80;
-
 mod scalar;
 pub mod search;
 
@@ -32,131 +23,6 @@ pub use crate::search::StochasticSearch;
 
 use rand::Rng;
 use std::convert::TryInto;
-mod range;
-
-/// An object implementing this trait is a static analysis on the instruction level. Usefully culls
-/// the search space by eliminating instructions not present on a particular model, or instructions
-/// accessing memory outside of permissible ranges, or any instruction that's not a "return from
-/// subroutine" instruction, or ...
-pub trait Fixup<I: Instruction>: std::fmt::Debug {
-    /// Fixes an instruction up by randomly selecting a different instruction
-    fn random(&self, insn: I) -> I;
-    /// Fixes an instruction up by iterating to the next instruction
-    fn next(&self, insn: I) -> Option<I>;
-    /// Checks whether this fixup needs to alter this instruction
-    fn check(&self, insn: I) -> bool;
-}
-
-/// A fixup that doesn't do anything.
-#[derive(Clone, Debug)]
-pub struct DummyFixup;
-
-impl<I: Instruction> crate::Fixup<I> for DummyFixup {
-    fn check(&self, _insn: I) -> bool {
-        false
-    }
-
-    fn next(&self, insn: I) -> Option<I> {
-        let mut copy = insn;
-        copy.increment()
-    }
-
-    fn random(&self, _insn: I) -> I {
-        I::random()
-    }
-}
-
-/// A fixup (see the Fixup trait) which yields exactly one instruction. Useful for ensuring that,
-/// for example, an interrupt handler ends in that architecture's "Return From Interrupt"
-/// instruction.
-#[derive(Debug)]
-pub struct SingleInstruction<I: Instruction>(I);
-
-impl<I: Instruction> crate::Fixup<I> for SingleInstruction<I> {
-    fn check(&self, insn: I) -> bool {
-        insn != self.0
-    }
-
-    fn next(&self, insn: I) -> Option<I> {
-        if insn < self.0 {
-            Some(self.0)
-        } else {
-            None
-        }
-    }
-
-    fn random(&self, _insn: I) -> I {
-        self.0
-    }
-}
-
-/// A fixup (see the Fixup trait) which calls any number of fixups.
-pub struct FixupGroup<I: Instruction>(Vec<Box<dyn Fixup<I>>>);
-
-impl<I: Instruction> std::fmt::Debug for FixupGroup<I> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use std::fmt::Write;
-        write!(
-            f,
-            "FixupGroup {{{}}}",
-            self.0.iter().fold(String::new(), |mut output, f| {
-                let _ = write!(output, "{:?}, ", f);
-                output
-            })
-        )
-    }
-}
-
-impl<I: Instruction + std::fmt::Debug> crate::Fixup<I> for FixupGroup<I> {
-    fn check(&self, insn: I) -> bool {
-        self.0.iter().any(|f| f.check(insn))
-    }
-
-    fn random(&self, insn: I) -> I {
-        let mut changed = false;
-        let mut insn = insn;
-        for f in &self.0 {
-            if f.check(insn) {
-                changed = true;
-                insn = f.random(insn);
-            }
-        }
-        if changed {
-            self.random(insn)
-        } else {
-            insn
-        }
-    }
-
-    fn next(&self, insn: I) -> Option<I> {
-        let mut changed = false;
-        let mut insn = insn;
-        for f in &self.0 {
-            if f.check(insn) {
-                changed = true;
-                insn = f.next(insn)?;
-            }
-        }
-        if changed {
-            self.next(insn)
-        } else {
-            Some(insn)
-        }
-    }
-}
-
-/// A trait for describing ranges. (This is part of the static analysis making sure that a program
-/// does not access memory or other address spaces outside of a specified range).
-pub trait Range<T> {
-    /// Returns a random T from the range
-    fn random(&self) -> T;
-
-    /// Returns the smallest `T` in the range that's greater than `t`.
-    fn next(&self, t: T) -> Option<T>;
-
-    /// returns `true` iff `t` is in the Range
-    fn check(&self, t: T) -> bool;
-}
 
 pub trait Instruction:
     std::cmp::PartialOrd
@@ -285,11 +151,6 @@ pub trait SearchAlgorithm: Clone {
 
     /// Tell the search algorithm about how close it's getting
     fn score(&mut self, score: f32);
-
-    /// Tell the search algorithm that an instruction is incorrectly placed; the `fixup` object may
-    /// be queried for correct instructions at this offset. Returns `true` if the instruction was
-    /// replaced, and false otherwise.
-    fn replace<F: Fixup<Self::Item>>(&mut self, offset: usize, fixup: F) -> bool;
 
     /// Get the next Candidate
     fn generate(&mut self) -> Option<Candidate<Self::Item>>;

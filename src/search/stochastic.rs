@@ -1,7 +1,6 @@
 //! Module defining the stochastic search algorithm
 
 use crate::Candidate;
-use crate::Fixup;
 use crate::Instruction;
 use crate::SearchAlgorithm;
 
@@ -108,16 +107,6 @@ impl<I: Instruction> SearchAlgorithm for StochasticSearch<I> {
         self.child_score = score.abs();
     }
 
-    fn replace<F: Fixup<I>>(&mut self, offset: usize, fixup: F) -> bool {
-        let orig = self.child.instructions[offset];
-        if fixup.check(orig) {
-            self.child.instructions[offset] = fixup.random(orig);
-            true
-        } else {
-            false
-        }
-    }
-
     fn generate(&mut self) -> Option<Candidate<I>> {
         use rand::Rng;
 
@@ -215,16 +204,6 @@ impl<I: Instruction> SearchAlgorithm for StochasticDeadCodeEliminator<I> {
 
     fn peek(&self) -> &Candidate<Self::Item> {
         &self.child
-    }
-
-    fn replace<F: Fixup<I>>(&mut self, offset: usize, fixup: F) -> bool {
-        let orig = self.child.instructions[offset];
-        if fixup.check(orig) {
-            self.child.instructions[offset] = fixup.random(orig);
-            true
-        } else {
-            false
-        }
     }
 
     fn generate(&mut self) -> Option<Candidate<I>> {

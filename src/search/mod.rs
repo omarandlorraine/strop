@@ -3,7 +3,7 @@
 mod bruteforce;
 mod stochastic;
 
-use crate::{Candidate, Fixup, Instruction, SearchAlgorithm};
+use crate::{Candidate, Instruction, SearchAlgorithm};
 pub use bruteforce::BruteForceSearch;
 pub use stochastic::StochasticDeadCodeEliminator;
 pub use stochastic::StochasticSearch;
@@ -32,10 +32,6 @@ where
 
     fn score(&mut self, score: f32) {
         self.inner.score(score);
-    }
-
-    fn replace<F: Fixup<I>>(&mut self, offset: usize, fixup: F) -> bool {
-        self.inner.replace(offset, fixup)
     }
 
     fn generate(&mut self) -> Option<Candidate<I>> {
