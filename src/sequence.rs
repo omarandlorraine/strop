@@ -45,8 +45,8 @@ impl<T: Clone + Iterable> Iterable for Sequence<T> {
         }
     }
 
-    fn goto(&mut self, other: Self) {
-        (*self).clone_from(&other);
+    fn goto(&mut self, other: &Self) {
+        (*self).clone_from(other);
     }
 }
 
@@ -106,7 +106,7 @@ impl<T: Clone + Random> Random for Sequence<T> {
         }
     }
 
-    fn goto(&mut self, other: Self) {
-        (*self).clone_from(&other);
+    fn goto(&mut self, other: &Self) {
+        (*self).clone_from(other);
     }
 }

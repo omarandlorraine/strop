@@ -27,7 +27,7 @@ pub trait Iterable {
     fn step(&mut self) -> bool;
 
     /// Replace self with some other value
-    fn goto(&mut self, destination: Self);
+    fn goto(&mut self, destination: &Self);
 }
 
 pub trait Random {
@@ -41,7 +41,7 @@ pub trait Random {
     fn step(&mut self);
 
     /// Replace self with some other value
-    fn goto(&mut self, destination: Self);
+    fn goto(&mut self, destination: &Self);
 }
 
 pub trait Encode<T> {
