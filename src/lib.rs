@@ -14,20 +14,17 @@
 #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 #![forbid(unsafe_code)]
 
+pub mod sequence;
+
 pub trait Iterable {
     //! A trait for anything that can be iterated across in an exhaustive manner. For example, the
     //! Bruteforce search uses this.
 
     /// Start from the beginning
-    fn first() -> Self
-    where
-        Self: std::default::Default,
-    {
-        Default::default()
-    }
+    fn first() -> Self;
 
     /// Take one step
-    fn step(&mut self);
+    fn step(&mut self) -> bool;
 
     /// Replace self with some other value
     fn goto(&mut self, destination: Self);
