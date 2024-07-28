@@ -30,6 +30,20 @@ pub trait Iterable {
     fn goto(&mut self, destination: &Self);
 }
 
+pub trait ConstraintSatisfactionSolver {
+    //! A trait for constraint satisfaction solvers. These are like exhaustive searches, but
+    //! consider relationships between consecutive instructions to reduce the search space.
+
+    /// Start from the beginning
+    fn first() -> Self;
+
+    /// Take one step
+    fn step(&mut self) -> bool;
+
+    /// Replace self with some other value
+    fn goto(&mut self, destination: &Self);
+}
+
 pub trait Random {
     //! A trait for things that can be searched through randomly. For example, the stochastic
     //! search uses this.
@@ -59,4 +73,34 @@ pub trait Encode<T> {
 
     /// Return the encoding
     fn encode(&self) -> Vec<T>;
+}
+
+/// Type `ConstraintViolation` represents the possibility that an unary or binary constraint has
+/// been violated. If the constraints are satisfied and not violated, then this case is represented
+/// by the variant `Ok`. If a constraint has been violated, then if a suitable replacement would be
+/// found by successive calls to the `Iterable` trait's `step` method, then it is held in the
+/// `ReplaceWith` variant. If a constraint has been violated but no such replacement can be found,
+/// then this case is represented by the `Violation` variant.
+#[derive(Debug)]
+pub enum ConstraintViolation<T> {
+    /// The proposed value was not found to violate any unary constraints
+    Ok,
+
+    /// The proposed value violated a constraint, and here is a proposed replacement. The proposed
+    /// replacement would also be found by successive calls to the `Iterable` trait's `step`
+    /// method.
+    ReplaceWith(T),
+
+    /// The proposed value violated a constraint, but we could not find a suitable replacement.
+    Violation,
+}
+
+pub trait ConstraintSatisfaction<T> {
+    //! A trait for constraint solvers
+    /// Considers the `T` passed to this method, and checks if it violates any unary constraints.
+    fn unary(&self, t: &T) -> ConstraintViolation<T>;
+
+    /// Considers the two connected nodes of type `T`, and sees if they violate any binary
+    /// constraints.
+    fn binary(&self, a: &T, b: &T) -> ConstraintViolation<T>;
 }
