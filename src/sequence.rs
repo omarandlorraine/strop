@@ -40,7 +40,7 @@ impl<T: Clone + Iterable> Iterable for Sequence<T> {
             } else if self.0[offset].step() {
                 offset += 1;
             } else {
-                return false;
+                return true;
             }
         }
     }

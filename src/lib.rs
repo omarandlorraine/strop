@@ -23,7 +23,7 @@ pub trait Iterable {
     /// Start from the beginning
     fn first() -> Self;
 
-    /// Take one step
+    /// Take one step. Returns true if the end of the iteration has not been reached.
     fn step(&mut self) -> bool;
 
     /// Replace self with some other value
@@ -37,7 +37,7 @@ pub trait ConstraintSatisfactionSolver {
     /// Start from the beginning
     fn first() -> Self;
 
-    /// Take one step
+    /// Take one step. Returns true if the end of the iteration has not been reached.
     fn step(&mut self) -> bool;
 
     /// Replace self with some other value
