@@ -1,5 +1,6 @@
 //! A module defining `Sequence<T>`.
 
+use crate::Goto;
 use crate::Iterable;
 use crate::Random;
 use std::ops::Index;
@@ -43,10 +44,6 @@ impl<T: Clone + Iterable> Iterable for Sequence<T> {
                 return true;
             }
         }
-    }
-
-    fn goto(&mut self, other: &Self) {
-        (*self).clone_from(other);
     }
 }
 
@@ -105,8 +102,10 @@ impl<T: Clone + Random> Random for Sequence<T> {
             _ => panic!(),
         }
     }
+}
 
-    fn goto(&mut self, other: &Self) {
-        (*self).clone_from(other);
+impl<I: std::clone::Clone> Goto<I> for Sequence<I> {
+    fn goto(&mut self, other: &[I]) {
+        (*self.0).clone_from_slice(other);
     }
 }
