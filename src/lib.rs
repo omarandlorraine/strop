@@ -25,9 +25,6 @@ pub trait Iterable {
 
     /// Take one step. Returns true if the end of the iteration has not been reached.
     fn step(&mut self) -> bool;
-
-    /// Replace self with some other value
-    fn goto(&mut self, destination: &Self);
 }
 
 pub trait ConstraintSatisfactionSolver {
@@ -39,9 +36,6 @@ pub trait ConstraintSatisfactionSolver {
 
     /// Take one step. Returns true if the end of the iteration has not been reached.
     fn step(&mut self) -> bool;
-
-    /// Replace self with some other value
-    fn goto(&mut self, destination: &Self);
 }
 
 pub trait Random {
@@ -53,9 +47,13 @@ pub trait Random {
 
     /// Take a step in a random direction
     fn step(&mut self);
+}
+
+pub trait Goto<I> {
+    //! Trait for starting a search from a particular point in the search space.
 
     /// Replace self with some other value
-    fn goto(&mut self, destination: &Self);
+    fn goto(&mut self, destination: &[I]);
 }
 
 pub trait Encode<T> {
