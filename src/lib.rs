@@ -27,7 +27,18 @@ pub trait Iterable {
     fn step(&mut self) -> bool;
 }
 
-pub trait ConstraintSatisfactionSolver {
+pub trait PrunedSearch<P> {
+    //! A trait for performing a bruteforce search that has some instructions pruned away. The type
+    //! P represents the prune.
+
+    /// Start from the beginning
+    fn first() -> Self;
+
+    /// Take one step. Returns true if the end of the iteration has not been reached.
+    fn pruned_step(&mut self, prune: P) -> bool;
+}
+
+pub trait ConstraintSatisfactionSolver<T, S: ConstraintSatisfaction<T>> {
     //! A trait for constraint satisfaction solvers. These are like exhaustive searches, but
     //! consider relationships between consecutive instructions to reduce the search space.
 
@@ -35,7 +46,7 @@ pub trait ConstraintSatisfactionSolver {
     fn first() -> Self;
 
     /// Take one step. Returns true if the end of the iteration has not been reached.
-    fn step(&mut self) -> bool;
+    fn step<S: ConstraintSatisfaction<T>>(&mut self, constraints: &S) -> bool;
 }
 
 pub trait Random {
