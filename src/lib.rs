@@ -38,17 +38,6 @@ pub trait PrunedSearch<P> {
     fn pruned_step(&mut self, prune: P) -> bool;
 }
 
-pub trait ConstraintSatisfactionSolver<T, S: ConstraintSatisfaction<T>> {
-    //! A trait for constraint satisfaction solvers. These are like exhaustive searches, but
-    //! consider relationships between consecutive instructions to reduce the search space.
-
-    /// Start from the beginning
-    fn first() -> Self;
-
-    /// Take one step. Returns true if the end of the iteration has not been reached.
-    fn step<S: ConstraintSatisfaction<T>>(&mut self, constraints: &S) -> bool;
-}
-
 pub trait Random {
     //! A trait for things that can be searched through randomly. For example, the stochastic
     //! search uses this.
