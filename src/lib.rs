@@ -35,7 +35,7 @@ pub trait PrunedSearch<P> {
     fn first() -> Self;
 
     /// Take one step. Returns true if the end of the iteration has not been reached.
-    fn pruned_step(&mut self, prune: P) -> bool;
+    fn pruned_step(&mut self, prune: &P) -> bool;
 }
 
 pub trait Random {
