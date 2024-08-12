@@ -93,6 +93,18 @@ pub enum ConstraintViolation<T> {
     Violation,
 }
 
+/// To get the search space down to something manageable, a type could implement this trait to
+/// reduce the number of instructions considered. This might be used to make sure the instructions
+/// only reads from the permitted registers or memory locations for example, or might write-protect
+/// regions of memory, or remove from consideration instructions incompatible with this or that CPU
+/// variant or whatever.
+pub trait Prune<T> {
+    /// Considers the `T` passed to this method, and if the instruction is to be pruned away from
+    /// the search, returns a `ConstraintViolation<T>` that describes how to proceed with the
+    /// search.
+    fn prune(&self, t: &T) -> ConstraintViolation<T>;
+}
+
 pub trait ConstraintSatisfaction<T> {
     //! A trait for constraint solvers
     /// Considers the `T` passed to this method, and checks if it violates any unary constraints.
