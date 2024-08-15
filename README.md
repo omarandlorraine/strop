@@ -17,14 +17,16 @@ If you're wondering what this could be used for, here is an example:
 
 ### Supported instruction sets:
 
-Strop currently has a relatively small number of backends:
+Strop currently has the following backends:
 
- * **armv4t**, which targets the Thumb instruction set as found on the ARM7TDMI.
- * **mos6502**, which targets the
-   [6502](https://en.wikipedia.org/wiki/MOS_Technology_6502). This backend is
-accompanied by emulators for some of the different variant 6502s.
- * **z80**, which targets the [Z80](https://en.wikipedia.org/wiki/Zilog_Z80),
-   another retro eight-bitter.
+ * **armv4t**, which targets the ARMv4T processors, such as the ARM7TDMI
+ * **m68000**, which targets the Motorola 68000
+    * NB. This backend is gated by the `m68k` feature since it requires nightly Rust
+ * **m6502**, targets various models of the MOS 6502
+    * Supports the NMOS and CMOS variants and others, thanks to the
+      (https://github.com/mre/mos6502)[mos6502] dependency.
+ * **m6809**, which targets the Motorola 6809
+ * **z80**, which targets the Zilog Z80
 
 ### Static analysis:
 
