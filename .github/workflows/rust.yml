@@ -21,7 +21,7 @@ jobs:
     - name: Build examples
       run: cargo test --examples
     - name: Test
-      run: cargo test --no-default-features --lib
+      run: cargo test --lib
     - name: Lint
       run: cargo clippy -- -Dwarnings
     - name: Format

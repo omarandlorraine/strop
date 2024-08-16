@@ -14,7 +14,7 @@ armv4t = ["armv4t_emu", "unarm"]
 m6502 = ["mos6502"]
 m6809 = ["emu6809"]
 z80 = ["iz80", "dez80"]
-m68k = []
+m68k = ["m68000"]
 
 [dependencies]
 armv4t_emu = { version = "0.1.0", optional = true }

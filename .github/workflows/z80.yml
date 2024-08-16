@@ -20,3 +20,5 @@ jobs:
       run: cargo build --verbose --features z80 --no-default-features
     - name: Test
       run: cargo test --features z80 --no-default-features --lib
+    - name: Lint
+      run: cargo clippy --features z80 --no-default-features -- -Dwarnings
