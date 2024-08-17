@@ -1,10 +1,3 @@
-//! Module defining representations of 6502 machine instructions.
-
-pub use mos6502::instruction::Cmos6502;
-pub use mos6502::instruction::Nmos6502;
-pub use mos6502::instruction::RevisionA;
-pub use mos6502::instruction::Ricoh2a03;
-
 /// Represents a 6502 machine instruction, compatible with some 6502 variant.
 #[derive(Copy, Clone, Default, PartialOrd, PartialEq)]
 pub struct Insn<V: mos6502::Variant + std::clone::Clone>([u8; 3], std::marker::PhantomData<V>)
