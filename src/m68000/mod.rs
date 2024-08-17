@@ -1,4 +1,7 @@
+//! This is the strop backend, targetting the Motorola 68000
 mod diss;
-pub mod isa;
-pub mod prune;
+mod isa;
+mod prune;
+
 pub use isa::Insn;
+pub use prune::Prune;
