@@ -16,317 +16,112 @@
 
 #[cfg(feature = "armv4t")]
 pub mod armv4t;
-
-#[cfg(feature = "mos6502")]
-pub mod mos6502;
-
+#[cfg(feature = "m6502")]
+pub mod m6502;
+#[cfg(feature = "m68k")]
+pub mod m68000;
+#[cfg(feature = "m6809")]
+pub mod m6809;
 #[cfg(feature = "z80")]
 pub mod z80;
 
-mod scalar;
-pub mod search;
+pub mod sequence;
 
-pub use crate::search::BruteForceSearch;
-pub use crate::search::SearchTrace;
-pub use crate::search::StochasticSearch;
+pub trait Iterable {
+    //! A trait for anything that can be iterated across in an exhaustive manner. For example, the
+    //! Bruteforce search uses this.
 
-use rand::Rng;
-use std::convert::TryInto;
-mod range;
-
-/// An object implementing this trait is a static analysis on the instruction level. Usefully culls
-/// the search space by eliminating instructions not present on a particular model, or instructions
-/// accessing memory outside of permissible ranges, or any instruction that's not a "return from
-/// subroutine" instruction, or ...
-pub trait Fixup<I: Instruction>: std::fmt::Debug {
-    /// Fixes an instruction up by randomly selecting a different instruction
-    fn random(&self, insn: I) -> I;
-    /// Fixes an instruction up by iterating to the next instruction
-    fn next(&self, insn: I) -> Option<I>;
-    /// Checks whether this fixup needs to alter this instruction
-    fn check(&self, insn: I) -> bool;
-}
-
-/// A fixup that doesn't do anything.
-#[derive(Clone, Debug)]
-pub struct DummyFixup;
-
-impl<I: Instruction> crate::Fixup<I> for DummyFixup {
-    fn check(&self, _insn: I) -> bool {
-        false
-    }
-
-    fn next(&self, insn: I) -> Option<I> {
-        let mut copy = insn;
-        copy.increment()
-    }
-
-    fn random(&self, _insn: I) -> I {
-        I::random()
-    }
-}
-
-/// A fixup (see the Fixup trait) which yields exactly one instruction. Useful for ensuring that,
-/// for example, an interrupt handler ends in that architecture's "Return From Interrupt"
-/// instruction.
-#[derive(Debug)]
-pub struct SingleInstruction<I: Instruction>(I);
-
-impl<I: Instruction> crate::Fixup<I> for SingleInstruction<I> {
-    fn check(&self, insn: I) -> bool {
-        insn != self.0
-    }
-
-    fn next(&self, insn: I) -> Option<I> {
-        if insn < self.0 {
-            Some(self.0)
-        } else {
-            None
-        }
-    }
-
-    fn random(&self, _insn: I) -> I {
-        self.0
-    }
-}
-
-/// A fixup (see the Fixup trait) which calls any number of fixups.
-pub struct FixupGroup<I: Instruction>(Vec<Box<dyn Fixup<I>>>);
-
-impl<I: Instruction> std::fmt::Debug for FixupGroup<I> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use std::fmt::Write;
-        write!(
-            f,
-            "FixupGroup {{{}}}",
-            self.0.iter().fold(String::new(), |mut output, f| {
-                let _ = write!(output, "{:?}, ", f);
-                output
-            })
-        )
-    }
-}
-
-impl<I: Instruction + std::fmt::Debug> crate::Fixup<I> for FixupGroup<I> {
-    fn check(&self, insn: I) -> bool {
-        self.0.iter().any(|f| f.check(insn))
-    }
-
-    fn random(&self, insn: I) -> I {
-        let mut changed = false;
-        let mut insn = insn;
-        for f in &self.0 {
-            if f.check(insn) {
-                changed = true;
-                insn = f.random(insn);
-            }
-        }
-        if changed {
-            self.random(insn)
-        } else {
-            insn
-        }
-    }
-
-    fn next(&self, insn: I) -> Option<I> {
-        let mut changed = false;
-        let mut insn = insn;
-        for f in &self.0 {
-            if f.check(insn) {
-                changed = true;
-                insn = f.next(insn)?;
-            }
-        }
-        if changed {
-            self.next(insn)
-        } else {
-            Some(insn)
-        }
-    }
-}
-
-/// A trait for describing ranges. (This is part of the static analysis making sure that a program
-/// does not access memory or other address spaces outside of a specified range).
-pub trait Range<T> {
-    /// Returns a random T from the range
-    fn random(&self) -> T;
-
-    /// Returns the smallest `T` in the range that's greater than `t`.
-    fn next(&self, t: T) -> Option<T>;
-
-    /// returns `true` iff `t` is in the Range
-    fn check(&self, t: T) -> bool;
-}
-
-pub trait Instruction:
-    std::cmp::PartialOrd
-    + Copy
-    + Clone
-    + std::marker::Send
-    + std::fmt::Display
-    + Sized
-    + std::fmt::Debug
-    + Default
-{
-    //! A trait for any kind of machine instruction. The searches use this trait to mutate
-    //! candidate programs, the emulators use this trait to get at a byte stream encoding a
-    //! candidate program.
-
-    /// Return a random machine instruction
-    fn random() -> Self;
-
-    /// Mutates a machine instruction in place. The mutation will of course depend on the
-    /// targeted machine; but differences could include a changed operand, or swapping an
-    /// increment for a decrement, etc.
-    fn mutate(&mut self);
-
-    /// Returns the machine instruction's encoding (i.e., what to write into the emulator's memory
-    /// in order to execute this instruction)
-    fn encode(self) -> Vec<u8>;
-
-    /// Gets the "first" instruction (this could be the first numerically, or by some other
-    /// measure. But it should in any case be one which the `increment` method does not revisit).
+    /// Start from the beginning
     fn first() -> Self;
 
-    /// Increments the instruction's encoding by one, and then returns a clone of self.
-    fn increment(&mut self) -> Option<Self>;
+    /// Take one step. Returns true if the end of the iteration has not been reached.
+    fn step(&mut self) -> bool;
 }
 
-pub trait Emulator<T: Instruction> {
-    //! A trait for executing candidate programs, and scoring them
+pub trait PrunedSearch<P> {
+    //! A trait for performing a bruteforce search that has some instructions pruned away. The type
+    //! P represents the prune.
 
-    /// Puts a candidate program into the emulator's address space at the given address, and then
-    /// runs the candidate program.
-    fn run(&mut self, addr: usize, candidate: &Candidate<T>);
+    /// Start from the beginning
+    fn first() -> Self;
+
+    /// Take one step. Returns true if the end of the iteration has not been reached.
+    fn pruned_step(&mut self, prune: &P) -> bool;
 }
 
-/// A candidate program. This is essentially an ordered list of `Instruction`s.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct Candidate<T: Instruction> {
-    pub instructions: Vec<T>,
-}
+pub trait Random {
+    //! A trait for things that can be searched through randomly. For example, the stochastic
+    //! search uses this.
 
-impl<T: Instruction> Candidate<T> {
-    /// returns the bytes encoding the program
-    pub fn encode(&self) -> Vec<u8> {
-        self.instructions.iter().flat_map(|i| i.encode()).collect()
-    }
-
-    /// creates an empty program.
-    pub fn empty() -> Self {
-        Self {
-            instructions: vec![],
-        }
-    }
-
-    /// creates a new candidate from a `Vec<T>`.
-    pub fn new(instructions: Vec<T>) -> Self {
-        Self { instructions }
-    }
-
-    /// inserts an instruction at a random offset
-    pub fn insert(&mut self, insn: T) {
-        // Because the appropriate trait is not implemented for usize, I have to convert to u32 and
-        // back.
-        let current_length: u32 = self.instructions.len().try_into().unwrap();
-        let insertion_offset = rand::thread_rng().gen_range(0..current_length + 1);
-        self.instructions.insert(insertion_offset as usize, insn);
-    }
-
-    /// Prints the `Candidate` to stdout
-    pub fn disassemble(&self, label: &str) {
-        println!("{}:", label);
-        for insn in &self.instructions {
-            println!("\t{}", insn);
-        }
-    }
-
-    /// Returns the number of instructions in the candidate program
-    pub fn length(&self) -> usize {
-        self.instructions.len()
-    }
-
-    /// replaces an instruction at a given offset
-    pub fn replace(&mut self, offset: usize, instruction: T) {
-        self.instructions[offset] = instruction;
-    }
-
-    /// offset of the last instruction
-    pub fn last_offset(&self) -> usize {
-        self.instructions.len() - 1
-    }
-
-    /// replaces the last instruction
-    pub fn replace_last(&mut self, instruction: T) {
-        self.replace(self.last_offset(), instruction)
-    }
-}
-
-/// An adapter struct for iterating over the candidate programs generated by a `SearchAlgorithm`.
-#[derive(Debug)]
-pub struct SearchAlgorithmIterator<'a, T: SearchAlgorithm + ?Sized>(&'a mut T);
-
-impl<'a, T> Iterator for SearchAlgorithmIterator<'a, T>
-where
-    T: SearchAlgorithm,
-{
-    type Item = Candidate<T::Item>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.generate()
-    }
-}
-
-pub trait SearchAlgorithm: Clone {
-    //! You can use this to guide the search algorithm.
-
-    /// Which instruction set to use
-    type Item: Instruction;
-
-    /// Tell the search algorithm about how close it's getting
-    fn score(&mut self, score: f32);
-
-    /// Tell the search algorithm that an instruction is incorrectly placed; the `fixup` object may
-    /// be queried for correct instructions at this offset. Returns `true` if the instruction was
-    /// replaced, and false otherwise.
-    fn replace<F: Fixup<Self::Item>>(&mut self, offset: usize, fixup: F) -> bool;
-
-    /// Get the next Candidate
-    fn generate(&mut self) -> Option<Candidate<Self::Item>>;
-
-    /// Calls the supplied function on each generated program
-    fn trace(
-        self,
-        func: fn(&Candidate<Self::Item>),
-    ) -> SearchTrace<Self, <Self as SearchAlgorithm>::Item>
-    where
-        Self: Sized,
-    {
-        SearchTrace::new(self, func)
-    }
-
-    /// Returns a reference to the Candidate which will be generated next
-    fn peek(&self) -> &Candidate<Self::Item>;
-
-    /// Starts or restarts the search from the given point in the search space.
-    fn start_from(&mut self, point: Candidate<Self::Item>);
-
-    /// Returns a `SearchAlgorithmIterator`, which can be used to iterate over the generated
-    /// candidates.
-    fn iter(&mut self) -> SearchAlgorithmIterator<'_, Self> {
-        SearchAlgorithmIterator(self)
-    }
-}
-
-pub trait Scalar: num::cast::AsPrimitive<u32> {
-    //! Trait for scalar values that may be a function's parameter, or return value, or something.
-
-    /// Returns a random value
+    /// Start from a random point
     fn random() -> Self;
 
-    /// Converts the value to i32
-    fn as_i32(self) -> i32;
+    /// Take a step in a random direction
+    fn step(&mut self);
+}
 
-    /// Calculates the hamming distance to another value, after truncating both to the same width.
-    fn hamming<T: num::cast::AsPrimitive<u32>>(self, other: T) -> u32;
+pub trait Goto<I> {
+    //! Trait for starting a search from a particular point in the search space.
+
+    /// Replace self with some other value
+    fn goto(&mut self, destination: &[I]);
+}
+
+pub trait Encode<T> {
+    //! Trait for things that can be converted to sequences (of bytes, words, etc)
+
+    /// Return the length of the encoding
+    fn len(&self) -> usize {
+        self.encode().len()
+    }
+
+    /// Returns `true` if `encode()` would return an empty vector, false otherwise
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Return the encoding
+    fn encode(&self) -> Vec<T>;
+}
+
+/// Type `ConstraintViolation` represents the possibility that an unary or binary constraint has
+/// been violated. If the constraints are satisfied and not violated, then this case is represented
+/// by the variant `Ok`. If a constraint has been violated, then if a suitable replacement would be
+/// found by successive calls to the `Iterable` trait's `step` method, then it is held in the
+/// `ReplaceWith` variant. If a constraint has been violated but no such replacement can be found,
+/// then this case is represented by the `Violation` variant.
+#[derive(Debug)]
+pub enum ConstraintViolation<T> {
+    /// The proposed value was not found to violate any unary constraints
+    Ok,
+
+    /// The proposed value violated a constraint, and here is a proposed replacement. The proposed
+    /// replacement would also be found by successive calls to the `Iterable` trait's `step`
+    /// method.
+    ReplaceWith(T),
+
+    /// The proposed value violated a constraint, but we could not find a suitable replacement.
+    Violation,
+}
+
+/// To get the search space down to something manageable, a type could implement this trait to
+/// reduce the number of instructions considered. This might be used to make sure the instructions
+/// only reads from the permitted registers or memory locations for example, or might write-protect
+/// regions of memory, or remove from consideration instructions incompatible with this or that CPU
+/// variant or whatever.
+pub trait Prune<T> {
+    /// Considers the `T` passed to this method, and if the instruction is to be pruned away from
+    /// the search, returns a `ConstraintViolation<T>` that describes how to proceed with the
+    /// search.
+    fn prune(&self, t: &T) -> ConstraintViolation<T>;
+}
+
+pub trait ConstraintSatisfaction<T> {
+    //! A trait for constraint solvers
+    /// Considers the `T` passed to this method, and checks if it violates any unary constraints.
+    fn unary(&self, t: &T) -> ConstraintViolation<T>;
+
+    /// Considers the two connected nodes of type `T`, and sees if they violate any binary
+    /// constraints.
+    fn binary(&self, a: &T, b: &T) -> ConstraintViolation<T>;
 }
