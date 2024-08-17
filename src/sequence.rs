@@ -1,5 +1,6 @@
 //! A module defining `Sequence<T>`.
 
+use crate::Encode;
 use crate::Goto;
 use crate::Iterable;
 use crate::Random;
@@ -18,6 +19,15 @@ impl<T> Index<usize> for Sequence<T> {
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.0[index]
+    }
+}
+
+impl<T, U> Encode<U> for Sequence<T>
+where
+    T: Encode<U>,
+{
+    fn encode(&self) -> Vec<U> {
+        self.0.iter().flat_map(|i| i.encode()).collect()
     }
 }
 

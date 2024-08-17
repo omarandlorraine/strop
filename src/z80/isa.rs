@@ -32,6 +32,13 @@ impl crate::Encode<u8> for Insn {
 }
 
 impl Insn {
+    /// Constructs a new Insn from a slice of bytes
+    pub fn new(mc: &[u8]) -> Self {
+        let mut enc = [0, 0, 0, 0, 0];
+        enc[..mc.len().min(5)].copy_from_slice(&mc);
+        Self(enc)
+    }
+
     /// Decodes the instruction and returns a `dez80::Instruction`.
     pub fn decode(&self) -> dez80::Instruction {
         let encoding = Vec::<_>::from(self.0);

@@ -25,7 +25,8 @@ pub mod m6809;
 #[cfg(feature = "z80")]
 pub mod z80;
 
-pub mod sequence;
+mod sequence;
+pub use sequence::Sequence;
 
 pub trait Iterable {
     //! A trait for anything that can be iterated across in an exhaustive manner. For example, the
@@ -124,4 +125,13 @@ pub trait ConstraintSatisfaction<T> {
     /// Considers the two connected nodes of type `T`, and sees if they violate any binary
     /// constraints.
     fn binary(&self, a: &T, b: &T) -> ConstraintViolation<T>;
+}
+
+pub trait CallingConvention<I, P, R> {
+    //! A trait for calling conventions. A type which implements this trait can execute a function
+    //! taking the given argument(s), and return the function's return value.
+
+    /// Calls the given callable object, passing it the parameters of type `P`, and returning an
+    /// `R`.
+    fn call(function: &I, parameters: P) -> Option<R>;
 }
