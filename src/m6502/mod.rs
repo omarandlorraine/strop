@@ -1,4 +1,4 @@
-//! This is the backend targetting the MOS 6502, a well-known 8-bit retro CPU.
+//! This is the back-end targeting the MOS 6502, a well-known 8-bit retro CPU.
 
 mod csp;
 mod diss;

@@ -39,7 +39,7 @@ pub trait Iterable {
 }
 
 pub trait PrunedSearch<P> {
-    //! A trait for performing a bruteforce search that has some instructions pruned away. The type
+    //! A trait for performing a brute-force search that has some instructions pruned away. The type
     //! P represents the prune.
 
     /// Start from the beginning

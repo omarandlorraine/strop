@@ -1,6 +1,6 @@
 //! Module for representing ARMv4T machine code instructions.
 
-/// Represents an ARMv4T maschine code instruction.
+/// Represents an ARMv4T machine code instruction.
 #[derive(Clone, Copy, Default, PartialOrd, PartialEq)]
 pub struct Insn(pub(crate) u32);
 
