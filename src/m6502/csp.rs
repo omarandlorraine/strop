@@ -48,7 +48,7 @@ impl Prune {
     }
 
     /// Informs the `Prune` object of an entry point. The `Prune` will prune away any `jmp` or
-    /// `jsr` instructions not targetting a known entry point.
+    /// `jsr` instructions not targeting a known entry point.
     pub fn entry_point(&mut self, entry_point: u16) -> &Self {
         self.entry_points.push(entry_point);
         self

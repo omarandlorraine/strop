@@ -6,7 +6,7 @@ strop, the *st*ochastic *op*timizer, written in *R*ust.
 
 Like a compiler, strop generates assembly that computes a given function. But
 unlike a compiler, it generates assembly-language subroutines by a random
-search or a bruteforce search.
+search or a brute-force search.
 
 ### Ancillary documents:
 
@@ -15,13 +15,13 @@ search or a bruteforce search.
 
 ### Supported instruction sets:
 
-Strop currently has the following backends:
+Strop currently has the following back-ends:
 
  * **armv4t**, which targets the ARMv4T processors, such as the ARM7TDMI
     * [![Build Status](https://github.com/omarandlorraine/strop/workflows/armv4t/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=armv4t)
  * **m68000**, which targets the Motorola 68000
     * [![Build Status](https://github.com/omarandlorraine/strop/workflows/m68000/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=m68000)
-    * NB. This backend is gated by the `m68k` feature since it requires nightly Rust
+    * NB. This back-end is gated by the `m68k` feature since it requires nightly Rust
  * **m6502**, targets various models of the MOS 6502
     * [![Build Status](https://github.com/omarandlorraine/strop/workflows/mos6502/badge.svg)](https://github.com/omarandlorraine/strop/actions?workflow=mos6502)
     * Supports the NMOS and CMOS variants and others, thanks to the

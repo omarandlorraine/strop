@@ -6,12 +6,12 @@ strop, the *st*ochastic *op*timizer, written in *R*ust.
 
 Like a compiler, strop generates assembly that computes a given function. But
 unlike a compiler, it generates assembly-language subroutines by a random
-search or a bruteforce search.
+search or a brute-force search.
 
 ### Core components
 
 * **Input function**: This is a pure function which strop can execute.
-* **Backends**: A backend targets a specific machine architecture. It usually
+* **Backends**: A back-end targets a specific machine architecture. It usually
   includes a symbolic representation of the machine instruction, and ways to
   execute these in emulation.
 * **Search space**: The search space encompasses all sequences of instructions
@@ -27,11 +27,11 @@ search or a bruteforce search.
 
 ### Operation workflow
 
-1. Usually at compilation time, a backend is selected, and a function is
+1. Usually at compilation time, a back-end is selected, and a function is
    selected. The function may be one that is compiled and linked into the
    executable, and callable from it (i.e., an ordinary function that runs as
    part of the executable's normal operation), or it may be a function that is
-   executable in some backend.
+   executable in some back-end.
 2. A new program is generated. Usually, this is an empty program, one that does
    nothing.
 3. The search algorithm searches the space, each time yielding a putative
@@ -80,4 +80,4 @@ system, or another mechanism) terminates the program.
 A stochastic superoptimizer offers a powerful but computationally expensive way
 to approach code generation and optimization. It can be made to explore
 unconventional solutions and achieve optimizations beyond the reach of
-traditional techniques, as currently used by compiler backends.
+traditional techniques, as currently used by compiler back-ends.
