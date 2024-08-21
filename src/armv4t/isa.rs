@@ -135,7 +135,7 @@ mod test {
             // check that the increment method does not visit invalid instructions; this will in
             // turn validate the fixup method.
             if !i.is_valid() {
-                let beginning = i.clone();
+                let beginning = i;
                 let mut end = i;
                 while !end.is_valid() {
                     end.step();

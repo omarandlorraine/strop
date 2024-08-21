@@ -35,7 +35,7 @@ impl Insn {
     /// Constructs a new Insn from a slice of bytes
     pub fn new(mc: &[u8]) -> Self {
         let mut enc = [0, 0, 0, 0, 0];
-        enc[..mc.len().min(5)].copy_from_slice(&mc);
+        enc[..mc.len().min(5)].copy_from_slice(mc);
         Self(enc)
     }
 
@@ -116,7 +116,7 @@ mod test {
             let d = insn.decode();
 
             if !d.ignored_prefixes.is_empty() {
-                let prev = insn.clone();
+                let prev = insn;
                 while !insn.decode().ignored_prefixes.is_empty() {
                     assert!(!insn.step());
                 }
