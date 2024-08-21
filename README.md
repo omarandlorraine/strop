@@ -1,5 +1,5 @@
 # strop
-[![Build Status](https://github.com/omarandlorraine/strop/actions/workflows/Rust.yml/badge.svg?branch=master)](https://github.com/omarandlorraine/strop/actions?workflow=Rust)
+[![Build Status](https://github.com/omarandlorraine/strop/actions/workflows/rust.yml/badge.svg?branch=master)](https://github.com/omarandlorraine/strop/actions?workflow=Rust)
 [![crates.io](https://img.shields.io/crates/v/strop)](https://crates.io/crates/strop)
 
 strop, the *st*ochastic *op*timizer, written in *R*ust.
