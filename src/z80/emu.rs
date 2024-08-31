@@ -1,7 +1,7 @@
-use crate::StropError;
 use crate::z80::Insn;
 use crate::Encode;
 use crate::Sequence;
+use crate::StropError;
 use iz80::*;
 
 /// The Z80 emulator.
@@ -65,6 +65,6 @@ impl Emulator {
             }
             self.cpu.execute_instruction(&mut self.machine);
         }
-        return Err(StropError::DidntReturn);
+        Err(StropError::DidntReturn)
     }
 }

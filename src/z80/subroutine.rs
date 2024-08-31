@@ -12,7 +12,17 @@ pub struct Subroutine<P, R, T: crate::CallingConvention<crate::Sequence<Insn>, P
     f: std::marker::PhantomData<R>,
 }
 
+impl<P, R, T: crate::CallingConvention<crate::Sequence<Insn>, P, R>> Default
+    for Subroutine<P, R, T>
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<P, R, T: crate::CallingConvention<crate::Sequence<Insn>, P, R>> Subroutine<P, R, T> {
+    //! Build a `Subroutine`
+    /// Build a `Subroutine`
     pub fn new() -> Self {
         use crate::Iterable;
 
@@ -25,25 +35,32 @@ impl<P, R, T: crate::CallingConvention<crate::Sequence<Insn>, P, R>> Subroutine<
     }
 }
 
-impl<P, R, T: crate::CallingConvention<crate::Sequence<Insn>, P, R>> AsRef<crate::Sequence<Insn>> for Subroutine<P, R, T> {
+impl<P, R, T: crate::CallingConvention<crate::Sequence<Insn>, P, R>> AsRef<crate::Sequence<Insn>>
+    for Subroutine<P, R, T>
+{
     fn as_ref(&self) -> &crate::Sequence<Insn> {
         &self.sequence
     }
 }
 
-
-impl<P, R, T: crate::CallingConvention<crate::Sequence<Insn>, P, R>> Goto<Insn> for Subroutine<P, R, T> {
+impl<P, R, T: crate::CallingConvention<crate::Sequence<Insn>, P, R>> Goto<Insn>
+    for Subroutine<P, R, T>
+{
     fn goto(&mut self, i: &[Insn]) {
         self.sequence.goto(i);
     }
 }
 
-impl<P, R, T: crate::CallingConvention<crate::Sequence<Insn>, P, R>> crate::Callable<crate::Sequence<Insn>, T, P, R> for Subroutine<P, R, T> {
+impl<P, R, T: crate::CallingConvention<crate::Sequence<Insn>, P, R>>
+    crate::Callable<crate::Sequence<Insn>, T, P, R> for Subroutine<P, R, T>
+{
     fn call(&self, parameters: P) -> Result<R, StropError<crate::Sequence<Insn>>> {
         T::call(&self.sequence, parameters)
     }
 }
 
 pub trait IntoSubroutine<P, R, T: crate::CallingConvention<crate::Sequence<Insn>, P, R>> {
+    //! Build a `Subroutine`
+    /// Build a `Subroutine`
     fn into_subroutine(instructions: &[Insn]) -> Subroutine<P, R, T>;
 }

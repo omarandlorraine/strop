@@ -153,7 +153,7 @@ pub enum StropError<I> {
 }
 
 pub trait Callable<I, T, P, R> {
-    //! A trait for objects which may be called. 
+    //! A trait for objects which may be called.
     //!
     //! For example, these could be machine code programs associated with a particular calling
     //! convention ready for execution in an emulated environment, or they may be function

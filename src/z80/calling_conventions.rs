@@ -1,10 +1,10 @@
-use crate::z80::Emulator;
-use crate::z80::subroutine::Subroutine;
 use crate::z80::subroutine::IntoSubroutine;
-use crate::StropError;
+use crate::z80::subroutine::Subroutine;
+use crate::z80::Emulator;
 use crate::z80::Insn;
 use crate::CallingConvention;
 use crate::Sequence;
+use crate::StropError;
 
 trait SdccCall1ParameterList {
     fn put(&self, emu: &mut Emulator);
@@ -61,7 +61,8 @@ impl CallingConvention<Sequence<Insn>, u16, u16> for SdccCall1 {
 }
 
 impl<P, R> IntoSubroutine<P, R, Self> for SdccCall1
-where SdccCall1: CallingConvention<Sequence<Insn>, P, R>
+where
+    SdccCall1: CallingConvention<Sequence<Insn>, P, R>,
 {
     fn into_subroutine(instructions: &[Insn]) -> Subroutine<P, R, Self> {
         use crate::Goto;

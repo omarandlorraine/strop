@@ -8,4 +8,4 @@ mod subroutine;
 pub use calling_conventions::SdccCall1;
 pub use emu::Emulator;
 pub use isa::Insn;
-pub use subroutine::{Subroutine, IntoSubroutine};
+pub use subroutine::{IntoSubroutine, Subroutine};

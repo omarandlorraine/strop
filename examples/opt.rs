@@ -1,8 +1,8 @@
 //! An example of a program that uses strop to optimize an existing function.
 
-use strop::Callable;
 use strop::z80::Insn;
 use strop::z80::SdccCall1;
+use strop::Callable;
 
 fn main() {
     use strop::z80::IntoSubroutine;
@@ -23,7 +23,4 @@ fn main() {
     let c = SdccCall1::into_subroutine(&mc);
 
     println!("{}", c.call(5).unwrap());
-
-
-    
 }
