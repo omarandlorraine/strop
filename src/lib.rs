@@ -28,6 +28,8 @@ pub mod z80;
 mod sequence;
 pub use sequence::Sequence;
 
+pub mod test;
+
 pub trait Iterable {
     //! A trait for anything that can be iterated across in an exhaustive manner. For example, the
     //! Bruteforce search uses this.
