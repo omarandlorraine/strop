@@ -1,3 +1,4 @@
+use crate::StropError;
 use crate::z80::Insn;
 use crate::Encode;
 use crate::Sequence;
@@ -49,7 +50,7 @@ impl Emulator {
 
     /// Puts the sequence of instructions into the emulator's memory, starting at address 0, and
     /// single steps until the end of the program is reached.
-    pub fn run(&mut self, program: &Sequence<Insn>) {
+    pub fn run<T>(&mut self, program: &Sequence<Insn>) -> Result<(), StropError<T>> {
         let encoding = program.encode();
 
         for (addr, val) in encoding.iter().enumerate() {
@@ -58,11 +59,12 @@ impl Emulator {
         }
         self.cpu.registers().set_pc(0);
 
-        loop {
+        for _ in 0..1000 {
             if usize::from(self.cpu.registers().pc()) > encoding.len() {
-                break;
+                return Ok(());
             }
             self.cpu.execute_instruction(&mut self.machine);
         }
+        return Err(StropError::DidntReturn);
     }
 }

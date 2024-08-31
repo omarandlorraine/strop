@@ -133,7 +133,7 @@ pub trait CallingConvention<I, P, R> {
 
     /// Calls the given callable object, passing it the parameters of type `P`, and returning an
     /// `R`.
-    fn call(function: &I, parameters: P) -> Option<R>;
+    fn call(function: &I, parameters: P) -> Result<R, StropError<I>>;
 }
 
 /// Enumerates reasons why executing a function may fail
@@ -156,5 +156,5 @@ pub trait Callable<I, T, P, R> {
     //! environment, or they may be function pointers, or lisp expressions, etc.)
 
     /// Calls the given callable object
-    fn call(parameters: P) -> Result<R, StropError<I>>;
+    fn call(&self, parameters: P) -> Result<R, StropError<I>>;
 }

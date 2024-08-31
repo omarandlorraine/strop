@@ -1,4 +1,7 @@
 use crate::z80::Emulator;
+use crate::z80::subroutine::Subroutine;
+use crate::z80::subroutine::IntoSubroutine;
+use crate::StropError;
 use crate::z80::Insn;
 use crate::CallingConvention;
 use crate::Sequence;
@@ -49,10 +52,21 @@ impl SdccCall1GetReturnValue<i16> for Emulator {
 pub struct SdccCall1;
 
 impl CallingConvention<Sequence<Insn>, u16, u16> for SdccCall1 {
-    fn call(instructions: &Sequence<Insn>, input: u16) -> Option<u16> {
+    fn call(instructions: &Sequence<Insn>, input: u16) -> Result<u16, StropError<Sequence<Insn>>> {
         let mut emu = Emulator::default();
         input.put(&mut emu);
-        emu.run(instructions);
-        Some(emu.get())
+        emu.run(instructions)?;
+        Ok(emu.get())
+    }
+}
+
+impl<P, R> IntoSubroutine<P, R, Self> for SdccCall1
+where SdccCall1: CallingConvention<Sequence<Insn>, P, R>
+{
+    fn into_subroutine(instructions: &[Insn]) -> Subroutine<P, R, Self> {
+        use crate::Goto;
+        let mut s = Subroutine::<P, R, Self>::new();
+        s.goto(instructions);
+        s
     }
 }

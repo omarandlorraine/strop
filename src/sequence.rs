@@ -116,6 +116,6 @@ impl<T: Clone + Random> Random for Sequence<T> {
 
 impl<I: std::clone::Clone> Goto<I> for Sequence<I> {
     fn goto(&mut self, other: &[I]) {
-        (*self.0).clone_from_slice(other);
+        self.0 = other.to_vec();
     }
 }
