@@ -86,7 +86,9 @@ pub trait Encode<T> {
 }
 
 /// Type `ConstraintViolation` represents the possibility that an unary or binary constraint has
-/// been violated. If the constraints are satisfied and not violated, then this case is represented
+/// been violated.
+///
+/// If the constraints are satisfied and not violated, then this case is represented
 /// by the variant `Ok`. If a constraint has been violated, then if a suitable replacement would be
 /// found by successive calls to the `Iterable` trait's `step` method, then it is held in the
 /// `ReplaceWith` variant. If a constraint has been violated but no such replacement can be found,
@@ -105,11 +107,11 @@ pub enum ConstraintViolation<T> {
     Violation,
 }
 
-/// To get the search space down to something manageable, a type could implement this trait to
-/// reduce the number of instructions considered. This might be used to make sure the instructions
-/// only reads from the permitted registers or memory locations for example, or might write-protect
-/// regions of memory, or remove from consideration instructions incompatible with this or that CPU
-/// variant or whatever.
+/// A type could implement this trait to reduce the number of instructions considered.
+///
+/// This might be used to make sure the instructions only reads from the permitted registers or
+/// memory locations for example, or might write-protect regions of memory, or remove from
+/// consideration instructions incompatible with this or that CPU variant or whatever.
 pub trait Prune<T> {
     /// Considers the `T` passed to this method, and if the instruction is to be pruned away from
     /// the search, returns a `ConstraintViolation<T>` that describes how to proceed with the
@@ -151,9 +153,11 @@ pub enum StropError<I> {
 }
 
 pub trait Callable<I, T, P, R> {
-    //! A trait for objects which may be called. (For examples, these could be machine code
-    //! programs associated with a particular calling convention ready for execution in an emulated
-    //! environment, or they may be function pointers, or lisp expressions, etc.)
+    //! A trait for objects which may be called. 
+    //!
+    //! For example, these could be machine code programs associated with a particular calling
+    //! convention ready for execution in an emulated environment, or they may be function
+    //! pointers, or lisp expressions, etc.)
 
     /// Calls the given callable object
     fn call(&self, parameters: P) -> Result<R, StropError<I>>;

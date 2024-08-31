@@ -7,7 +7,9 @@ use crate::Random;
 use std::ops::Index;
 
 /// `Sequence<T>` is a straight-line sequence of things, such as machine instructions or other
-/// sequences. This datatype is intended to represent a point in a search space, and so `impl`s
+/// sequences.
+///
+/// This datatype is intended to represent a point in a search space, and so `impl`s
 /// strop's `Random` and `Iterable` traits.  This means that strop can search across the search
 /// space of things represented by the `Sequence<T>`.
 #[derive(Clone, Debug)]
