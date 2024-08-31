@@ -135,3 +135,26 @@ pub trait CallingConvention<I, P, R> {
     /// `R`.
     fn call(function: &I, parameters: P) -> Option<R>;
 }
+
+/// Enumerates reasons why executing a function may fail
+#[derive(Debug)]
+pub enum StropError<I> {
+    /// The callable object does not pass static analysis, but the static analysis pass has
+    /// proposed a replacement program.
+    ProposedChange(I),
+
+    /// The represented function is not defined for the given inputs
+    Undefined,
+
+    /// The callable object ran amok during emulation, or somehow did not return
+    DidntReturn,
+}
+
+pub trait Callable<I, T, P, R> {
+    //! A trait for objects which may be called. (For examples, these could be machine code
+    //! programs associated with a particular calling convention ready for execution in an emulated
+    //! environment, or they may be function pointers, or lisp expressions, etc.)
+
+    /// Calls the given callable object
+    fn call(parameters: P) -> Result<R, StropError<I>>;
+}
