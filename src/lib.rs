@@ -41,15 +41,15 @@ pub trait Iterable {
     fn step(&mut self) -> bool;
 }
 
-pub trait PrunedSearch<P> {
+pub trait PrunedSearch<Prune> {
     //! A trait for performing a brute-force search that has some instructions pruned away. The type
-    //! P represents the prune.
+    //! Prune represents the prune.
 
     /// Start from the beginning
     fn first() -> Self;
 
     /// Take one step. Returns true if the end of the iteration has not been reached.
-    fn pruned_step(&mut self, prune: &P) -> bool;
+    fn pruned_step(&mut self, prune: &Prune) -> bool;
 }
 
 pub trait Random {
@@ -63,11 +63,11 @@ pub trait Random {
     fn step(&mut self);
 }
 
-pub trait Goto<I> {
+pub trait Goto<SamplePoint> {
     //! Trait for starting a search from a particular point in the search space.
 
     /// Replace self with some other value
-    fn goto(&mut self, destination: &[I]);
+    fn goto(&mut self, destination: &[SamplePoint]);
 }
 
 pub trait Encode<T> {
@@ -131,21 +131,24 @@ pub trait ConstraintSatisfaction<T> {
     fn binary(&self, a: &T, b: &T) -> ConstraintViolation<T>;
 }
 
-pub trait CallingConvention<I, P, R> {
+pub trait CallingConvention<SamplePoint, InputParameters, ReturnValue> {
     //! A trait for calling conventions. A type which implements this trait can execute a function
     //! taking the given argument(s), and return the function's return value.
 
-    /// Calls the given callable object, passing it the parameters of type `P`, and returning an
-    /// `R`.
-    fn call(function: &I, parameters: P) -> Result<R, StropError<I>>;
+    /// Calls the given callable object, passing it the parameters of type `InputParameters`, and returning an
+    /// `ReturnValue`.
+    fn call(
+        function: &SamplePoint,
+        parameters: InputParameters,
+    ) -> Result<ReturnValue, StropError<SamplePoint>>;
 }
 
 /// Enumerates reasons why executing a function may fail
 #[derive(Debug)]
-pub enum StropError<I> {
+pub enum StropError<SamplePoint> {
     /// The callable object does not pass static analysis, but the static analysis pass has
     /// proposed a replacement program.
-    ProposedChange(I),
+    ProposedChange(SamplePoint),
 
     /// The represented function is not defined for the given inputs
     Undefined,
@@ -154,7 +157,7 @@ pub enum StropError<I> {
     DidntReturn,
 }
 
-pub trait Callable<I, T, P, R> {
+pub trait Callable<SamplePoint, T, InputParameters, ReturnValue> {
     //! A trait for objects which may be called.
     //!
     //! For example, these could be machine code programs associated with a particular calling
@@ -162,5 +165,5 @@ pub trait Callable<I, T, P, R> {
     //! pointers, or lisp expressions, etc.)
 
     /// Calls the given callable object
-    fn call(&self, parameters: P) -> Result<R, StropError<I>>;
+    fn call(&self, parameters: InputParameters) -> Result<ReturnValue, StropError<SamplePoint>>;
 }

@@ -116,8 +116,8 @@ impl<T: Clone + Random> Random for Sequence<T> {
     }
 }
 
-impl<I: std::clone::Clone> Goto<I> for Sequence<I> {
-    fn goto(&mut self, other: &[I]) {
+impl<SamplePoint: std::clone::Clone> Goto<SamplePoint> for Sequence<SamplePoint> {
+    fn goto(&mut self, other: &[SamplePoint]) {
         self.0 = other.to_vec();
     }
 }

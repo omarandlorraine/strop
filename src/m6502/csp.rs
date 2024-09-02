@@ -87,14 +87,14 @@ impl<V: mos6502::Variant + std::clone::Clone> crate::Prune<Insn<V>> for Prune {
     }
 }
 
-impl<V: mos6502::Variant + Default + std::clone::Clone, P: crate::Prune<Insn<V>>>
-    crate::PrunedSearch<P> for Insn<V>
+impl<V: mos6502::Variant + Default + std::clone::Clone, Prune: crate::Prune<Insn<V>>>
+    crate::PrunedSearch<Prune> for Insn<V>
 {
     fn first() -> Self {
         Default::default()
     }
 
-    fn pruned_step(&mut self, prune: &P) -> bool {
+    fn pruned_step(&mut self, prune: &Prune) -> bool {
         use crate::Iterable;
         loop {
             if !self.step() {

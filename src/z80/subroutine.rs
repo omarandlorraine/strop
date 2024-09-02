@@ -5,22 +5,34 @@ use crate::StropError;
 /// Wraps up a `Sequence<Insn>`, that is, a sequence of Z80 instructions, and associates it with a
 /// calling convention, so that it can be called using strop's supplied `Callable` trait.
 #[derive(Debug)]
-pub struct Subroutine<P, R, T: crate::CallingConvention<crate::Sequence<Insn>, P, R>> {
+pub struct Subroutine<
+    InputParameters,
+    ReturnValue,
+    T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
+> {
     sequence: crate::Sequence<Insn>,
     d: std::marker::PhantomData<T>,
-    e: std::marker::PhantomData<P>,
-    f: std::marker::PhantomData<R>,
+    e: std::marker::PhantomData<InputParameters>,
+    f: std::marker::PhantomData<ReturnValue>,
 }
 
-impl<P, R, T: crate::CallingConvention<crate::Sequence<Insn>, P, R>> Default
-    for Subroutine<P, R, T>
+impl<
+        InputParameters,
+        ReturnValue,
+        T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
+    > Default for Subroutine<InputParameters, ReturnValue, T>
 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<P, R, T: crate::CallingConvention<crate::Sequence<Insn>, P, R>> Subroutine<P, R, T> {
+impl<
+        InputParameters,
+        ReturnValue,
+        T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
+    > Subroutine<InputParameters, ReturnValue, T>
+{
     //! Build a `Subroutine`
     /// Build a `Subroutine`
     pub fn new() -> Self {
@@ -35,32 +47,50 @@ impl<P, R, T: crate::CallingConvention<crate::Sequence<Insn>, P, R>> Subroutine<
     }
 }
 
-impl<P, R, T: crate::CallingConvention<crate::Sequence<Insn>, P, R>> AsRef<crate::Sequence<Insn>>
-    for Subroutine<P, R, T>
+impl<
+        InputParameters,
+        ReturnValue,
+        T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
+    > AsRef<crate::Sequence<Insn>> for Subroutine<InputParameters, ReturnValue, T>
 {
     fn as_ref(&self) -> &crate::Sequence<Insn> {
         &self.sequence
     }
 }
 
-impl<P, R, T: crate::CallingConvention<crate::Sequence<Insn>, P, R>> Goto<Insn>
-    for Subroutine<P, R, T>
+impl<
+        InputParameters,
+        ReturnValue,
+        T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
+    > Goto<Insn> for Subroutine<InputParameters, ReturnValue, T>
 {
     fn goto(&mut self, i: &[Insn]) {
         self.sequence.goto(i);
     }
 }
 
-impl<P, R, T: crate::CallingConvention<crate::Sequence<Insn>, P, R>>
-    crate::Callable<crate::Sequence<Insn>, T, P, R> for Subroutine<P, R, T>
+impl<
+        InputParameters,
+        ReturnValue,
+        T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
+    > crate::Callable<crate::Sequence<Insn>, T, InputParameters, ReturnValue>
+    for Subroutine<InputParameters, ReturnValue, T>
 {
-    fn call(&self, parameters: P) -> Result<R, StropError<crate::Sequence<Insn>>> {
+    fn call(
+        &self,
+        parameters: InputParameters,
+    ) -> Result<ReturnValue, StropError<crate::Sequence<Insn>>> {
         T::call(&self.sequence, parameters)
     }
 }
 
-pub trait IntoSubroutine<P, R, T: crate::CallingConvention<crate::Sequence<Insn>, P, R>> {
+pub trait IntoSubroutine<
+    InputParameters,
+    ReturnValue,
+    T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
+>
+{
     //! Build a `Subroutine`
     /// Build a `Subroutine`
-    fn into_subroutine(instructions: &[Insn]) -> Subroutine<P, R, T>;
+    fn into_subroutine(instructions: &[Insn]) -> Subroutine<InputParameters, ReturnValue, T>;
 }

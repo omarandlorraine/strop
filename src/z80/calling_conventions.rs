@@ -60,13 +60,13 @@ impl CallingConvention<Sequence<Insn>, u16, u16> for SdccCall1 {
     }
 }
 
-impl<P, R> IntoSubroutine<P, R, Self> for SdccCall1
+impl<InputParameters, ReturnValue> IntoSubroutine<InputParameters, ReturnValue, Self> for SdccCall1
 where
-    SdccCall1: CallingConvention<Sequence<Insn>, P, R>,
+    SdccCall1: CallingConvention<Sequence<Insn>, InputParameters, ReturnValue>,
 {
-    fn into_subroutine(instructions: &[Insn]) -> Subroutine<P, R, Self> {
+    fn into_subroutine(instructions: &[Insn]) -> Subroutine<InputParameters, ReturnValue, Self> {
         use crate::Goto;
-        let mut s = Subroutine::<P, R, Self>::new();
+        let mut s = Subroutine::<InputParameters, ReturnValue, Self>::new();
         s.goto(instructions);
         s
     }

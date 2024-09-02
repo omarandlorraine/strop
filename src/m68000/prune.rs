@@ -127,12 +127,12 @@ impl crate::Prune<Insn> for Prune {
     }
 }
 
-impl<P: crate::Prune<Self>> crate::PrunedSearch<P> for Insn {
+impl<Prune: crate::Prune<Self>> crate::PrunedSearch<Prune> for Insn {
     fn first() -> Self {
         Self::default()
     }
 
-    fn pruned_step(&mut self, prune: &P) -> bool {
+    fn pruned_step(&mut self, prune: &Prune) -> bool {
         use crate::Iterable;
         loop {
             self.step();

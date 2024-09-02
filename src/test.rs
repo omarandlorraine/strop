@@ -70,11 +70,17 @@ impl<A: Vals + Copy, B: Vals + Copy, C: Vals + Copy> Vals for (A, B, C) {
 }
 
 /// Derives a simple test suite for the given callable.
-pub fn quick_tests<P: Vals + Copy, R: Vals, I, S, T: Callable<I, S, P, R>>(
+pub fn quick_tests<
+    InputParameters: Vals + Copy,
+    ReturnValue: Vals,
+    SamplePoint,
+    S,
+    T: Callable<SamplePoint, S, InputParameters, ReturnValue>,
+>(
     callable: T,
-) -> Vec<(P, R)> {
+) -> Vec<(InputParameters, ReturnValue)> {
     let mut v = vec![];
-    for p in P::vals() {
+    for p in InputParameters::vals() {
         if let Ok(r) = callable.call(p) {
             v.push((p, r))
         }
