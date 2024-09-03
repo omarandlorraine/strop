@@ -87,3 +87,25 @@ pub fn quick_tests<
     }
     v
 }
+
+/// Checks if a callable passes the test suite.
+pub fn passes<P: Vals + Copy, R: Vals + std::cmp::PartialEq, I, S, T: Callable<I, S, P, R>>(
+    callable: T,
+suite: Vec<(P, R)> ) -> bool {
+    for t in suite {
+        match callable.call(t.0) {
+            Err(_) => {
+                // The function doesn't pass the test because of some error during execution
+                return false;
+            }
+            Ok(r) => {
+                if r != t.1 {
+                    // The function doesn't pass the test because it returned some (valid) value
+                    // different from the expected one
+                    return false;
+                }
+            }
+        }
+    }
+    true
+}
