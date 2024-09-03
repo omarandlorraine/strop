@@ -73,7 +73,7 @@ impl<
         InputParameters,
         ReturnValue,
         T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
-    > crate::Callable<crate::Sequence<Insn>, T, InputParameters, ReturnValue>
+    > crate::Callable<crate::Sequence<Insn>, InputParameters, ReturnValue>
     for Subroutine<InputParameters, ReturnValue, T>
 {
     fn call(

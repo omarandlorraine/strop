@@ -157,7 +157,7 @@ pub enum StropError<SamplePoint> {
     DidntReturn,
 }
 
-pub trait Callable<SamplePoint, T, InputParameters, ReturnValue> {
+pub trait Callable<SamplePoint, InputParameters, ReturnValue> {
     //! A trait for objects which may be called.
     //!
     //! For example, these could be machine code programs associated with a particular calling
