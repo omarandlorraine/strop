@@ -30,6 +30,9 @@ pub use sequence::Sequence;
 
 pub mod test;
 
+mod bruteforce;
+pub use bruteforce::BruteForce;
+
 pub trait Iterable {
     //! A trait for anything that can be iterated across in an exhaustive manner. For example, the
     //! Bruteforce search uses this.
@@ -144,7 +147,7 @@ pub trait CallingConvention<SamplePoint, InputParameters, ReturnValue> {
 }
 
 /// Enumerates reasons why executing a function may fail
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum StropError<SamplePoint> {
     /// The callable object does not pass static analysis, but the static analysis pass has
     /// proposed a replacement program.

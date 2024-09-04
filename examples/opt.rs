@@ -2,7 +2,10 @@
 
 use strop::z80::Insn;
 use strop::z80::SdccCall1;
+use strop::z80::Subroutine;
+use strop::BruteForce;
 use strop::Callable;
+use strop::Sequence;
 
 fn main() {
     use strop::z80::IntoSubroutine;
@@ -22,5 +25,19 @@ fn main() {
     // This machine code is callable using the sdcccall(1) calling convention.
     let c = SdccCall1::into_subroutine(&mc);
 
+    // you can call this function
     println!("{}", c.call(5).unwrap());
+
+    // you can do a bruteforce search for Z80 machine code programs implementing the same function
+    let mut bruteforce: BruteForce<
+        _,
+        _,
+        _,
+        Sequence<strop::z80::Insn>,
+        _,
+        Subroutine<u16, u16, SdccCall1>,
+    > = strop::BruteForce::new(c);
+
+    let optimized = bruteforce.search();
+    println!("{:?}", optimized);
 }

@@ -1,10 +1,11 @@
 use crate::z80::Insn;
 use crate::Goto;
+use crate::Iterable;
 use crate::StropError;
 
 /// Wraps up a `Sequence<Insn>`, that is, a sequence of Z80 instructions, and associates it with a
 /// calling convention, so that it can be called using strop's supplied `Callable` trait.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Subroutine<
     InputParameters,
     ReturnValue,
@@ -14,6 +15,21 @@ pub struct Subroutine<
     d: std::marker::PhantomData<T>,
     e: std::marker::PhantomData<InputParameters>,
     f: std::marker::PhantomData<ReturnValue>,
+}
+
+impl<
+        InputParameters,
+        ReturnValue,
+        T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
+    > Iterable for Subroutine<InputParameters, ReturnValue, T>
+{
+    fn first() -> Self {
+        Self::new()
+    }
+
+    fn step(&mut self) -> bool {
+        self.sequence.step()
+    }
 }
 
 impl<

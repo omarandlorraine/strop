@@ -50,7 +50,8 @@ impl<T: Clone + Iterable> Iterable for Sequence<T> {
         loop {
             if offset == self.0.len() {
                 self.0.push(T::first());
-            } else if self.0[offset].step() {
+                return true;
+            } else if !self.0[offset].step() {
                 offset += 1;
             } else {
                 return true;

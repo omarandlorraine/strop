@@ -48,7 +48,7 @@ impl SdccCall1GetReturnValue<i16> for Emulator {
 
 /// Mimics the calling convention used by modern-day SDCC. SDCC's internal documentation calls this
 /// `__sdcccall(1)`.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct SdccCall1;
 
 impl CallingConvention<Sequence<Insn>, u16, u16> for SdccCall1 {

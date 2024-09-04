@@ -1,5 +1,6 @@
 //! Module containing miscellaneous functions for testing callables
 use crate::Callable;
+use rand;
 
 /// Returns a few representative values for a given type
 ///
@@ -9,11 +10,18 @@ pub trait Vals {
     fn vals() -> Vec<Self>
     where
         Self: std::marker::Sized;
+
+    /// Returns a random value
+    fn rand() -> Self;
 }
 
 impl Vals for bool {
     fn vals() -> Vec<Self> {
         vec![true, false]
+    }
+
+    fn rand() -> Self {
+        rand::random()
     }
 }
 
@@ -26,6 +34,10 @@ impl Vals for u8 {
             v.push(u8::MAX - i);
         }
         v
+    }
+
+    fn rand() -> Self {
+        rand::random()
     }
 }
 
@@ -41,6 +53,27 @@ impl Vals for i16 {
         }
         v
     }
+
+    fn rand() -> Self {
+        rand::random()
+    }
+}
+
+impl Vals for u16 {
+    fn vals() -> Vec<Self> {
+        let mut v = vec![0];
+        for i in 0..16 {
+            v.push(1 << i);
+            v.push(i);
+            v.push(u16::MAX - i);
+            v.push(u16::MIN + i);
+        }
+        v
+    }
+
+    fn rand() -> Self {
+        rand::random()
+    }
 }
 
 impl<A: Vals + Copy, B: Vals + Copy> Vals for (A, B) {
@@ -52,6 +85,10 @@ impl<A: Vals + Copy, B: Vals + Copy> Vals for (A, B) {
             }
         }
         v
+    }
+
+    fn rand() -> Self {
+        (A::rand(), B::rand())
     }
 }
 
@@ -67,6 +104,10 @@ impl<A: Vals + Copy, B: Vals + Copy, C: Vals + Copy> Vals for (A, B, C) {
         }
         v
     }
+
+    fn rand() -> Self {
+        (A::rand(), B::rand(), C::rand())
+    }
 }
 
 /// Derives a simple test suite for the given callable.
@@ -76,7 +117,7 @@ pub fn quick_tests<
     SamplePoint,
     T: Callable<SamplePoint, InputParameters, ReturnValue>,
 >(
-    callable: T,
+    callable: &T,
 ) -> Vec<(InputParameters, ReturnValue)> {
     let mut v = vec![];
     for p in InputParameters::vals() {
@@ -88,9 +129,35 @@ pub fn quick_tests<
 }
 
 /// Checks if a callable passes the test suite.
+pub fn fuzz<
+    P: Vals + Copy,
+    R: Vals + std::cmp::PartialEq,
+    I,
+    J,
+    T: Callable<I, P, R>,
+    U: Callable<J, P, R>,
+>(
+    target_function: &T,
+    candidate: &U,
+    iterations: usize,
+) -> Option<(P, R)> {
+    for _ in 0..iterations {
+        let i = P::rand();
+        if let Ok(r) = target_function.call(i) {
+            if let Ok(s) = candidate.call(i) {
+                if r != s {
+                    return Some((i, r));
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Checks if a callable passes the test suite.
 pub fn passes<P: Vals + Copy, R: Vals + std::cmp::PartialEq, I, T: Callable<I, P, R>>(
-    callable: T,
-    suite: Vec<(P, R)>,
+    callable: &T,
+    suite: &Vec<(P, R)>,
 ) -> bool {
     for t in suite {
         match callable.call(t.0) {
