@@ -1,5 +1,6 @@
 //! A module defining `Sequence<T>`.
 
+use crate::Disassemble;
 use crate::Encode;
 use crate::Goto;
 use crate::Iterable;
@@ -21,6 +22,17 @@ impl<T> Index<usize> for Sequence<T> {
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.0[index]
+    }
+}
+
+impl<T> Disassemble for Sequence<T>
+where
+    T: Disassemble,
+{
+    fn dasm(&self) {
+        for i in &self.0 {
+            i.dasm();
+        }
     }
 }
 

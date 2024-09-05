@@ -1,3 +1,4 @@
+use crate::Disassemble;
 use std::fmt::Display;
 
 impl Display for crate::z80::isa::Insn {
@@ -17,5 +18,11 @@ impl std::fmt::Debug for crate::z80::isa::Insn {
             .collect::<Vec<String>>()
             .join(" ");
         write!(f, "{}", bytes)
+    }
+}
+
+impl Disassemble for crate::z80::isa::Insn {
+    fn dasm(&self) {
+        println!("\t{}", self);
     }
 }

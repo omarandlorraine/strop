@@ -89,6 +89,17 @@ impl<
         InputParameters,
         ReturnValue,
         T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
+    > crate::Disassemble for Subroutine<InputParameters, ReturnValue, T>
+{
+    fn dasm(&self) {
+        self.sequence.dasm();
+    }
+}
+
+impl<
+        InputParameters,
+        ReturnValue,
+        T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
     > crate::Callable<crate::Sequence<Insn>, InputParameters, ReturnValue>
     for Subroutine<InputParameters, ReturnValue, T>
 {

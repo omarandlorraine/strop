@@ -5,6 +5,7 @@ use strop::z80::SdccCall1;
 use strop::z80::Subroutine;
 use strop::BruteForce;
 use strop::Callable;
+use strop::Disassemble;
 use strop::Sequence;
 
 fn main() {
@@ -26,7 +27,10 @@ fn main() {
     let c = SdccCall1::into_subroutine(&mc);
 
     // you can call this function
-    println!("{}", c.call(5).unwrap());
+    println!("The function returns {}", c.call(5).unwrap());
+
+    println!("The subroutine we started with:");
+    c.dasm();
 
     // you can do a bruteforce search for Z80 machine code programs implementing the same function
     let mut bruteforce: BruteForce<
@@ -38,6 +42,8 @@ fn main() {
         Subroutine<u16, u16, SdccCall1>,
     > = strop::BruteForce::new(c);
 
-    let optimized = bruteforce.search();
-    println!("{:?}", optimized);
+    let bf = bruteforce.search().unwrap();
+
+    println!("An equivalent subroutine we found by bruteforce search:");
+    bf.dasm();
 }

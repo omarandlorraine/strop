@@ -33,6 +33,13 @@ pub mod test;
 mod bruteforce;
 pub use bruteforce::BruteForce;
 
+pub trait Disassemble {
+    //! A trait for printing out the disassembly of an instruction, a subroutine, or anything else
+
+    /// Disassemble to stdout
+    fn dasm(&self);
+}
+
 pub trait Iterable {
     //! A trait for anything that can be iterated across in an exhaustive manner. For example, the
     //! Bruteforce search uses this.
