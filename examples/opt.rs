@@ -36,9 +36,7 @@ fn main() {
     let mut bruteforce: BruteForce<
         _,
         _,
-        _,
-        Sequence<strop::z80::Insn>,
-        _,
+        Subroutine<u16, u16, SdccCall1>,
         Subroutine<u16, u16, SdccCall1>,
     > = strop::BruteForce::new(c);
 

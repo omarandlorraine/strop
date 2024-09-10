@@ -8,28 +8,22 @@ use crate::Iterable;
 pub struct BruteForce<
     InputParameters,
     ReturnValue,
-    R,
-    S,
-    T: Callable<R, InputParameters, ReturnValue>,
-    U: Callable<S, InputParameters, ReturnValue> + Iterable,
+    T: Callable<InputParameters, ReturnValue>,
+    U: Callable<InputParameters, ReturnValue> + Iterable,
 > {
     target_function: T,
     candidate: U,
     tests: Vec<(InputParameters, ReturnValue)>,
     input: std::marker::PhantomData<InputParameters>,
     ret: std::marker::PhantomData<ReturnValue>,
-    r: std::marker::PhantomData<R>,
-    s: std::marker::PhantomData<S>,
 }
 
 impl<
         InputParameters: Copy + Vals,
         ReturnValue: Vals + std::cmp::PartialEq,
-        R,
-        S,
-        T: Callable<R, InputParameters, ReturnValue>,
-        U: Callable<S, InputParameters, ReturnValue> + Iterable + Clone,
-    > BruteForce<InputParameters, ReturnValue, R, S, T, U>
+        T: Callable<InputParameters, ReturnValue>,
+        U: Callable<InputParameters, ReturnValue> + Iterable + Clone,
+    > BruteForce<InputParameters, ReturnValue, T, U>
 {
     /// Constructs a new `BruteForce`
     pub fn new(target_function: T) -> Self {
@@ -41,8 +35,6 @@ impl<
             tests,
             input: std::marker::PhantomData,
             ret: std::marker::PhantomData,
-            r: std::marker::PhantomData,
-            s: std::marker::PhantomData,
         }
     }
 

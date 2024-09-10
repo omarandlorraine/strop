@@ -100,13 +100,13 @@ impl<
         InputParameters,
         ReturnValue,
         T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
-    > crate::Callable<crate::Sequence<Insn>, InputParameters, ReturnValue>
+    > crate::Callable<InputParameters, ReturnValue>
     for Subroutine<InputParameters, ReturnValue, T>
 {
     fn call(
         &self,
         parameters: InputParameters,
-    ) -> Result<ReturnValue, StropError<crate::Sequence<Insn>>> {
+    ) -> Result<ReturnValue, StropError> {
         T::call(&self.sequence, parameters)
     }
 }

@@ -50,7 +50,7 @@ impl Emulator {
 
     /// Puts the sequence of instructions into the emulator's memory, starting at address 0, and
     /// single steps until the end of the program is reached.
-    pub fn run<T>(&mut self, program: &Sequence<Insn>) -> Result<(), StropError<T>> {
+    pub fn run(&mut self, program: &Sequence<Insn>) -> Result<(), StropError> {
         let encoding = program.encode();
 
         for (addr, val) in encoding.iter().enumerate() {

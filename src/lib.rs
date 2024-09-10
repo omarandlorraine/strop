@@ -150,15 +150,19 @@ pub trait CallingConvention<SamplePoint, InputParameters, ReturnValue> {
     fn call(
         function: &SamplePoint,
         parameters: InputParameters,
-    ) -> Result<ReturnValue, StropError<SamplePoint>>;
+    ) -> Result<ReturnValue, StropError>;
 }
 
 /// Enumerates reasons why executing a function may fail
 #[derive(Debug, PartialEq)]
-pub enum StropError<SamplePoint> {
+pub enum StropError {
     /// The callable object does not pass static analysis, but the static analysis pass has
-    /// proposed a replacement program.
-    ProposedChange(SamplePoint),
+    /// proposed for a step to be taken at the given offset
+
+    Step(usize),
+    /// The callable object does not pass static analysis, but the static analysis pass has
+    /// proposed for a lunge to be taken at the given offset
+    Lunge(usize),
 
     /// The represented function is not defined for the given inputs
     Undefined,
@@ -167,7 +171,7 @@ pub enum StropError<SamplePoint> {
     DidntReturn,
 }
 
-pub trait Callable<SamplePoint, InputParameters, ReturnValue> {
+pub trait Callable<InputParameters, ReturnValue> {
     //! A trait for objects which may be called.
     //!
     //! For example, these could be machine code programs associated with a particular calling
@@ -175,5 +179,5 @@ pub trait Callable<SamplePoint, InputParameters, ReturnValue> {
     //! pointers, or lisp expressions, etc.)
 
     /// Calls the given callable object
-    fn call(&self, parameters: InputParameters) -> Result<ReturnValue, StropError<SamplePoint>>;
+    fn call(&self, parameters: InputParameters) -> Result<ReturnValue, StropError>;
 }

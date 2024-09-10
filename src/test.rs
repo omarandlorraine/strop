@@ -114,8 +114,7 @@ impl<A: Vals + Copy, B: Vals + Copy, C: Vals + Copy> Vals for (A, B, C) {
 pub fn quick_tests<
     InputParameters: Vals + Copy,
     ReturnValue: Vals,
-    SamplePoint,
-    T: Callable<SamplePoint, InputParameters, ReturnValue>,
+    T: Callable<InputParameters, ReturnValue>,
 >(
     callable: &T,
 ) -> Vec<(InputParameters, ReturnValue)> {
@@ -132,10 +131,8 @@ pub fn quick_tests<
 pub fn fuzz<
     P: Vals + Copy,
     R: Vals + std::cmp::PartialEq,
-    I,
-    J,
-    T: Callable<I, P, R>,
-    U: Callable<J, P, R>,
+    T: Callable<P, R>,
+    U: Callable<P, R>,
 >(
     target_function: &T,
     candidate: &U,
@@ -155,7 +152,7 @@ pub fn fuzz<
 }
 
 /// Checks if a callable passes the test suite.
-pub fn passes<P: Vals + Copy, R: Vals + std::cmp::PartialEq, I, T: Callable<I, P, R>>(
+pub fn passes<P: Vals + Copy, R: Vals + std::cmp::PartialEq, T: Callable<P, R>>(
     callable: &T,
     suite: &Vec<(P, R)>,
 ) -> bool {
