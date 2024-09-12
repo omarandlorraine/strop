@@ -1,153 +1,68 @@
 use crate::z80::Insn;
-use crate::Goto;
 use crate::IterableSequence;
-use crate::StropError;
 
-/// Wraps up a `Sequence<Insn>`, that is, a sequence of Z80 instructions, and associates it with a
-/// calling convention, so that it can be called using strop's supplied `Callable` trait.
+/// Wraps up a `Sequence<Insn>`, that is, a sequence of Z80 instructions, and associates it with
+/// static analysis that makes sure it's a valid Z80 subroutine.
 #[derive(Clone, Debug)]
-pub struct Subroutine<
-    InputParameters,
-    ReturnValue,
-    T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
-> {
-    sequence: crate::Sequence<Insn>,
-    d: std::marker::PhantomData<T>,
-    e: std::marker::PhantomData<InputParameters>,
-    f: std::marker::PhantomData<ReturnValue>,
-}
+pub struct Subroutine(crate::Sequence<Insn>);
 
-impl<
-        InputParameters,
-        ReturnValue,
-        T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
-    > Subroutine<InputParameters, ReturnValue, T>
-{
+impl Subroutine {
     fn fixup(&mut self) {
         use crate::Encode;
-        while self.sequence[self.sequence.last_instruction_offset()].encode()[0] != 0xc9 {
+        while self.0[self.0.last_instruction_offset()].encode()[0] != 0xc9 {
             // make sure the subroutine ends in a return instruction
-            self.sequence
-                .stride_at(self.sequence.last_instruction_offset());
+            self.0.stride_at(self.0.last_instruction_offset());
         }
     }
 }
 
-impl<
-        InputParameters,
-        ReturnValue,
-        T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
-    > IterableSequence for Subroutine<InputParameters, ReturnValue, T>
-{
-    fn first() -> Self {
-        Self::new()
-    }
-
-    fn stride_at(&mut self, offset: usize) -> bool {
-        self.sequence.stride_at(offset);
-        self.fixup();
-        true
-    }
-
-    fn step_at(&mut self, offset: usize) -> bool {
-        self.sequence.step_at(offset);
-        self.fixup();
-        true
-    }
-}
-
-impl<
-        InputParameters,
-        ReturnValue,
-        T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
-    > Default for Subroutine<InputParameters, ReturnValue, T>
-{
+impl Default for Subroutine {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<
-        InputParameters,
-        ReturnValue,
-        T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
-    > Subroutine<InputParameters, ReturnValue, T>
-{
+impl IterableSequence for Subroutine {
+    fn first() -> Self {
+        Self::new()
+    }
+
+    fn stride_at(&mut self, offset: usize) -> bool {
+        self.0.stride_at(offset);
+        self.fixup();
+        true
+    }
+
+    fn step_at(&mut self, offset: usize) -> bool {
+        self.0.step_at(offset);
+        self.fixup();
+        true
+    }
+}
+
+impl Subroutine {
     //! Build a `Subroutine`
     /// Build a `Subroutine`
     pub fn new() -> Self {
         use crate::IterableSequence;
 
-        Self {
-            sequence: crate::Sequence::<Insn>::first(),
-            d: Default::default(),
-            e: Default::default(),
-            f: Default::default(),
-        }
+        Self(crate::Sequence::<Insn>::first())
     }
 }
 
-impl<
-        InputParameters,
-        ReturnValue,
-        T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
-    > AsRef<crate::Sequence<Insn>> for Subroutine<InputParameters, ReturnValue, T>
-{
+impl AsRef<crate::Sequence<Insn>> for Subroutine {
     fn as_ref(&self) -> &crate::Sequence<Insn> {
-        &self.sequence
+        &self.0
     }
 }
 
-impl<
-        InputParameters,
-        ReturnValue,
-        T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
-    > Goto<Insn> for Subroutine<InputParameters, ReturnValue, T>
-{
-    fn goto(&mut self, i: &[Insn]) {
-        self.sequence.goto(i);
+impl crate::Goto<Insn> for Subroutine {
+    fn goto(&mut self, t: &[Insn]) {
+        self.0.goto(t);
     }
 }
-
-impl<
-        InputParameters,
-        ReturnValue,
-        T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
-    > crate::Disassemble for Subroutine<InputParameters, ReturnValue, T>
-{
+impl crate::Disassemble for Subroutine {
     fn dasm(&self) {
-        self.sequence.dasm();
+        self.0.dasm();
     }
-}
-
-impl<
-        InputParameters,
-        ReturnValue,
-        T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
-    > crate::Callable<InputParameters, ReturnValue>
-    for Subroutine<InputParameters, ReturnValue, T>
-{
-    fn call(&self, parameters: InputParameters) -> Result<ReturnValue, StropError> {
-        use crate::Encode;
-        let offs = self.sequence.last_instruction_offset();
-        let last_instruction = self.sequence[offs];
-        if last_instruction.encode()[0] != 0xc9 {
-            // The subroutine doesn't end in a `RET` instruction; lunge the instruction at that
-            // offset
-            Err(StropError::Stride(offs))
-        } else {
-            T::call(&self.sequence, parameters)
-        }
-    }
-}
-
-pub trait IntoSubroutine<
-    InputParameters,
-    ReturnValue,
-    T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
->
-{
-    //! Build a `Subroutine`
-    /// Build a `Subroutine`
-    fn into_subroutine(instructions: &[Insn]) -> Subroutine<InputParameters, ReturnValue, T>;
 }

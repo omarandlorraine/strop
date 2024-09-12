@@ -2,20 +2,31 @@
 
 use strop::z80::Insn;
 use strop::z80::SdccCall1;
-use strop::z80::Subroutine;
 use strop::BruteForce;
 use strop::Callable;
 use strop::Disassemble;
 
-fn main() {
-    use strop::z80::IntoSubroutine;
-
+fn target_function() -> SdccCall1 {
     // Construct some machine code.
+    //
+    // In a real world scenario maybe you'd read this in from assembly on something, but you can
+    // also build up the machine code program in the way shown below:
+    //
     // It's equivalent to this C code:
-    // `int f(uint16_t unused) { return 16511; }`
+    // `uint16_t f(uint16_t unused) { return 16511; }`
+    //
+    // Or, alternatively,
+    // `uint8_t f(uint16_t unused) { return 127; }`
+    // (having the dead code, `ld h,40h`.)
+    //
+    // or any number of other interpretations.
     //
     // (this is not a terribly efficient way to encode this program; you can save a byte and some
     // time with hex 217f40c9 instead -- let's see if strop figures this out!)
+
+    use strop::Goto;
+    use strop::IterableSequence;
+
     let mc = [
         Insn::new(&[0x26, 0x40]), // LD H,40H
         Insn::new(&[0x2e, 0x7f]), // LD L,7FH
@@ -23,21 +34,27 @@ fn main() {
     ];
 
     // This machine code is callable using the sdcccall(1) calling convention.
-    let c = SdccCall1::into_subroutine(&mc);
+    let mut c = SdccCall1::first();
+    c.goto(&mc);
+    c
+}
 
-    // you can call this function
-    println!("The function returns {}", c.call(5).unwrap());
+fn main() {
+    let c = target_function();
+
+    // you can call this function in a few different ways
+    let result_u16: u16 = c.call(5u16).unwrap();
+    let result_i8: i8 = c.call(5u16).unwrap();
+    println!(
+        "The function returns, for example, {} (u16), or {} (i8)",
+        result_u16, result_i8
+    );
 
     println!("The subroutine we started with:");
     c.dasm();
 
     // you can do a bruteforce search for Z80 machine code programs implementing the same function
-    let mut bruteforce: BruteForce<
-        _,
-        _,
-        Subroutine<u16, u16, SdccCall1>,
-        Subroutine<u16, u16, SdccCall1>,
-    > = strop::BruteForce::new(c);
+    let mut bruteforce: BruteForce<u16, u16, SdccCall1, SdccCall1> = strop::BruteForce::new(c);
 
     let bf = bruteforce.search().unwrap();
 

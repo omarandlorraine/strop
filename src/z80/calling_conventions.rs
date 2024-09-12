@@ -1,9 +1,7 @@
-use crate::z80::subroutine::IntoSubroutine;
 use crate::z80::subroutine::Subroutine;
 use crate::z80::Emulator;
 use crate::z80::Insn;
-use crate::CallingConvention;
-use crate::Sequence;
+use crate::IterableSequence;
 use crate::StropError;
 
 trait SdccCall1ParameterList {
@@ -49,25 +47,51 @@ impl SdccCall1GetReturnValue<i16> for Emulator {
 /// Mimics the calling convention used by modern-day SDCC. SDCC's internal documentation calls this
 /// `__sdcccall(1)`.
 #[derive(Clone, Debug)]
-pub struct SdccCall1;
+pub struct SdccCall1(Subroutine);
 
-impl CallingConvention<Sequence<Insn>, u16, u16> for SdccCall1 {
-    fn call(instructions: &Sequence<Insn>, input: u16) -> Result<u16, StropError> {
+impl crate::Disassemble for SdccCall1 {
+    fn dasm(&self) {
+        self.0.dasm()
+    }
+}
+
+impl AsRef<crate::Sequence<Insn>> for SdccCall1 {
+    fn as_ref(&self) -> &crate::Sequence<Insn> {
+        self.0.as_ref()
+    }
+}
+
+impl<InputParameters: SdccCall1ParameterList, ReturnValue>
+    crate::Callable<InputParameters, ReturnValue> for SdccCall1
+where
+    Emulator: SdccCall1GetReturnValue<ReturnValue>,
+{
+    fn call(&self, input: InputParameters) -> Result<ReturnValue, StropError> {
         let mut emu = Emulator::default();
         input.put(&mut emu);
-        emu.run(instructions)?;
+        emu.run(self.0.as_ref())?;
         Ok(emu.get())
     }
 }
 
-impl<InputParameters, ReturnValue> IntoSubroutine<InputParameters, ReturnValue, Self> for SdccCall1
-where
-    SdccCall1: CallingConvention<Sequence<Insn>, InputParameters, ReturnValue>,
-{
-    fn into_subroutine(instructions: &[Insn]) -> Subroutine<InputParameters, ReturnValue, Self> {
-        use crate::Goto;
-        let mut s = Subroutine::<InputParameters, ReturnValue, Self>::new();
-        s.goto(instructions);
-        s
+impl IterableSequence for SdccCall1 {
+    fn first() -> Self {
+        Self(Subroutine::new())
+    }
+
+    fn stride_at(&mut self, offset: usize) -> bool {
+        self.0.stride_at(offset);
+        true
+    }
+
+    fn step_at(&mut self, offset: usize) -> bool {
+        self.0.step_at(offset);
+        true
+    }
+}
+
+impl crate::Goto<Insn> for SdccCall1 {
+    fn goto(&mut self, t: &[Insn]) {
+        self.0.goto(t);
     }
 }
