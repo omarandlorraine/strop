@@ -18,6 +18,16 @@ impl crate::Iterable for Insn {
             true
         }
     }
+
+    fn stride(&mut self) -> bool {
+        if self.0 > 0xfff70000 {
+            false
+        } else {
+            self.0 += 0x80000;
+            self.fixup();
+            true
+        }
+    }
 }
 
 impl crate::Encode<u8> for Insn {

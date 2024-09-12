@@ -19,6 +19,22 @@ impl crate::Iterable for Insn {
             true
         }
     }
+
+    fn stride(&mut self) -> bool {
+        if self.0[0..3] == [0xff, 0xff, 0xff] {
+            false
+        } else if [0x10, 0x11].contains(&self.0[0]) {
+            // two-byte opcode
+            self.0 = [self.0[0], self.0[1] + 1, 0, 0, 0];
+            self.fixup();
+            true
+        } else {
+            // one-byte opcode
+            self.0 = [self.0[0] + 1, 0, 0, 0, 0];
+            self.fixup();
+            true
+        }
+    }
 }
 
 impl crate::Encode<u8> for Insn {
