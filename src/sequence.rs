@@ -18,6 +18,7 @@ use std::ops::Index;
 pub struct Sequence<T>(Vec<T>);
 
 impl<T: Iterable> Sequence<T> {
+    /// Returns the index to the last element in the sequence
     pub fn last_instruction_offset(&self) -> usize {
         self.0.len() - 1
     }

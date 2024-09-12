@@ -23,7 +23,7 @@ impl<
         T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
     > Subroutine<InputParameters, ReturnValue, T>
 {
-    pub fn fixup(&mut self) {
+    fn fixup(&mut self) {
         use crate::Encode;
         while self.sequence[self.sequence.last_instruction_offset()].encode()[0] != 0xc9 {
             // make sure the subroutine ends in a return instruction
