@@ -1,6 +1,6 @@
 use crate::z80::Insn;
 use crate::Goto;
-use crate::Iterable;
+use crate::IterableSequence;
 use crate::StropError;
 
 /// Wraps up a `Sequence<Insn>`, that is, a sequence of Z80 instructions, and associates it with a
@@ -21,14 +21,38 @@ impl<
         InputParameters,
         ReturnValue,
         T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
-    > Iterable for Subroutine<InputParameters, ReturnValue, T>
+    > Subroutine<InputParameters, ReturnValue, T>
+{
+    pub fn fixup(&mut self) {
+        use crate::Encode;
+        while self.sequence[self.sequence.last_instruction_offset()].encode()[0] != 0xc9 {
+            // make sure the subroutine ends in a return instruction
+            self.sequence
+                .stride_at(self.sequence.last_instruction_offset());
+        }
+    }
+}
+
+impl<
+        InputParameters,
+        ReturnValue,
+        T: crate::CallingConvention<crate::Sequence<Insn>, InputParameters, ReturnValue>,
+    > IterableSequence for Subroutine<InputParameters, ReturnValue, T>
 {
     fn first() -> Self {
         Self::new()
     }
 
-    fn step(&mut self) -> bool {
-        self.sequence.step()
+    fn stride_at(&mut self, offset: usize) -> bool {
+        self.sequence.stride_at(offset);
+        self.fixup();
+        true
+    }
+
+    fn step_at(&mut self, offset: usize) -> bool {
+        self.sequence.step_at(offset);
+        self.fixup();
+        true
     }
 }
 
@@ -52,7 +76,7 @@ impl<
     //! Build a `Subroutine`
     /// Build a `Subroutine`
     pub fn new() -> Self {
-        use crate::Iterable;
+        use crate::IterableSequence;
 
         Self {
             sequence: crate::Sequence::<Insn>::first(),
@@ -103,11 +127,17 @@ impl<
     > crate::Callable<InputParameters, ReturnValue>
     for Subroutine<InputParameters, ReturnValue, T>
 {
-    fn call(
-        &self,
-        parameters: InputParameters,
-    ) -> Result<ReturnValue, StropError> {
-        T::call(&self.sequence, parameters)
+    fn call(&self, parameters: InputParameters) -> Result<ReturnValue, StropError> {
+        use crate::Encode;
+        let offs = self.sequence.last_instruction_offset();
+        let last_instruction = self.sequence[offs];
+        if last_instruction.encode()[0] != 0xc9 {
+            // The subroutine doesn't end in a `RET` instruction; lunge the instruction at that
+            // offset
+            Err(StropError::Stride(offs))
+        } else {
+            T::call(&self.sequence, parameters)
+        }
     }
 }
 

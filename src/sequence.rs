@@ -4,6 +4,7 @@ use crate::Disassemble;
 use crate::Encode;
 use crate::Goto;
 use crate::Iterable;
+use crate::IterableSequence;
 use crate::Random;
 use std::ops::Index;
 
@@ -15,6 +16,12 @@ use std::ops::Index;
 /// space of things represented by the `Sequence<T>`.
 #[derive(Clone, Debug)]
 pub struct Sequence<T>(Vec<T>);
+
+impl<T: Iterable> Sequence<T> {
+    pub fn last_instruction_offset(&self) -> usize {
+        self.0.len() - 1
+    }
+}
 
 // Implement the Index trait for read-only access.
 impl<T> Index<usize> for Sequence<T> {
@@ -52,23 +59,41 @@ impl<T> Sequence<T> {
     }
 }
 
-impl<T: Clone + Iterable> Iterable for Sequence<T> {
+impl<T: Clone + Iterable> IterableSequence for Sequence<T> {
     fn first() -> Self {
         Self(vec![])
     }
 
-    fn step(&mut self) -> bool {
-        let mut offset = 0;
+    fn stride_at(&mut self, offset: usize) -> bool {
+        let mut offset = offset;
         loop {
             if offset == self.0.len() {
                 self.0.push(T::first());
-                return true;
-            } else if !self.0[offset].step() {
+                break;
+            } else if !self.0[offset].stride() {
+                self.0[offset] = T::first();
                 offset += 1;
             } else {
-                return true;
+                break;
             }
         }
+        true
+    }
+
+    fn step_at(&mut self, offset: usize) -> bool {
+        let mut offset = offset;
+        loop {
+            if offset == self.0.len() {
+                self.0.push(T::first());
+                break;
+            } else if !self.0[offset].step() {
+                self.0[offset] = T::first();
+                offset += 1;
+            } else {
+                break;
+            }
+        }
+        true
     }
 }
 

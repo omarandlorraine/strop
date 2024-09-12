@@ -1,5 +1,6 @@
 //! Module containing miscellaneous functions for testing callables
 use crate::Callable;
+use crate::StropError;
 use rand;
 
 /// Returns a few representative values for a given type
@@ -128,12 +129,7 @@ pub fn quick_tests<
 }
 
 /// Checks if a callable passes the test suite.
-pub fn fuzz<
-    P: Vals + Copy,
-    R: Vals + std::cmp::PartialEq,
-    T: Callable<P, R>,
-    U: Callable<P, R>,
->(
+pub fn fuzz<P: Vals + Copy, R: Vals + std::cmp::PartialEq, T: Callable<P, R>, U: Callable<P, R>>(
     target_function: &T,
     candidate: &U,
     iterations: usize,
@@ -155,21 +151,21 @@ pub fn fuzz<
 pub fn passes<P: Vals + Copy, R: Vals + std::cmp::PartialEq, T: Callable<P, R>>(
     callable: &T,
     suite: &Vec<(P, R)>,
-) -> bool {
+) -> Result<bool, StropError> {
     for t in suite {
         match callable.call(t.0) {
-            Err(_) => {
+            Err(e) => {
                 // The function doesn't pass the test because of some error during execution
-                return false;
+                return Err(e);
             }
             Ok(r) => {
                 if r != t.1 {
                     // The function doesn't pass the test because it returned some (valid) value
                     // different from the expected one
-                    return false;
+                    return Ok(false);
                 }
             }
         }
     }
-    true
+    Ok(true)
 }

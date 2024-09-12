@@ -6,7 +6,6 @@ use strop::z80::Subroutine;
 use strop::BruteForce;
 use strop::Callable;
 use strop::Disassemble;
-use strop::Sequence;
 
 fn main() {
     use strop::z80::IntoSubroutine;

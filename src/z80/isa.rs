@@ -19,6 +19,19 @@ impl crate::Iterable for Insn {
             true
         }
     }
+
+    fn stride(&mut self) -> bool {
+        if self.0[0] == 0xff {
+            false
+        } else {
+            self.0[0] += 1;
+            self.0[1] = 0;
+            self.0[2] = 0;
+            self.0[3] = 0;
+            self.0[4] = 0;
+            true
+        }
+    }
 }
 
 impl crate::Encode<u8> for Insn {
