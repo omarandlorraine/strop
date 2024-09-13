@@ -9,14 +9,15 @@ use strop::Disassemble;
 fn target_function() -> SdccCall1 {
     // Construct some machine code.
     //
-    // In a real world scenario maybe you'd read this in from assembly on something, but you can
+    // In a real world scenario maybe you'd read this in from assembly or something, but you can
     // also build up the machine code program in the way shown below:
     //
     // It's equivalent to this C code:
     // `uint16_t f(uint16_t unused) { return 16511; }`
     //
-    // (this is not a terribly efficient way to encode this program; you can save a byte and some
-    // time with hex 217f40c9 instead -- let's see if strop figures this out!)
+    // This is not a terribly efficient way to encode this program; you can save a byte and some
+    // time with `LD HL, 7F40H` instead (a single 16-bit bit immediate load is more efficient than two
+    // individual 8-bit loads) -- let's see if strop figures this out!
 
     use strop::Goto;
     use strop::IterableSequence;
