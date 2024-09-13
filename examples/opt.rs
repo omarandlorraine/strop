@@ -15,12 +15,6 @@ fn target_function() -> SdccCall1 {
     // It's equivalent to this C code:
     // `uint16_t f(uint16_t unused) { return 16511; }`
     //
-    // Or, alternatively,
-    // `uint8_t f(uint16_t unused) { return 127; }`
-    // (having the dead code, `ld h,40h`.)
-    //
-    // or any number of other interpretations.
-    //
     // (this is not a terribly efficient way to encode this program; you can save a byte and some
     // time with hex 217f40c9 instead -- let's see if strop figures this out!)
 
@@ -43,12 +37,8 @@ fn main() {
     let c = target_function();
 
     // you can call this function in a few different ways
-    let result_u16: u16 = c.call(5u16).unwrap();
-    let result_i8: i8 = c.call(5u16).unwrap();
-    println!(
-        "The function returns, for example, {} (u16), or {} (i8)",
-        result_u16, result_i8
-    );
+    let result: u16 = c.call(5u16).unwrap();
+    println!("The function returns {result}");
 
     println!("The subroutine we started with:");
     c.dasm();
