@@ -1,5 +1,6 @@
 use crate::z80::Insn;
 use crate::IterableSequence;
+use std::ops::Index;
 
 /// Wraps up a `Sequence<Insn>`, that is, a sequence of Z80 instructions, and associates it with
 /// static analysis that makes sure it's a valid Z80 subroutine.
@@ -13,6 +14,23 @@ impl Subroutine {
             // make sure the subroutine ends in a return instruction
             self.0.stride_at(self.0.last_instruction_offset());
         }
+    }
+
+    pub fn last_instruction_offset(&self) -> usize {
+        self.0.last_instruction_offset()
+    }
+
+    pub fn penultimate_instruction_offset(&self) -> Option<usize> {
+        self.last_instruction_offset().checked_sub(1)
+    }
+}
+
+// Implement the Index trait for read-only access.
+impl Index<usize> for Subroutine {
+    type Output = Insn;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
     }
 }
 
