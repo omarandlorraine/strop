@@ -28,8 +28,8 @@ impl<
     > BruteForce<InputParameters, ReturnValue, T, U>
 {
     /// Constructs a new `BruteForce`
-    pub fn new(target_function: T) -> Self {
-        let candidate = U::first();
+    pub fn new(target_function: T, initial_candidate: U) -> Self {
+        let candidate = initial_candidate;
         let tests = test::quick_tests(&target_function);
         Self {
             target_function,

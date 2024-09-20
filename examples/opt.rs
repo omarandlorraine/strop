@@ -35,6 +35,7 @@ fn target_function() -> SdccCall1 {
 }
 
 fn main() {
+    use strop::Iterable;
     let c = target_function();
 
     // you can call this function in a few different ways
@@ -45,7 +46,7 @@ fn main() {
     c.dasm();
 
     // you can do a bruteforce search for Z80 machine code programs implementing the same function
-    let mut bruteforce: BruteForce<u16, u16, SdccCall1, SdccCall1> = strop::BruteForce::new(c);
+    let mut bruteforce: BruteForce<u16, u16, SdccCall1, _> = strop::BruteForce::new(c, SdccCall1::first());
 
     let bf = bruteforce.search().unwrap();
 
