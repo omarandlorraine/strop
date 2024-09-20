@@ -214,3 +214,9 @@ pub trait Callable<InputParameters, ReturnValue> {
     /// Calls the given callable object
     fn call(&self, parameters: InputParameters) -> Result<ReturnValue, StropError>;
 }
+
+impl<InputParameters, ReturnValue> Callable<InputParameters, ReturnValue> for fn(InputParameters) -> Result<ReturnValue, StropError> {
+    fn call(&self, parameters: InputParameters) -> Result<ReturnValue, StropError> {
+        (self)(parameters)
+    }
+}
