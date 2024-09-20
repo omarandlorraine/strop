@@ -23,6 +23,10 @@ impl std::fmt::Debug for Emulator {
 }
 
 impl Emulator {
+    /// Sets the emulator's accumulator to some value
+    pub fn set_a(&mut self, val: u8) {
+        self.cpu.registers().set_a(val);
+    }
     /// Sets the emulator's B register to some value
     pub fn set_b(&mut self, val: u8) {
         self.cpu.registers().set8(Reg8::B, val);

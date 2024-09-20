@@ -8,6 +8,12 @@ trait SdccCall1ParameterList {
     fn put(&self, emu: &mut Emulator);
 }
 
+impl SdccCall1ParameterList for u8 {
+    fn put(&self, emu: &mut Emulator) {
+        emu.set_a(*self);
+    }
+}
+
 impl SdccCall1ParameterList for u16 {
     fn put(&self, emu: &mut Emulator) {
         emu.set_hl(*self);
