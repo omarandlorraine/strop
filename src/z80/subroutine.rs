@@ -16,10 +16,13 @@ impl Subroutine {
         }
     }
 
+    /// Returns the offset of the last instruction in the subroutine
     pub fn last_instruction_offset(&self) -> usize {
         self.0.last_instruction_offset()
     }
 
+    /// Returns the offset of the penultimate instruction in the subroutine, if there is one (i.e.,
+    /// the subroutine contains at least one instruction before the `ret` instruction)
     pub fn penultimate_instruction_offset(&self) -> Option<usize> {
         self.last_instruction_offset().checked_sub(1)
     }

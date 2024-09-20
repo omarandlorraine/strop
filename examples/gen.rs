@@ -1,15 +1,14 @@
 //! An example of a program that uses strop to optimize an existing function.
 
-use strop::Iterable;
 use strop::z80::SdccCall1;
 use strop::BruteForce;
 use strop::Disassemble;
+use strop::Iterable;
 use strop::StropError;
 
 fn zero(hex: u8) -> Result<u8, StropError> {
-        Ok('0' as u8)
+    Ok('0' as u8)
 }
-
 
 fn target_function(hex: u8) -> Result<u8, StropError> {
     match hex {
@@ -34,11 +33,11 @@ fn target_function(hex: u8) -> Result<u8, StropError> {
 }
 
 fn main() {
-
     let target_function = zero as fn(u8) -> Result<u8, StropError>;
 
     // you can do a bruteforce search for Z80 machine code programs implementing the same function
-    let mut bruteforce: BruteForce<_, _, _, SdccCall1> = strop::BruteForce::new(target_function, SdccCall1::first());
+    let mut bruteforce: BruteForce<_, _, _, SdccCall1> =
+        strop::BruteForce::new(target_function, SdccCall1::first());
 
     let bf = bruteforce.search().unwrap();
 

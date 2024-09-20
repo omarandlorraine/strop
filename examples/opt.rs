@@ -46,7 +46,8 @@ fn main() {
     c.dasm();
 
     // you can do a bruteforce search for Z80 machine code programs implementing the same function
-    let mut bruteforce: BruteForce<u16, u16, SdccCall1, _> = strop::BruteForce::new(c, SdccCall1::first());
+    let mut bruteforce: BruteForce<u16, u16, SdccCall1, _> =
+        strop::BruteForce::new(c, SdccCall1::first());
 
     let bf = bruteforce.search().unwrap();
 
