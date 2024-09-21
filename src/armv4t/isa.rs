@@ -18,6 +18,16 @@ impl crate::Iterable for Insn {
             true
         }
     }
+
+    fn stride(&mut self) -> bool {
+        if self.0 > 0xfff70000 {
+            false
+        } else {
+            self.0 += 0x80000;
+            self.fixup();
+            true
+        }
+    }
 }
 
 impl crate::Encode<u8> for Insn {
@@ -135,7 +145,7 @@ mod test {
             // check that the increment method does not visit invalid instructions; this will in
             // turn validate the fixup method.
             if !i.is_valid() {
-                let beginning = i.clone();
+                let beginning = i;
                 let mut end = i;
                 while !end.is_valid() {
                     end.step();

@@ -51,6 +51,15 @@ impl crate::Iterable for Insn {
             }
         }
     }
+
+    fn stride(&mut self) -> bool {
+        if self.0[0] > 0xe000 {
+            false
+        } else {
+            self.0 = [self.0[0] + 1, 0, 0, 0, 0];
+            true
+        }
+    }
 }
 
 impl Insn {

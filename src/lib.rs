@@ -25,7 +25,20 @@ pub mod m6809;
 #[cfg(feature = "z80")]
 pub mod z80;
 
-pub mod sequence;
+mod sequence;
+pub use sequence::Sequence;
+
+pub mod test;
+
+mod bruteforce;
+pub use bruteforce::BruteForce;
+
+pub trait Disassemble {
+    //! A trait for printing out the disassembly of an instruction, a subroutine, or anything else
+
+    /// Disassemble to stdout
+    fn dasm(&self);
+}
 
 pub trait Iterable {
     //! A trait for anything that can be iterated across in an exhaustive manner. For example, the
@@ -36,17 +49,52 @@ pub trait Iterable {
 
     /// Take one step. Returns true if the end of the iteration has not been reached.
     fn step(&mut self) -> bool;
+
+    /// Take one stride (this skips many points in the search space which `step` would have
+    /// visited; so that many known bad points are skipped.) Returns true if the end of the
+    /// iteration has not been reached.
+    fn stride(&mut self) -> bool;
 }
 
-pub trait PrunedSearch<P> {
-    //! A trait for performing a brute-force search that has some instructions pruned away. The type
-    //! P represents the prune.
+pub trait IterableSequence {
+    //! A trait for anything that can be iterated across in an exhaustive manner, but which also
+    //! may be stepped at a particular offset.
+    //!
+    //! For example, if a sequence of instructions is found by static analysis to have an incorrect
+    //! instruction at offset *x*, then the sequence's `step_at` method may be called, informing
+    //! the search strategy of this fact.
 
     /// Start from the beginning
     fn first() -> Self;
 
     /// Take one step. Returns true if the end of the iteration has not been reached.
-    fn pruned_step(&mut self, prune: &P) -> bool;
+    fn step_at(&mut self, offset: usize) -> bool;
+
+    /// Take one stride. Returns true if the end of the iteration has not been reached.
+    fn stride_at(&mut self, offset: usize) -> bool;
+}
+
+impl<T: IterableSequence> Iterable for T {
+    fn first() -> Self {
+        <Self as IterableSequence>::first()
+    }
+    fn step(&mut self) -> bool {
+        self.step_at(0)
+    }
+    fn stride(&mut self) -> bool {
+        self.stride_at(0)
+    }
+}
+
+pub trait PrunedSearch<Prune> {
+    //! A trait for performing a brute-force search that has some instructions pruned away. The type
+    //! Prune represents the prune.
+
+    /// Start from the beginning
+    fn first() -> Self;
+
+    /// Take one step. Returns true if the end of the iteration has not been reached.
+    fn pruned_step(&mut self, prune: &Prune) -> bool;
 }
 
 pub trait Random {
@@ -60,11 +108,11 @@ pub trait Random {
     fn step(&mut self);
 }
 
-pub trait Goto<I> {
+pub trait Goto<SamplePoint> {
     //! Trait for starting a search from a particular point in the search space.
 
     /// Replace self with some other value
-    fn goto(&mut self, destination: &[I]);
+    fn goto(&mut self, destination: &[SamplePoint]);
 }
 
 pub trait Encode<T> {
@@ -85,7 +133,9 @@ pub trait Encode<T> {
 }
 
 /// Type `ConstraintViolation` represents the possibility that an unary or binary constraint has
-/// been violated. If the constraints are satisfied and not violated, then this case is represented
+/// been violated.
+///
+/// If the constraints are satisfied and not violated, then this case is represented
 /// by the variant `Ok`. If a constraint has been violated, then if a suitable replacement would be
 /// found by successive calls to the `Iterable` trait's `step` method, then it is held in the
 /// `ReplaceWith` variant. If a constraint has been violated but no such replacement can be found,
@@ -104,11 +154,11 @@ pub enum ConstraintViolation<T> {
     Violation,
 }
 
-/// To get the search space down to something manageable, a type could implement this trait to
-/// reduce the number of instructions considered. This might be used to make sure the instructions
-/// only reads from the permitted registers or memory locations for example, or might write-protect
-/// regions of memory, or remove from consideration instructions incompatible with this or that CPU
-/// variant or whatever.
+/// A type could implement this trait to reduce the number of instructions considered.
+///
+/// This might be used to make sure the instructions only reads from the permitted registers or
+/// memory locations for example, or might write-protect regions of memory, or remove from
+/// consideration instructions incompatible with this or that CPU variant or whatever.
 pub trait Prune<T> {
     /// Considers the `T` passed to this method, and if the instruction is to be pruned away from
     /// the search, returns a `ConstraintViolation<T>` that describes how to proceed with the
@@ -124,4 +174,51 @@ pub trait ConstraintSatisfaction<T> {
     /// Considers the two connected nodes of type `T`, and sees if they violate any binary
     /// constraints.
     fn binary(&self, a: &T, b: &T) -> ConstraintViolation<T>;
+}
+
+pub trait CallingConvention<SamplePoint, InputParameters, ReturnValue> {
+    //! A trait for calling conventions. A type which implements this trait can execute a function
+    //! taking the given argument(s), and return the function's return value.
+
+    /// Calls the given callable object, passing it the parameters of type `InputParameters`, and returning an
+    /// `ReturnValue`.
+    fn call(function: &SamplePoint, parameters: InputParameters)
+        -> Result<ReturnValue, StropError>;
+}
+
+/// Enumerates reasons why executing a function may fail
+#[derive(Debug, PartialEq)]
+pub enum StropError {
+    /// The callable object does not pass static analysis, but the static analysis pass has
+    /// proposed for a step to be taken at the given offset
+    Step(usize),
+
+    /// The callable object does not pass static analysis, but the static analysis pass has
+    /// proposed for a stride to be taken at the given offset
+    Stride(usize),
+
+    /// The represented function is not defined for the given inputs
+    Undefined,
+
+    /// The callable object ran amok during emulation, or somehow did not return
+    DidntReturn,
+}
+
+pub trait Callable<InputParameters, ReturnValue> {
+    //! A trait for objects which may be called.
+    //!
+    //! For example, these could be machine code programs associated with a particular calling
+    //! convention ready for execution in an emulated environment, or they may be function
+    //! pointers, or lisp expressions, etc.)
+
+    /// Calls the given callable object
+    fn call(&self, parameters: InputParameters) -> Result<ReturnValue, StropError>;
+}
+
+impl<InputParameters, ReturnValue> Callable<InputParameters, ReturnValue>
+    for fn(InputParameters) -> Result<ReturnValue, StropError>
+{
+    fn call(&self, parameters: InputParameters) -> Result<ReturnValue, StropError> {
+        (self)(parameters)
+    }
 }

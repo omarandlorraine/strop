@@ -1,16 +1,28 @@
 //! A module defining `Sequence<T>`.
 
+use crate::Disassemble;
+use crate::Encode;
 use crate::Goto;
 use crate::Iterable;
+use crate::IterableSequence;
 use crate::Random;
 use std::ops::Index;
 
 /// `Sequence<T>` is a straight-line sequence of things, such as machine instructions or other
-/// sequences. This datatype is intended to represent a point in a search space, and so `impl`s
+/// sequences.
+///
+/// This datatype is intended to represent a point in a search space, and so `impl`s
 /// strop's `Random` and `Iterable` traits.  This means that strop can search across the search
 /// space of things represented by the `Sequence<T>`.
 #[derive(Clone, Debug)]
 pub struct Sequence<T>(Vec<T>);
+
+impl<T: Iterable> Sequence<T> {
+    /// Returns the index to the last element in the sequence
+    pub fn last_instruction_offset(&self) -> usize {
+        self.0.len() - 1
+    }
+}
 
 // Implement the Index trait for read-only access.
 impl<T> Index<usize> for Sequence<T> {
@@ -21,6 +33,26 @@ impl<T> Index<usize> for Sequence<T> {
     }
 }
 
+impl<T> Disassemble for Sequence<T>
+where
+    T: Disassemble,
+{
+    fn dasm(&self) {
+        for i in &self.0 {
+            i.dasm();
+        }
+    }
+}
+
+impl<T, U> Encode<U> for Sequence<T>
+where
+    T: Encode<U>,
+{
+    fn encode(&self) -> Vec<U> {
+        self.0.iter().flat_map(|i| i.encode()).collect()
+    }
+}
+
 impl<T> Sequence<T> {
     fn random_offset(&self) -> usize {
         use rand::Rng;
@@ -28,22 +60,41 @@ impl<T> Sequence<T> {
     }
 }
 
-impl<T: Clone + Iterable> Iterable for Sequence<T> {
+impl<T: Clone + Iterable> IterableSequence for Sequence<T> {
     fn first() -> Self {
         Self(vec![])
     }
 
-    fn step(&mut self) -> bool {
-        let mut offset = 0;
+    fn stride_at(&mut self, offset: usize) -> bool {
+        let mut offset = offset;
         loop {
             if offset == self.0.len() {
                 self.0.push(T::first());
-            } else if self.0[offset].step() {
+                break;
+            } else if !self.0[offset].stride() {
+                self.0[offset] = T::first();
                 offset += 1;
             } else {
-                return true;
+                break;
             }
         }
+        true
+    }
+
+    fn step_at(&mut self, offset: usize) -> bool {
+        let mut offset = offset;
+        loop {
+            if offset == self.0.len() {
+                self.0.push(T::first());
+                break;
+            } else if !self.0[offset].step() {
+                self.0[offset] = T::first();
+                offset += 1;
+            } else {
+                break;
+            }
+        }
+        true
     }
 }
 
@@ -104,8 +155,8 @@ impl<T: Clone + Random> Random for Sequence<T> {
     }
 }
 
-impl<I: std::clone::Clone> Goto<I> for Sequence<I> {
-    fn goto(&mut self, other: &[I]) {
-        (*self.0).clone_from_slice(other);
+impl<SamplePoint: std::clone::Clone> Goto<SamplePoint> for Sequence<SamplePoint> {
+    fn goto(&mut self, other: &[SamplePoint]) {
+        self.0 = other.to_vec();
     }
 }

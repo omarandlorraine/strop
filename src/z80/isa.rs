@@ -19,6 +19,19 @@ impl crate::Iterable for Insn {
             true
         }
     }
+
+    fn stride(&mut self) -> bool {
+        if self.0[0] == 0xff {
+            false
+        } else {
+            self.0[0] += 1;
+            self.0[1] = 0;
+            self.0[2] = 0;
+            self.0[3] = 0;
+            self.0[4] = 0;
+            true
+        }
+    }
 }
 
 impl crate::Encode<u8> for Insn {
@@ -32,6 +45,13 @@ impl crate::Encode<u8> for Insn {
 }
 
 impl Insn {
+    /// Constructs a new Insn from a slice of bytes
+    pub fn new(mc: &[u8]) -> Self {
+        let mut enc = [0, 0, 0, 0, 0];
+        enc[..mc.len().min(5)].copy_from_slice(mc);
+        Self(enc)
+    }
+
     /// Decodes the instruction and returns a `dez80::Instruction`.
     pub fn decode(&self) -> dez80::Instruction {
         let encoding = Vec::<_>::from(self.0);
@@ -109,7 +129,7 @@ mod test {
             let d = insn.decode();
 
             if !d.ignored_prefixes.is_empty() {
-                let prev = insn.clone();
+                let prev = insn;
                 while !insn.decode().ignored_prefixes.is_empty() {
                     assert!(!insn.step());
                 }

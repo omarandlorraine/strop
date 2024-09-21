@@ -13,6 +13,13 @@ search or a brute-force search.
  * [LICENSE](LICENSE.md) It's just the MIT license.
  * [Theory of operation](THEORY_OF_OPERATION.md) High-level documentation explaining how strop works.
 
+### What it's for
+
+To see what strop could be used for:
+
+ * [opt](examples/opt.rs) optimizes an existing machine code function
+ * [gen](examples/gen.rs) generates a Z80 function matching the Rust function, after a fashion compiling Rust to Z80.
+
 ### Supported instruction sets:
 
 Strop currently has the following back-ends:
