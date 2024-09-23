@@ -45,7 +45,7 @@ impl crate::Encode<u32> for Insn {
 impl Insn {
     /// Decodes the instruction and returns an `unarm::ParsedIns`
     pub fn decode(&self) -> unarm::ParsedIns {
-        unarm::v4t::arm::Ins::new(self.0, &Default::default()).parse(&Default::default())
+        unarm::arm::Ins::new(self.0, &Default::default()).parse(&Default::default())
     }
 
     /// No matter the `Insn`'s value, if it does not encode a valid ARMv4T machine code
