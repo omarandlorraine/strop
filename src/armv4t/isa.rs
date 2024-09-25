@@ -108,6 +108,11 @@ impl Insn {
 
         true
     }
+
+    /// Returns the `bx lr` instruction, which is used to terminate subroutines
+    pub fn bx_lr() -> Self {
+        Self(0xe12fff1e)
+    }
 }
 
 #[cfg(test)]

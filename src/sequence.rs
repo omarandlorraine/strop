@@ -6,7 +6,7 @@ use crate::Goto;
 use crate::Iterable;
 use crate::IterableSequence;
 use crate::Random;
-use std::ops::Index;
+use std::ops::{Index, IndexMut};
 
 /// `Sequence<T>` is a straight-line sequence of things, such as machine instructions or other
 /// sequences.
@@ -21,6 +21,18 @@ impl<T: Iterable> Sequence<T> {
     /// Returns the index to the last element in the sequence
     pub fn last_instruction_offset(&self) -> usize {
         self.0.len() - 1
+    }
+
+    /// Sticks another `T` on the end of the sequence
+    pub fn append(&mut self, t: T) {
+        self.0.push(t);
+    }
+}
+
+// Implement the Index trait for read-only access.
+impl<T> IndexMut<usize> for Sequence<T> {
+    fn index_mut(&mut self, index: usize) -> &mut T {
+        &mut self.0[index]
     }
 }
 
