@@ -3,6 +3,9 @@
 mod csp;
 mod diss;
 mod isa;
+mod subroutine;
+
+pub use subroutine::Subroutine;
 
 pub use csp::Prune;
 pub use isa::Insn;
