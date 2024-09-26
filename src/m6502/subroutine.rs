@@ -83,8 +83,9 @@ impl<V: mos6502::Variant + std::clone::Clone> crate::Goto<Insn<V>> for Subroutin
     }
 }
 
-impl<V:  mos6502::Variant + std::clone::Clone> crate::Disassemble for Subroutine<V> 
-where Insn<V>: crate::Disassemble
+impl<V: mos6502::Variant + std::clone::Clone> crate::Disassemble for Subroutine<V>
+where
+    Insn<V>: crate::Disassemble,
 {
     fn dasm(&self) {
         self.0.dasm();

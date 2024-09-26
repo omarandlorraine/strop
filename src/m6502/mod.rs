@@ -2,13 +2,13 @@
 
 mod csp;
 mod diss;
-mod isa;
-mod subroutine;
-mod llvm_mos;
 mod emulator;
+mod isa;
+mod llvm_mos;
+mod subroutine;
 
-pub use subroutine::Subroutine;
 pub use llvm_mos::LlvmMos;
+pub use subroutine::Subroutine;
 
 pub use csp::Prune;
 pub use isa::Insn;

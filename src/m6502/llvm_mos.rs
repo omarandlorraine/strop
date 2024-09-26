@@ -54,8 +54,9 @@ impl<V: mos6502::Variant> SdccCall1GetReturnValue<i16> for Emulator<V> {
 #[derive(Clone, Debug)]
 pub struct LlvmMos<V: mos6502::Variant + Clone>(Subroutine<V>);
 
-impl<V: mos6502::Variant + Clone> crate::Disassemble for LlvmMos<V> 
-where Insn<V>: crate::Disassemble
+impl<V: mos6502::Variant + Clone> crate::Disassemble for LlvmMos<V>
+where
+    Insn<V>: crate::Disassemble,
 {
     fn dasm(&self) {
         self.0.dasm()
@@ -68,8 +69,11 @@ impl<V: mos6502::Variant + Clone> AsRef<crate::Sequence<Insn<V>>> for LlvmMos<V>
     }
 }
 
-impl<V: mos6502::Variant + Clone, InputParameters: LlvmMosParameterList<V>, ReturnValue>
-    crate::Callable<InputParameters, ReturnValue> for LlvmMos<V>
+impl<
+        V: mos6502::Variant + Clone + Default,
+        InputParameters: LlvmMosParameterList<V>,
+        ReturnValue,
+    > crate::Callable<InputParameters, ReturnValue> for LlvmMos<V>
 where
     Emulator<V>: SdccCall1GetReturnValue<ReturnValue>,
 {

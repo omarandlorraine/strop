@@ -1,10 +1,9 @@
 //! Module containing emulators for the 6502, with the necessary additions making them suitable for
 //! use with strop.
+use crate::StropError;
 use crate::m6502::Insn;
-use std::convert::TryInto;
-
-use mos6502::instruction::Nmos6502;
 use mos6502::memory::Memory;
+use std::convert::TryInto;
 
 /// This emulates one of the 6502 CPU variants
 #[derive(Debug)]
@@ -12,16 +11,15 @@ pub struct Emulator<V: mos6502::Variant> {
     cpu: mos6502::cpu::CPU<Memory, V>,
 }
 
-impl<V: mos6502::Variant> Default for Emulator<V> {
+impl<V: mos6502::Variant + Default> Default for Emulator<V> {
     fn default() -> Self {
-        let mut cpu = mos6502::cpu::CPU::new(Memory::new(), V);
+        let mut cpu = mos6502::cpu::CPU::new(Memory::new(), V::default());
         cpu.registers.accumulator = 0;
         cpu.registers.index_x = 0;
         cpu.registers.index_y = 0;
         Self { cpu }
     }
 }
-
 
 impl<V: mos6502::Variant> Emulator<V> {
     /// return value of accumulator
@@ -57,9 +55,12 @@ impl<V: mos6502::Variant> Emulator<V> {
     }
 }
 
-impl<T: Instruction> Emulator<T> {
-    fn run(&mut self, addr: usize, program: &crate::Sequence<Insn>) {
+impl<V: Clone + mos6502::Variant> Emulator<V> {
+    /// Runs a subroutine in emulation
+    pub fn run(&mut self, program: &crate::Sequence<Insn<V>>) -> Result<(), StropError> {
+        use crate::Encode;
         use mos6502::memory::Bus;
+        let addr = 0x300;
         let org: u16 = addr.try_into().unwrap();
         let encoding = program.encode();
         let end: u16 = (addr + encoding.len()).try_into().unwrap();
@@ -77,5 +78,6 @@ impl<T: Instruction> Emulator<T> {
                 break;
             }
         }
+        Ok(())
     }
 }
