@@ -12,3 +12,9 @@ impl std::fmt::Debug for crate::armv4t::Insn {
         write!(f, "{dasm:<82} ; {inner:#010x}")
     }
 }
+
+impl crate::Disassemble for crate::armv4t::Insn {
+    fn dasm(&self) {
+        println!("\t{}", self);
+    }
+}
