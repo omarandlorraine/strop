@@ -1,7 +1,7 @@
 //! Module containing emulators for the 6502, with the necessary additions making them suitable for
 //! use with strop.
-use crate::StropError;
 use crate::m6502::Insn;
+use crate::StropError;
 use mos6502::memory::Memory;
 use std::convert::TryInto;
 
