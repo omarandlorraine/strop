@@ -46,6 +46,7 @@ impl<
             if !self.candidate.step() {
                 return None;
             }
+            self.candidate.fixup();
 
             match test::passes(&self.candidate, &self.tests) {
                 Err(StropError::Stride(offset)) => {

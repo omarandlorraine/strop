@@ -55,34 +55,6 @@ impl SdccCall1GetReturnValue<i16> for Emulator {
 #[derive(Clone, Debug)]
 pub struct SdccCall1(Subroutine);
 
-impl SdccCall1 {
-    fn penultimates(&mut self) {
-        use crate::Encode;
-
-        // checks that the penultimate instruction in the sequence is one that makes sense for
-        // sdcccall(1). If not, then bumps it until it is.
-        let Some(offs) = self.0.penultimate_instruction_offset() else {
-            return;
-        };
-        let skip_opcodes = [
-            0x00, // nop
-            0x01, // ld bc, something
-            0x03, // inc bc
-            0x04, // inc b
-            0x05, // dec b
-            0x06, // ld b, something
-        ];
-        for opc in skip_opcodes {
-            if self.0[offs].encode()[0] == opc {
-                self.0.stride_at(offs);
-            }
-        }
-    }
-    fn fixup(&mut self) {
-        self.penultimates();
-    }
-}
-
 impl crate::Disassemble for SdccCall1 {
     fn dasm(&self) {
         self.0.dasm()
@@ -100,6 +72,9 @@ impl<InputParameters: SdccCall1ParameterList, ReturnValue>
 where
     Emulator: SdccCall1GetReturnValue<ReturnValue>,
 {
+    fn fixup(&mut self) {
+        println!("called fixup");
+    }
     fn call(&self, input: InputParameters) -> Result<ReturnValue, StropError> {
         let mut emu = Emulator::default();
         input.put(&mut emu);
@@ -115,13 +90,11 @@ impl IterableSequence for SdccCall1 {
 
     fn stride_at(&mut self, offset: usize) -> bool {
         self.0.stride_at(offset);
-        self.fixup();
         true
     }
 
     fn step_at(&mut self, offset: usize) -> bool {
         self.0.step_at(offset);
-        self.fixup();
         true
     }
 }

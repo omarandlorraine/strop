@@ -33,6 +33,23 @@ impl<T> Index<usize> for Sequence<T> {
     }
 }
 
+impl<T> std::ops::Deref for Sequence<T> {
+    type Target = Vec<T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T> IntoIterator for Sequence<T> {
+    type Item = T;
+    type IntoIter = <Vec<T> as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> <Self as IntoIterator>::IntoIter {
+        self.0.into_iter()
+    }
+}
+
 impl<T> Disassemble for Sequence<T>
 where
     T: Disassemble,

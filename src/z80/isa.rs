@@ -112,6 +112,28 @@ impl Insn {
             self.0 = [self.0[0] + 1, 0, 0, 0, 0];
         }
     }
+
+    pub fn produces(&self, fact: crate::z80::dataflow::Fact) -> bool {
+        use dez80::instruction::Operand;
+        use dez80::register::SingleRegisterType;
+        use dez80::instruction::InstructionType;
+        use crate::z80::dataflow::Fact;
+
+        let d = self.decode();
+
+        if d.destination.is_none() {
+            panic!("{:?}", d);
+        }
+
+
+
+        match (d.r#type, d.destination, fact) {
+            (InstructionType::Adc, _, Fact::A) => true,
+            (_, Some(Operand::RegisterImplied(SingleRegisterType::A)), Fact::A) => true,
+            (_, Some(Operand::RegisterImplied(SingleRegisterType::B)), Fact::A) => true,
+            _ => true,
+        }
+    }
 }
 
 #[cfg(test)]

@@ -4,6 +4,7 @@ mod diss;
 mod emu;
 mod isa;
 mod subroutine;
+mod dataflow;
 
 pub use calling_conventions::SdccCall1;
 pub use emu::Emulator;
