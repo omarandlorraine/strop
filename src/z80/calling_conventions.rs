@@ -1,3 +1,4 @@
+use crate::z80::dataflow::Fact;
 use crate::z80::subroutine::Subroutine;
 use crate::z80::Emulator;
 use crate::z80::Insn;
@@ -6,17 +7,24 @@ use crate::StropError;
 
 trait SdccCall1ParameterList {
     fn put(&self, emu: &mut Emulator);
+    fn facts() -> Vec<Fact>;
 }
 
 impl SdccCall1ParameterList for u8 {
     fn put(&self, emu: &mut Emulator) {
         emu.set_a(*self);
     }
+    fn facts() -> Vec<Fact> {
+        vec![Fact::A]
+    }
 }
 
 impl SdccCall1ParameterList for u16 {
     fn put(&self, emu: &mut Emulator) {
         emu.set_hl(*self);
+    }
+    fn facts() -> Vec<Fact> {
+        vec![Fact::H, Fact::L]
     }
 }
 
@@ -73,8 +81,12 @@ where
     Emulator: SdccCall1GetReturnValue<ReturnValue>,
 {
     fn fixup(&mut self) {
-        println!("called fixup");
+        for f in InputParameters::facts() {
+            crate::z80::dataflow::make_produce(&mut self.0, 0, f);
+            self.0.fixup();
+        }
     }
+
     fn call(&self, input: InputParameters) -> Result<ReturnValue, StropError> {
         let mut emu = Emulator::default();
         input.put(&mut emu);
