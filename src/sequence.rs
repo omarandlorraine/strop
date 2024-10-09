@@ -17,6 +17,23 @@ use std::ops::Index;
 #[derive(Clone, Debug)]
 pub struct Sequence<T>(Vec<T>);
 
+impl<T> From<Vec<&Vec<T>>> for Sequence<T>
+where
+    T: Clone,
+{
+    fn from(v: Vec<&Vec<T>>) -> Self {
+        let mut r: Vec<T> = vec![];
+
+        for s in v {
+            for i in s {
+                r.push(i.clone());
+            }
+        }
+
+        Self(r)
+    }
+}
+
 impl<T: Iterable> Sequence<T> {
     /// Returns the index to the last element in the sequence
     pub fn last_instruction_offset(&self) -> usize {
