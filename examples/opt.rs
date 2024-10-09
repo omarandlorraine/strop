@@ -18,6 +18,9 @@ fn target_function() -> SdccCall1 {
     // This is not a terribly efficient way to encode this program; you can save a byte and some
     // time with `LD HL, 7F40H` instead (a single 16-bit bit immediate load is more efficient than two
     // individual 8-bit loads) -- let's see if strop figures this out!
+    //
+    // When building a SdccCall1 callable we leave off the terminating RET instruction since when
+    // SdccCall1 builds, it adds one
 
     use strop::Goto;
     use strop::IterableSequence;
@@ -25,7 +28,6 @@ fn target_function() -> SdccCall1 {
     let mc = [
         Insn::new(&[0x26, 0x40]), // LD H,40H
         Insn::new(&[0x2e, 0x7f]), // LD L,7FH
-        Insn::new(&[0xc9]),       // RET
     ];
 
     // This machine code is callable using the sdcccall(1) calling convention.

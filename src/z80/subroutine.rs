@@ -1,5 +1,6 @@
 use crate::z80::Insn;
 use crate::IterableSequence;
+use crate::Sequence;
 use std::ops::Index;
 
 /// Wraps up a `Sequence<Insn>`, that is, a sequence of Z80 instructions, and associates it with
@@ -8,25 +9,10 @@ use std::ops::Index;
 pub struct Subroutine(crate::Sequence<Insn>);
 
 impl Subroutine {
-    /// Makes sure that the sequence of instructions ends in a return instruction, as is necessary
-    /// for a Z80 subroutine.
-    pub fn fixup(&mut self) {
-        use crate::Encode;
-        while self.0[self.0.last_instruction_offset()].encode()[0] != 0xc9 {
-            // make sure the subroutine ends in a return instruction
-            self.0.stride_at(self.0.last_instruction_offset());
-        }
-    }
-
-    /// Returns the offset of the last instruction in the subroutine
-    pub fn last_instruction_offset(&self) -> usize {
-        self.0.last_instruction_offset()
-    }
-
-    /// Returns the offset of the penultimate instruction in the subroutine, if there is one (i.e.,
-    /// the subroutine contains at least one instruction before the `ret` instruction)
-    pub fn penultimate_instruction_offset(&self) -> Option<usize> {
-        self.last_instruction_offset().checked_sub(1)
+    /// Builds the subroutine by concatenating the body of the subroutine with a return
+    /// instruction.
+    pub fn build(&self) -> Sequence<Insn> {
+        vec![&self.0, &vec![Insn::new(&[0xc9])]].into()
     }
 }
 
@@ -66,13 +52,11 @@ impl IterableSequence for Subroutine {
 
     fn stride_at(&mut self, offset: usize) -> bool {
         self.0.stride_at(offset);
-        self.fixup();
         true
     }
 
     fn step_at(&mut self, offset: usize) -> bool {
         self.0.step_at(offset);
-        self.fixup();
         true
     }
 }

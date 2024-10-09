@@ -65,7 +65,7 @@ pub struct SdccCall1(Subroutine);
 
 impl crate::Disassemble for SdccCall1 {
     fn dasm(&self) {
-        self.0.dasm()
+        self.0.build().dasm()
     }
 }
 
@@ -83,14 +83,13 @@ where
     fn fixup(&mut self) {
         for f in InputParameters::facts() {
             crate::z80::dataflow::make_produce(&mut self.0, 0, f);
-            self.0.fixup();
         }
     }
 
     fn call(&self, input: InputParameters) -> Result<ReturnValue, StropError> {
         let mut emu = Emulator::default();
         input.put(&mut emu);
-        emu.run(self.0.as_ref())?;
+        emu.run(&self.0.build())?;
         Ok(emu.get())
     }
 }
