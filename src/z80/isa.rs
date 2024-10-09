@@ -19,8 +19,10 @@ impl crate::Iterable for Insn {
             true
         }
     }
+}
 
-    fn stride(&mut self) -> bool {
+impl Insn {
+    pub fn next_opcode(&mut self) -> bool {
         if self.0[0] == 0xff {
             false
         } else if self.0[0] == 0xcb && self.0[1] < 0xff {
