@@ -211,6 +211,9 @@ pub trait Callable<InputParameters, ReturnValue> {
     //! convention ready for execution in an emulated environment, or they may be function
     //! pointers, or lisp expressions, etc.)
 
+    /// Performs a static analysis on the object
+    fn fixup(&mut self) {}
+
     /// Calls the given callable object
     fn call(&self, parameters: InputParameters) -> Result<ReturnValue, StropError>;
 }

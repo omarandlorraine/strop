@@ -8,7 +8,9 @@ use std::ops::Index;
 pub struct Subroutine(crate::Sequence<Insn>);
 
 impl Subroutine {
-    fn fixup(&mut self) {
+    /// Makes sure that the sequence of instructions ends in a return instruction, as is necessary
+    /// for a Z80 subroutine.
+    pub fn fixup(&mut self) {
         use crate::Encode;
         while self.0[self.0.last_instruction_offset()].encode()[0] != 0xc9 {
             // make sure the subroutine ends in a return instruction
@@ -34,6 +36,20 @@ impl Index<usize> for Subroutine {
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.0[index]
+    }
+}
+
+impl std::ops::DerefMut for Subroutine {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl std::ops::Deref for Subroutine {
+    type Target = crate::Sequence<Insn>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
