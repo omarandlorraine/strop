@@ -18,8 +18,10 @@ impl<V: mos6502::Variant + std::clone::Clone> crate::Iterable for Insn<V> {
         // ($ff is not a valid opcode)
         self.0[0] != 0xff
     }
+}
 
-    fn stride(&mut self) -> bool {
+impl<V: mos6502::Variant + std::clone::Clone> Insn<V> {
+    pub fn skip_to_next_opcode(&mut self) -> bool {
         self.0 = [self.0[0] + 1, 0, 0];
         self.fixup();
 

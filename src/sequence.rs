@@ -4,9 +4,8 @@ use crate::Disassemble;
 use crate::Encode;
 use crate::Goto;
 use crate::Iterable;
-use crate::IterableSequence;
 use crate::Random;
-use std::ops::Index;
+use std::ops::{Index, IndexMut};
 
 /// `Sequence<T>` is a straight-line sequence of things, such as machine instructions or other
 /// sequences.
@@ -41,12 +40,17 @@ impl<T: Iterable> Sequence<T> {
     }
 }
 
-// Implement the Index trait for read-only access.
 impl<T> Index<usize> for Sequence<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.0[index]
+    }
+}
+
+impl<T> IndexMut<usize> for Sequence<T> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.0[index]
     }
 }
 
@@ -94,29 +98,13 @@ impl<T> Sequence<T> {
     }
 }
 
-impl<T: Clone + Iterable> IterableSequence for Sequence<T> {
+impl<T: Clone + Iterable> Iterable for Sequence<T> {
     fn first() -> Self {
         Self(vec![])
     }
 
-    fn stride_at(&mut self, offset: usize) -> bool {
-        let mut offset = offset;
-        loop {
-            if offset == self.0.len() {
-                self.0.push(T::first());
-                break;
-            } else if !self.0[offset].stride() {
-                self.0[offset] = T::first();
-                offset += 1;
-            } else {
-                break;
-            }
-        }
-        true
-    }
-
-    fn step_at(&mut self, offset: usize) -> bool {
-        let mut offset = offset;
+    fn step(&mut self) -> bool {
+        let mut offset = 0;
         loop {
             if offset == self.0.len() {
                 self.0.push(T::first());

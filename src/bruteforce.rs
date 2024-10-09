@@ -2,7 +2,6 @@ use crate::test;
 use crate::test::Vals;
 use crate::Callable;
 use crate::Iterable;
-use crate::IterableSequence;
 use crate::StropError;
 
 /// Performs a brute force search over a given search space `U`
@@ -24,7 +23,7 @@ impl<
         InputParameters: Copy + Vals,
         ReturnValue: Vals + std::cmp::PartialEq,
         T: Callable<InputParameters, ReturnValue>,
-        U: Callable<InputParameters, ReturnValue> + IterableSequence + Clone,
+        U: Callable<InputParameters, ReturnValue> + Iterable + Clone,
     > BruteForce<InputParameters, ReturnValue, T, U>
 {
     /// Constructs a new `BruteForce`
@@ -49,14 +48,6 @@ impl<
             self.candidate.fixup();
 
             match test::passes(&self.candidate, &self.tests) {
-                Err(StropError::Stride(offset)) => {
-                    // Static analysis discovered an erroneous opcode or something
-                    self.candidate.stride_at(offset);
-                }
-                Err(StropError::Step(offset)) => {
-                    // Static analysis discovered an erroneous operand or something
-                    self.candidate.step_at(offset);
-                }
                 Err(StropError::DidntReturn) => {
                     // The candidate does not pass the test case(s)
                     // go round the loop again

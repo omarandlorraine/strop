@@ -2,7 +2,6 @@ use crate::z80::dataflow::Fact;
 use crate::z80::subroutine::Subroutine;
 use crate::z80::Emulator;
 use crate::z80::Insn;
-use crate::IterableSequence;
 use crate::StropError;
 
 trait SdccCall1ParameterList {
@@ -91,22 +90,6 @@ where
         input.put(&mut emu);
         emu.run(&self.0.build())?;
         Ok(emu.get())
-    }
-}
-
-impl IterableSequence for SdccCall1 {
-    fn first() -> Self {
-        Self(Subroutine::new())
-    }
-
-    fn stride_at(&mut self, offset: usize) -> bool {
-        self.0.stride_at(offset);
-        true
-    }
-
-    fn step_at(&mut self, offset: usize) -> bool {
-        self.0.step_at(offset);
-        true
     }
 }
 

@@ -1,5 +1,4 @@
 use crate::z80::Insn;
-use crate::IterableSequence;
 use crate::Sequence;
 use std::ops::Index;
 
@@ -45,27 +44,11 @@ impl Default for Subroutine {
     }
 }
 
-impl IterableSequence for Subroutine {
-    fn first() -> Self {
-        Self::new()
-    }
-
-    fn stride_at(&mut self, offset: usize) -> bool {
-        self.0.stride_at(offset);
-        true
-    }
-
-    fn step_at(&mut self, offset: usize) -> bool {
-        self.0.step_at(offset);
-        true
-    }
-}
-
 impl Subroutine {
     //! Build a `Subroutine`
     /// Build a `Subroutine`
     pub fn new() -> Self {
-        use crate::IterableSequence;
+        use crate::Iterable;
 
         Self(crate::Sequence::<Insn>::first())
     }
