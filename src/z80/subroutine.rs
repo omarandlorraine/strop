@@ -70,3 +70,13 @@ impl crate::Disassemble for Subroutine {
         self.0.dasm();
     }
 }
+
+impl crate::Iterable for Subroutine {
+    fn first() -> Self {
+        Self(crate::Iterable::first())
+    }
+
+    fn step(&mut self) -> bool {
+        self.0.step()
+    }
+}

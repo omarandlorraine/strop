@@ -74,6 +74,20 @@ impl AsRef<crate::Sequence<Insn>> for SdccCall1 {
     }
 }
 
+impl std::ops::Deref for SdccCall1 {
+    type Target = Subroutine;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl std::ops::DerefMut for SdccCall1 {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 impl<InputParameters: SdccCall1ParameterList, ReturnValue>
     crate::Callable<InputParameters, ReturnValue> for SdccCall1
 where
@@ -96,5 +110,15 @@ where
 impl crate::Goto<Insn> for SdccCall1 {
     fn goto(&mut self, t: &[Insn]) {
         self.0.goto(t);
+    }
+}
+
+impl crate::Iterable for SdccCall1 {
+    fn first() -> Self {
+        Self(crate::Iterable::first())
+    }
+
+    fn step(&mut self) -> bool {
+        self.0.step()
     }
 }

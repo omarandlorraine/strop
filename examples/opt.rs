@@ -5,6 +5,7 @@ use strop::z80::SdccCall1;
 use strop::BruteForce;
 use strop::Callable;
 use strop::Disassemble;
+use strop::Iterable;
 
 fn target_function() -> SdccCall1 {
     // Construct some machine code.
@@ -23,7 +24,6 @@ fn target_function() -> SdccCall1 {
     // SdccCall1 builds, it adds one
 
     use strop::Goto;
-    use strop::IterableSequence;
 
     let mc = [
         Insn::new(&[0x26, 0x40]), // LD H,40H
