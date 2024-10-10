@@ -22,6 +22,7 @@ impl crate::Iterable for Insn {
 }
 
 impl Insn {
+    /// Increments the opcode, and sets all subsequent bytes (i.e. the operand) to 0.
     pub fn next_opcode(&mut self) -> bool {
         if self.0[0] == 0xff {
             false
