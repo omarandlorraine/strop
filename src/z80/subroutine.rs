@@ -11,7 +11,7 @@ impl Subroutine {
     /// Builds the subroutine by concatenating the body of the subroutine with a return
     /// instruction.
     pub fn build(&self) -> Sequence<Insn> {
-        vec![&self.0, &vec![Insn::new(&[0xc9])]].into()
+        vec![&self.0, &vec![Insn::ret()]].into()
     }
 }
 

@@ -22,6 +22,11 @@ impl crate::Iterable for Insn {
 }
 
 impl Insn {
+    /// constructs a return instruction `ret`
+    pub fn ret() -> Self {
+        Self::new(&[0xc9])
+    }
+
     /// Increments the opcode, and sets all subsequent bytes (i.e. the operand) to 0.
     pub fn next_opcode(&mut self) -> bool {
         if self.0[0] == 0xff {
