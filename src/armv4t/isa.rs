@@ -4,6 +4,43 @@
 #[derive(Clone, Copy, Default, PartialOrd, PartialEq)]
 pub struct Insn(pub(crate) u32);
 
+/// The condition field in the instruction.
+#[derive(Clone, Copy, Debug)]
+pub enum Cond {
+    /// equal
+    Eq, 
+    /// not equal
+    Ne, 
+    /// unsigned higher or same
+    Cs, 
+    /// unsigned lower
+    Cc, 
+    /// negative
+    Mi, 
+    /// positive
+    Pl, 
+    /// overflow
+    Vs, 
+    /// no overflow
+    Vc, 
+    /// unsigned higher
+    Hi, 
+    /// unsigned lower or same
+    Ls, 
+    /// greater or equal
+    Ge, 
+    /// less than
+    Lt, 
+    /// Greater than
+    Gt, 
+    /// Less than or equal
+    Le, 
+    /// Always
+    Al, 
+    /// Never
+    Nv
+}
+
 impl crate::Iterable for Insn {
     fn first() -> Self {
         Insn(0)
@@ -36,6 +73,14 @@ impl Insn {
     /// Decodes the instruction and returns an `unarm::ParsedIns`
     pub fn decode(&self) -> unarm::ParsedIns {
         unarm::arm::Ins::new(self.0, &Default::default()).parse(&Default::default())
+    }
+
+    /// Extracts and returns the Cond part of the instruction
+    pub fn cond(&self) -> Cond {
+        let bitfield = (self.0 >> 28) & 0x0f;
+        [
+            Cond::Eq, Cond::Ne, Cond::Cs, Cond::Cc, Cond::Mi, Cond::Pl, Cond::Vs, Cond::Vc, Cond::Hi, Cond::Ls, Cond::Ge, Cond::Lt, Cond::Gt, Cond::Le, Cond::Al, Cond::Nv
+        ][bitfield as usize]
     }
 
     /// No matter the `Insn`'s value, if it does not encode a valid ARMv4T machine code
