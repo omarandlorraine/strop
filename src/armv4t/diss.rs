@@ -1,6 +1,7 @@
 impl std::fmt::Display for crate::armv4t::Insn {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        write!(f, "{}", self.decode().display(Default::default()))
+        let i = unarm::arm::Ins::new(self.0, &Default::default()).parse(&Default::default());
+        write!(f, "{}", i.display(Default::default()))
     }
 }
 
