@@ -1,45 +1,10 @@
 //! Module for representing ARMv4T machine code instructions.
 
+mod decode;
+
 /// Represents an ARMv4T machine code instruction.
 #[derive(Clone, Copy, Default, PartialOrd, PartialEq)]
 pub struct Insn(pub(crate) u32);
-
-/// The condition field in the instruction.
-#[derive(Clone, Copy, Debug)]
-pub enum Cond {
-    /// equal
-    Eq, 
-    /// not equal
-    Ne, 
-    /// unsigned higher or same
-    Cs, 
-    /// unsigned lower
-    Cc, 
-    /// negative
-    Mi, 
-    /// positive
-    Pl, 
-    /// overflow
-    Vs, 
-    /// no overflow
-    Vc, 
-    /// unsigned higher
-    Hi, 
-    /// unsigned lower or same
-    Ls, 
-    /// greater or equal
-    Ge, 
-    /// less than
-    Lt, 
-    /// Greater than
-    Gt, 
-    /// Less than or equal
-    Le, 
-    /// Always
-    Al, 
-    /// Never
-    Nv
-}
 
 impl crate::Iterable for Insn {
     fn first() -> Self {
@@ -70,17 +35,12 @@ impl crate::Encode<u32> for Insn {
 }
 
 impl Insn {
-    /// Decodes the instruction and returns an `unarm::ParsedIns`
-    pub fn decode(&self) -> unarm::ParsedIns {
-        unarm::arm::Ins::new(self.0, &Default::default()).parse(&Default::default())
+    fn extract(&self, offs: usize, mask: u32) -> u32 {
+        (self.0 >> offs) & mask
     }
 
-    /// Extracts and returns the Cond part of the instruction
-    pub fn cond(&self) -> Cond {
-        let bitfield = (self.0 >> 28) & 0x0f;
-        [
-            Cond::Eq, Cond::Ne, Cond::Cs, Cond::Cc, Cond::Mi, Cond::Pl, Cond::Vs, Cond::Vc, Cond::Hi, Cond::Ls, Cond::Ge, Cond::Lt, Cond::Gt, Cond::Le, Cond::Al, Cond::Nv
-        ][bitfield as usize]
+    fn bit(&self, offs: usize) -> bool {
+        self.extract(offs, 1) != 0
     }
 
     /// No matter the `Insn`'s value, if it does not encode a valid ARMv4T machine code
@@ -130,15 +90,6 @@ impl Insn {
         } else if self.0 & 0x0e000010 == 0x06000010 {
             // this range of instructions is undefined
             return false;
-        }
-
-        let d = self.decode();
-
-        if d.mnemonic.starts_with("bx") {
-            // A Branch and Exchange instruction with PC as its operand is undefined behaviour
-            if let unarm::args::Argument::Reg(reg) = d.args[0] {
-                return reg.reg != unarm::args::Register::Pc;
-            }
         }
 
         true
