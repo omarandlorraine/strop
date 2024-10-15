@@ -415,12 +415,11 @@ fn alu(word: u32,f : Bitfield) -> Operation {
         rm!(f, 0);
 
         if word[4] & 0x10 == 0 {
+            shift_amount!(f (11, 8));
             let amount = bit!(word[11;7]) as u8;
             Shift::ImmediateShiftedRegister { amount: amount, shift: shift, m: m }
         } else {
             rs!(word, 8);
-            shift_amount!(f (11, 8)) as u8;
-            Shift::RegisterShiftedRegister { s: amount, shift: shift, m: m }
         }
     };
 
