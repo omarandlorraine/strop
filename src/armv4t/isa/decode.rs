@@ -120,13 +120,6 @@ fn branch(word: u32) -> Operation {
     Operation::Branch(condition.into(), link.into(), offset << 8 >> 6)
 }
 
-fn branch_exchange(word:u32) -> Operation {
-    let mut registers = Registers::default();
-    registers.n = bit!(word[3;0]) as u8;
-
-    return Operation::BranchExchange(registers);
-}
-
 fn coprocessor_data_operation(word: u32) -> Operation {
     let coprocessor = bit!(word[11;8]) as u8;
     let opcode = bit!(word[23;20]) as u8;
@@ -202,20 +195,6 @@ fn halfword_data_transfer(word: u32) -> Operation {
     };
 
     Operation::HalfwordDataTransfer(flags, registers, offset)
-}
-
-fn multiply(word: u32) -> Operation {
-    let mut flags = MultiplyFlags::default();
-    flags.accumulate = bit!(word[21]);
-    flags.flags = bit!(word[20]);
-
-    let mut registers = Registers::default();
-    registers.d = bit!(word[19;16]) as u8;
-    registers.n = bit!(word[15;12]) as u8;
-    registers.s = bit!(word[11;8]) as u8;
-    registers.m = bit!(word[3;0]) as u8;
-
-    Operation::Multiply(flags, registers)
 }
 
 fn multiply_long(word: u32) -> Operation {
@@ -336,17 +315,37 @@ fn extract(word: u32, field: (u32, u32)) -> u32 {
 #[derive(PartialEq)]
 enum Bitfield {
     Rm,
+    Rd,
     SetConditionCodes,
     Cond,
     Opcode,
     Rn,
+    Rs,
     ShiftType,
+    Immediate,
+    ShiftAmount,
+}
+
+macro_rules! shift_amount {
+    ($expr:expr, $field:expr) => {
+        if $expr == Bitfield::ShiftAmount {
+            return Some($field);
+        }
+    };
+}
+
+macro_rules! immediate {
+    ($expr:expr, $field:expr) => {
+        if $expr == Bitfield::Immediate {
+            return Some($field);
+        }
+    };
 }
 
 macro_rules! shift_type {
     ($expr:expr, $bit_number:expr) => {
         if $expr == Bitfield::SetConditionCodes {
-            return Some(($bit_number, 1));
+            return Some(($bit_number, 2));
         }
     };
 }
@@ -362,15 +361,23 @@ macro_rules! set_condition_codes {
 macro_rules! opcode {
     ($expr:expr, $e:expr) => {
         if $expr == Bitfield::Opcode {
-            return Some(e);
+            return Some($e);
         }
     };
 }
 
 macro_rules! cond {
     ($expr:expr) => {
-        if $expr == Bitfield::S {
+        if $expr == Bitfield::SetConditionCodes {
             return Some((28, 4));
+        }
+    };
+}
+
+macro_rules! rs {
+    ($expr:expr, $offs:expr) => {
+        if $expr == Bitfield::Rs {
+            return Some(($offs, 4));
         }
     };
 }
@@ -378,7 +385,7 @@ macro_rules! cond {
 macro_rules! rm {
     ($expr:expr, $offs:expr) => {
         if $expr == Bitfield::Rm {
-            return Some((offs, 4));
+            return Some(($offs, 4));
         }
     };
 }
@@ -386,7 +393,7 @@ macro_rules! rm {
 macro_rules! rn {
     ($expr:expr, $offs:expr) => {
         if $expr == Bitfield::Rn {
-            return Some((offs, 4));
+            return Some(($offs, 4));
         }
     };
 }
@@ -394,65 +401,65 @@ macro_rules! rn {
 macro_rules! rd {
     ($expr:expr, $offs:expr) => {
         if $expr == Bitfield::Rd {
-            return Some((offs, 4));
+            return Some(($offs, 4));
         }
     };
 }
 
-fn alu(word: u32,f : Bitfield) -> Operation {
+fn branch_exchange(word:u32, f: Bitfield) -> Option<(u32, u32)> {
+    rn!(f, 0);
+    cond!(f);
+    None
+}
+
+fn alu(word: u32,f : Bitfield) -> Option<(u32, u32)> {
+    if word & 0x0ffffff0 == 0x012fff10 {
+        return branch_exchange(word,f);
+    }
+
+    if word & 0x0f800000 == 0x01000000 {
+        // psr transfer instructions
+        todo!();
+    }
+
     set_condition_codes!(f, 20);
     opcode!(f, (21, 4));
 
-    rn!(word,16);
-    rd!(word,12);
+    rn!(f,16);
+    rd!(f,12);
 
-    let operand = if bit!(word[25]) {
-        let rotate = bit!(word[11;8]) as u8;
-        let immediate = bit!(word[7;0]) as u8;
-        Shift::RotatedImmediate { rotation: rotate, immediate: immediate }
+    let operand = if word & (1 << 25) != 0 {
+        immediate!(f, (0, 8));
+        shift_amount!(f, (8, 4));
     } else {
-        shift_type!(f, (6, 2));
+        shift_type!(f, 6);
         rm!(f, 0);
 
-        if word[4] & 0x10 == 0 {
-            shift_amount!(f (11, 8));
-            let amount = bit!(word[11;7]) as u8;
-            Shift::ImmediateShiftedRegister { amount: amount, shift: shift, m: m }
+        if word & 0x10 == 0 {
+            shift_amount!(f, (11, 8));
         } else {
-            rs!(word, 8);
+            rs!(f, 8);
         }
     };
+    cond!(f);
+    None
+}
 
-    // 'br rn' instructions are equivalent to 'teq r15, rn, lsl r15'
-    // without the S bit set.
-    if let Shift::RegisterShiftedRegister { s: shift, .. } = operand {
-        if shift == 15 && word & 0x0ffffff0 == 0x012fff10 {
-            return branch_exchange(word);
-        }
-    }
-
-    match (opcode, s) {
-        (DataOp::Tst, false) if word & 0x0ffffff0 == 0x012fff10 => {
-            return branch_exchange(word)
-        }
-        (DataOp::Tst, false)
-        | (DataOp::Teq, false)
-        | (DataOp::Cmp, false)
-        | (DataOp::Cmn, false) => {
-            return status_transfer(word);
-        }
-        _ => (),
-    }
-
-    Operation::Alu(opcode, s.into(), registers, operand)
+fn multiply(word: u32, f: Bitfield) -> Option<(u32, u32)> {
+    set_condition_codes!(f, 20);
+    rd!(f, 16);
+    rn!(f, 12);
+    rs!(f, 8);
+    rm!(f, 0);
+    None
 }
 
 fn get_bitfield(word: u32, f: Bitfield) -> Option<(u32, u32)> {
     cond!(f);
     match word >> 24 & 0b1111 {
-        0b0000..=0b0001 if extract(word,(4,1))==0 || extract(word,(7,1))==0 => alu(word),
-        0b0010..=0b0011 => alu(word),
-        0b0000 if extract(word,(23,22)) == 0 && extract(word,(7,4)) == 9 => multiply(word),
+        0b0000..=0b0001 if extract(word,(4,1))==0 || extract(word,(7,1))==0 => alu(word, f),
+        0b0010..=0b0011 => alu(word, f),
+        0b0000 if extract(word,(23,22)) == 0 && extract(word,(7,4)) == 9 => multiply(word, f),
         0b0000 if extract(word,(23)) && extract(word,(7,4)) == 9 => multiply_long(word),
         0b0001 if !extract(word,(23)) && extract(word,(21,20)) == 0 && extract(word,(11,4)) == 9 => single_data_swap(word),
         0b0000..=0b0001 if !extract(word,(22)) && extract(word,(11,7)) == 1 && extract(word,(6,5)) != 0 && extract(word,(4)) => halfword_data_transfer(word),
