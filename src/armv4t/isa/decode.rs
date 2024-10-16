@@ -32,7 +32,7 @@ pub enum Condition {
     /// Always
     Al,
     /// Never
-    Nv
+    Nv,
 }
 
 /// A register
@@ -54,16 +54,6 @@ pub enum Register {
     Sp,
     Lr,
     Pc,
-}
-
-
-/// Operand2, for data processing/PSR transfer instructions
-#[allow(missing_docs)]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Operand2 {
-    Shift(u8, Register),
-    Shift2(Register, Register),
-    Immediate(u8, u8),
 }
 
 /*
@@ -197,21 +187,6 @@ fn halfword_data_transfer(word: u32) -> Operation {
     Operation::HalfwordDataTransfer(flags, registers, offset)
 }
 
-fn multiply_long(word: u32) -> Operation {
-    let mut flags = MultiplyFlags::default();
-    flags.unsigned = bit!(word[22]);
-    flags.accumulate = bit!(word[21]);
-    flags.flags = bit!(word[20]);
-
-    let mut registers = Registers::default();
-    registers.h = bit!(word[19;16]) as u8;
-    registers.l = bit!(word[15;12]) as u8;
-    registers.s = bit!(word[11;8]) as u8;
-    registers.m = bit!(word[3;0]) as u8;
-
-    Operation::MultiplyLong(flags, registers)
-}
-
 fn single_data_swap(word: u32) -> Operation {
     let mut flags = TransferFlags::default();
     flags.byte = bit!(word[22]);
@@ -312,16 +287,18 @@ fn extract(word: u32, field: (u32, u32)) -> u32 {
     (word >> x) & mask
 }
 
-#[derive(PartialEq)]
-enum Bitfield {
+/// An enumeration of the miscellaneous bitfields in the ARMv4T instruction
+#[derive(Debug, PartialEq)]
+pub enum Bitfield {
     Rm,
     Rd,
+    RdHi,
+    RdLo,
     SetConditionCodes,
     Cond,
     Opcode,
     Rn,
     Rs,
-    ShiftType,
     Immediate,
     ShiftAmount,
 }
@@ -406,15 +383,31 @@ macro_rules! rd {
     };
 }
 
-fn branch_exchange(word:u32, f: Bitfield) -> Option<(u32, u32)> {
+macro_rules! rd_hi {
+    ($expr:expr, $offs:expr) => {
+        if $expr == Bitfield::RdHi {
+            return Some(($offs, 4));
+        }
+    };
+}
+
+macro_rules! rd_lo {
+    ($expr:expr, $offs:expr) => {
+        if $expr == Bitfield::RdLo {
+            return Some(($offs, 4));
+        }
+    };
+}
+
+fn branch_exchange(f: Bitfield) -> Option<(u32, u32)> {
     rn!(f, 0);
     cond!(f);
     None
 }
 
-fn alu(word: u32,f : Bitfield) -> Option<(u32, u32)> {
+fn alu(word: u32, f: Bitfield) -> Option<(u32, u32)> {
     if word & 0x0ffffff0 == 0x012fff10 {
-        return branch_exchange(word,f);
+        return branch_exchange(f);
     }
 
     if word & 0x0f800000 == 0x01000000 {
@@ -425,10 +418,10 @@ fn alu(word: u32,f : Bitfield) -> Option<(u32, u32)> {
     set_condition_codes!(f, 20);
     opcode!(f, (21, 4));
 
-    rn!(f,16);
-    rd!(f,12);
+    rn!(f, 16);
+    rd!(f, 12);
 
-    let operand = if word & (1 << 25) != 0 {
+    if word & (1 << 25) != 0 {
         immediate!(f, (0, 8));
         shift_amount!(f, (8, 4));
     } else {
@@ -445,7 +438,7 @@ fn alu(word: u32,f : Bitfield) -> Option<(u32, u32)> {
     None
 }
 
-fn multiply(word: u32, f: Bitfield) -> Option<(u32, u32)> {
+fn multiply(f: Bitfield) -> Option<(u32, u32)> {
     set_condition_codes!(f, 20);
     rd!(f, 16);
     rn!(f, 12);
@@ -454,13 +447,28 @@ fn multiply(word: u32, f: Bitfield) -> Option<(u32, u32)> {
     None
 }
 
+fn multiply_long(f: Bitfield) -> Option<(u32, u32)> {
+    rd_hi!(f, 16);
+    rd_lo!(f, 12);
+    rs!(f, 8);
+    rm!(f, 0);
+    cond!(f);
+    None
+}
+
 fn get_bitfield(word: u32, f: Bitfield) -> Option<(u32, u32)> {
     cond!(f);
     match word >> 24 & 0b1111 {
-        0b0000..=0b0001 if extract(word,(4,1))==0 || extract(word,(7,1))==0 => alu(word, f),
+        0b0000..=0b0001 if extract(word, (4, 1)) == 0 || extract(word, (7, 1)) == 0 => alu(word, f),
         0b0010..=0b0011 => alu(word, f),
-        0b0000 if extract(word,(23,22)) == 0 && extract(word,(7,4)) == 9 => multiply(word, f),
-        0b0000 if extract(word,(23)) && extract(word,(7,4)) == 9 => multiply_long(word),
+        0b0000 if extract(word, (7, 4)) == 9 => {
+            if extract(word, (22, 2)) == 0 {
+                multiply(f)
+            } else {
+                multiply_long(f)
+            }
+        }
+        /*
         0b0001 if !extract(word,(23)) && extract(word,(21,20)) == 0 && extract(word,(11,4)) == 9 => single_data_swap(word),
         0b0000..=0b0001 if !extract(word,(22)) && extract(word,(11,7)) == 1 && extract(word,(6,5)) != 0 && extract(word,(4)) => halfword_data_transfer(word),
         0b0000..=0b0001 if extract(word,(22)) && extract(word,(7)) && extract(word,(6,5)) != 0 && extract(word,(4)) => halfword_data_transfer(word),
@@ -471,6 +479,99 @@ fn get_bitfield(word: u32, f: Bitfield) -> Option<(u32, u32)> {
         0b1110 if !extract(word,(4)) => coprocessor_data_operation(word),
         0b1110 if extract(word,(4)) => coprocessor_register_transfer(word),
         0b1111 => software_interrupt(word),
-        _ => undefined(),
+        */
+        _ => None,
+    }
+}
+
+impl crate::armv4t::Insn {
+    /// Returns the instruction's Condition field
+    pub fn get_cond(&self) -> Option<Condition> {
+        get_bitfield(self.0, Bitfield::Cond).map(|c| {
+            [
+                Condition::Eq,
+                Condition::Ne,
+                Condition::Cs,
+                Condition::Cc,
+                Condition::Mi,
+                Condition::Pl,
+                Condition::Vs,
+                Condition::Vc,
+                Condition::Hi,
+                Condition::Ls,
+                Condition::Ge,
+                Condition::Lt,
+                Condition::Gt,
+                Condition::Le,
+                Condition::Al,
+                Condition::Nv,
+            ][extract(self.0, c) as usize]
+        })
+    }
+
+    fn get_register(&self, field: Bitfield) -> Option<Register> {
+        get_bitfield(self.0, field).map(|f| {
+            [
+                Register::R0,
+                Register::R1,
+                Register::R2,
+                Register::R3,
+                Register::R4,
+                Register::R5,
+                Register::R6,
+                Register::R7,
+                Register::R8,
+                Register::R9,
+                Register::R10,
+                Register::R12,
+                Register::Sp,
+                Register::Lr,
+                Register::Pc,
+            ][extract(self.0, f) as usize]
+        })
+    }
+
+    /// Returns the instruction's Rm field
+    pub fn get_rm(&self) -> Option<Register> {
+        self.get_register(Bitfield::Rm)
+    }
+
+    /// Returns the instruction's Rd field
+    pub fn get_rd(&self) -> Option<Register> {
+        self.get_register(Bitfield::Rd)
+    }
+
+    /// Returns the instruction's Rs field
+    pub fn get_rs(&self) -> Option<Register> {
+        self.get_register(Bitfield::Rs)
+    }
+
+    /// Returns the instruction's Rn field
+    pub fn get_rn(&self) -> Option<Register> {
+        self.get_register(Bitfield::Rn)
+    }
+
+    /// Randomizes the bits inside the bitfield
+    pub fn randomize_bitfield(&mut self, field: Bitfield) {
+        use rand::Rng;
+
+        let Some((x, width)) = get_bitfield(self.0, field) else {
+            return;
+        };
+        let mask = ((1u32 << width) - 1) << x;
+        let mut rng = rand::thread_rng();
+        let random_bits = rng.gen::<u32>() & mask;
+        self.0 = (self.0 & !mask) | random_bits;
+    }
+
+    /// Increments the bitfield. (Carry propagates out of the bitfield, so that if the bitfield
+    /// rolls over, then the next bits to the left are incremented).
+    pub fn increment_bitfield(&mut self, field: Bitfield) {
+        let (x, _width) = get_bitfield(self.0, field).unwrap_or(
+            // if the bitfield is not present in the instruction, then just increment the entire
+            // instruction.
+            (0, 0),
+        );
+        self.0 += 1 << x;
     }
 }

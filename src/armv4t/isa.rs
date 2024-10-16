@@ -35,14 +35,6 @@ impl crate::Encode<u32> for Insn {
 }
 
 impl Insn {
-    fn extract(&self, offs: usize, mask: u32) -> u32 {
-        (self.0 >> offs) & mask
-    }
-
-    fn bit(&self, offs: usize) -> bool {
-        self.extract(offs, 1) != 0
-    }
-
     /// No matter the `Insn`'s value, if it does not encode a valid ARMv4T machine code
     /// instruction, this method mutates it so that it does.
     pub fn fixup(&mut self) {
