@@ -50,236 +50,12 @@ pub enum Register {
     R8,
     R9,
     R10,
+    R11,
     R12,
     Sp,
     Lr,
     Pc,
 }
-
-/*
-pub fn decode(word: u32) -> Operation {
-    match word >> 24 & 0b1111 {
-        0b0000...0b0001 if !bit!(word[4]) || !bit!(word[7]) => alu(word),
-        0b0010...0b0011 => alu(word),
-        0b0000 if bit!(word[23;22]) == 0 && bit!(word[7;4]) == 9 => multiply(word),
-        0b0000 if bit!(word[23]) && bit!(word[7;4]) == 9 => multiply_long(word),
-        0b0001 if !bit!(word[23]) && bit!(word[21;20]) == 0 && bit!(word[11;4]) == 9 => single_data_swap(word),
-        0b0000...0b0001 if !bit!(word[22]) && bit!(word[11;7]) == 1 && bit!(word[6;5]) != 0 && bit!(word[4]) => halfword_data_transfer(word),
-        0b0000...0b0001 if bit!(word[22]) && bit!(word[7]) && bit!(word[6;5]) != 0 && bit!(word[4]) => halfword_data_transfer(word),
-        0b0100...0b0111 if !bit!(word[25]) || !bit!(word[4]) => single_data_transfer(word),
-        0b1000...0b1001 => block_data_transfer(word),
-        0b1010...0b1011 => branch(word),
-        0b1100...0b1101 => coprocessor_data_transfer(word),
-        0b1110 if !bit!(word[4]) => coprocessor_data_operation(word),
-        0b1110 if bit!(word[4]) => coprocessor_register_transfer(word),
-        0b1111 => software_interrupt(word),
-        _ => undefined(),
-    }
-}
-
-
-fn block_data_transfer(word: u32) -> Operation {
-    let mut flags = TransferFlags::default();
-    flags.pre = bit!(word[24]);
-    flags.up = bit!(word[23]);
-    let s = bit!(word[22]);
-    flags.writeback = bit!(word[21]);
-    flags.load = bit!(word[20]);
-
-    let mut registers = Registers::default();
-    registers.n = bit!(word[19;16]) as u8;
-
-    let list = bit!(word[15;0]) as u16;
-
-    match (s, flags.load, list & 0x8000 != 0) {
-        (false, _, _) => (),
-        (true, true, true) => flags.psr = true,
-        (true, false, true)
-        | (true, true, false)
-        | (true, false, false) => flags.user = true,
-    }
-
-    Operation::BlockDataTransfer(flags, registers, list)
-}
-
-fn branch(word: u32) -> Operation {
-    let condition = bit!(word[31;28]);
-    let link = bit!(word[24]);
-    let offset = bit!(word[23;0]) as i32;
-
-    Operation::Branch(condition.into(), link.into(), offset << 8 >> 6)
-}
-
-fn coprocessor_data_operation(word: u32) -> Operation {
-    let coprocessor = bit!(word[11;8]) as u8;
-    let opcode = bit!(word[23;20]) as u8;
-    let information = bit!(word[7;5]) as u8;
-
-    let mut registers = Registers::default();
-    registers.n = bit!(word[19;16]) as u8;
-    registers.d = bit!(word[15;12]) as u8;
-    registers.m = bit!(word[3;0]) as u8;
-
-    Operation::CoprocessorDataOperation(coprocessor, opcode, information, registers)
-}
-
-fn coprocessor_data_transfer(word: u32) -> Operation {
-    let mut flags = TransferFlags::default();
-    flags.pre = bit!(word[24]);
-    flags.up = bit!(word[23]);
-    flags.transfer = bit!(word[22]);
-    flags.writeback = bit!(word[21]);
-    flags.load = bit!(word[20]);
-
-    let coprocessor = bit!(word[11;8]) as u8;
-
-    let mut registers = Registers::default();
-    registers.n = bit!(word[19;16]) as u8;
-    registers.d = bit!(word[15;12]) as u8;
-
-    let offset = bit!(word[7;0]);
-
-    Operation::CoprocessorDataTransfer(flags, coprocessor, registers, offset << 2)
-}
-
-fn coprocessor_register_transfer(word: u32) -> Operation {
-    let mut flags = TransferFlags::default();
-    flags.load = bit!(word[20]);
-
-    let coprocessor = bit!(word[11;8]) as u8;
-    let opcode = bit!(word[23;21]) as u8;
-    let information = bit!(word[7;5]) as u8;
-
-    let mut registers = Registers::default();
-    registers.n = bit!(word[19;16]) as u8;
-    registers.d = bit!(word[15;12]) as u8;
-    registers.m = bit!(word[3;0]) as u8;
-
-    Operation::CoprocessorRegisterTransfer(flags, coprocessor, opcode, information, registers)
-}
-
-fn halfword_data_transfer(word: u32) -> Operation {
-    let mut flags = TransferFlags::default();
-    flags.pre = bit!(word[24]);
-    flags.up = bit!(word[23]);
-    let immediate = bit!(word[22]);
-    flags.writeback = bit!(word[21]);
-    flags.load = bit!(word[20]);
-    flags.signed = bit!(word[6]);
-    flags.halfword = bit!(word[5]);
-
-    let mut registers = Registers::default();
-    registers.n = bit!(word[19;16]) as u8;
-    registers.d = bit!(word[15;12]) as u8;
-
-    let offset = if immediate {
-        let low = bit!(word[3;0]) as u8;
-        let high = bit!(word[11;8]) as u8;
-        let offset = high << 4 | low;
-
-        Shift::Immediate { value: offset as u32 }
-    } else {
-        let m = bit!(word[3;0]) as u8;
-
-        Shift::ImmediateShiftedRegister { amount: 0, shift: 0, m: m }
-    };
-
-    Operation::HalfwordDataTransfer(flags, registers, offset)
-}
-
-fn single_data_swap(word: u32) -> Operation {
-    let mut flags = TransferFlags::default();
-    flags.byte = bit!(word[22]);
-
-    let mut registers = Registers::default();
-    registers.n = bit!(word[19;16]) as u8;
-    registers.d = bit!(word[15;12]) as u8;
-    registers.m = bit!(word[3;0]) as u8;
-
-    Operation::SingleDataSwap(flags, registers)
-}
-
-fn single_data_transfer(word: u32) -> Operation {
-    let mut flags = TransferFlags::default();
-    let immediate = !bit!(word[25]);
-    flags.pre = bit!(word[24]);
-    flags.up = bit!(word[23]);
-    flags.byte = bit!(word[22]);
-    flags.writeback = bit!(word[21]);
-    flags.load = bit!(word[20]);
-
-    let mut registers = Registers::default();
-    registers.n = bit!(word[19;16]) as u8;
-    registers.d = bit!(word[15;12]) as u8;
-
-    let offset = if immediate {
-        let value = bit!(word[11;0]) as u32;
-
-        Shift::Immediate { value: value }
-    } else {
-        let shift = bit!(word[6;5]) as u8;
-        let m = bit!(word[3;0]) as u8;
-        let amount = bit!(word[11;7]) as u8;
-
-        Shift::ImmediateShiftedRegister { amount: amount, shift: shift, m: m }
-    };
-
-    Operation::SingleDataTransfer(flags, registers, offset)
-}
-
-fn software_interrupt(word: u32) -> Operation {
-    let comment = bit!(word[23;0]);
-
-    Operation::SoftwareInterrupt(comment)
-}
-
-fn status_transfer(word: u32) -> Operation {
-    let mut flags = TransferFlags::default();
-    let immediate = bit!(word[25]);
-    flags.saved = bit!(word[22]);
-    flags.load = !bit!(word[21]);
-
-    let mask = bit!(word[19;16]) as u8;
-
-    let mut registers = Registers::default();
-    registers.d = bit!(word[15;12]) as u8;
-
-    let value = if immediate {
-        let rotate = bit!(word[11;8]) as u8;
-        let immediate = bit!(word[7;0]) as u8;
-        Shift::RotatedImmediate { rotation: rotate, immediate: immediate }
-    } else {
-        let m = bit!(word[3;0]) as u8;
-        Shift::ImmediateShiftedRegister { amount: 0, shift: 0, m: m}
-    };
-
-    Operation::StatusTransfer(flags, mask, registers, value)
-}
-
-fn undefined() -> Operation {
-    Operation::Undefined
-}
-
-fn decode(word: u32) -> Option<(u32, u32)> {
-    match word >> 24 & 0b1111 {
-        0b0000...0b0001 if !bit!(word[4]) || !bit!(word[7]) => alu(word),
-        0b0010...0b0011 => alu(word),
-        0b0000 if bit!(word[23;22]) == 0 && bit!(word[7;4]) == 9 => multiply(word),
-        0b0000 if bit!(word[23]) && bit!(word[7;4]) == 9 => multiply_long(word),
-        0b0001 if !bit!(word[23]) && bit!(word[21;20]) == 0 && bit!(word[11;4]) == 9 => single_data_swap(word),
-        0b0000...0b0001 if !bit!(word[22]) && bit!(word[11;7]) == 1 && bit!(word[6;5]) != 0 && bit!(word[4]) => halfword_data_transfer(word),
-        0b0000...0b0001 if bit!(word[22]) && bit!(word[7]) && bit!(word[6;5]) != 0 && bit!(word[4]) => halfword_data_transfer(word),
-        0b0100...0b0111 if !bit!(word[25]) || !bit!(word[4]) => single_data_transfer(word),
-        0b1000...0b1001 => block_data_transfer(word),
-        0b1010...0b1011 => branch(word),
-        0b1100...0b1101 => coprocessor_data_transfer(word),
-        0b1110 if !bit!(word[4]) => coprocessor_data_operation(word),
-        0b1110 if bit!(word[4]) => coprocessor_register_transfer(word),
-        0b1111 => software_interrupt(word),
-        _ => undefined(),
-    }
-}
-*/
 
 fn extract(word: u32, field: (u32, u32)) -> u32 {
     let (x, width) = field;
@@ -301,6 +77,35 @@ pub enum Bitfield {
     Rs,
     Immediate,
     ShiftAmount,
+    LoadRegisterList,
+    StoreRegisterList,
+    BranchOffset,
+    SwiNumber,
+    Fixup
+}
+
+macro_rules! store_register_list {
+    ($expr:expr) => {
+        if $expr == Bitfield::StoreRegisterList {
+            return Some((0, 16));
+        }
+    };
+}
+
+macro_rules! load_register_list {
+    ($expr:expr) => {
+        if $expr == Bitfield::LoadRegisterList {
+            return Some((0, 16));
+        }
+    };
+}
+
+macro_rules! fixup {
+    ($expr:expr, $field:expr) => {
+        if $expr == Bitfield::Fixup {
+            return Some($field);
+        }
+    };
 }
 
 macro_rules! shift_amount {
@@ -345,7 +150,7 @@ macro_rules! opcode {
 
 macro_rules! cond {
     ($expr:expr) => {
-        if $expr == Bitfield::SetConditionCodes {
+        if $expr == Bitfield::Cond {
             return Some((28, 4));
         }
     };
@@ -399,6 +204,22 @@ macro_rules! rd_lo {
     };
 }
 
+macro_rules! branch_offset {
+    ($expr:expr, $field:expr) => {
+        if $expr == Bitfield::BranchOffset {
+            return Some($field);
+        }
+    };
+}
+
+macro_rules! swi_number {
+    ($expr:expr, $field:expr) => {
+        if $expr == Bitfield::SwiNumber {
+            return Some($field);
+        }
+    };
+}
+
 fn branch_exchange(f: Bitfield) -> Option<(u32, u32)> {
     rn!(f, 0);
     cond!(f);
@@ -406,13 +227,27 @@ fn branch_exchange(f: Bitfield) -> Option<(u32, u32)> {
 }
 
 fn alu(word: u32, f: Bitfield) -> Option<(u32, u32)> {
+    if word & 0x0fc0_00f0 == 0x0000_0090 {
+        return multiply(word, f);
+    }
+
+    #[cfg(test)]
+    assert!(!format!("{}", crate::armv4t::Insn(word)).starts_with("mul"));
+
+    #[cfg(test)]
+    assert!(!format!("{}", crate::armv4t::Insn(word)).starts_with("mla"));
+
+    assert!(0x004000b4 != word);
+
     if word & 0x0ffffff0 == 0x012fff10 {
         return branch_exchange(f);
     }
 
     if word & 0x0f800000 == 0x01000000 {
         // psr transfer instructions
-        todo!();
+        // These are not supported by strop
+        fixup!(f, (0, 22));
+        return None;
     }
 
     set_condition_codes!(f, 20);
@@ -432,18 +267,24 @@ fn alu(word: u32, f: Bitfield) -> Option<(u32, u32)> {
             shift_amount!(f, (11, 8));
         } else {
             rs!(f, 8);
+            fixup!(f, (0, 5));
         }
     };
     cond!(f);
     None
 }
 
-fn multiply(f: Bitfield) -> Option<(u32, u32)> {
+fn multiply(word: u32, f: Bitfield) -> Option<(u32, u32)> {
+    if word & 0x0000_f000 != 0 {
+        // Rn has to be zero
+        fixup!(f, (0, 0));
+    }
     set_condition_codes!(f, 20);
     rd!(f, 16);
     rn!(f, 12);
     rs!(f, 8);
     rm!(f, 0);
+    cond!(f);
     None
 }
 
@@ -456,30 +297,73 @@ fn multiply_long(f: Bitfield) -> Option<(u32, u32)> {
     None
 }
 
+fn single_data_swap(f: Bitfield) -> Option<(u32, u32)> {
+    rn!(f, 16);
+    rd!(f, 12);
+    rm!(f, 0);
+    cond!(f);
+    None
+}
+
+fn halfword_data_transfer(word: u32, f: Bitfield) -> Option<(u32, u32)> {
+    let immediate = word & 0x01<< 22 != 0;
+    rn!(f, 16);
+    rd!(f, 12);
+
+    if !immediate {
+        rm!(f, 0);
+    }
+
+    cond!(f);
+    None
+}
+
+fn single_data_transfer(word: u32, f: Bitfield) -> Option<(u32, u32)> {
+    // ldrh/strh/ldrsb/ldrsh
+    let immediate = word & 0x0040_0000 != 0;
+    rn!(f,16);
+    rd!(f,12);
+
+    if !immediate {
+        rm!(f, 0);
+    };
+    cond!(f);
+    None
+}
+
+fn block_data_transfer(word: u32, f: Bitfield) -> Option<(u32, u32)> {
+    rn!(f, 16);
+    if word & 1 << 20 == 0 {
+        store_register_list!(f);
+    } else {
+        load_register_list!(f);
+    }
+    cond!(f);
+    None
+}
+
+fn branch(f: Bitfield) -> Option<(u32, u32)> {
+    branch_offset!(f, (0,16));
+    cond!(f);
+    None
+}
+
+fn software_interrupt(f: Bitfield) -> Option<(u32, u32)> {
+    swi_number!(f, (0,24));
+    cond!(f);
+    None
+}
+
 fn get_bitfield(word: u32, f: Bitfield) -> Option<(u32, u32)> {
     cond!(f);
     match word >> 24 & 0b1111 {
-        0b0000..=0b0001 if extract(word, (4, 1)) == 0 || extract(word, (7, 1)) == 0 => alu(word, f),
-        0b0010..=0b0011 => alu(word, f),
-        0b0000 if extract(word, (7, 4)) == 9 => {
-            if extract(word, (22, 2)) == 0 {
-                multiply(f)
-            } else {
-                multiply_long(f)
-            }
-        }
-        /*
-        0b0001 if !extract(word,(23)) && extract(word,(21,20)) == 0 && extract(word,(11,4)) == 9 => single_data_swap(word),
-        0b0000..=0b0001 if !extract(word,(22)) && extract(word,(11,7)) == 1 && extract(word,(6,5)) != 0 && extract(word,(4)) => halfword_data_transfer(word),
-        0b0000..=0b0001 if extract(word,(22)) && extract(word,(7)) && extract(word,(6,5)) != 0 && extract(word,(4)) => halfword_data_transfer(word),
-        0b0100..=0b0111 if !extract(word,(25)) || !extract(word,(4)) => single_data_transfer(word),
-        0b1000..=0b1001 => block_data_transfer(word),
-        0b1010..=0b1011 => branch(word),
-        0b1100..=0b1101 => coprocessor_data_transfer(word),
-        0b1110 if !extract(word,(4)) => coprocessor_data_operation(word),
-        0b1110 if extract(word,(4)) => coprocessor_register_transfer(word),
-        0b1111 => software_interrupt(word),
-        */
+        0b0000..=0b0011 => alu(word, f),
+        0b0001 if word & 0x0fb0_0ff0 == 0x0100_0090 => single_data_swap(f),
+        0b0000..=0b0001 if word & 0x0c00_0f90 == 0x0000_0090 => halfword_data_transfer(word,f),
+        0b0100..=0b0111 if word & 0x0c00_0000 == 0x0400_0000 => single_data_transfer(word, f),
+        0b1000..=0b1001 => block_data_transfer(word, f),
+        0b1010..=0b1011 => branch(f),
+        0b1111 => software_interrupt(f),
         _ => None,
     }
 }
@@ -523,6 +407,7 @@ impl crate::armv4t::Insn {
                 Register::R8,
                 Register::R9,
                 Register::R10,
+                Register::R11,
                 Register::R12,
                 Register::Sp,
                 Register::Lr,
@@ -573,5 +458,54 @@ impl crate::armv4t::Insn {
             (0, 0),
         );
         self.0 += 1 << x;
+    }
+
+    /// Resets the bitfield. This means that the bitfield, and all bits to the right, are set to 0,
+    /// and the bits to the left of the bitfield are incremented.
+    pub fn reset_bitfield(&mut self, field: (u32, u32)) {
+        let (x, width) = field;
+        let mask = (1u32 << (x + width)) - 1;
+        self.0 |= mask;
+        self.0 += 1;
+    }
+
+    /// If the instruction does not encode a valid ARMv4T instruction, then this method will change
+    /// it to the numerically next valid instruction.
+    pub fn fixup(&mut self) {
+        while let Some(fixup) = get_bitfield(self.0, Bitfield::Fixup) {
+            self.reset_bitfield(fixup);
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn all_instructions_have_cond() {
+        use crate::Iterable;
+        use crate::armv4t::Insn;
+        use crate::armv4t::isa::decode::Register;
+        use crate::armv4t::isa::decode::Bitfield;
+        use crate::armv4t::isa::decode::get_bitfield;
+
+        // for i in 0..u32::MAX {
+        for i in 0x00400000..u32::MAX {
+            let mut insn = Insn(i);
+
+            let dasm = format!("{:?}", insn);
+            println!("{dasm}");
+            if dasm.starts_with("<illegal>") {
+                assert!(get_bitfield(insn.0, Bitfield::Fixup).is_some());
+                continue;
+            }
+
+            if let Some(rm) = insn.get_rm() {
+                if rm == Register::R4 {
+                    assert!(dasm.contains("r4"), "{:?}", insn);
+                } else {
+                    insn.increment_bitfield(Bitfield::Rm);
+                }
+            }
+        }
     }
 }
