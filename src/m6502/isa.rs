@@ -18,8 +18,11 @@ impl<V: mos6502::Variant + std::clone::Clone> crate::Iterable for Insn<V> {
         // ($ff is not a valid opcode)
         self.0[0] != 0xff
     }
+}
 
-    fn stride(&mut self) -> bool {
+impl<V: mos6502::Variant + std::clone::Clone> Insn<V> {
+    /// Increments the opcode, and sets all subsequent bytes (i.e. the operand) to 0.
+    pub fn skip_to_next_opcode(&mut self) -> bool {
         self.0 = [self.0[0] + 1, 0, 0];
         self.fixup();
 
@@ -59,6 +62,18 @@ impl<V: mos6502::Variant + std::clone::Clone> crate::Encode<u8> for Insn<V> {
 }
 
 impl<V: mos6502::Variant + std::clone::Clone> Insn<V> {
+    /// constructs a return instruction `rts`.
+    pub fn rts() -> Self {
+        Self::new(&[0x60])
+    }
+
+    /// Constructs a new Insn from a slice of bytes
+    pub fn new(mc: &[u8]) -> Self {
+        let mut enc = [0, 0, 0];
+        enc[..mc.len().min(3)].copy_from_slice(mc);
+        Self(enc, std::marker::PhantomData::<V>)
+    }
+
     fn incr_at_offset(&mut self, offset: usize) -> bool {
         if let Some(nb) = self.0[offset].checked_add(1) {
             self.0[offset] = nb;
