@@ -16,6 +16,9 @@ impl crate::Iterable for Insn {
             false
         } else {
             self.0 += 1;
+            while !self.valid() {
+            self.0 += 1;
+            }
             true
         }
     }

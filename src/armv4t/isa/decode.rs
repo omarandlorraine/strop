@@ -357,10 +357,10 @@ fn software_interrupt(f: Bitfield) -> Option<(u32, u32)> {
 fn get_bitfield(word: u32, f: Bitfield) -> Option<(u32, u32)> {
     cond!(f);
     match word >> 24 & 0b1111 {
-        0b0000..=0b0011 => alu(word, f),
         0b0001 if word & 0x0fb0_0ff0 == 0x0100_0090 => single_data_swap(f),
         0b0000..=0b0001 if word & 0x0c00_0f90 == 0x0000_0090 => halfword_data_transfer(word,f),
         0b0100..=0b0111 if word & 0x0c00_0000 == 0x0400_0000 => single_data_transfer(word, f),
+        0b0000..=0b0011 => alu(word, f),
         0b1000..=0b1001 => block_data_transfer(word, f),
         0b1010..=0b1011 => branch(f),
         0b1111 => software_interrupt(f),
@@ -476,11 +476,39 @@ impl crate::armv4t::Insn {
             self.reset_bitfield(fixup);
         }
     }
+
+    /// Returns false iff the instruction does not encode a valid instruction (or, it is not
+    /// supported by the emulator, say if the instruction is only available on later architectures
+    /// than ARMv4T)
+    pub fn valid(&self) -> bool {
+        let dasm = format!("{:?}", self);
+        if dasm.starts_with("<invalid>") {
+            return false;
+        }
+        if dasm.starts_with("qadd") {
+            // only available on version 5TE and above
+            return false;
+        }
+        if dasm.starts_with("qsub") {
+            // only available on version 5TE and above
+            return false;
+        }
+        if dasm.starts_with("smla") {
+            // only available on version 5TE and above
+            return false;
+        }
+        if dasm.starts_with("umaal") {
+            //only available on version 6 and above
+            return false;
+        }
+        true
+    }
 }
 
 #[cfg(test)]
 mod test {
     #[test]
+    #[ignore]
     fn all_instructions_have_cond() {
         use crate::Iterable;
         use crate::armv4t::Insn;
@@ -505,6 +533,44 @@ mod test {
                 } else {
                     insn.increment_bitfield(Bitfield::Rm);
                 }
+            }
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn r4() {
+        use crate::Iterable;
+        use crate::armv4t::Insn;
+        use crate::armv4t::isa::decode::Register;
+        use crate::armv4t::isa::decode::Bitfield;
+        use crate::armv4t::isa::decode::get_bitfield;
+
+        let mut i = Insn::first();
+        while i.step() {
+            let dasm =  format!("{:?}", i);
+
+            if dasm.contains("r4") {
+                println!("{:?}", dasm);
+
+                if i.get_rm() == Some(Register::R4) {
+                    continue;
+                }
+
+                if i.get_rs() == Some(Register::R4) {
+                    continue;
+                }
+
+                if i.get_rd() == Some(Register::R4) {
+                    continue;
+                }
+
+                if i.get_rn() == Some(Register::R4) {
+                    continue;
+                }
+
+                panic!();
+
             }
         }
     }
