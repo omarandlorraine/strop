@@ -543,7 +543,9 @@ impl crate::armv4t::Insn {
                 "????_000000_1_?_dddd_nnnn_ssss_1001_mmmm" => (vec![m, s, n], vec![d]),
 
                 // strh
-                "????_000_???0?_nnnn_dddd_0000_1??1_mmmm" => (vec![n, m], vec![d]),
+                "????_000_???0?_nnnn_dddd_????_1??1_mmmm" => {
+                    (vec![n, m], vec![d])
+                }
                 _ => (vec![], vec![])
 
             }
@@ -569,11 +571,12 @@ impl crate::armv4t::Insn {
 
 #[cfg(test)]
 mod test {
+        use crate::armv4t::Insn;
+        use crate::armv4t::isa::decode::Register;
+
     #[test]
     #[ignore]
     fn all_instructions_have_cond() {
-        use crate::armv4t::Insn;
-        use crate::armv4t::isa::decode::Register;
         use crate::armv4t::isa::decode::Bitfield;
         use crate::armv4t::isa::decode::get_bitfield;
 
@@ -596,6 +599,12 @@ mod test {
                 }
             }
         }
+    }
+
+    #[test]
+    fn strheq() {
+        let insn = Insn(0x004041b0);
+        assert!(insn.uses().0.contains(&Register::R4));
     }
 
     #[test]
