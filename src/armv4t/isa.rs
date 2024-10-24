@@ -16,9 +16,7 @@ impl crate::Iterable for Insn {
             false
         } else {
             self.0 += 1;
-            while !self.valid() {
-            self.0 += 1;
-            }
+            self.fixup();
             true
         }
     }
@@ -59,7 +57,6 @@ mod test {
 
         while i.step() {
             // check that the instruction can be disassembled
-            format!("{}", i);
             assert_eq!(format!("{:?}", i).len(), 95, "{:?}", i);
 
             // println!("{:?}", i);

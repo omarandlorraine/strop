@@ -211,22 +211,6 @@ macro_rules! rd {
     };
 }
 
-macro_rules! rd_hi {
-    ($expr:expr, $offs:expr) => {
-        if $expr == Bitfield::RdHi {
-            return Some(($offs, 4));
-        }
-    };
-}
-
-macro_rules! rd_lo {
-    ($expr:expr, $offs:expr) => {
-        if $expr == Bitfield::RdLo {
-            return Some(($offs, 4));
-        }
-    };
-}
-
 macro_rules! branch_offset {
     ($expr:expr, $field:expr) => {
         if $expr == Bitfield::BranchOffset {
@@ -305,15 +289,6 @@ fn multiply(word: u32, f: Bitfield) -> Option<(u32, u32)> {
     set_condition_codes!(f, 20);
     rd!(f, 16);
     rn!(f, 12);
-    rs!(f, 8);
-    rm!(f, 0);
-    cond!(f);
-    None
-}
-
-fn multiply_long(f: Bitfield) -> Option<(u32, u32)> {
-    rd_hi!(f, 16);
-    rd_lo!(f, 12);
     rs!(f, 8);
     rm!(f, 0);
     cond!(f);
@@ -494,41 +469,46 @@ impl crate::armv4t::Insn {
 
     /// If the instruction does not encode a valid ARMv4T instruction, then this method will change
     /// it to the numerically next valid instruction.
+    #[bitmatch]
     pub fn fixup(&mut self) {
-        while let Some(fixup) = get_bitfield(self.0, Bitfield::Fixup) {
-            self.reset_bitfield(fixup);
-        }
-    }
+        #[bitmatch]
+        fn f(i: &mut crate::armv4t::Insn) -> bool {
+            fn bump16(i: &mut crate::armv4t::Insn) -> bool {
+                i.0 |= 0xf;
+                i.0 += 1;
+                true
+            }
 
-    /// Returns false iff the instruction does not encode a valid instruction (or, it is not
-    /// supported by the emulator, say if the instruction is only available on later architectures
-    /// than ARMv4T)
-    pub fn valid(&self) -> bool {
-        let dasm = format!("{:?}", self);
-        if dasm.starts_with("<invalid>") {
-            return false;
+            #[allow(unused_variables)]
+            #[bitmatch]
+            match i.0 {
+                // strh. the bits marked zzzz should be zero
+                "????_000_pu1w0_nnnn_dddd_zzzz_1??1_mmmm" => {
+                    if z != 0 {
+                        bump16(i)
+                    } else {
+                        false
+                    }
+                }
+
+                // umull(s) and umlal(s). not available on armv4t.
+                "????_0000_1???_hhhh_llll_mmmm_1001_nnnn" => {
+                    bump16(i)
+                }
+                
+                _ => false
+
+            }
         }
-        if dasm.starts_with("qadd") {
-            // only available on version 5TE and above
-            return false;
+        loop {
+            if !f(self) {
+                break;
+            }
         }
-        if dasm.starts_with("qsub") {
-            // only available on version 5TE and above
-            return false;
-        }
-        if dasm.starts_with("smla") {
-            // only available on version 5TE and above
-            return false;
-        }
-        if dasm.starts_with("umaal") {
-            //only available on version 6 and above
-            return false;
-        }
-        true
     }
 
     #[bitmatch]
-    pub fn uses(&self) -> (Vec<Register>, Vec<Register>) {
+    fn uses(&self) -> (Vec<Register>, Vec<Register>) {
         #[bitmatch]
         fn f(word: u32) -> (Vec<u32>, Vec<u32>) {
             #[bitmatch]
@@ -559,10 +539,12 @@ impl crate::armv4t::Insn {
         )
     }
 
+    /// Returns a list of the registers which the instruction writes to
     pub fn writes(&self, register: Register) -> bool {
         self.uses().1.contains(&register)
     }
 
+    /// Returns a list of the registers which the instruction reads from
     #[bitmatch]
     pub fn reads(&self, register: Register) -> bool {
         self.uses().0.contains(&register)
@@ -581,7 +563,7 @@ mod test {
         use crate::armv4t::isa::decode::get_bitfield;
 
         // for i in 0..u32::MAX {
-        for i in 0x00400000..u32::MAX {
+        for i in 0x00e00000..u32::MAX {
             let mut insn = Insn(i);
 
             let dasm = format!("{:?}", insn);
@@ -602,21 +584,13 @@ mod test {
     }
 
     #[test]
-    fn strheq() {
-        let insn = Insn(0x004041b0);
-        assert!(insn.uses().0.contains(&Register::R4));
-    }
-
-    #[test]
-    #[ignore]
     fn r4() {
         use crate::Iterable;
-        use crate::armv4t::Insn;
-        use crate::armv4t::isa::decode::Register;
 
-        let mut i = Insn::first();
+        // let mut i = Insn::first();
+        let mut i = Insn(0x00d00000);
         while i.step() {
-            let dasm =  format!("{:?}", i);
+            let dasm = format!("{:?}", i);
 
             if dasm.contains("r4") {
                 if i.reads(Register::R4) {
