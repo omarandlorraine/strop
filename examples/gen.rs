@@ -6,9 +6,11 @@ use strop::Disassemble;
 use strop::Iterable;
 use strop::StropError;
 
+/*
 fn zero(_hex: u8) -> Result<u8, StropError> {
     Ok(b'0')
 }
+*/
 
 fn target_function(hex: u8) -> Result<u8, StropError> {
     match hex {

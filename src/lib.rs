@@ -49,41 +49,6 @@ pub trait Iterable {
 
     /// Take one step. Returns true if the end of the iteration has not been reached.
     fn step(&mut self) -> bool;
-
-    /// Take one stride (this skips many points in the search space which `step` would have
-    /// visited; so that many known bad points are skipped.) Returns true if the end of the
-    /// iteration has not been reached.
-    fn stride(&mut self) -> bool;
-}
-
-pub trait IterableSequence {
-    //! A trait for anything that can be iterated across in an exhaustive manner, but which also
-    //! may be stepped at a particular offset.
-    //!
-    //! For example, if a sequence of instructions is found by static analysis to have an incorrect
-    //! instruction at offset *x*, then the sequence's `step_at` method may be called, informing
-    //! the search strategy of this fact.
-
-    /// Start from the beginning
-    fn first() -> Self;
-
-    /// Take one step. Returns true if the end of the iteration has not been reached.
-    fn step_at(&mut self, offset: usize) -> bool;
-
-    /// Take one stride. Returns true if the end of the iteration has not been reached.
-    fn stride_at(&mut self, offset: usize) -> bool;
-}
-
-impl<T: IterableSequence> Iterable for T {
-    fn first() -> Self {
-        <Self as IterableSequence>::first()
-    }
-    fn step(&mut self) -> bool {
-        self.step_at(0)
-    }
-    fn stride(&mut self) -> bool {
-        self.stride_at(0)
-    }
 }
 
 pub trait PrunedSearch<Prune> {
@@ -189,14 +154,6 @@ pub trait CallingConvention<SamplePoint, InputParameters, ReturnValue> {
 /// Enumerates reasons why executing a function may fail
 #[derive(Debug, PartialEq)]
 pub enum StropError {
-    /// The callable object does not pass static analysis, but the static analysis pass has
-    /// proposed for a step to be taken at the given offset
-    Step(usize),
-
-    /// The callable object does not pass static analysis, but the static analysis pass has
-    /// proposed for a stride to be taken at the given offset
-    Stride(usize),
-
     /// The represented function is not defined for the given inputs
     Undefined,
 

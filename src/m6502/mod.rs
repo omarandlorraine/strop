@@ -3,9 +3,11 @@
 mod csp;
 mod diss;
 mod isa;
+mod subroutine;
 
 pub use csp::Prune;
 pub use isa::Insn;
+pub use subroutine::Subroutine;
 
 pub use mos6502::instruction::Cmos6502;
 pub use mos6502::instruction::Nmos6502;

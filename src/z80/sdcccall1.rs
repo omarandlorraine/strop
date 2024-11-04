@@ -2,7 +2,6 @@ use crate::z80::dataflow::Fact;
 use crate::z80::subroutine::Subroutine;
 use crate::z80::Emulator;
 use crate::z80::Insn;
-use crate::IterableSequence;
 use crate::StropError;
 
 trait SdccCall1ParameterList {
@@ -65,13 +64,27 @@ pub struct SdccCall1(Subroutine);
 
 impl crate::Disassemble for SdccCall1 {
     fn dasm(&self) {
-        self.0.dasm()
+        self.0.build().dasm()
     }
 }
 
 impl AsRef<crate::Sequence<Insn>> for SdccCall1 {
     fn as_ref(&self) -> &crate::Sequence<Insn> {
         self.0.as_ref()
+    }
+}
+
+impl std::ops::Deref for SdccCall1 {
+    type Target = Subroutine;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl std::ops::DerefMut for SdccCall1 {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -83,36 +96,29 @@ where
     fn fixup(&mut self) {
         for f in InputParameters::facts() {
             crate::z80::dataflow::make_produce(&mut self.0, 0, f);
-            self.0.fixup();
         }
     }
 
     fn call(&self, input: InputParameters) -> Result<ReturnValue, StropError> {
         let mut emu = Emulator::default();
         input.put(&mut emu);
-        emu.run(self.0.as_ref())?;
+        emu.run(&self.0.build())?;
         Ok(emu.get())
-    }
-}
-
-impl IterableSequence for SdccCall1 {
-    fn first() -> Self {
-        Self(Subroutine::new())
-    }
-
-    fn stride_at(&mut self, offset: usize) -> bool {
-        self.0.stride_at(offset);
-        true
-    }
-
-    fn step_at(&mut self, offset: usize) -> bool {
-        self.0.step_at(offset);
-        true
     }
 }
 
 impl crate::Goto<Insn> for SdccCall1 {
     fn goto(&mut self, t: &[Insn]) {
         self.0.goto(t);
+    }
+}
+
+impl crate::Iterable for SdccCall1 {
+    fn first() -> Self {
+        Self(crate::Iterable::first())
+    }
+
+    fn step(&mut self) -> bool {
+        self.0.step()
     }
 }

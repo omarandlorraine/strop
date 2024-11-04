@@ -19,8 +19,11 @@ impl crate::Iterable for Insn {
             true
         }
     }
+}
 
-    fn stride(&mut self) -> bool {
+impl Insn {
+    /// Increments the opcode, and sets all subsequent bytes (i.e. the operand) to 0.
+    pub fn skip_to_next_opcode(&mut self) -> bool {
         if self.0[0..3] == [0xff, 0xff, 0xff] {
             false
         } else if [0x10, 0x11].contains(&self.0[0]) {
