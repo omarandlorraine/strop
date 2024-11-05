@@ -71,18 +71,16 @@ impl<
             Ok(true) => {
                 // Found a candidate which passes all known test cases.
                 // Let's fuzz test the candidate
-                if let Some(test_case) =
-                    test::fuzz(&self.target_function, &self.candidate, 5000)
-                    {
-                        // We've fuzzed the functions against eachother and found another test case.
-                        // So keep hold of this new test case
-                        self.tests.push(test_case);
-                        false
-                    } else {
-                        // The candidate passed all known test cases and also a fuzz test, so let's say
-                        // it's good enough and return it
-                        true
-                    }
+                if let Some(test_case) = test::fuzz(&self.target_function, &self.candidate, 5000) {
+                    // We've fuzzed the functions against eachother and found another test case.
+                    // So keep hold of this new test case
+                    self.tests.push(test_case);
+                    false
+                } else {
+                    // The candidate passed all known test cases and also a fuzz test, so let's say
+                    // it's good enough and return it
+                    true
+                }
             }
         }
     }
