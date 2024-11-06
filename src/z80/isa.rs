@@ -27,6 +27,27 @@ impl Insn {
         Self::new(&[0xc9])
     }
 
+    /// Returns `true` if the instruction does any kind of flow control, `false` otherwise
+    pub fn is_flow_control(&self) -> bool {
+        match self.0[0] {
+            0x10 => /*djnz*/ true,
+            0x18 | 0x20 | 0x28 | 0x30 | 0x38 => /* jr */ true,
+            0x76 => /* halt */ true,
+            0xc0 | 0xc8 | 0xc9 | 0xd0 | 0xd8 | 0xe0 | 0xe8 | 0xf0 | 0xf8 /* ret */ => true,
+            0xc2 | 0xd2 | 0xe2 | 0xf2 | 0xc3 | 0xca | 0xda | 0xea | 0xfa | 0xe9 /* jp */ => true,
+            0xed => /*reti*/ self.0[1] == 0x4d,
+            0xdd => /* jp */ self.0[1] == 0xe9,
+            0xfd => /* jp */ self.0[1] == 0xe9,
+            _ => false,
+        }
+    }
+
+    pub fn allowed_in_pure_functions(&self) -> bool {
+        match self.0[0] {
+            _ => todo!(),
+        }
+    }
+
     /// Increments the opcode, and sets all subsequent bytes (i.e. the operand) to 0.
     pub fn next_opcode(&mut self) -> bool {
         if self.0[0] == 0xff {
@@ -312,5 +333,33 @@ mod test {
                 );
             }
         }
+    }
+
+    #[test]
+    fn next_after_or_ffh() {
+        use super::Insn;
+        use crate::Encode;
+        use crate::Iterable;
+
+        let mut insn = Insn([0xf6, 0xff, 0, 0, 0]);
+        println!("{insn} {:?}", insn);
+        insn.step();
+        println!("{insn} {:?}", insn);
+        insn.step();
+        println!("{insn} {:?}", insn);
+    }
+
+    #[test]
+    fn next_after_add_iy_bc() {
+        use super::Insn;
+        use crate::Encode;
+        use crate::Iterable;
+
+        let mut insn = Insn([0xfd, 0x09, 0, 0, 0]);
+        println!("{insn} {:?}", insn);
+        insn.step();
+        println!("{insn} {:?}", insn);
+        insn.step();
+        println!("{insn} {:?}", insn);
     }
 }
