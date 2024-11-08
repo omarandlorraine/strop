@@ -200,22 +200,6 @@ impl<V: mos6502::Variant + std::clone::Clone> Insn<V> {
             TAX | TAY | TXA | TYA | TSX | TXS => None,
         }
     }
-
-    /// Returns a `ConstraintViolation` suggesting that the operand is bumped to the specified
-    /// value.
-    pub fn bump_operand(&self, addr: u16) -> crate::ConstraintViolation<Self> {
-        let addr = addr.to_le_bytes();
-        let i = Self([self.0[0], addr[0], addr[1]], std::marker::PhantomData::<V>);
-        crate::ConstraintViolation::ReplaceWith(i)
-    }
-
-    /// Returns a `ConstraintViolation` suggesting that the opcode is unsuitable.
-    pub fn next_opcode(&self) -> crate::ConstraintViolation<Self> {
-        let mut i = Self([self.0[0] + 1, 0, 0], std::marker::PhantomData::<V>);
-        i.fixup();
-        crate::ConstraintViolation::ReplaceWith(i)
-    }
-
     /// Regardless of the `Insn`'s current value, this mutates it such that it now represents a
     /// valid 6502 machine instruction. Be sure that the opcode field is not beyond the range of
     /// valid opcodes.

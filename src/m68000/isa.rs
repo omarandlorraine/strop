@@ -86,45 +86,4 @@ impl Insn {
             self.0[0] += 1;
         }
     }
-
-    /// Bumps the opcode, and sets all subsequent words back to zero (handy for if static analysis
-    /// determines an opcode to be unsuitable)
-    pub fn bump_opcode(&self) -> crate::ConstraintViolation<Self> {
-        if self.0[0] > 0xefbe {
-            // Apparently there are no opcodes higher than 0xEFBE.
-            crate::ConstraintViolation::Violation
-        } else {
-            let mut i = Insn([self.0[0] + 1, 0, 0, 0, 0]);
-            i.fixup();
-            crate::ConstraintViolation::ReplaceWith(i)
-        }
-    }
-}
-
-#[cfg(test)]
-mod test {
-    #[test]
-    fn all_opcodes() {
-        use crate::ConstraintViolation;
-        use crate::Iterable;
-        let mut insn = super::Insn::first();
-        loop {
-            assert!(
-                insn.len_b() > 1,
-                "{:?}, length in bytes: {}",
-                insn,
-                insn.len_b()
-            );
-            let diss = format!("{}", insn);
-            assert!(!insn.decode().1 > 0);
-            assert!(!diss.contains("Unknown"), "{:?}", insn);
-            assert!(!diss.contains("ILLEGAL"), "{:?}", insn);
-
-            match insn.bump_opcode() {
-                ConstraintViolation::Ok => {}
-                ConstraintViolation::ReplaceWith(me) => insn = me,
-                ConstraintViolation::Violation => break,
-            }
-        }
-    }
 }

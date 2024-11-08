@@ -51,17 +51,6 @@ pub trait Iterable {
     fn step(&mut self) -> bool;
 }
 
-pub trait PrunedSearch<Prune> {
-    //! A trait for performing a brute-force search that has some instructions pruned away. The type
-    //! Prune represents the prune.
-
-    /// Start from the beginning
-    fn first() -> Self;
-
-    /// Take one step. Returns true if the end of the iteration has not been reached.
-    fn pruned_step(&mut self, prune: &Prune) -> bool;
-}
-
 pub trait Random {
     //! A trait for things that can be searched through randomly. For example, the stochastic
     //! search uses this.
@@ -108,50 +97,6 @@ pub trait Constrain<T> {
     fn stochastic_fixup(&self, t: &mut T) {
         self.fixup(t);
     }
-}
-
-/// Type `ConstraintViolation` represents the possibility that an unary or binary constraint has
-/// been violated.
-///
-/// If the constraints are satisfied and not violated, then this case is represented
-/// by the variant `Ok`. If a constraint has been violated, then if a suitable replacement would be
-/// found by successive calls to the `Iterable` trait's `step` method, then it is held in the
-/// `ReplaceWith` variant. If a constraint has been violated but no such replacement can be found,
-/// then this case is represented by the `Violation` variant.
-#[derive(Debug)]
-pub enum ConstraintViolation<T> {
-    /// The proposed value was not found to violate any unary constraints
-    Ok,
-
-    /// The proposed value violated a constraint, and here is a proposed replacement. The proposed
-    /// replacement would also be found by successive calls to the `Iterable` trait's `step`
-    /// method.
-    ReplaceWith(T),
-
-    /// The proposed value violated a constraint, but we could not find a suitable replacement.
-    Violation,
-}
-
-/// A type could implement this trait to reduce the number of instructions considered.
-///
-/// This might be used to make sure the instructions only reads from the permitted registers or
-/// memory locations for example, or might write-protect regions of memory, or remove from
-/// consideration instructions incompatible with this or that CPU variant or whatever.
-pub trait Prune<T> {
-    /// Considers the `T` passed to this method, and if the instruction is to be pruned away from
-    /// the search, returns a `ConstraintViolation<T>` that describes how to proceed with the
-    /// search.
-    fn prune(&self, t: &T) -> ConstraintViolation<T>;
-}
-
-pub trait ConstraintSatisfaction<T> {
-    //! A trait for constraint solvers
-    /// Considers the `T` passed to this method, and checks if it violates any unary constraints.
-    fn unary(&self, t: &T) -> ConstraintViolation<T>;
-
-    /// Considers the two connected nodes of type `T`, and sees if they violate any binary
-    /// constraints.
-    fn binary(&self, a: &T, b: &T) -> ConstraintViolation<T>;
 }
 
 pub trait CallingConvention<SamplePoint, InputParameters, ReturnValue> {
