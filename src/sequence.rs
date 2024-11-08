@@ -78,6 +78,15 @@ impl<T: Iterable> Sequence<T> {
     pub fn last_instruction_offset(&self) -> usize {
         self.0.len() - 1
     }
+
+    /// In a deterministic way compatible with the BruteForce search algorithm, mutates the
+    /// Sequence at the offset in the given way.
+    pub fn mut_at(&mut self, change: fn(&mut T) -> bool, offset: usize) {
+        if !change(&mut self[offset]) {
+            self[offset] = T::first();
+            self.step_at(offset + 1);
+        }
+    }
 }
 
 impl<T> Index<usize> for Sequence<T> {

@@ -91,11 +91,24 @@ pub trait Encode<T> {
 /// modified by peephole optimization, etc. etc.
 pub trait Constrain<T> {
     /// Fixes the candidate up in a deterministic way, compatible with the `BruteForce` search.
-    fn fixup(&self, t: &mut T);
+    fn fixup(&self, t: &mut Sequence<T>, offset: usize);
 
     /// Fixes the candidate up in a stochastic way
-    fn stochastic_fixup(&self, t: &mut T) {
-        self.fixup(t);
+    fn stochastic_fixup(&self, t: &mut Sequence<T>, offset: usize) {
+        self.fixup(t, offset);
+    }
+
+    /// Reports on whether this constraint would make any changes to the program
+    fn report(&self, t: &Sequence<T>, offset: usize) -> Vec<String>;
+}
+
+/// Disassembles the code sequence, and prints out the lints along the way {
+pub fn report<I: std::fmt::Display, C: Constrain<I>>(sequence: &Sequence<I>, constraint: &C) {
+    for offset in 0..sequence.len() {
+        for report in constraint.report(sequence, offset) {
+            println!("\t; {report}");
+        }
+        println!("\t{}", sequence[offset]);
     }
 }
 

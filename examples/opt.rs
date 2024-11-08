@@ -37,7 +37,6 @@ fn target_function() -> SdccCall1<u16, u16> {
 }
 
 fn main() {
-    use strop::z80::Constraints;
     use strop::Iterable;
 
     let c = target_function();
@@ -50,8 +49,8 @@ fn main() {
     c.dasm();
 
     // you can do a bruteforce search for Z80 machine code programs implementing the same function
-    let mut bruteforce: BruteForce<u16, u16, SdccCall1<u16, u16>, _, _> =
-        strop::BruteForce::new(c, SdccCall1::first(), Constraints::default());
+    let mut bruteforce: BruteForce<u16, u16, SdccCall1<u16, u16>, _> =
+        strop::BruteForce::new(c, SdccCall1::first());
 
     let bf = bruteforce.search().unwrap();
 

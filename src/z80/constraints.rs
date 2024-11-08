@@ -2,16 +2,42 @@ use crate::z80::Insn;
 use crate::Constrain;
 use crate::Sequence;
 
-use crate::z80::sdcccall1::SdccCall1ParameterList;
+struct BasicBlock;
+
+impl BasicBlock {
+    fn check(seq: &Sequence<Insn>, offset: usize) -> bool {
+        if offset == seq.len() - 1 {
+            false
+        } else {
+            seq[offset].is_flow_control()
+        }
+    }
+}
+
+impl Constrain<Insn> for BasicBlock {
+    fn fixup(&self, seq: &mut Sequence<Insn>, offset: usize) {
+        if Self::check(seq, offset) {
+            seq.mut_at(Insn::next_opcode, offset);
+        }
+    }
+    fn report(&self, seq: &Sequence<Insn>, offset: usize) -> Vec<String> {
+        if Self::check(seq, offset) {
+            vec![
+                "This flow control instruction is not allowed at this point in a basic block"
+                    .to_string(),
+            ]
+        } else {
+            vec![]
+        }
+    }
+}
 
 /// A struct that defines which constraints to apply to a search
 #[derive(Clone, Copy, Default, Debug)]
 pub struct Constraints {
     bb: bool,
-    nopeep: bool,
     leaffn: bool,
     purefn: bool,
-    nodata: bool,
 }
 
 impl Constraints {
@@ -24,13 +50,6 @@ impl Constraints {
     /// which are basic blocks.
     pub fn basic_block(&mut self) -> Self {
         self.bb = true;
-        *self
-    }
-
-    /// Removes peephole optimization from the search constraint. It's unclear why you'd want to do
-    /// that.
-    pub fn disable_peephole_optimization(&mut self) -> Self {
-        self.nopeep = true;
         *self
     }
 
@@ -47,38 +66,18 @@ impl Constraints {
     }
 }
 
-impl Constrain<Sequence<Insn>> for Constraints {
-    fn fixup(&self, sequence: &mut Sequence<Insn>) {
-        // In a basic block, only the last instruction may do any flow control
+impl Constrain<Insn> for Constraints {
+    fn fixup(&self, sequence: &mut Sequence<Insn>, offset: usize) {
         if self.bb {
-            for i in 0..(sequence.len() - 1) {
-                if sequence[i].is_flow_control() {
-                    // We're looking for basic blocks, so this instruction may not do any flow control!
-                    sequence[i].next_opcode();
-                    continue;
-                }
-            }
-        }
-
-        if self.purefn {
-            for i in 0..sequence.len() {
-                while !sequence[i].allowed_in_pure_functions() {
-                    // We're looking for pure functions; this should not read or write anything!
-                    sequence[i].next_opcode();
-                    continue;
-                }
-            }
+            BasicBlock.fixup(sequence, offset)
         }
     }
-}
 
-impl<Params: SdccCall1ParameterList, ReturnValue>
-    Constrain<crate::z80::SdccCall1<Params, ReturnValue>> for Constraints
-{
-    fn fixup(&self, function: &mut crate::z80::SdccCall1<Params, ReturnValue>) {
-        if !self.nodata {
-            function.dataflow_analysis();
+    fn report(&self, sequence: &Sequence<Insn>, offset: usize) -> Vec<String> {
+        let mut reports = vec![];
+        if self.bb {
+            reports.extend(BasicBlock.report(sequence, offset))
         }
-        <Constraints as Constrain<Sequence<Insn>>>::fixup(self, function);
+        reports
     }
 }

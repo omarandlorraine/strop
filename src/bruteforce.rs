@@ -11,14 +11,12 @@ pub struct BruteForce<
     ReturnValue,
     T: Callable<InputParameters, ReturnValue>,
     U: Callable<InputParameters, ReturnValue> + Iterable,
-    Constrain: crate::Constrain<U>,
 > {
     target_function: T,
     candidate: U,
     tests: Vec<(InputParameters, ReturnValue)>,
     input: std::marker::PhantomData<InputParameters>,
     ret: std::marker::PhantomData<ReturnValue>,
-    constraints: Constrain,
 }
 
 impl<
@@ -26,11 +24,10 @@ impl<
         ReturnValue: Vals + std::cmp::PartialEq,
         T: Callable<InputParameters, ReturnValue>,
         U: Callable<InputParameters, ReturnValue> + Iterable + Clone + crate::Disassemble,
-        Constrain: crate::Constrain<U>,
-    > BruteForce<InputParameters, ReturnValue, T, U, Constrain>
+    > BruteForce<InputParameters, ReturnValue, T, U>
 {
     /// Constructs a new `BruteForce`
-    pub fn new(target_function: T, initial_candidate: U, constraints: Constrain) -> Self {
+    pub fn new(target_function: T, initial_candidate: U) -> Self {
         let candidate = initial_candidate;
         let tests = test::quick_tests(&target_function);
         Self {
@@ -39,7 +36,6 @@ impl<
             tests,
             input: std::marker::PhantomData,
             ret: std::marker::PhantomData,
-            constraints,
         }
     }
 
@@ -53,7 +49,6 @@ impl<
         if !self.candidate.step() {
             return false;
         }
-        self.constraints.fixup(&mut self.candidate);
         true
     }
 
