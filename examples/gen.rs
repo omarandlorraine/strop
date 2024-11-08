@@ -35,11 +35,12 @@ fn target_function(hex: u8) -> Result<u8, StropError> {
 }
 
 fn main() {
+    use strop::z80::Constraints;
     let target_function = target_function as fn(u8) -> Result<u8, StropError>;
 
     // you can do a bruteforce search for Z80 machine code programs implementing the same function
-    let mut bruteforce: BruteForce<_, _, _, SdccCall1> =
-        strop::BruteForce::new(target_function, SdccCall1::first());
+    let mut bruteforce: BruteForce<_, _, _, SdccCall1<u8, u8>, _> =
+        strop::BruteForce::new(target_function, SdccCall1::first(), Constraints::default());
 
     let bf = bruteforce.search().unwrap();
 

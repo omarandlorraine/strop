@@ -97,6 +97,19 @@ pub trait Encode<T> {
     fn encode(&self) -> Vec<T>;
 }
 
+/// A type implementing the Constraint trait can constrain the search space to, for example,
+/// leaf functions, or programs compatible with certain variants, or programs not liable to be
+/// modified by peephole optimization, etc. etc.
+pub trait Constrain<T> {
+    /// Fixes the candidate up in a deterministic way, compatible with the `BruteForce` search.
+    fn fixup(&self, t: &mut T);
+
+    /// Fixes the candidate up in a stochastic way
+    fn stochastic_fixup(&self, t: &mut T) {
+        self.fixup(t);
+    }
+}
+
 /// Type `ConstraintViolation` represents the possibility that an unary or binary constraint has
 /// been violated.
 ///
@@ -168,9 +181,6 @@ pub trait Callable<InputParameters, ReturnValue> {
     //! convention ready for execution in an emulated environment, or they may be function
     //! pointers, or lisp expressions, etc.)
 
-    /// Performs a static analysis on the object
-    fn fixup(&mut self) {}
-
     /// Calls the given callable object
     fn call(&self, parameters: InputParameters) -> Result<ReturnValue, StropError>;
 }
@@ -181,4 +191,26 @@ impl<InputParameters, ReturnValue> Callable<InputParameters, ReturnValue>
     fn call(&self, parameters: InputParameters) -> Result<ReturnValue, StropError> {
         (self)(parameters)
     }
+}
+
+pub trait DataFlow<T> {
+    //! A trait for very local dataflow. It's generic across `T`, a type intended to represent
+    //! "things" a machine instruction may read from or write to.
+    //!
+    //! For example, a type representing a Z80 machine code instruction could implement this for
+    //! the Z80's register file, the flags, the I/O space and the address space.
+
+    /// returns true iff the variable `t` is read (used) by the instruction or basic block before
+    /// any assignment. Such a variables must be live at the start of the block.
+    fn reads(&self, t: &T) -> bool;
+
+    /// returns true iff the variable `t` is assigned (written to) by the instruction or basic
+    /// block, effectively "killing" any previous value it held.
+    fn writes(&self, t: &T) -> bool;
+
+    /// Modifies the instruction so that it reads from `t`.
+    fn make_read(&mut self, t: &T) -> bool;
+
+    /// Modifies the instruction so that it writes to `t`.
+    fn make_write(&mut self, t: &T) -> bool;
 }

@@ -33,6 +33,46 @@ where
     }
 }
 
+impl<T: Iterable, U> crate::DataFlow<U> for Sequence<T>
+where
+    T: crate::DataFlow<U>,
+{
+    fn reads(&self, t: &U) -> bool {
+        for i in &self.0 {
+            if i.reads(t) {
+                return true;
+            }
+            if i.writes(t) {
+                return false;
+            }
+        }
+        false
+    }
+
+    fn writes(&self, t: &U) -> bool {
+        for i in &self.0 {
+            if i.writes(t) {
+                return true;
+            }
+        }
+        false
+    }
+
+    fn make_read(&mut self, t: &U) -> bool {
+        if !self.0[0].make_read(t) {
+            self.step_at(0);
+        }
+        true
+    }
+
+    fn make_write(&mut self, t: &U) -> bool {
+        if !self.0[0].make_write(t) {
+            self.step_at(0);
+        }
+        true
+    }
+}
+
 impl<T: Iterable> Sequence<T> {
     /// Returns the index to the last element in the sequence
     pub fn last_instruction_offset(&self) -> usize {
@@ -98,13 +138,10 @@ impl<T> Sequence<T> {
     }
 }
 
-impl<T: Clone + Iterable> Iterable for Sequence<T> {
-    fn first() -> Self {
-        Self(vec![])
-    }
-
-    fn step(&mut self) -> bool {
-        let mut offset = 0;
+impl<T: Iterable> Sequence<T> {
+    /// steps the sequence at the given offset
+    pub fn step_at(&mut self, offs: usize) {
+        let mut offset = offs;
         loop {
             if offset == self.0.len() {
                 self.0.push(T::first());
@@ -116,6 +153,16 @@ impl<T: Clone + Iterable> Iterable for Sequence<T> {
                 break;
             }
         }
+    }
+}
+
+impl<T: Clone + Iterable> Iterable for Sequence<T> {
+    fn first() -> Self {
+        Self(vec![])
+    }
+
+    fn step(&mut self) -> bool {
+        self.step_at(0);
         true
     }
 }

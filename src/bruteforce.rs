@@ -11,23 +11,26 @@ pub struct BruteForce<
     ReturnValue,
     T: Callable<InputParameters, ReturnValue>,
     U: Callable<InputParameters, ReturnValue> + Iterable,
+    Constrain: crate::Constrain<U>,
 > {
     target_function: T,
     candidate: U,
     tests: Vec<(InputParameters, ReturnValue)>,
     input: std::marker::PhantomData<InputParameters>,
     ret: std::marker::PhantomData<ReturnValue>,
+    constraints: Constrain,
 }
 
 impl<
         InputParameters: Copy + Vals,
         ReturnValue: Vals + std::cmp::PartialEq,
         T: Callable<InputParameters, ReturnValue>,
-        U: Callable<InputParameters, ReturnValue> + Iterable + Clone,
-    > BruteForce<InputParameters, ReturnValue, T, U>
+        U: Callable<InputParameters, ReturnValue> + Iterable + Clone + crate::Disassemble,
+        Constrain: crate::Constrain<U>,
+    > BruteForce<InputParameters, ReturnValue, T, U, Constrain>
 {
     /// Constructs a new `BruteForce`
-    pub fn new(target_function: T, initial_candidate: U) -> Self {
+    pub fn new(target_function: T, initial_candidate: U, constraints: Constrain) -> Self {
         let candidate = initial_candidate;
         let tests = test::quick_tests(&target_function);
         Self {
@@ -36,6 +39,7 @@ impl<
             tests,
             input: std::marker::PhantomData,
             ret: std::marker::PhantomData,
+            constraints,
         }
     }
 
@@ -49,7 +53,7 @@ impl<
         if !self.candidate.step() {
             return false;
         }
-        self.candidate.fixup();
+        self.constraints.fixup(&mut self.candidate);
         true
     }
 

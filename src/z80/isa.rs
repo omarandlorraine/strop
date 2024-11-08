@@ -42,10 +42,16 @@ impl Insn {
         }
     }
 
+    /// Returns true if the instruction is permitted in pure functions
     pub fn allowed_in_pure_functions(&self) -> bool {
-        match self.0[0] {
-            _ => todo!(),
+        if self.0[0] == 0xcb {
+            // it uses (hl)
+            return self.0[1] & 0x07 != 0x06;
         }
+        !matches!(
+            self.0[0],
+            0x02 | 0x12 | 0x32 | 0x34 | 0x35 | 0x36 | 0x77 | 0xd3
+        )
     }
 
     /// Increments the opcode, and sets all subsequent bytes (i.e. the operand) to 0.
@@ -149,163 +155,6 @@ impl Insn {
             self.0 = [self.0[0] + 1, 0, 0, 0, 0];
         }
     }
-
-    /// Returns true iff the instruction affects the value in the register specified by `f`
-    pub fn produces(&self, fact: crate::z80::dataflow::Fact) -> bool {
-        use crate::z80::dataflow::Fact;
-        use dez80::instruction::InstructionType;
-        use dez80::instruction::Operand;
-
-        fn cprf(r: Option<Operand>, f: Fact) -> bool {
-            use dez80::register::RegisterPairType;
-            use dez80::register::SingleRegisterType;
-
-            fn cpr(r: SingleRegisterType, f: Fact) -> bool {
-                match r {
-                    SingleRegisterType::A => f == Fact::A,
-                    SingleRegisterType::A_ => f == Fact::A,
-                    SingleRegisterType::B => f == Fact::B,
-                    SingleRegisterType::B_ => f == Fact::B,
-                    SingleRegisterType::C => f == Fact::C,
-                    SingleRegisterType::C_ => f == Fact::C,
-                    SingleRegisterType::D => f == Fact::D,
-                    SingleRegisterType::D_ => f == Fact::D,
-                    SingleRegisterType::E => f == Fact::E,
-                    SingleRegisterType::E_ => f == Fact::E,
-                    SingleRegisterType::H => f == Fact::H,
-                    SingleRegisterType::H_ => f == Fact::H,
-                    SingleRegisterType::L => f == Fact::L,
-                    SingleRegisterType::L_ => f == Fact::L,
-                    SingleRegisterType::F => f.is_flag(),
-                    SingleRegisterType::F_ => f.is_flag(),
-                    SingleRegisterType::IXH => f == Fact::Ixh,
-                    SingleRegisterType::IXL => f == Fact::Ixl,
-                    SingleRegisterType::IYH => f == Fact::Iyh,
-                    SingleRegisterType::IYL => f == Fact::Iyl,
-                    SingleRegisterType::PCH => false,
-                    SingleRegisterType::PCL => false,
-                    SingleRegisterType::SPH => false,
-                    SingleRegisterType::SPL => false,
-                    SingleRegisterType::I => false,
-                    SingleRegisterType::R => false,
-                    SingleRegisterType::W => false,
-                    SingleRegisterType::Z => false,
-                }
-            }
-
-            fn cpr2(r: RegisterPairType, f: Fact) -> bool {
-                match r {
-                    RegisterPairType::AF => f == Fact::A || f.is_flag(),
-                    RegisterPairType::AF_ => f == Fact::A || f.is_flag(),
-                    RegisterPairType::BC => f == Fact::B || f == Fact::C,
-                    RegisterPairType::BC_ => f == Fact::B || f == Fact::C,
-                    RegisterPairType::DE => f == Fact::D || f == Fact::E,
-                    RegisterPairType::DE_ => f == Fact::D || f == Fact::E,
-                    RegisterPairType::HL => f == Fact::H || f == Fact::L,
-                    RegisterPairType::HL_ => f == Fact::H || f == Fact::L,
-                    RegisterPairType::IX => f == Fact::Ixh || f == Fact::Ixl,
-                    RegisterPairType::IY => f == Fact::Iyh || f == Fact::Iyl,
-                    RegisterPairType::PC => false,
-                    RegisterPairType::SP => false,
-                    RegisterPairType::IR => false,
-                    RegisterPairType::WZ => false,
-                }
-            }
-
-            match r {
-                Some(Operand::OctetImmediate(_)) => false,
-                Some(Operand::DoubletImmediate(_)) => false,
-                Some(Operand::OctetImplied(_)) => false,
-                Some(Operand::RegisterImplied(r)) => cpr(r, f),
-                Some(Operand::RegisterPairImplied(rp)) => cpr2(rp, f),
-                Some(Operand::RegisterImpliedBit(r, _)) => cpr(r, f),
-                Some(Operand::MemoryDirect(_)) => false,
-                Some(Operand::MemoryIndirect(_)) => false,
-                Some(Operand::MemoryIndexed(_, _)) => false,
-                Some(Operand::MemoryIndexedAndRegister(_, _, _)) => false,
-                Some(Operand::MemoryIndirectBit(_, _)) => false,
-                Some(Operand::MemoryIndexedBit(_, _, _)) => false,
-                Some(Operand::MemoryIndexedBitAndRegister(_, _, _, _)) => false,
-                Some(Operand::ProgramCounterRelative(_)) => false,
-                Some(Operand::PortDirect(_)) => false,
-                Some(Operand::PortIndirect(_)) => false,
-                None => false,
-            }
-        }
-        let d = self.decode();
-
-        match (d.r#type, d.destination, fact) {
-            (InstructionType::Ret(_), _, _) => false,
-            (InstructionType::Jp(_), _, _) => false,
-            (InstructionType::Jr(_), _, _) => false,
-            (InstructionType::Call(_), _, _) => false,
-            (InstructionType::Halt, _, _) => false,
-            (InstructionType::Nop, _, _) => false,
-            (InstructionType::Push, _, _) => false,
-            (InstructionType::Rst(_), _, _) => false,
-            (InstructionType::Di, _, _) => false,
-            (InstructionType::Ei, _, _) => false,
-            (InstructionType::Reti, _, _) => false,
-            (InstructionType::Retn, _, _) => false,
-            (InstructionType::Djnz, _, f) => f == Fact::B,
-            (InstructionType::Rlc, r, f) => cprf(r, f),
-            (InstructionType::Rrc, r, f) => cprf(r, f),
-            (InstructionType::Rl, r, f) => cprf(r, f),
-            (InstructionType::Rr, r, f) => cprf(r, f),
-            (InstructionType::Sla, r, f) => cprf(r, f),
-            (InstructionType::Sra, r, f) => cprf(r, f),
-            (InstructionType::Srl, r, f) => cprf(r, f),
-            (InstructionType::Sll, r, f) => cprf(r, f),
-            (InstructionType::Ld, r, f) => cprf(r, f),
-            (InstructionType::Inc, r, f) => cprf(r, f),
-            (InstructionType::Dec, r, f) => cprf(r, f),
-            (InstructionType::Cpl, _, f) => f.anh(),
-            (InstructionType::Scf, _, f) => f == Fact::Carry,
-            (InstructionType::Ccf, _, f) => f.cnh(),
-            (InstructionType::Daa, _, f) => f.acph(),
-            (InstructionType::Rla, _, f) => f.acnh(),
-            (InstructionType::Rra, _, f) => f.acnh(),
-            (InstructionType::Rlca, _, f) => f.acnh(),
-            (InstructionType::Rrca, _, f) => f.acnh(),
-            (InstructionType::Ex, r, f) => cprf(r, f),
-            (InstructionType::Exx, _, _) => false,
-            (InstructionType::Pop, r, f) => cprf(r, f),
-            (InstructionType::Bit, _, _) => true, // probably loads of false positives here
-            (InstructionType::Set, r, f) => cprf(r, f),
-            (InstructionType::Res, r, f) => cprf(r, f),
-            (InstructionType::Add, _, f) => f.achzs(),
-            (InstructionType::Adc, _, f) => f.achzs(),
-            (InstructionType::Sub, _, f) => f.achzs(),
-            (InstructionType::Sbc, _, f) => f.achzs(),
-            (InstructionType::And, _, f) => f.acnh(),
-            (InstructionType::Xor, _, f) => f.acnh(),
-            (InstructionType::Or, _, f) => f.acnh(),
-            (InstructionType::Cp, _, f) => f.is_flag(),
-            (InstructionType::Out, _, _) => false,
-            (InstructionType::In, r, f) => cprf(r, f),
-            (InstructionType::Neg, _, f) => f.is_flag() || f == Fact::A,
-            (InstructionType::Rrd, _, f) => f.is_flag() || f == Fact::A,
-            (InstructionType::Rld, _, f) => f.is_flag() || f == Fact::A,
-            (InstructionType::Cpd, _, _) => true,
-            (InstructionType::Cpdr, _, _) => true,
-            (InstructionType::Cpi, _, _) => true,
-            (InstructionType::Cpir, _, _) => true,
-            (InstructionType::Im(_), _, _) => true,
-            (InstructionType::Outi, _, _) => true,
-            (InstructionType::Outd, _, _) => true,
-            (InstructionType::Otir, _, _) => true,
-            (InstructionType::Otdr, _, _) => true,
-            (InstructionType::Ind, _, _) => true,
-            (InstructionType::Indr, _, _) => true,
-            (InstructionType::Ldi, _, _) => true,
-            (InstructionType::Ldir, _, _) => true,
-            (InstructionType::Ini, _, _) => true,
-            (InstructionType::Inir, _, _) => true,
-            (InstructionType::Inva, _, _) => false,
-            (InstructionType::Ldd, _, _) => true,
-            (InstructionType::Lddr, _, _) => true,
-        }
-    }
 }
 
 #[cfg(test)]
@@ -338,7 +187,7 @@ mod test {
     #[test]
     fn next_after_or_ffh() {
         use super::Insn;
-        use crate::Encode;
+
         use crate::Iterable;
 
         let mut insn = Insn([0xf6, 0xff, 0, 0, 0]);
@@ -350,9 +199,23 @@ mod test {
     }
 
     #[test]
+    fn next_opcode() {
+        use super::Insn;
+
+        let mut insn = Insn([0xfd, 0x09, 0, 0, 0]);
+        println!("{insn} {:?}", insn);
+        insn.next_opcode();
+        println!("{insn} {:?}", insn);
+        insn.next_opcode();
+        println!("{insn} {:?}", insn);
+        insn.next_opcode();
+        println!("{insn} {:?}", insn);
+    }
+
+    #[test]
     fn next_after_add_iy_bc() {
         use super::Insn;
-        use crate::Encode;
+
         use crate::Iterable;
 
         let mut insn = Insn([0xfd, 0x09, 0, 0, 0]);
