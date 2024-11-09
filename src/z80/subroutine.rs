@@ -1,5 +1,4 @@
 use crate::z80::Insn;
-use crate::Sequence;
 use std::ops::Index;
 
 /// Wraps up a `Sequence<Insn>`, that is, a sequence of Z80 instructions, and associates it with
@@ -7,11 +6,21 @@ use std::ops::Index;
 #[derive(Clone, Debug)]
 pub struct Subroutine(crate::Sequence<Insn>);
 
-impl Subroutine {
-    /// Builds the subroutine by concatenating the body of the subroutine with a return
-    /// instruction.
-    pub fn build(&self) -> Sequence<Insn> {
-        vec![&self.0, &vec![Insn::ret()]].into()
+impl crate::Constrain<Insn> for Subroutine {
+    fn fixup(&mut self) {
+        while self.0[self.0.len() - 1] != Insn::ret() {
+            self.0.mut_at(Insn::next_opcode, self.0.len() - 1)
+        }
+    }
+
+    fn report(&self, offset: usize) -> Vec<String> {
+        if offset != self.0.len() - 1 {
+            vec![]
+        } else if self.0[offset] != Insn::ret() {
+            vec!["Subroutine not ending in the `RET` instruction".to_string()]
+        } else {
+            vec![]
+        }
     }
 }
 

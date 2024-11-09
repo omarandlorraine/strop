@@ -42,6 +42,24 @@ impl Vals for u8 {
     }
 }
 
+impl Vals for i8 {
+    fn vals() -> Vec<Self> {
+        let mut v = vec![0];
+        for i in 0..16 {
+            v.push(1 << i);
+            v.push(i);
+            v.push(i8::MAX - i);
+            v.push(i8::MIN + i);
+            v.push(-i);
+        }
+        v
+    }
+
+    fn rand() -> Self {
+        rand::random()
+    }
+}
+
 impl Vals for i16 {
     fn vals() -> Vec<Self> {
         let mut v = vec![0];

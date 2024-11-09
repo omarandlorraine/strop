@@ -1,30 +1,39 @@
 use crate::test;
 use crate::test::Vals;
 use crate::Callable;
+use crate::Constrain;
 use crate::Iterable;
 use crate::StropError;
 
 /// Performs a brute force search over a given search space `U`
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BruteForce<
     InputParameters,
-    ReturnValue,
-    T: Callable<InputParameters, ReturnValue>,
+    ReturnValue: Clone,
+    T: Callable<InputParameters, ReturnValue> + Clone,
     U: Callable<InputParameters, ReturnValue> + Iterable,
+    Insn: Clone,
 > {
     target_function: T,
     candidate: U,
     tests: Vec<(InputParameters, ReturnValue)>,
     input: std::marker::PhantomData<InputParameters>,
     ret: std::marker::PhantomData<ReturnValue>,
+    insn: std::marker::PhantomData<Insn>,
+    trace_enable: bool,
 }
 
 impl<
+        Insn: Clone,
         InputParameters: Copy + Vals,
-        ReturnValue: Vals + std::cmp::PartialEq,
-        T: Callable<InputParameters, ReturnValue>,
-        U: Callable<InputParameters, ReturnValue> + Iterable + Clone + crate::Disassemble,
-    > BruteForce<InputParameters, ReturnValue, T, U>
+        ReturnValue: Vals + std::cmp::PartialEq + Clone,
+        T: Callable<InputParameters, ReturnValue> + Clone,
+        U: Callable<InputParameters, ReturnValue>
+            + Iterable
+            + Clone
+            + crate::Disassemble
+            + Constrain<Insn>,
+    > BruteForce<InputParameters, ReturnValue, T, U, Insn>
 {
     /// Constructs a new `BruteForce`
     pub fn new(target_function: T, initial_candidate: U) -> Self {
@@ -36,7 +45,15 @@ impl<
             tests,
             input: std::marker::PhantomData,
             ret: std::marker::PhantomData,
+            insn: std::marker::PhantomData,
+            trace_enable: false,
         }
+    }
+
+    /// Enables trace: disassembles each candidate to stdout.
+    pub fn trace(&mut self) -> Self {
+        self.trace_enable = true;
+        self.clone()
     }
 
     /// Returns the candidate currently under consideration
@@ -44,10 +61,23 @@ impl<
         &self.candidate
     }
 
+    /// Prints the current candidate to stdout
+    pub fn dasm(&self) {
+        println!("\ncandidate:");
+        self.candidate().dasm();
+    }
+
     /// Advances the candidate to the next position in the search space
     pub fn step(&mut self) -> bool {
         if !self.candidate.step() {
+            if self.trace_enable {
+                self.dasm();
+            }
             return false;
+        }
+        self.candidate.fixup();
+        if self.trace_enable {
+            self.dasm();
         }
         true
     }

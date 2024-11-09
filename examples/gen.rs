@@ -1,17 +1,14 @@
 //! An example of a program that uses strop to optimize an existing function.
 
 use strop::z80::SdccCall1;
-use strop::BruteForce;
 use strop::Disassemble;
-use strop::Iterable;
 use strop::StropError;
 
-/*
 fn zero(_hex: u8) -> Result<u8, StropError> {
     Ok(b'0')
 }
-*/
 
+/*
 fn target_function(hex: u8) -> Result<u8, StropError> {
     match hex {
         0x0 => Ok(b'0'),
@@ -33,13 +30,19 @@ fn target_function(hex: u8) -> Result<u8, StropError> {
         _ => Err(StropError::Undefined),
     }
 }
+*/
 
 fn main() {
-    let target_function = target_function as fn(u8) -> Result<u8, StropError>;
+    let target_function = zero as fn(u8) -> Result<u8, StropError>;
 
     // you can do a bruteforce search for Z80 machine code programs implementing the same function
-    let mut bruteforce: BruteForce<_, _, _, SdccCall1<u8, u8>> =
-        strop::BruteForce::new(target_function, SdccCall1::first());
+    let mut bruteforce = SdccCall1::<u8, u8>::new()
+        // By specifying that we want a pure function, and that the function is a leaf function, we
+        // can constrain the search space even further
+        .pure()
+        .leaf()
+        .bruteforce(target_function)
+        .trace();
 
     let bf = bruteforce.search().unwrap();
 

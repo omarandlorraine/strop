@@ -1,3 +1,4 @@
+use strop::z80::Insn;
 use strop::BruteForce;
 use strop::Disassemble;
 use strop::Iterable;
@@ -9,9 +10,7 @@ fn zero(_nothing: u8) -> Result<u8, StropError> {
 
 fn check() {
     use strop::z80::Constraints;
-    use strop::z80::Insn;
     use strop::z80::SdccCall1;
-    use strop::Constrain;
     use strop::Goto;
 
     let mc = [
@@ -23,7 +22,7 @@ fn check() {
     let mut c: SdccCall1<u8, u8> = SdccCall1::first();
     c.goto(&mc);
 
-    strop::report(&c.build(), &Constraints::default().basic_block());
+    strop::report(&c, &Constraints::default().basic_block());
 }
 
 fn sdcccall1_search(target_function: fn(u8) -> Result<u8, StropError>) {
@@ -32,11 +31,14 @@ fn sdcccall1_search(target_function: fn(u8) -> Result<u8, StropError>) {
     let target_function = target_function as fn(u8) -> Result<u8, StropError>;
 
     // a bruteforce search for Z80 machine code programs implementing the function
-    let mut bruteforce: BruteForce<_, _, _, SdccCall1<_, _>> =
+    let mut bruteforce: BruteForce<_, _, _, SdccCall1<_, _>, Insn> =
         BruteForce::new(target_function, SdccCall1::first());
 
     // let's find the first program that implements the function!
     let first = bruteforce.search().unwrap();
+
+    println!("found first:");
+    first.dasm();
 
     let mut count = 0usize;
 
