@@ -209,6 +209,9 @@ impl<Params: Copy + Vals, ReturnValue: Copy + Vals> crate::Constrain<Insn>
             if self.subroutine[offset].overwrites_sp() {
                 self.mut_at(Insn::next_opcode, offset);
             }
+            if !self.subroutine[offset].allowed_in_pure_functions() && self.pure_function {
+                self.mut_at(Insn::next_opcode, offset);
+            }
         }
     }
 
@@ -216,6 +219,9 @@ impl<Params: Copy + Vals, ReturnValue: Copy + Vals> crate::Constrain<Insn>
         let mut report = self.subroutine.report(offset);
         if self.subroutine[offset].overwrites_sp() {
             report.push("This opcode is disallowed in sdcccall(1)".to_string());
+        }
+        if !self.subroutine[offset].allowed_in_pure_functions() && self.pure_function {
+            report.push("This instruction is disallowed in pure functions".to_string());
         }
         report
     }
