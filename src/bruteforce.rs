@@ -21,6 +21,7 @@ pub struct BruteForce<
     ret: std::marker::PhantomData<ReturnValue>,
     insn: std::marker::PhantomData<Insn>,
     trace_enable: bool,
+    count: usize,
 }
 
 impl<
@@ -47,6 +48,7 @@ impl<
             ret: std::marker::PhantomData,
             insn: std::marker::PhantomData,
             trace_enable: false,
+            count: 0
         }
     }
 
@@ -63,12 +65,13 @@ impl<
 
     /// Prints the current candidate to stdout
     pub fn dasm(&self) {
-        println!("\ncandidate:");
+        println!("\ncandidate{}:", self.count);
         self.candidate().dasm();
     }
 
     /// Advances the candidate to the next position in the search space
     pub fn step(&mut self) -> bool {
+        self.count += 1;
         if !self.candidate.step() {
             if self.trace_enable {
                 self.dasm();
