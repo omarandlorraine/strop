@@ -205,9 +205,18 @@ impl<Params: Copy + Vals, ReturnValue: Copy + Vals> crate::Constrain<Insn>
 {
     fn fixup(&mut self) {
         self.subroutine.fixup();
+        for offset in 0..(self.len()-1) {
+            if self.subroutine[offset].overwrites_sp() {
+                self.mut_at(Insn::next_opcode, offset);
+            }
+        }
     }
 
     fn report(&self, offset: usize) -> Vec<String> {
-        self.subroutine.report(offset)
+        let mut report = self.subroutine.report(offset);
+        if self.subroutine[offset].overwrites_sp() {
+            report.push("This opcode is disallowed in sdcccall(1)".to_string());
+        }
+        report
     }
 }

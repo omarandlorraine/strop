@@ -27,6 +27,15 @@ impl Insn {
         Self::new(&[0xc9])
     }
 
+    pub fn overwrites_sp(&self) -> bool {
+        match self.0[0] {
+            0x31 => true,
+            0xf9 => true,
+            0xed => matches!(self.0[1], 0x7b),
+            _ => false,
+        }
+    }
+
     /// Returns `true` if the instruction does any kind of flow control, `false` otherwise
     pub fn is_flow_control(&self) -> bool {
         match self.0[0] {
