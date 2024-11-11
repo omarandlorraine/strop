@@ -32,31 +32,31 @@ impl SdccCall1ParameterList for u16 {
 
 // TODO: Implement this for more types. The calling convention supports return signed types, 32-bit
 // types, and perhaps others which are not supported (yet)
-pub trait SdccCall1GetReturnValue<T: Copy + Vals> {
-    fn get(&self) -> T;
+pub trait SdccCall1GetReturnValue: Copy + Vals + PartialEq {
+    fn get(emu: &Emulator) -> Self;
 }
 
-impl SdccCall1GetReturnValue<u8> for Emulator {
-    fn get(&self) -> u8 {
-        self.get_a()
+impl SdccCall1GetReturnValue for u8 {
+    fn get(emu: &Emulator) -> u8 {
+        emu.get_a()
     }
 }
 
-impl SdccCall1GetReturnValue<i8> for Emulator {
-    fn get(&self) -> i8 {
-        self.get_a() as i8
+impl SdccCall1GetReturnValue for i8 {
+    fn get(emu: &Emulator) -> i8 {
+        emu.get_a() as i8
     }
 }
 
-impl SdccCall1GetReturnValue<u16> for Emulator {
-    fn get(&self) -> u16 {
-        self.get_hl()
+impl SdccCall1GetReturnValue for u16 {
+    fn get(emu: &Emulator) -> u16 {
+        emu.get_hl()
     }
 }
 
-impl SdccCall1GetReturnValue<i16> for Emulator {
-    fn get(&self) -> i16 {
-        self.get_hl() as i16
+impl SdccCall1GetReturnValue for i16 {
+    fn get(emu: &Emulator) -> i16 {
+        emu.get_hl() as i16
     }
 }
 
@@ -71,20 +71,16 @@ pub struct SdccCall1<Params: Copy + Vals, ReturnValue: Copy + Vals> {
     leaf_function: bool,
 }
 
-impl<Params: SdccCall1ParameterList, ReturnValue: Copy + Vals + PartialEq> Default
+impl<Params: SdccCall1ParameterList, ReturnValue: SdccCall1GetReturnValue> Default
     for SdccCall1<Params, ReturnValue>
-where
-    Emulator: SdccCall1GetReturnValue<ReturnValue>,
 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Params: SdccCall1ParameterList, ReturnValue: Copy + Vals + PartialEq>
+impl<Params: SdccCall1ParameterList, ReturnValue: SdccCall1GetReturnValue>
     SdccCall1<Params, ReturnValue>
-where
-    Emulator: SdccCall1GetReturnValue<ReturnValue>,
 {
     /// Instantiates a new, empty SdccCall1.
     pub fn new() -> Self {
@@ -161,16 +157,14 @@ impl<Params: Copy + Vals + SdccCall1ParameterList, ReturnValue: Copy + Vals>
     }
 }
 
-impl<Params: Copy + Vals + SdccCall1ParameterList, ReturnValue: Copy + Vals>
+impl<Params: Copy + Vals + SdccCall1ParameterList, ReturnValue: SdccCall1GetReturnValue>
     Callable<Params, ReturnValue> for SdccCall1<Params, ReturnValue>
-where
-    Emulator: SdccCall1GetReturnValue<ReturnValue>,
 {
     fn call(&self, input: Params) -> Result<ReturnValue, StropError> {
         let mut emu = Emulator::default();
         input.put(&mut emu);
         emu.run(&self.subroutine)?;
-        Ok(emu.get())
+        Ok(ReturnValue::get(&mut emu))
     }
 }
 
