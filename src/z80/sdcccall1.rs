@@ -7,12 +7,12 @@ use crate::Callable;
 use crate::DataFlow;
 use crate::StropError;
 
-pub trait SdccCall1ParameterList: Copy + Vals {
+pub trait ParameterList: Copy + Vals {
     fn put(&self, emu: &mut Emulator);
     fn live_in() -> Vec<Register>;
 }
 
-impl SdccCall1ParameterList for u8 {
+impl ParameterList for u8 {
     fn put(&self, emu: &mut Emulator) {
         emu.set_a(*self);
     }
@@ -21,7 +21,7 @@ impl SdccCall1ParameterList for u8 {
     }
 }
 
-impl SdccCall1ParameterList for u16 {
+impl ParameterList for u16 {
     fn put(&self, emu: &mut Emulator) {
         emu.set_hl(*self);
     }
@@ -32,12 +32,12 @@ impl SdccCall1ParameterList for u16 {
 
 // TODO: Implement this for more types. The calling convention supports return signed types, 32-bit
 // types, and perhaps others which are not supported (yet)
-pub trait SdccCall1GetReturnValue: Copy + Vals + PartialEq {
+pub trait ReturnValue: Copy + Vals + PartialEq {
     fn get(emu: &Emulator) -> Self;
     fn live_out() -> Vec<Register>;
 }
 
-impl SdccCall1GetReturnValue for u8 {
+impl ReturnValue for u8 {
     fn get(emu: &Emulator) -> u8 {
         emu.get_a()
     }
@@ -46,7 +46,7 @@ impl SdccCall1GetReturnValue for u8 {
     }
 }
 
-impl SdccCall1GetReturnValue for i8 {
+impl ReturnValue for i8 {
     fn get(emu: &Emulator) -> i8 {
         emu.get_a() as i8
     }
@@ -55,7 +55,7 @@ impl SdccCall1GetReturnValue for i8 {
     }
 }
 
-impl SdccCall1GetReturnValue for u16 {
+impl ReturnValue for u16 {
     fn get(emu: &Emulator) -> u16 {
         emu.get_hl()
     }
@@ -64,7 +64,7 @@ impl SdccCall1GetReturnValue for u16 {
     }
 }
 
-impl SdccCall1GetReturnValue for i16 {
+impl ReturnValue for i16 {
     fn get(emu: &Emulator) -> i16 {
         emu.get_hl() as i16
     }
@@ -76,24 +76,24 @@ impl SdccCall1GetReturnValue for i16 {
 /// Mimics the calling convention used by modern-day SDCC. SDCC's internal documentation calls this
 /// `__sdcccall(1)`.
 #[derive(Clone, Debug)]
-pub struct SdccCall1<Params: Copy + Vals, ReturnValue: Copy + Vals> {
+pub struct SdccCall1<Params: Copy + Vals, RetVal: Copy + Vals> {
     subroutine: Subroutine,
     params: std::marker::PhantomData<Params>,
-    return_value: std::marker::PhantomData<ReturnValue>,
+    return_value: std::marker::PhantomData<RetVal>,
     pure_function: bool,
     leaf_function: bool,
 }
 
-impl<Params: SdccCall1ParameterList, ReturnValue: SdccCall1GetReturnValue> Default
-    for SdccCall1<Params, ReturnValue>
+impl<Params: ParameterList, RetVal: ReturnValue> Default
+    for SdccCall1<Params, RetVal>
 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Params: SdccCall1ParameterList, ReturnValue: SdccCall1GetReturnValue>
-    SdccCall1<Params, ReturnValue>
+impl<Params: ParameterList, RetVal: ReturnValue>
+    SdccCall1<Params, RetVal>
 {
     /// Instantiates a new, empty SdccCall1.
     pub fn new() -> Self {
@@ -103,10 +103,10 @@ impl<Params: SdccCall1ParameterList, ReturnValue: SdccCall1GetReturnValue>
 
     /// Instantiates a strop::BruteForce object that searches over functions complying with the
     /// sdcccall(1) ABI.
-    pub fn bruteforce<C: Clone + Callable<Params, ReturnValue>>(
+    pub fn bruteforce<C: Clone + Callable<Params, RetVal>>(
         self,
         target_function: C,
-    ) -> crate::BruteForce<Params, ReturnValue, C, SdccCall1<Params, ReturnValue>, Insn> {
+    ) -> crate::BruteForce<Params, RetVal, C, SdccCall1<Params, RetVal>, Insn> {
         crate::BruteForce::new(target_function, self)
     }
 
@@ -125,24 +125,24 @@ impl<Params: SdccCall1ParameterList, ReturnValue: SdccCall1GetReturnValue>
     }
 }
 
-impl<Params: Copy + Vals, ReturnValue: Copy + Vals> crate::Disassemble
-    for SdccCall1<Params, ReturnValue>
+impl<Params: ParameterList, RetVal: ReturnValue> crate::Disassemble
+    for SdccCall1<Params, RetVal>
 {
     fn dasm(&self) {
         self.subroutine.dasm()
     }
 }
 
-impl<Params: Copy + Vals, ReturnValue: Copy + Vals> AsRef<crate::Sequence<Insn>>
-    for SdccCall1<Params, ReturnValue>
+impl<Params: ParameterList, RetVal: ReturnValue> AsRef<crate::Sequence<Insn>>
+    for SdccCall1<Params, RetVal>
 {
     fn as_ref(&self) -> &crate::Sequence<Insn> {
         self.subroutine.as_ref()
     }
 }
 
-impl<Params: Copy + Vals, ReturnValue: Copy + Vals> std::ops::Deref
-    for SdccCall1<Params, ReturnValue>
+impl<Params: ParameterList, RetVal: ReturnValue> std::ops::Deref
+    for SdccCall1<Params, RetVal>
 {
     type Target = Subroutine;
 
@@ -151,16 +151,16 @@ impl<Params: Copy + Vals, ReturnValue: Copy + Vals> std::ops::Deref
     }
 }
 
-impl<Params: Copy + Vals, ReturnValue: Copy + Vals> std::ops::DerefMut
-    for SdccCall1<Params, ReturnValue>
+impl<Params: ParameterList, RetVal: ReturnValue> std::ops::DerefMut
+    for SdccCall1<Params, RetVal>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.subroutine
     }
 }
 
-impl<Params: Copy + Vals + SdccCall1ParameterList, ReturnValue: Copy + Vals>
-    SdccCall1<Params, ReturnValue>
+impl<Params: ParameterList, RetVal: ReturnValue>
+    SdccCall1<Params, RetVal>
 {
     /// Performs dataflow analysis on the function
     pub fn dataflow_analysis(&mut self) {
@@ -170,27 +170,27 @@ impl<Params: Copy + Vals + SdccCall1ParameterList, ReturnValue: Copy + Vals>
     }
 }
 
-impl<Params: Copy + Vals + SdccCall1ParameterList, ReturnValue: SdccCall1GetReturnValue>
-    Callable<Params, ReturnValue> for SdccCall1<Params, ReturnValue>
+impl<Params: ParameterList, RetVal: ReturnValue>
+    Callable<Params, RetVal> for SdccCall1<Params, RetVal>
 {
-    fn call(&self, input: Params) -> Result<ReturnValue, StropError> {
+    fn call(&self, input: Params) -> Result<RetVal, StropError> {
         let mut emu = Emulator::default();
         input.put(&mut emu);
         emu.run(&self.subroutine)?;
-        Ok(ReturnValue::get(&mut emu))
+        Ok(RetVal::get(&mut emu))
     }
 }
 
-impl<Params: Copy + Vals, ReturnValue: Copy + Vals> crate::Goto<Insn>
-    for SdccCall1<Params, ReturnValue>
+impl<Params: ParameterList, RetVal: ReturnValue> crate::Goto<Insn>
+    for SdccCall1<Params, RetVal>
 {
     fn goto(&mut self, t: &[Insn]) {
         self.subroutine.goto(t);
     }
 }
 
-impl<Params: Copy + Vals, ReturnValue: Copy + Vals> crate::Iterable
-    for SdccCall1<Params, ReturnValue>
+impl<Params: ParameterList, RetVal: ReturnValue> crate::Iterable
+    for SdccCall1<Params, RetVal>
 {
     fn first() -> Self {
         Self {
@@ -207,8 +207,8 @@ impl<Params: Copy + Vals, ReturnValue: Copy + Vals> crate::Iterable
     }
 }
 
-impl<Params: Copy + Vals, ReturnValue: Copy + Vals> crate::Constrain<Insn>
-    for SdccCall1<Params, ReturnValue>
+impl<Params: ParameterList, RetVal: ReturnValue> crate::Constrain<Insn>
+    for SdccCall1<Params, RetVal>
 {
     fn fixup(&mut self) {
         self.subroutine.fixup();
