@@ -48,7 +48,7 @@ impl<
             ret: std::marker::PhantomData,
             insn: std::marker::PhantomData,
             trace_enable: false,
-            count: 0
+            count: 0,
         }
     }
 

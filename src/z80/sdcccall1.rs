@@ -24,7 +24,7 @@ fn allowed(insn: &Insn) -> bool {
         return false;
     }
 
-    if matches!(enc[0] , 0xf3 | 0xfb ) {
+    if matches!(enc[0], 0xf3 | 0xfb) {
         // di and ei
         return false;
     }
@@ -130,17 +130,13 @@ pub struct SdccCall1<Params: Copy + Vals, RetVal: Copy + Vals> {
     leaf_function: bool,
 }
 
-impl<Params: ParameterList, RetVal: ReturnValue> Default
-    for SdccCall1<Params, RetVal>
-{
+impl<Params: ParameterList, RetVal: ReturnValue> Default for SdccCall1<Params, RetVal> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Params: ParameterList, RetVal: ReturnValue>
-    SdccCall1<Params, RetVal>
-{
+impl<Params: ParameterList, RetVal: ReturnValue> SdccCall1<Params, RetVal> {
     /// Instantiates a new, empty SdccCall1.
     pub fn new() -> Self {
         use crate::Iterable;
@@ -171,9 +167,7 @@ impl<Params: ParameterList, RetVal: ReturnValue>
     }
 }
 
-impl<Params: ParameterList, RetVal: ReturnValue> crate::Disassemble
-    for SdccCall1<Params, RetVal>
-{
+impl<Params: ParameterList, RetVal: ReturnValue> crate::Disassemble for SdccCall1<Params, RetVal> {
     fn dasm(&self) {
         self.subroutine.dasm()
     }
@@ -187,9 +181,7 @@ impl<Params: ParameterList, RetVal: ReturnValue> AsRef<crate::Sequence<Insn>>
     }
 }
 
-impl<Params: ParameterList, RetVal: ReturnValue> std::ops::Deref
-    for SdccCall1<Params, RetVal>
-{
+impl<Params: ParameterList, RetVal: ReturnValue> std::ops::Deref for SdccCall1<Params, RetVal> {
     type Target = Subroutine;
 
     fn deref(&self) -> &Self::Target {
@@ -197,17 +189,13 @@ impl<Params: ParameterList, RetVal: ReturnValue> std::ops::Deref
     }
 }
 
-impl<Params: ParameterList, RetVal: ReturnValue> std::ops::DerefMut
-    for SdccCall1<Params, RetVal>
-{
+impl<Params: ParameterList, RetVal: ReturnValue> std::ops::DerefMut for SdccCall1<Params, RetVal> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.subroutine
     }
 }
 
-impl<Params: ParameterList, RetVal: ReturnValue>
-    SdccCall1<Params, RetVal>
-{
+impl<Params: ParameterList, RetVal: ReturnValue> SdccCall1<Params, RetVal> {
     /// Performs dataflow analysis on the function
     pub fn dataflow_analysis(&mut self) {
         for f in Params::live_in() {
@@ -216,28 +204,24 @@ impl<Params: ParameterList, RetVal: ReturnValue>
     }
 }
 
-impl<Params: ParameterList, RetVal: ReturnValue>
-    Callable<Params, RetVal> for SdccCall1<Params, RetVal>
+impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal>
+    for SdccCall1<Params, RetVal>
 {
     fn call(&self, input: Params) -> Result<RetVal, StropError> {
         let mut emu = Emulator::default();
         input.put(&mut emu);
         emu.run(&self.subroutine)?;
-        Ok(RetVal::get(&mut emu))
+        Ok(RetVal::get(&emu))
     }
 }
 
-impl<Params: ParameterList, RetVal: ReturnValue> crate::Goto<Insn>
-    for SdccCall1<Params, RetVal>
-{
+impl<Params: ParameterList, RetVal: ReturnValue> crate::Goto<Insn> for SdccCall1<Params, RetVal> {
     fn goto(&mut self, t: &[Insn]) {
         self.subroutine.goto(t);
     }
 }
 
-impl<Params: ParameterList, RetVal: ReturnValue> crate::Iterable
-    for SdccCall1<Params, RetVal>
-{
+impl<Params: ParameterList, RetVal: ReturnValue> crate::Iterable for SdccCall1<Params, RetVal> {
     fn first() -> Self {
         Self {
             subroutine: crate::Iterable::first(),
@@ -258,7 +242,7 @@ impl<Params: ParameterList, RetVal: ReturnValue> crate::Constrain<Insn>
 {
     fn fixup(&mut self) {
         self.subroutine.fixup();
-        for offset in 0..(self.len()-1) {
+        for offset in 0..(self.len() - 1) {
             if !allowed(&self.subroutine[offset]) {
                 self.mut_at(Insn::next_opcode, offset);
             }
