@@ -34,11 +34,15 @@ impl SdccCall1ParameterList for u16 {
 // types, and perhaps others which are not supported (yet)
 pub trait SdccCall1GetReturnValue: Copy + Vals + PartialEq {
     fn get(emu: &Emulator) -> Self;
+    fn live_out() -> Vec<Register>;
 }
 
 impl SdccCall1GetReturnValue for u8 {
     fn get(emu: &Emulator) -> u8 {
         emu.get_a()
+    }
+    fn live_out() -> Vec<Register> {
+        vec![Register::A]
     }
 }
 
@@ -46,17 +50,26 @@ impl SdccCall1GetReturnValue for i8 {
     fn get(emu: &Emulator) -> i8 {
         emu.get_a() as i8
     }
+    fn live_out() -> Vec<Register> {
+        vec![Register::A]
+    }
 }
 
 impl SdccCall1GetReturnValue for u16 {
     fn get(emu: &Emulator) -> u16 {
         emu.get_hl()
     }
+    fn live_out() -> Vec<Register> {
+        vec![Register::H, Register::L]
+    }
 }
 
 impl SdccCall1GetReturnValue for i16 {
     fn get(emu: &Emulator) -> i16 {
         emu.get_hl() as i16
+    }
+    fn live_out() -> Vec<Register> {
+        vec![Register::H, Register::L]
     }
 }
 
