@@ -7,6 +7,8 @@ mod isa;
 mod sdcccall1;
 mod subroutine;
 
+pub mod register_pairs;
+
 pub use constraints::Constraints;
 pub use emu::Emulator;
 pub use isa::Insn;

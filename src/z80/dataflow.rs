@@ -86,7 +86,7 @@ impl crate::DataFlow<Register> for Insn {
     fn reads(&self, t: &Register) -> bool {
         let d = self.decode();
 
-        if d.r#type == InstructionType::Nop {
+        if matches!(d.r#type, InstructionType::Nop | InstructionType::Ret(_)) {
             return false;
         }
 

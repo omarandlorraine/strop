@@ -1,5 +1,6 @@
 use crate::test::Vals;
 use crate::z80::dataflow::Register;
+use crate::z80::register_pairs::RegPairFixup;
 use crate::z80::subroutine::Subroutine;
 use crate::z80::Emulator;
 use crate::z80::Insn;
@@ -249,6 +250,7 @@ impl<Params: ParameterList, RetVal: ReturnValue> crate::Constrain<Insn>
             if !self.subroutine[offset].allowed_in_pure_functions() && self.pure_function {
                 self.mut_at(Insn::next_opcode, offset);
             }
+            RegPairFixup(&mut self.subroutine).fixup();
         }
     }
 
@@ -259,6 +261,9 @@ impl<Params: ParameterList, RetVal: ReturnValue> crate::Constrain<Insn>
         }
         if !self.subroutine[offset].allowed_in_pure_functions() && self.pure_function {
             report.push("This instruction is disallowed in pure functions".to_string());
+        }
+        for r in RegPairFixup(&mut self.subroutine.clone()).report(offset) {
+            report.push(r);
         }
         report
     }
