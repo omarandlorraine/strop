@@ -23,12 +23,15 @@ fn main() {
         Insn::new(&[0x06, 0x40]), // LD B,40H, this is dead code
         Insn::new(&[0x26, 0x40]), // LD H,40H
         Insn::new(&[0x2e, 0x7f]), // LD L,7FH, should just use `LD HL,` which is more efficient
-        Insn::new(&[0xd8]),       // RET C
-        Insn::new(&[0xd0]),       // RET NC, wrong way to return from a subroutine.
+        Insn::new(&[0x01, 0x00, 0x00]),
+        Insn::new(&[0x03]),
+        Insn::new(&[0xd8]), // RET C
+        Insn::new(&[0x00]),
+        Insn::new(&[0xd0]), // RET NC, wrong way to return from a subroutine.
     ];
 
     // This machine code is callable using the sdcccall(1) calling convention.
-    let mut c = SdccCall1::<u16, u16>::first();
+    let mut c = SdccCall1::<u16, u16>::first().peephole_optimization();
     c.goto(&mc);
     strop::report(&c, &c);
 }
