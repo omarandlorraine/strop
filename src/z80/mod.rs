@@ -4,6 +4,7 @@ mod dataflow;
 mod diss;
 mod emu;
 mod isa;
+mod peephole;
 mod sdcccall1;
 mod subroutine;
 

@@ -128,6 +128,7 @@ pub struct SdccCall1<Params: Copy + Vals, RetVal: Copy + Vals> {
     subroutine: Subroutine,
     params: std::marker::PhantomData<Params>,
     return_value: std::marker::PhantomData<RetVal>,
+    peep_enable: bool,
     pure_function: bool,
     leaf_function: bool,
 }
@@ -148,9 +149,10 @@ impl<Params: ParameterList, RetVal: ReturnValue> SdccCall1<Params, RetVal> {
     /// Instantiates a strop::BruteForce object that searches over functions complying with the
     /// sdcccall(1) ABI.
     pub fn bruteforce<C: Clone + Callable<Params, RetVal>>(
-        self,
+        mut self,
         target_function: C,
     ) -> crate::BruteForce<Params, RetVal, C, SdccCall1<Params, RetVal>, Insn> {
+        self.peep_enable = true;
         crate::BruteForce::new(target_function, self)
     }
 
@@ -158,6 +160,12 @@ impl<Params: ParameterList, RetVal: ReturnValue> SdccCall1<Params, RetVal> {
     /// side effects, and do not observe any state other than its parameters).
     pub fn pure(&mut self) -> Self {
         self.pure_function = true;
+        self.clone()
+    }
+
+    /// Enables peephole optimization
+    pub fn peephole_optimization(&mut self) -> Self {
+        self.peep_enable = true;
         self.clone()
     }
 
@@ -231,6 +239,7 @@ impl<Params: ParameterList, RetVal: ReturnValue> crate::Iterable for SdccCall1<P
             return_value: Default::default(),
             leaf_function: false,
             pure_function: false,
+            peep_enable: false,
         }
     }
 
@@ -252,6 +261,9 @@ impl<Params: ParameterList, RetVal: ReturnValue> crate::Constrain<Insn>
                 self.mut_at(Insn::next_opcode, offset);
             }
             RegPairFixup(&mut self.subroutine).fixup();
+            if self.peep_enable {
+                crate::peephole::PeepholeOptimizer::new(&mut self.subroutine).fixup();
+            }
             for reg in Register::all() {
                 if !Params::live_in().contains(&reg) {
                     NotLive::new(&mut self.subroutine, reg).fixup();
@@ -269,6 +281,11 @@ impl<Params: ParameterList, RetVal: ReturnValue> crate::Constrain<Insn>
             report.push("This instruction is disallowed in pure functions".to_string());
         }
         for r in RegPairFixup(&mut self.subroutine.clone()).report(offset) {
+            report.push(r);
+        }
+        for r in
+            crate::peephole::PeepholeOptimizer::new(&mut self.subroutine.clone()).report(offset)
+        {
             report.push(r);
         }
         for reg in Register::all() {

@@ -26,6 +26,7 @@ pub mod m6809;
 pub mod z80;
 
 pub mod dataflow;
+pub mod peephole;
 
 mod sequence;
 pub use sequence::Sequence;
@@ -176,4 +177,21 @@ pub trait DataFlow<T> {
 
     /// Modifies the instruction so that it writes to `t`.
     fn make_write(&mut self, t: &T) -> bool;
+}
+
+pub trait Peephole {
+    //! A trait for very local peephole optimizations. It's generic across `T`, a type intended to
+    //! represent machine instructions.
+    //!
+    //! The default implementation is effectively a no-op.
+
+    /// Modifies the instruction
+    fn modify(&mut self) -> bool {
+        unreachable!();
+    }
+
+    /// Checks if two instructions may not follow eachother.
+    fn check(_a: &Self, _b: &Self) -> bool {
+        false
+    }
 }

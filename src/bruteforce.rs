@@ -21,7 +21,7 @@ pub struct BruteForce<
     ret: std::marker::PhantomData<ReturnValue>,
     insn: std::marker::PhantomData<Insn>,
     trace_enable: bool,
-    count: usize,
+    pub count: usize,
 }
 
 impl<
