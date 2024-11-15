@@ -58,16 +58,21 @@ where
         false
     }
 
+    fn modify(&mut self) -> bool {
+        self.step_at(0);
+        true
+    }
+
     fn make_read(&mut self, t: &U) -> bool {
         if !self.0[0].make_read(t) {
-            self.step_at(0);
+            self.modify();
         }
         true
     }
 
     fn make_write(&mut self, t: &U) -> bool {
         if !self.0[0].make_write(t) {
-            self.step_at(0);
+            self.modify();
         }
         true
     }

@@ -25,6 +25,8 @@ pub mod m6809;
 #[cfg(feature = "z80")]
 pub mod z80;
 
+pub mod dataflow;
+
 mod sequence;
 pub use sequence::Sequence;
 
@@ -165,6 +167,9 @@ pub trait DataFlow<T> {
     /// returns true iff the variable `t` is assigned (written to) by the instruction or basic
     /// block, effectively "killing" any previous value it held.
     fn writes(&self, t: &T) -> bool;
+
+    /// Modifies the instruction
+    fn modify(&mut self) -> bool;
 
     /// Modifies the instruction so that it reads from `t`.
     fn make_read(&mut self, t: &T) -> bool;

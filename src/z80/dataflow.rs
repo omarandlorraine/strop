@@ -23,6 +23,23 @@ pub enum Register {
 }
 
 impl Register {
+    pub fn all() -> Vec<Self> {
+        vec![
+            Register::A,
+            Register::B,
+            Register::C,
+            Register::D,
+            Register::E,
+            Register::H,
+            Register::L,
+            Register::I,
+            Register::Ixh,
+            Register::Ixl,
+            Register::Iyh,
+            Register::Iyl,
+        ]
+    }
+
     pub fn rp(&self, r: RegisterPairType) -> bool {
         match r {
             RegisterPairType::AF => self == &Self::A,
@@ -98,12 +115,20 @@ impl crate::DataFlow<Register> for Insn {
 
     fn writes(&self, t: &Register) -> bool {
         let d = self.decode();
+
+        if matches!(d.r#type, InstructionType::Nop | InstructionType::Ret(_)) {
+            return false;
+        }
         t.check(d.destination)
+    }
+
+    fn modify(&mut self) -> bool {
+        self.next_opcode()
     }
 
     fn make_read(&mut self, t: &Register) -> bool {
         while !self.reads(t) {
-            if !self.next_opcode() {
+            if !self.modify() {
                 return false;
             }
         }
@@ -112,7 +137,7 @@ impl crate::DataFlow<Register> for Insn {
 
     fn make_write(&mut self, t: &Register) -> bool {
         while !self.writes(t) {
-            if self.next_opcode() {
+            if self.modify() {
                 return false;
             }
         }

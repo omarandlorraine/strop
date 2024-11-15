@@ -1,3 +1,4 @@
+use crate::dataflow::NotLive;
 use crate::test::Vals;
 use crate::z80::dataflow::Register;
 use crate::z80::register_pairs::RegPairFixup;
@@ -251,6 +252,11 @@ impl<Params: ParameterList, RetVal: ReturnValue> crate::Constrain<Insn>
                 self.mut_at(Insn::next_opcode, offset);
             }
             RegPairFixup(&mut self.subroutine).fixup();
+            for reg in Register::all() {
+                if !Params::live_in().contains(&reg) {
+                    NotLive::new(&mut self.subroutine, reg).fixup();
+                }
+            }
         }
     }
 
@@ -264,6 +270,13 @@ impl<Params: ParameterList, RetVal: ReturnValue> crate::Constrain<Insn>
         }
         for r in RegPairFixup(&mut self.subroutine.clone()).report(offset) {
             report.push(r);
+        }
+        for reg in Register::all() {
+            if !Params::live_in().contains(&reg) {
+                for r in NotLive::new(&mut self.subroutine.clone(), reg).report(offset) {
+                    report.push(r);
+                }
+            }
         }
         report
     }
