@@ -21,6 +21,8 @@ pub struct BruteForce<
     ret: std::marker::PhantomData<ReturnValue>,
     insn: std::marker::PhantomData<Insn>,
     trace_enable: bool,
+
+    /// Keeps track of how many iterations the bruteforce search has been through.
     pub count: usize,
 }
 

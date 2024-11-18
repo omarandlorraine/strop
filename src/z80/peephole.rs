@@ -9,21 +9,13 @@ fn cp1(a: &[u8], a2: &[u8]) -> bool {
     a[..len] == a2[..len]
 }
 
-fn cp2(a: &[u8], b: &[u8], a2: &[u8], b2: &[u8]) -> bool {
-    cp1(a, a2) && cp1(b, b2)
-}
-
 macro_rules! cp {
     // This macro takes an expression of type `expr` and prints
     // it as a string along with its result.
     // The `expr` designator is used for expressions.
     ($a:expr, $b:expr, $a2:expr, $b2:expr) => {
-        if cp1($a, $a2) {
-            if $b2.iter().any(|b2| !cp1($b, b2)) {
-                return true;
-            }
-        } else {
-            return false;
+        if cp1($a, $a2) && $b2.iter().any(|b2| cp1($b, b2)) {
+            return true;
         }
     };
 }
@@ -53,6 +45,19 @@ impl Peephole for Insn {
                 return true;
             }
         }
+
+        // pointless sequences that load one half of a register pair and then the other half. (for
+        // example, there is no need for an `ld b, something` and then `ld c, something`, since
+        // this sequence can be replaced by `ld bc, something`.
+        cp!(&a_encoded, &b_encoded, &[0x01], &[[0x06], [0x0e]]);
+
+        // pointless sequences that perform some operation on A, and then overwrite it
+        cp!(
+            &b_encoded,
+            &a_encoded,
+            &[0x3e],
+            &[[0xc6], [0x3e], [0xde], [0xdb]]
+        );
 
         // There's no need to load into BC and then increment, decrement or load BC or B or C,
         // Same deal with DE and HL

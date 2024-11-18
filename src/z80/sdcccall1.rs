@@ -1,4 +1,5 @@
-use crate::dataflow::NotLive;
+use crate::dataflow::NotLiveIn;
+use crate::dataflow::NotLiveOut;
 use crate::test::Vals;
 use crate::z80::dataflow::Register;
 use crate::z80::register_pairs::RegPairFixup;
@@ -266,7 +267,10 @@ impl<Params: ParameterList, RetVal: ReturnValue> crate::Constrain<Insn>
             }
             for reg in Register::all() {
                 if !Params::live_in().contains(&reg) {
-                    NotLive::new(&mut self.subroutine, reg).fixup();
+                    NotLiveIn::new(&mut self.subroutine, reg).fixup();
+                }
+                if !RetVal::live_out().contains(&reg) {
+                    NotLiveOut::new(&mut self.subroutine, reg).fixup();
                 }
             }
         }
@@ -290,7 +294,7 @@ impl<Params: ParameterList, RetVal: ReturnValue> crate::Constrain<Insn>
         }
         for reg in Register::all() {
             if !Params::live_in().contains(&reg) {
-                for r in NotLive::new(&mut self.subroutine.clone(), reg).report(offset) {
+                for r in NotLiveIn::new(&mut self.subroutine.clone(), reg).report(offset) {
                     report.push(r);
                 }
             }
