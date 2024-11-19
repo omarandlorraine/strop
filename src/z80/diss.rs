@@ -23,6 +23,6 @@ impl std::fmt::Debug for crate::z80::isa::Insn {
 
 impl Disassemble for crate::z80::isa::Insn {
     fn dasm(&self) {
-        println!("\t{}  ; {:?}", self, self);
+        println!("\t{:<15}; {:?}", format!("{}", self), self);
     }
 }

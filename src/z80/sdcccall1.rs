@@ -253,26 +253,35 @@ impl<Params: ParameterList, RetVal: ReturnValue> crate::Constrain<Insn>
     for SdccCall1<Params, RetVal>
 {
     fn fixup(&mut self) {
-        self.subroutine.fixup();
-        for offset in 0..(self.len() - 1) {
-            if !allowed(&self.subroutine[offset]) {
-                self.mut_at(Insn::next_opcode, offset);
-            }
-            if !self.subroutine[offset].allowed_in_pure_functions() && self.pure_function {
-                self.mut_at(Insn::next_opcode, offset);
-            }
-            RegPairFixup(&mut self.subroutine).fixup();
-            if self.peep_enable {
-                crate::peephole::PeepholeOptimizer::new(&mut self.subroutine).fixup();
-            }
-            for reg in Register::all() {
-                if !Params::live_in().contains(&reg) {
-                    NotLiveIn::new(&mut self.subroutine, reg).fixup();
+        let mut before = self.subroutine.clone();
+        
+        loop {
+            self.subroutine.fixup();
+            for offset in 0..(self.len() - 1) {
+                if !allowed(&self.subroutine[offset]) {
+                    self.mut_at(Insn::next_opcode, offset);
                 }
-                if !RetVal::live_out().contains(&reg) {
-                    NotLiveOut::new(&mut self.subroutine, reg).fixup();
+                if !self.subroutine[offset].allowed_in_pure_functions() && self.pure_function {
+                    self.mut_at(Insn::next_opcode, offset);
+                }
+                RegPairFixup(&mut self.subroutine).fixup();
+                if self.peep_enable {
+                    crate::peephole::PeepholeOptimizer::new(&mut self.subroutine).fixup();
+                }
+                for reg in Register::all() {
+                    if !Params::live_in().contains(&reg) {
+                        NotLiveIn::new(&mut self.subroutine, reg).fixup();
+                    }
+                    if !RetVal::live_out().contains(&reg) {
+                        NotLiveOut::new(&mut self.subroutine, reg).fixup();
+                    }
                 }
             }
+            if self.subroutine == before {
+                // nothing got changed by the fixup
+                break;
+            }
+            before = self.subroutine.clone();
         }
     }
 

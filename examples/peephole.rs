@@ -1,28 +1,8 @@
-use strop::z80::Insn;
-use strop::BruteForce;
 use strop::Disassemble;
-use strop::Iterable;
 use strop::StropError;
 
 fn zero(_nothing: u8) -> Result<u8, StropError> {
     Ok(b'0')
-}
-
-fn check() {
-    use strop::z80::Constraints;
-    use strop::z80::SdccCall1;
-    use strop::Goto;
-
-    let mc = [
-        Insn::new(&[0x3e, 0x30]), // ld a, 30h
-        Insn::new(&[0x10, 0x00]), // djnz 0
-    ];
-
-    // This machine code is callable using the sdcccall(1) calling convention.
-    let mut c: SdccCall1<u8, u8> = SdccCall1::first();
-    c.goto(&mc);
-
-    strop::report(&c, &Constraints::default().basic_block());
 }
 
 fn sdcccall1_search(target_function: fn(u8) -> Result<u8, StropError>) {
@@ -31,8 +11,12 @@ fn sdcccall1_search(target_function: fn(u8) -> Result<u8, StropError>) {
     let target_function = target_function as fn(u8) -> Result<u8, StropError>;
 
     // a bruteforce search for Z80 machine code programs implementing the function
-    let mut bruteforce: BruteForce<_, _, _, SdccCall1<_, _>, Insn> =
-        BruteForce::new(target_function, SdccCall1::first());
+    let mut bruteforce = SdccCall1::<u8, u8>::new()
+        // By specifying that we want a pure function, and that the function is a leaf function, we
+        // can constrain the search space even further
+        .pure()
+        .leaf()
+        .bruteforce(target_function);
 
     // let's find the first program that implements the function!
     let first = bruteforce.search().unwrap();
@@ -46,44 +30,22 @@ fn sdcccall1_search(target_function: fn(u8) -> Result<u8, StropError>) {
     // inefficiencies, which will point out deficiencies in the peephole optimizers and dataflow
     // analysis.
     loop {
-        println!("about to step");
-        if !bruteforce.step() {
-            break;
-        }
-        println!("stepped");
+        let second = bruteforce.search().unwrap();
 
-        /*
-        if bruteforce.candidate().len() > first.len() + 1 {
-            break;
-        }
-        */
-
-        println!("\n\nunder consideration:");
-        bruteforce.candidate().dasm();
-
-        if !bruteforce.test() {
-            println!("test failes");
-            continue;
-        }
-        println!("test passed");
-
-        if count == 0 {
+        if count == 1 {
             println!(
-                "I've discovered two programs that are equivalent. One's going to have dead code"
-            );
+                "I've discovered two or more programs that are equivalent. One's going to have dead code"
+                );
             println!("or some other inefficency.");
-
-            println!("first:");
-            //first.dasm();
-            count = 1;
         }
 
-        println!("next_{count}");
-        bruteforce.candidate().dasm();
+        println!("number {count}:");
+        second.dasm();
+        count += 1;
+
     }
 }
 
 fn main() {
-    check();
     sdcccall1_search(zero);
 }

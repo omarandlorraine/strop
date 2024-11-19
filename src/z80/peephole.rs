@@ -53,11 +53,21 @@ impl Peephole for Insn {
 
         // pointless sequences that perform some operation on A, and then overwrite it
         cp!(
-            &b_encoded,
             &a_encoded,
+            &b_encoded,
             &[0x3e],
-            &[[0xc6], [0x3e], [0xde], [0xdb]]
+            &[[0x3b], [0x3c], [0x3d], [0x3e], [0xc6], [0xce], [0xdb], [0xde]]
         );
+
+        // No need for two consecutive immediate add/sub instructions
+        let sub_and_add = [[0xc6], [0xd6], [0xce], [0xde]];
+        for op in sub_and_add {
+            cp!( &a_encoded, &b_encoded, &op, &sub_and_add);
+        }
+
+        // There's no need for an unconditional return instruction to be preceded by another return
+        // instruction
+        cp!(&a_encoded, &b_encoded, &[0xc9], &[[0xc0, 0xd0, 0xe0, 0xf0, 0xc8, 0xd8, 0xe8, 0xf8]]);
 
         // There's no need to load into BC and then increment, decrement or load BC or B or C,
         // Same deal with DE and HL
@@ -70,6 +80,10 @@ impl Peephole for Insn {
                 return true;
             }
         }
+
+        // instructions which could be scheduled either which way (that is, they are independent of
+        // each other), but which are not in ascending numerical order.
+        cp!( &a_encoded, &b_encoded, &[0x3e], &[[0x33, 0x3b]]);
 
         false
     }

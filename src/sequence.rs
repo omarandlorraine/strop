@@ -13,7 +13,7 @@ use std::ops::{Index, IndexMut};
 /// This datatype is intended to represent a point in a search space, and so `impl`s
 /// strop's `Random` and `Iterable` traits.  This means that strop can search across the search
 /// space of things represented by the `Sequence<T>`.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Sequence<T>(Vec<T>);
 
 impl<T> From<Vec<&Vec<T>>> for Sequence<T>

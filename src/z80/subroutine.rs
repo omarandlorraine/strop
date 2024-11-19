@@ -3,7 +3,7 @@ use std::ops::Index;
 
 /// Wraps up a `Sequence<Insn>`, that is, a sequence of Z80 instructions, and associates it with
 /// static analysis that makes sure it's a valid Z80 subroutine.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Subroutine(crate::Sequence<Insn>);
 
 impl crate::Constrain<Insn> for Subroutine {
