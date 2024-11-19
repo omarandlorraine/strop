@@ -42,7 +42,6 @@ fn sdcccall1_search(target_function: fn(u8) -> Result<u8, StropError>) {
         println!("number {count}:");
         second.dasm();
         count += 1;
-
     }
 }
 

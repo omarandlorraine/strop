@@ -10,51 +10,9 @@ use crate::Callable;
 use crate::DataFlow;
 use crate::StropError;
 
-fn allowed(insn: &Insn) -> bool {
-    // I don't think that a functino should meddle with things like interrupts, halting the
-    // processor, loading or storing the stack pointer, etc. So I have just removed these
-    // instructions from the search.
-    use crate::Encode;
-    let enc = insn.encode();
+mod constraints;
 
-    if enc[0] == 0x31 {
-        // ld sp, nn
-        return false;
-    }
-
-    if enc[0] == 0x76 {
-        // halt
-        return false;
-    }
-
-    if matches!(enc[0], 0xf3 | 0xfb) {
-        // di and ei
-        return false;
-    }
-
-    if enc[0] == 0xed {
-        if enc[1] == 0x45 {
-            // retn
-            return false;
-        }
-
-        if enc[1] == 0x4d {
-            // reti
-            return false;
-        }
-
-        if matches!(enc[1], 0x46 | 0x56 | 0x5e) {
-            // im 0/1/2
-            return false;
-        }
-
-        if enc[1] == 0x73 {
-            // ld (nn), sp
-            return false;
-        }
-    }
-    true
-}
+pub use constraints::SdccCall1Constraint;
 
 pub trait ParameterList: Copy + Vals {
     fn put(&self, emu: &mut Emulator);
@@ -254,17 +212,15 @@ impl<Params: ParameterList, RetVal: ReturnValue> crate::Constrain<Insn>
 {
     fn fixup(&mut self) {
         let mut before = self.subroutine.clone();
-        
+
         loop {
             self.subroutine.fixup();
             for offset in 0..(self.len() - 1) {
-                if !allowed(&self.subroutine[offset]) {
-                    self.mut_at(Insn::next_opcode, offset);
-                }
                 if !self.subroutine[offset].allowed_in_pure_functions() && self.pure_function {
                     self.mut_at(Insn::next_opcode, offset);
                 }
                 RegPairFixup(&mut self.subroutine).fixup();
+                SdccCall1Constraint::new(&mut self.subroutine).fixup();
                 if self.peep_enable {
                     crate::peephole::PeepholeOptimizer::new(&mut self.subroutine).fixup();
                 }
@@ -287,9 +243,6 @@ impl<Params: ParameterList, RetVal: ReturnValue> crate::Constrain<Insn>
 
     fn report(&self, offset: usize) -> Vec<String> {
         let mut report = self.subroutine.report(offset);
-        if !allowed(&self.subroutine[offset]) {
-            report.push("This opcode is disallowed in sdcccall(1)".to_string());
-        }
         if !self.subroutine[offset].allowed_in_pure_functions() && self.pure_function {
             report.push("This instruction is disallowed in pure functions".to_string());
         }
@@ -299,6 +252,9 @@ impl<Params: ParameterList, RetVal: ReturnValue> crate::Constrain<Insn>
         for r in
             crate::peephole::PeepholeOptimizer::new(&mut self.subroutine.clone()).report(offset)
         {
+            report.push(r);
+        }
+        for r in SdccCall1Constraint::new(&mut self.subroutine.clone()).report(offset) {
             report.push(r);
         }
         for reg in Register::all() {

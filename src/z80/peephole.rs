@@ -39,8 +39,8 @@ impl Peephole for Insn {
 
         let a_encoded = a.encode();
 
-        // pointless instructions that load from one register to the same register, like `ld c, c,`
-        for i in [0x40, 0x049, 0x52, 0x5b, 0x64, 0x6d, 0x7f] {
+        // pointless instructions that don't do anything, like `nop`, `ld c, c,`, etc.
+        for i in [0x00, 0x40, 0x049, 0x52, 0x5b, 0x64, 0x6d, 0x7f] {
             if a_encoded[0] == i {
                 return true;
             }
@@ -51,23 +51,47 @@ impl Peephole for Insn {
         // this sequence can be replaced by `ld bc, something`.
         cp!(&a_encoded, &b_encoded, &[0x01], &[[0x06], [0x0e]]);
 
-        // pointless sequences that perform some operation on A, and then overwrite it
+        // pointless sequences that immediate load into A, and then performs some ALU operation on
+        // it (a real compiler would just constant fold these two instructions together)
         cp!(
             &a_encoded,
             &b_encoded,
             &[0x3e],
-            &[[0x3b], [0x3c], [0x3d], [0x3e], [0xc6], [0xce], [0xdb], [0xde]]
+            &[[0x3c], [0x3d], [0x3e], [0x87], [0xc6], [0xce]]
+        );
+
+        // pointless sequences that perform some operation on A, and then overwrite it
+        cp!(
+            &b_encoded,
+            &a_encoded,
+            &[0x3e],
+            &[
+                [0x3d],
+                [0x3c],
+                [0x3e],
+                [0x87],
+                [0x8f],
+                [0x9f],
+                [0xc6],
+                [0xce],
+                [0xde]
+            ]
         );
 
         // No need for two consecutive immediate add/sub instructions
         let sub_and_add = [[0xc6], [0xd6], [0xce], [0xde]];
         for op in sub_and_add {
-            cp!( &a_encoded, &b_encoded, &op, &sub_and_add);
+            cp!(&a_encoded, &b_encoded, &op, &sub_and_add);
         }
 
         // There's no need for an unconditional return instruction to be preceded by another return
         // instruction
-        cp!(&a_encoded, &b_encoded, &[0xc9], &[[0xc0, 0xd0, 0xe0, 0xf0, 0xc8, 0xd8, 0xe8, 0xf8]]);
+        cp!(
+            &a_encoded,
+            &b_encoded,
+            &[0xc9],
+            &[[0xc0, 0xd0, 0xe0, 0xf0, 0xc8, 0xd8, 0xe8, 0xf8]]
+        );
 
         // There's no need to load into BC and then increment, decrement or load BC or B or C,
         // Same deal with DE and HL
@@ -83,7 +107,7 @@ impl Peephole for Insn {
 
         // instructions which could be scheduled either which way (that is, they are independent of
         // each other), but which are not in ascending numerical order.
-        cp!( &a_encoded, &b_encoded, &[0x3e], &[[0x33, 0x3b]]);
+        cp!(&a_encoded, &b_encoded, &[0x3e], &[[0x33, 0x3b]]);
 
         false
     }
