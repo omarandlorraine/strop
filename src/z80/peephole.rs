@@ -86,12 +86,9 @@ impl Peephole for Insn {
 
         // There's no need for an unconditional return instruction to be preceded by another return
         // instruction
-        cp!(
-            &a_encoded,
-            &b_encoded,
-            &[0xc9],
-            &[[0xc0, 0xd0, 0xe0, 0xf0, 0xc8, 0xd8, 0xe8, 0xf8]]
-        );
+        let return_instructions = [[0xc0, 0xd0, 0xe0, 0xf0, 0xc8, 0xd8, 0xe8, 0xf8]];
+        cp!(&a_encoded, &b_encoded, &[0xc9], &return_instructions);
+        cp!(&b_encoded, &a_encoded, &[0xc9], &return_instructions);
 
         // There's no need to load into BC and then increment, decrement or load BC or B or C,
         // Same deal with DE and HL
