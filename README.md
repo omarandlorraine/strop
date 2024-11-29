@@ -19,7 +19,6 @@ To see what strop could be used for:
 
  * [opt](examples/opt.rs) optimizes an existing machine code function
  * [gen](examples/gen.rs) generates a Z80 function matching the Rust function, after a fashion compiling Rust to Z80.
- * [report](examples/report.rs) performs static analysis on a given function, and print it out
  * [peephole](examples/peephole.rs) discovers lacunae in the peephole optimizers and other constraints
 
 ### Supported instruction sets:

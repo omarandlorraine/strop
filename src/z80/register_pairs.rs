@@ -21,11 +21,11 @@ use crate::Sequence;
 ///
 /// This is special-cased for reasons explained in the module-level doc comments.
 #[derive(Debug)]
-pub struct RegPairFixup<'a>(pub &'a mut Sequence<Insn>);
+pub struct RegPairFixup();
 
-impl RegPairFixup<'_> {
-    fn reads(&self, offset: usize, register: &Register) -> bool {
-        self.0
+impl RegPairFixup {
+    fn reads(&self, candidate: &Sequence<Insn>, offset: usize, register: &Register) -> bool {
+        candidate
             .iter()
             .skip(offset + 1)
             .any(|insn| insn.reads(register))
@@ -33,13 +33,14 @@ impl RegPairFixup<'_> {
 
     fn unnecessary_load(
         &self,
+        candidate: &Sequence<Insn>,
         offset: usize,
         opcode: &[u8],
         left: Register,
         right: Register,
     ) -> bool {
         use crate::Encode;
-        let enc = self.0[offset].encode();
+        let enc = candidate[offset].encode();
         if enc.len() < opcode.len() {
             return false;
         }
@@ -49,18 +50,18 @@ impl RegPairFixup<'_> {
 
         // We're looking at a register pair load. Let's check that both left and right are used by
         // subsequent instructions
-        if self.reads(offset, &left) && self.reads(offset, &right) {
+        if self.reads(candidate, offset, &left) && self.reads(candidate, offset, &right) {
             return false;
         }
         true
     }
 
-    fn check(&self, offset: usize) -> Option<&str> {
-        if self.unnecessary_load(offset, &[0x01], Register::B, Register::C) {
+    fn check(&self, candidate: &Sequence<Insn>, offset: usize) -> Option<&'static str> {
+        if self.unnecessary_load(candidate, offset, &[0x01], Register::B, Register::C) {
             Some("No need to load BC, since B and C is not used later")
-        } else if self.unnecessary_load(offset, &[0x11], Register::D, Register::E) {
+        } else if self.unnecessary_load(candidate, offset, &[0x11], Register::D, Register::E) {
             Some("No need to load DE, since E is not used later")
-        } else if self.unnecessary_load(offset, &[0x21], Register::H, Register::L) {
+        } else if self.unnecessary_load(candidate, offset, &[0x21], Register::H, Register::L) {
             Some("No need to load HL, since H and L is not used later")
         } else {
             None
@@ -68,20 +69,14 @@ impl RegPairFixup<'_> {
     }
 }
 
-impl Constrain<Insn> for RegPairFixup<'_> {
-    fn fixup(&mut self) {
-        for i in 0..(self.0.len() - 1) {
-            if self.check(i).is_some() {
-                self.0.mut_at(Insn::next_opcode, i);
+impl Constrain<Insn> for RegPairFixup {
+    fn fixup(&self, candidate: &mut Sequence<Insn>) -> Option<(usize, &'static str)> {
+        for i in 0..(candidate.len() - 1) {
+            if let Some(r) = self.check(candidate, i) {
+                candidate.mut_at(Insn::next_opcode, i);
+                return Some((i, r));
             }
         }
-    }
-
-    fn report(&self, offset: usize) -> Vec<String> {
-        if let Some(r) = self.check(offset) {
-            vec![r.to_string()]
-        } else {
-            vec![]
-        }
+        None
     }
 }

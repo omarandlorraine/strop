@@ -10,21 +10,15 @@
 
 use crate::z80::Insn;
 use crate::Constrain;
-use crate::Sequence;
 
 /// Performs static analysis making sure that instruction selection is consistent with the SDCC ABI
-#[derive(Debug)]
-pub struct SdccCall1Constraint<'a>(pub &'a mut Sequence<Insn>);
+#[derive(Debug, Default)]
+pub struct SdccCall1Constraint();
 
-impl SdccCall1Constraint<'_> {
-    /// builds a new `NotLive` struct.
-    pub fn new<'a>(seq: &'a mut Sequence<Insn>) -> SdccCall1Constraint<'a> {
-        SdccCall1Constraint::<'a>(seq)
-    }
-
-    fn check(&self, offset: usize) -> bool {
+impl SdccCall1Constraint {
+    fn check(&self, seq: &crate::Sequence<Insn>, offset: usize) -> bool {
         use crate::Encode;
-        let i = self.0[offset].encode()[0];
+        let i = seq[offset].encode()[0];
 
         [
             0x08, // ex af, af'
@@ -36,20 +30,14 @@ impl SdccCall1Constraint<'_> {
     }
 }
 
-impl Constrain<Insn> for SdccCall1Constraint<'_> {
-    fn fixup(&mut self) {
-        for i in 0..(self.0.len() - 1) {
-            while self.check(i) {
-                self.0.mut_at(Insn::next_opcode, i);
+impl Constrain<Insn> for SdccCall1Constraint {
+    fn fixup(&self, seq: &mut crate::Sequence<Insn>) -> Option<(usize, &'static str)> {
+        for i in 0..(seq.len() - 1) {
+            if self.check(seq, i) {
+                seq.mut_at(Insn::next_opcode, i);
+                return Some((i, "disallowed in SDCC ABI"));
             }
         }
-    }
-
-    fn report(&self, offset: usize) -> Vec<String> {
-        if self.check(offset) {
-            vec!["disallowed in SDCC ABI".to_string()]
-        } else {
-            vec![]
-        }
+        None
     }
 }

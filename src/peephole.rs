@@ -11,49 +11,38 @@ use crate::Sequence;
 /// instructions which a peephole optimizer would catch.
 ///
 /// The `report` method will point out where such a code sequence would be replaced.
-#[derive(Debug)]
-pub struct PeepholeOptimizer<'a, Insn>
+#[derive(Debug, Default)]
+pub struct PeepholeOptimizer<Insn>
 where
     Insn: Peephole,
 {
-    seq: &'a mut Sequence<Insn>,
+    i: std::marker::PhantomData<Insn>,
 }
 
-impl<Insn> PeepholeOptimizer<'_, Insn>
+impl<Insn> PeepholeOptimizer<Insn>
 where
     Insn: Peephole,
 {
-    /// builds a new `NotLive` struct.
-    pub fn new<'a>(seq: &'a mut Sequence<Insn>) -> PeepholeOptimizer<'a, Insn> {
-        PeepholeOptimizer::<'a, Insn> { seq }
-    }
-
-    fn check(&self, offset: usize) -> bool {
-        if offset >= self.seq.len() - 1 {
+    fn check(&self, seq: &Sequence<Insn>, offset: usize) -> bool {
+        if offset >= seq.len() - 1 {
             false
         } else {
-            Insn::check(&self.seq[offset], &self.seq[offset + 1])
+            Insn::check(&seq[offset], &seq[offset + 1])
         }
     }
 }
 
-impl<Insn> Constrain<Insn> for PeepholeOptimizer<'_, Insn>
+impl<Insn> Constrain<Insn> for PeepholeOptimizer<Insn>
 where
     Insn: Peephole + Iterable,
 {
-    fn fixup(&mut self) {
-        for offset in 0..(self.seq.len() - 1) {
-            while self.check(offset) {
-                self.seq.mut_at(Insn::modify, offset);
+    fn fixup(&self, seq: &mut Sequence<Insn>) -> Option<(usize, &'static str)> {
+        for offset in 0..(seq.len() - 1) {
+            if self.check(seq, offset) {
+                seq.mut_at(Insn::modify, offset);
+                return Some((offset, "peephole"));
             }
         }
-    }
-
-    fn report(&self, offset: usize) -> Vec<String> {
-        if self.check(offset) {
-            vec!["The next two instructions are peephole optimizable".to_string()]
-        } else {
-            vec![]
-        }
+        None
     }
 }

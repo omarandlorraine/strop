@@ -80,7 +80,6 @@ impl<
             }
             return false;
         }
-        self.candidate.fixup();
         if self.trace_enable {
             self.dasm();
         }

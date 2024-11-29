@@ -1,5 +1,6 @@
 use crate::z80::Insn;
 use crate::Constrain;
+use crate::Sequence;
 
 /// A struct that defines which constraints to apply to a search
 #[derive(Clone, Copy, Default, Debug)]
@@ -36,9 +37,7 @@ impl Constraints {
 }
 
 impl Constrain<Insn> for Constraints {
-    fn fixup(&mut self) {}
-
-    fn report(&self, _offset: usize) -> Vec<String> {
-        vec![]
+    fn fixup(&self, _candidate: &mut Sequence<Insn>) -> Option<(usize, &'static str)> {
+        None
     }
 }

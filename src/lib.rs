@@ -92,26 +92,13 @@ pub trait Encode<T> {
 /// A type implementing the Constraint trait can constrain the search space to, for example,
 /// leaf functions, or programs compatible with certain variants, or programs not liable to be
 /// modified by peephole optimization, etc. etc.
-pub trait Constrain<T> {
+pub trait Constrain<Insn> {
     /// Fixes the candidate up in a deterministic way, compatible with the `BruteForce` search.
-    fn fixup(&mut self);
+    fn fixup(&self, candidate: &mut Sequence<Insn>) -> Option<(usize, &'static str)>;
 
     /// Fixes the candidate up in a stochastic way
-    fn stochastic_fixup(&mut self) {
-        self.fixup();
-    }
-
-    /// Reports on whether this constraint would make any changes to the program
-    fn report(&self, offset: usize) -> Vec<String>;
-}
-
-/// Disassembles the code sequence, and prints out the lints along the way {
-pub fn report<I: std::fmt::Display, C: Constrain<I>>(sequence: &Sequence<I>, constraint: &C) {
-    for offset in 0..sequence.len() {
-        for report in constraint.report(offset) {
-            println!("\t; {report}");
-        }
-        println!("\t{}", sequence[offset]);
+    fn stochastic_fixup(&self, candidate: &mut Sequence<Insn>) -> Option<(usize, &'static str)> {
+        self.fixup(candidate)
     }
 }
 
