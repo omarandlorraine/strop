@@ -4,8 +4,24 @@
 
 use crate::Constrain;
 use crate::Iterable;
-use crate::Peephole;
 use crate::Sequence;
+
+pub trait Peephole {
+    //! A trait for very local peephole optimizations. It's generic across `T`, a type intended to
+    //! represent machine instructions.
+    //!
+    //! The default implementation is effectively a no-op.
+
+    /// Modifies the instruction
+    fn modify(&mut self) -> bool {
+        unreachable!();
+    }
+
+    /// Checks if two instructions may not follow eachother.
+    fn check(_a: &Self, _b: &Self) -> bool {
+        false
+    }
+}
 
 /// A constraint for checking that a code sequence does not contain any two consecutive
 /// instructions which a peephole optimizer would catch.

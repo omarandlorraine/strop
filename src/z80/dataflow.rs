@@ -99,7 +99,7 @@ impl Register {
     }
 }
 
-impl crate::DataFlow<Register> for Insn {
+impl crate::dataflow::DataFlow<Register> for Insn {
     fn reads(&self, t: &Register) -> bool {
         let d = self.decode();
 

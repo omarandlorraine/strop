@@ -1,5 +1,5 @@
+use crate::peephole::Peephole;
 use crate::z80::Insn;
-use crate::Peephole;
 
 fn cp1(a: &[u8], a2: &[u8]) -> bool {
     let len = a2.len();

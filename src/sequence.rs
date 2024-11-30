@@ -33,9 +33,9 @@ where
     }
 }
 
-impl<T: Iterable, U> crate::DataFlow<U> for Sequence<T>
+impl<T: Iterable, U> crate::dataflow::DataFlow<U> for Sequence<T>
 where
-    T: crate::DataFlow<U>,
+    T: crate::dataflow::DataFlow<U>,
 {
     fn reads(&self, t: &U) -> bool {
         for i in &self.0 {

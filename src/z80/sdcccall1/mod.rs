@@ -1,3 +1,4 @@
+use crate::dataflow::DataFlow;
 use crate::dataflow::NotLiveIn;
 use crate::test::Vals;
 use crate::z80::dataflow::Register;
@@ -6,7 +7,6 @@ use crate::z80::subroutine::Subroutine;
 use crate::z80::Emulator;
 use crate::z80::Insn;
 use crate::Callable;
-use crate::DataFlow;
 use crate::Sequence;
 use crate::StropError;
 

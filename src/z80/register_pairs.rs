@@ -11,10 +11,10 @@
 //!
 //! Therefore, this module implements conveniences for skipping these instructions.
 
+use crate::dataflow::DataFlow;
 use crate::z80::dataflow::Register;
 use crate::z80::Insn;
 use crate::Constrain;
-use crate::DataFlow;
 use crate::Sequence;
 
 /// Performs dataflow analysis of immediate register pair loads.
