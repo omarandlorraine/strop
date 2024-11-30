@@ -7,7 +7,7 @@ use strop::Callable;
 use strop::Disassemble;
 use strop::Iterable;
 
-fn target_function() -> SdccCall1 {
+fn target_function() -> SdccCall1<u16, u16> {
     // Construct some machine code.
     //
     // In a real world scenario maybe you'd read this in from assembly or something, but you can
@@ -19,15 +19,13 @@ fn target_function() -> SdccCall1 {
     // This is not a terribly efficient way to encode this program; you can save a byte and some
     // time with `LD HL, 7F40H` instead (a single 16-bit bit immediate load is more efficient than two
     // individual 8-bit loads) -- let's see if strop figures this out!
-    //
-    // When building a SdccCall1 callable we leave off the terminating RET instruction since when
-    // SdccCall1 builds, it adds one
 
     use strop::Goto;
 
     let mc = [
         Insn::new(&[0x26, 0x40]), // LD H,40H
         Insn::new(&[0x2e, 0x7f]), // LD L,7FH
+        Insn::new(&[0xc9]),       // RET
     ];
 
     // This machine code is callable using the sdcccall(1) calling convention.
@@ -38,6 +36,7 @@ fn target_function() -> SdccCall1 {
 
 fn main() {
     use strop::Iterable;
+
     let c = target_function();
 
     // you can call this function in a few different ways
@@ -48,7 +47,7 @@ fn main() {
     c.dasm();
 
     // you can do a bruteforce search for Z80 machine code programs implementing the same function
-    let mut bruteforce: BruteForce<u16, u16, SdccCall1, _> =
+    let mut bruteforce: BruteForce<u16, u16, SdccCall1<u16, u16>, _, _> =
         strop::BruteForce::new(c, SdccCall1::first());
 
     let bf = bruteforce.search().unwrap();

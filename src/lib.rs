@@ -25,6 +25,9 @@ pub mod m6809;
 #[cfg(feature = "z80")]
 pub mod z80;
 
+pub mod dataflow;
+pub mod peephole;
+
 mod sequence;
 pub use sequence::Sequence;
 
@@ -49,17 +52,6 @@ pub trait Iterable {
 
     /// Take one step. Returns true if the end of the iteration has not been reached.
     fn step(&mut self) -> bool;
-}
-
-pub trait PrunedSearch<Prune> {
-    //! A trait for performing a brute-force search that has some instructions pruned away. The type
-    //! Prune represents the prune.
-
-    /// Start from the beginning
-    fn first() -> Self;
-
-    /// Take one step. Returns true if the end of the iteration has not been reached.
-    fn pruned_step(&mut self, prune: &Prune) -> bool;
 }
 
 pub trait Random {
@@ -97,58 +89,17 @@ pub trait Encode<T> {
     fn encode(&self) -> Vec<T>;
 }
 
-/// Type `ConstraintViolation` represents the possibility that an unary or binary constraint has
-/// been violated.
-///
-/// If the constraints are satisfied and not violated, then this case is represented
-/// by the variant `Ok`. If a constraint has been violated, then if a suitable replacement would be
-/// found by successive calls to the `Iterable` trait's `step` method, then it is held in the
-/// `ReplaceWith` variant. If a constraint has been violated but no such replacement can be found,
-/// then this case is represented by the `Violation` variant.
-#[derive(Debug)]
-pub enum ConstraintViolation<T> {
-    /// The proposed value was not found to violate any unary constraints
-    Ok,
+/// A type implementing the Constraint trait can constrain the search space to, for example,
+/// leaf functions, or programs compatible with certain variants, or programs not liable to be
+/// modified by peephole optimization, etc. etc.
+pub trait Constrain<Insn> {
+    /// Fixes the candidate up in a deterministic way, compatible with the `BruteForce` search.
+    fn fixup(&self, candidate: &mut Sequence<Insn>) -> Option<(usize, &'static str)>;
 
-    /// The proposed value violated a constraint, and here is a proposed replacement. The proposed
-    /// replacement would also be found by successive calls to the `Iterable` trait's `step`
-    /// method.
-    ReplaceWith(T),
-
-    /// The proposed value violated a constraint, but we could not find a suitable replacement.
-    Violation,
-}
-
-/// A type could implement this trait to reduce the number of instructions considered.
-///
-/// This might be used to make sure the instructions only reads from the permitted registers or
-/// memory locations for example, or might write-protect regions of memory, or remove from
-/// consideration instructions incompatible with this or that CPU variant or whatever.
-pub trait Prune<T> {
-    /// Considers the `T` passed to this method, and if the instruction is to be pruned away from
-    /// the search, returns a `ConstraintViolation<T>` that describes how to proceed with the
-    /// search.
-    fn prune(&self, t: &T) -> ConstraintViolation<T>;
-}
-
-pub trait ConstraintSatisfaction<T> {
-    //! A trait for constraint solvers
-    /// Considers the `T` passed to this method, and checks if it violates any unary constraints.
-    fn unary(&self, t: &T) -> ConstraintViolation<T>;
-
-    /// Considers the two connected nodes of type `T`, and sees if they violate any binary
-    /// constraints.
-    fn binary(&self, a: &T, b: &T) -> ConstraintViolation<T>;
-}
-
-pub trait CallingConvention<SamplePoint, InputParameters, ReturnValue> {
-    //! A trait for calling conventions. A type which implements this trait can execute a function
-    //! taking the given argument(s), and return the function's return value.
-
-    /// Calls the given callable object, passing it the parameters of type `InputParameters`, and returning an
-    /// `ReturnValue`.
-    fn call(function: &SamplePoint, parameters: InputParameters)
-        -> Result<ReturnValue, StropError>;
+    /// Fixes the candidate up in a stochastic way
+    fn stochastic_fixup(&self, candidate: &mut Sequence<Insn>) -> Option<(usize, &'static str)> {
+        self.fixup(candidate)
+    }
 }
 
 /// Enumerates reasons why executing a function may fail
@@ -167,9 +118,6 @@ pub trait Callable<InputParameters, ReturnValue> {
     //! For example, these could be machine code programs associated with a particular calling
     //! convention ready for execution in an emulated environment, or they may be function
     //! pointers, or lisp expressions, etc.)
-
-    /// Performs a static analysis on the object
-    fn fixup(&mut self) {}
 
     /// Calls the given callable object
     fn call(&self, parameters: InputParameters) -> Result<ReturnValue, StropError>;
