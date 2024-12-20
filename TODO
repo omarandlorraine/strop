@@ -1,0 +1,27 @@
+here's a dsecription of a basic genetic alogrithm
+
+start with a population of random code sequences
+
+Selection:
+    this is about selecting the best performers and knocking off the worst
+    two methods:
+    1. Roulette wheel selection
+    2. Tournament selection
+
+Crossover:
+    pick two parents
+    take first half of parent A + second half of parent B to create child 1
+    take first half of parent B + second half of parent A to create child 2
+
+Mutation:
+    Pick a random point in the code sequence and mutate somethnig there.
+    Typically mutation rate is much lower than the crossover rate
+
+Elitism:
+    Pick the best solutions and just copy them to the next generation
+
+So generation by generation, the best fitness and average fitness will
+increase.
+But eventually this curve will taper off, which is normally a good time to
+terminate the search
+
