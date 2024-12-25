@@ -33,6 +33,9 @@ pub use sequence::Sequence;
 
 pub mod test;
 
+mod genetic;
+pub use genetic::Generate;
+
 mod bruteforce;
 pub use bruteforce::BruteForce;
 
@@ -52,6 +55,22 @@ pub trait Iterable {
 
     /// Take one step. Returns true if the end of the iteration has not been reached.
     fn step(&mut self) -> bool;
+}
+
+pub trait Mutate {
+    //! A trait for anything that can be randomly mutated
+
+    /// Mutates the object in some random way
+    fn mutate(&mut self);
+}
+
+pub trait Crossover {
+    //! A trait for taking two items having the same type, and producing a thrid item of the same
+    //! type, having a value being a mashup of the two parents. Such a thing is used in the genetic
+    //! algorithm
+
+    /// spawns a child from two parents
+    fn crossover(a: &Self, b: &Self) -> Self;
 }
 
 pub trait Random {

@@ -6,7 +6,7 @@ use rand;
 /// Returns a few representative values for a given type
 ///
 /// Useful for fuzz testing a Callable
-pub trait Vals {
+pub trait Vals: std::cmp::PartialEq + Copy {
     /// Returns a few representative values
     fn vals() -> Vec<Self>
     where
@@ -14,6 +14,9 @@ pub trait Vals {
 
     /// Returns a random value
     fn rand() -> Self;
+
+    /// Returns the difference between A and B
+    fn error(self, other: Self) -> f64;
 }
 
 impl Vals for bool {
@@ -23,6 +26,14 @@ impl Vals for bool {
 
     fn rand() -> Self {
         rand::random()
+    }
+
+    fn error(self, other: bool) -> f64 {
+        if self == other {
+            1.0
+        } else {
+            0.0
+        }
     }
 }
 
@@ -39,6 +50,10 @@ impl Vals for u8 {
 
     fn rand() -> Self {
         rand::random()
+    }
+
+    fn error(self, other: Self) -> f64 {
+        (self ^ other).count_ones() as f64
     }
 }
 
@@ -58,6 +73,10 @@ impl Vals for i8 {
     fn rand() -> Self {
         rand::random()
     }
+
+    fn error(self, other: Self) -> f64 {
+        (self ^ other).count_ones() as f64
+    }
 }
 
 impl Vals for i16 {
@@ -76,6 +95,10 @@ impl Vals for i16 {
     fn rand() -> Self {
         rand::random()
     }
+
+    fn error(self, other: Self) -> f64 {
+        (self ^ other).count_ones() as f64
+    }
 }
 
 impl Vals for u16 {
@@ -93,6 +116,10 @@ impl Vals for u16 {
     fn rand() -> Self {
         rand::random()
     }
+
+    fn error(self, other: Self) -> f64 {
+        (self ^ other).count_ones() as f64
+    }
 }
 
 impl<A: Vals + Copy, B: Vals + Copy> Vals for (A, B) {
@@ -108,6 +135,10 @@ impl<A: Vals + Copy, B: Vals + Copy> Vals for (A, B) {
 
     fn rand() -> Self {
         (A::rand(), B::rand())
+    }
+
+    fn error(self, other: Self) -> f64 {
+        self.0.error(other.0) + self.1.error(other.1)
     }
 }
 
@@ -126,6 +157,10 @@ impl<A: Vals + Copy, B: Vals + Copy, C: Vals + Copy> Vals for (A, B, C) {
 
     fn rand() -> Self {
         (A::rand(), B::rand(), C::rand())
+    }
+
+    fn error(self, other: Self) -> f64 {
+        self.0.error(other.0) + self.1.error(other.1) + self.2.error(other.2)
     }
 }
 
@@ -186,4 +221,24 @@ pub fn passes<P: Vals + Copy, R: Vals + std::cmp::PartialEq, T: Callable<P, R>>(
         }
     }
     Ok(true)
+}
+
+/// Checks if a callable passes the test suite.
+pub fn score<P: Vals, R: Vals + std::cmp::PartialEq, T: Callable<P, R>>(
+    callable: &T,
+    suite: &Vec<(P, R)>,
+) -> f64 {
+    let mut result = 0.0f64;
+    for t in suite {
+        match callable.call(t.0) {
+            Err(_) => {
+                // The function doesn't pass the test because of some error during execution
+                return f64::MAX;
+            }
+            Ok(r) => {
+                result += r.error(t.1);
+            }
+        }
+    }
+    result
 }
