@@ -60,6 +60,9 @@ pub trait Iterable {
 pub trait Mutate {
     //! A trait for anything that can be randomly mutated
 
+    /// Returns a random value
+    fn random() -> Self;
+
     /// Mutates the object in some random way
     fn mutate(&mut self);
 }
@@ -71,17 +74,6 @@ pub trait Crossover {
 
     /// spawns a child from two parents
     fn crossover(a: &Self, b: &Self) -> Self;
-}
-
-pub trait Random {
-    //! A trait for things that can be searched through randomly. For example, the stochastic
-    //! search uses this.
-
-    /// Start from a random point
-    fn random() -> Self;
-
-    /// Take a step in a random direction
-    fn step(&mut self);
 }
 
 pub trait Goto<SamplePoint> {
