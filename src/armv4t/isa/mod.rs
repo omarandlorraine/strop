@@ -1,6 +1,7 @@
 //! Module for representing ARMv4T machine code instructions.
 
 pub mod decode;
+mod mutate;
 
 /// Represents an ARMv4T machine code instruction.
 #[derive(Clone, Copy, Default, PartialOrd, PartialEq)]
@@ -74,6 +75,14 @@ impl Insn {
             }
         }
         Self(i)
+    }
+
+    /// Makes sure that the instruction is a valid one. If it does not encode a valid instruction
+    /// it gets incremented until it does. If this approach does not result in a valid instruction,
+    /// the method returns false.
+    pub fn fixup(&mut self) -> bool {
+        // TODO: PSR instructions shouldn't ever take PC or SP or LR as their argument
+        true
     }
 }
 
