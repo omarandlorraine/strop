@@ -26,6 +26,7 @@ pub mod m6809;
 pub mod z80;
 
 pub mod dataflow;
+pub mod objectives;
 pub mod peephole;
 
 mod sequence;
@@ -140,4 +141,8 @@ impl<InputParameters, ReturnValue> Callable<InputParameters, ReturnValue>
     fn call(&self, parameters: InputParameters) -> Result<ReturnValue, StropError> {
         (self)(parameters)
     }
+}
+
+pub trait Objective<Something> {
+    fn score(&self, something: &Something) -> f64;
 }
