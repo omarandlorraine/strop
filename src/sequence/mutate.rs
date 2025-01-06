@@ -7,7 +7,11 @@ use rand::Rng;
 impl<Insn: Mutate> Sequence<Insn> {
     fn random_offset(&self) -> usize {
         let mut rng = rand::thread_rng();
-        rng.gen_range(0..self.0.len())
+        if self.0.is_empty() {
+            0
+        } else {
+            rng.gen_range(0..self.0.len())
+        }
     }
 
     /// Deletes a randomly selected instruction
@@ -77,5 +81,23 @@ impl<Insn: Mutate> Mutate for Sequence<Insn> {
             4 => self.mutate_random(),
             _ => unreachable!(),
         }
+    }
+}
+
+impl<Insn: Copy> crate::Crossover for Sequence<Insn> {
+    fn crossover(a: &Self, b: &Self) -> Self {
+        let min_len = usize::min(a.len(), b.len());
+        let crossover_point = if min_len == 0 {
+            0
+        } else {
+            rand::thread_rng().gen_range(0..min_len)
+        };
+        Self(
+            a.iter()
+                .take(crossover_point)
+                .chain(b.iter().skip(crossover_point))
+                .map(|i| i.clone())
+                .collect(),
+        )
     }
 }
