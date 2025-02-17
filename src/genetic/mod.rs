@@ -1,9 +1,6 @@
 mod generate;
 pub use generate::Generate;
 
-mod optimize;
-pub use optimize::Optimize;
-
 use crate::test::Vals;
 use crate::Callable;
 
@@ -35,15 +32,6 @@ impl<InputParameters: Vals, ReturnValue: Vals, U: Callable<InputParameters, Retu
         };
         s.retest(tests);
         s
-    }
-
-    pub fn new_with_score(candidate: U, score: f64) -> Self {
-        Self {
-            score,
-            candidate,
-            input: Default::default(),
-            ret: Default::default(),
-        }
     }
 
     fn retest(&mut self, tests: &Vec<(InputParameters, ReturnValue)>) {

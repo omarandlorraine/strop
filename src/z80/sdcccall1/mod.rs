@@ -117,6 +117,8 @@ impl<Params: ParameterList, RetVal: ReturnValue> SdccCall1<Params, RetVal> {
         crate::BruteForce::new(target_function, self)
     }
 
+    /// Instantiates a strop::Generate object that searches over functions complying with the
+    /// sdcccall(1) ABI.
     pub fn stochastic<C: Clone + Callable<Params, RetVal>>(
         self,
         target_function: C,

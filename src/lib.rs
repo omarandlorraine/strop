@@ -143,6 +143,11 @@ impl<InputParameters, ReturnValue> Callable<InputParameters, ReturnValue>
     }
 }
 
+/// Objective function. The genetic algorithms try to minimize this function. Possible functions
+/// include "length of program" (the algorithm tries to reduce this, so it will find the shortest
+/// program), and "average runtime in machine cycles" (the algorithm tries to reduce this, so it
+/// will find faster programs).
 pub trait Objective<Something> {
+    /// Evaluates the objective function
     fn score(&self, something: &Something) -> f64;
 }

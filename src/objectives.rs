@@ -4,6 +4,7 @@ use crate::Objective;
 use crate::Sequence;
 
 /// Objective function for optimizing for size
+#[derive(Debug, Default)]
 pub struct Short;
 
 impl<I> Objective<Sequence<I>> for Short
