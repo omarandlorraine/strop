@@ -49,18 +49,18 @@ fn main() {
 
     let target_function = dec_to_hex as fn(u8) -> Result<u8, StropError>;
 
-    // you can do a bruteforce search for Z80 machine code programs implementing the same function
-    let mut bruteforce = SdccCall1::<u8, u8>::new()
+    let mut genetic = SdccCall1::<u8, u8>::new()
         // By specifying that we want a pure function, and that the function is a leaf function, we
         // can constrain the search space even further
         .pure()
         .leaf()
-        .bruteforce(target_function)
-        .trace();
+        .stochastic(target_function)
+        //.optimize(strop::objectives::Short)
+        //.trace()
+        ;
 
-    let bf = bruteforce.search().unwrap();
+    let g = genetic.search();
 
-    println!("An equivalent subroutine we found by bruteforce search,");
-    println!("after {} iterations.", bruteforce.count);
-    bf.dasm();
+    println!("An equivalent subroutine we found by stochastic search,");
+    g.dasm();
 }

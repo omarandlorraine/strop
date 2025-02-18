@@ -7,6 +7,8 @@ use crate::z80::subroutine::Subroutine;
 use crate::z80::Emulator;
 use crate::z80::Insn;
 use crate::Callable;
+use crate::Goto;
+use crate::Iterable;
 use crate::Sequence;
 use crate::StropError;
 
@@ -113,6 +115,15 @@ impl<Params: ParameterList, RetVal: ReturnValue> SdccCall1<Params, RetVal> {
     ) -> crate::BruteForce<Params, RetVal, C, SdccCall1<Params, RetVal>, Insn> {
         self.peep_enable = true;
         crate::BruteForce::new(target_function, self)
+    }
+
+    /// Instantiates a strop::Generate object that searches over functions complying with the
+    /// sdcccall(1) ABI.
+    pub fn stochastic<C: Clone + Callable<Params, RetVal>>(
+        self,
+        target_function: C,
+    ) -> crate::Generate<Params, RetVal, C, SdccCall1<Params, RetVal>> {
+        crate::genetic::Generate::new(target_function)
     }
 
     /// Makes sure that the search space includes only pure functions (i.e., those that do not have
@@ -240,5 +251,36 @@ impl<Params: ParameterList, RetVal: ReturnValue> crate::Constrain<Insn>
             }
         }
         None
+    }
+}
+
+impl<Params: ParameterList, RetVal: ReturnValue> crate::Crossover for SdccCall1<Params, RetVal> {
+    fn crossover(a: &Self, b: &Self) -> Self {
+        use crate::Constrain;
+        let mut sub = Sequence::<Insn>::crossover(&a.seq, &b.seq);
+
+        sub.step();
+        while let Some(_r) = a.fixup(&mut sub) {}
+        let mut s = a.clone();
+        s.goto(&sub);
+        s
+    }
+}
+
+impl<Params: ParameterList, RetVal: ReturnValue> crate::Mutate for SdccCall1<Params, RetVal> {
+    fn random() -> Self {
+        use crate::Iterable;
+        let mut s = Self::first();
+        s.seq = Sequence::random();
+        s
+    }
+
+    fn mutate(&mut self) {
+        use crate::Constrain;
+        let mut sub = self.seq.clone();
+
+        sub.mutate();
+        while let Some(_r) = self.fixup(&mut sub) {}
+        self.goto(&sub);
     }
 }

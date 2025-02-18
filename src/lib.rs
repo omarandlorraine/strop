@@ -26,12 +26,16 @@ pub mod m6809;
 pub mod z80;
 
 pub mod dataflow;
+pub mod objectives;
 pub mod peephole;
 
 mod sequence;
 pub use sequence::Sequence;
 
 pub mod test;
+
+mod genetic;
+pub use genetic::Generate;
 
 mod bruteforce;
 pub use bruteforce::BruteForce;
@@ -54,15 +58,23 @@ pub trait Iterable {
     fn step(&mut self) -> bool;
 }
 
-pub trait Random {
-    //! A trait for things that can be searched through randomly. For example, the stochastic
-    //! search uses this.
+pub trait Mutate {
+    //! A trait for anything that can be randomly mutated
 
-    /// Start from a random point
+    /// Returns a random value
     fn random() -> Self;
 
-    /// Take a step in a random direction
-    fn step(&mut self);
+    /// Mutates the object in some random way
+    fn mutate(&mut self);
+}
+
+pub trait Crossover {
+    //! A trait for taking two items having the same type, and producing a thrid item of the same
+    //! type, having a value being a mashup of the two parents. Such a thing is used in the genetic
+    //! algorithm
+
+    /// spawns a child from two parents
+    fn crossover(a: &Self, b: &Self) -> Self;
 }
 
 pub trait Goto<SamplePoint> {
@@ -129,4 +141,13 @@ impl<InputParameters, ReturnValue> Callable<InputParameters, ReturnValue>
     fn call(&self, parameters: InputParameters) -> Result<ReturnValue, StropError> {
         (self)(parameters)
     }
+}
+
+/// Objective function. The genetic algorithms try to minimize this function. Possible functions
+/// include "length of program" (the algorithm tries to reduce this, so it will find the shortest
+/// program), and "average runtime in machine cycles" (the algorithm tries to reduce this, so it
+/// will find faster programs).
+pub trait Objective<Something> {
+    /// Evaluates the objective function
+    fn score(&self, something: &Something) -> f64;
 }

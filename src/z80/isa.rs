@@ -98,6 +98,30 @@ impl crate::Encode<u8> for Insn {
     }
 }
 
+impl crate::Mutate for Insn {
+    fn random() -> Self {
+        let mut s = Self(rand::random());
+        s.fixup();
+        s
+    }
+
+    fn mutate(&mut self) {
+        use rand::Rng;
+        let offset = rand::thread_rng().gen_range(0..5);
+
+        if rand::random() {
+            // could flip a bit in the instruction word
+            let mask: u8 = 1 << rand::thread_rng().gen_range(0..8);
+            self.0[offset] ^= mask;
+        } else {
+            // could completely change the instruction word to something completely different
+            self.0[offset] = rand::random()
+        }
+
+        self.fixup();
+    }
+}
+
 impl Insn {
     /// Constructs a new Insn from a slice of bytes
     pub fn new(mc: &[u8]) -> Self {
