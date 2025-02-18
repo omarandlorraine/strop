@@ -148,7 +148,7 @@ where
 impl<T> Sequence<T> {
     fn random_offset(&self) -> usize {
         use rand::Rng;
-        rand::rng().random_range(0..self.0.len())
+        rand::thread_rng().gen_range(0..self.0.len())
     }
 }
 
@@ -188,7 +188,7 @@ impl<T: Clone + Random> Random for Sequence<T> {
 
     fn step(&mut self) {
         use rand::Rng;
-        let choice = rand::rng().random_range(0..5);
+        let choice = rand::thread_rng().gen_range(0..5);
 
         match choice {
             0 => {
