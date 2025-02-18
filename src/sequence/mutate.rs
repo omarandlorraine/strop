@@ -95,7 +95,8 @@ impl<Insn: Copy> crate::Crossover for Sequence<Insn> {
         Self(
             a.iter()
                 .take(crossover_point)
-                .chain(b.iter().skip(crossover_point)).copied()
+                .chain(b.iter().skip(crossover_point))
+                .copied()
                 .collect(),
         )
     }
