@@ -1,4 +1,4 @@
-name: Tier 1
+name: Checks
 
 on:
   push:
