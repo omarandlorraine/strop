@@ -5,6 +5,8 @@ on:
     workflows: ["Tier 1"]
     types:
       - completed
+    branches:
+      - master
 
 env:
   CARGO_TERM_COLOR: always
