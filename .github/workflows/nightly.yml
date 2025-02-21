@@ -1,6 +1,10 @@
 name: nightly
 
 on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
   workflow_run:
     workflows: [Tier 1]
     types: [completed]
