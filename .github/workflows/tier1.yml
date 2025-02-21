@@ -1,4 +1,4 @@
-name: Rust
+name: Tier 1
 
 on:
   push:
@@ -16,11 +16,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: build
-      run: cargo build --verbose
-    - name: test
-      run: cargo test --lib
-    - name: lint
-      run: cargo clippy -- -Dwarnings
     - name: format
       run: cargo fmt --check
+    - name: lint
+      run: cargo clippy -- -Dwarnings
+    - name: test
+      run: cargo test
