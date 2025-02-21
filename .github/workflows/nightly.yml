@@ -2,11 +2,8 @@ name: nightly
 
 on:
   workflow_run:
-    workflows: ["Tier 1"]
-    types:
-      - completed
-    branches:
-      - master
+    workflows: [Tier 1]
+    types: [completed]
 
 env:
   CARGO_TERM_COLOR: always
