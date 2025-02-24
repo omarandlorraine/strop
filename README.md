@@ -1,5 +1,5 @@
 # strop
-[![Build Status](https://github.com/omarandlorraine/strop/actions/workflows/rust.yml/badge.svg?branch=master)](https://github.com/omarandlorraine/strop/actions?workflow=Rust)
+[![Build Status](https://github.com/omarandlorraine/strop/actions/workflows/tier1.yml/badge.svg?branch=master)](https://github.com/omarandlorraine/strop/actions?workflow=Check)
 [![crates.io](https://img.shields.io/crates/v/strop)](https://crates.io/crates/strop)
 
 strop, the *st*ochastic *op*timizer, written in *R*ust.
@@ -26,16 +26,11 @@ To see what strop could be used for:
 Strop currently has the following back-ends:
 
  * **armv4t**, which targets the ARMv4T processors, such as the ARM7TDMI
-    * [![Build Status](https://github.com/omarandlorraine/strop/actions/workflows/armv4t.yml/badge.svg?branch=master)](https://github.com/omarandlorraine/strop/actions?workflow=armv4t)
  * **m68000**, which targets the Motorola 68000
-    * [![Build Status](https://github.com/omarandlorraine/strop/actions/workflows/m68000.yml/badge.svg?branch=master)](https://github.com/omarandlorraine/strop/actions?workflow=m68000)
     * NB. This back-end is gated by the `m68k` feature since it requires nightly Rust
  * **m6502**, targets various models of the MOS 6502
-    * [![Build Status](https://github.com/omarandlorraine/strop/actions/workflows/mos6502.yml/badge.svg?branch=master)](https://github.com/omarandlorraine/strop/actions?workflow=mos6502)
     * Supports the NMOS and CMOS variants and others, thanks to the
       [mos6502](https://github.com/mre/mos6502) dependency.
  * **m6809**, which targets the Motorola 6809
-    * [![Build Status](https://github.com/omarandlorraine/strop/actions/workflows/m6809.yml/badge.svg?branch=master)](https://github.com/omarandlorraine/strop/actions?workflow=m6809)
  * **z80**, which targets the Zilog Z80
-    * [![Build Status](https://github.com/omarandlorraine/strop/actions/workflows/z80.yml/badge.svg?branch=master)](https://github.com/omarandlorraine/strop/actions?workflow=z80)
 
