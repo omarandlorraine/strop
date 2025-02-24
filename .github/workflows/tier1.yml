@@ -1,4 +1,4 @@
-name: m68000
+name: Checks
 
 on:
   push:
@@ -16,11 +16,15 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Install nightly toolchain
-      run: rustup update nightly && rustup default nightly && rustup component add clippy 
-    - name: Build
-      run: cargo +nightly build --verbose --features m68k --no-default-features
-    - name: Test
+    - name: format
+      run: cargo fmt --check
+    - name: lint
+      run: cargo clippy -- -Dwarnings
+    - name: test
+      run: cargo test
+    - name: install nightly toolchain
+      run: rustup update nightly && rustup default nightly && rustup component add clippy
+    - name: nightly test
       run: cargo +nightly test --features m68k --no-default-features --lib
-    - name: Lint
+    - name: nightly lint
       run: cargo +nightly clippy --features m68k --no-default-features -- -Dwarnings
