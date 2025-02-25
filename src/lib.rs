@@ -22,6 +22,8 @@ pub mod m6502;
 pub mod m68000;
 #[cfg(feature = "m6809")]
 pub mod m6809;
+#[cfg(feature = "sm83")]
+pub mod sm83;
 #[cfg(feature = "z80")]
 pub mod z80;
 
