@@ -33,4 +33,4 @@ Strop currently has the following back-ends:
       [mos6502](https://github.com/mre/mos6502) dependency.
  * **m6809**, which targets the Motorola 6809
  * **z80**, which targets the Zilog Z80
-
+ * **sm83**, which targets the SM83, also known as the Gameboy CPU
