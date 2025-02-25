@@ -28,6 +28,8 @@ pub mod mips;
 pub mod sm83;
 #[cfg(feature = "z80")]
 pub mod z80;
+#[cfg(any(feature = "sm83", feature = "z80"))]
+pub mod i80;
 
 mod sequence;
 pub use sequence::Sequence;
