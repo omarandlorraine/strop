@@ -1,7 +1,7 @@
 //! A module for the representation of SM83 machine instructions.
 
 /// Represents a SM83 machine instruction
-#[derive(Clone, Copy, PartialOrd, PartialEq, Default)]
+#[derive(Clone, Copy, PartialOrd, PartialEq, Debug, Default)]
 pub struct Insn([u8; 3]);
 
 impl crate::Iterable for Insn {
@@ -10,7 +10,6 @@ impl crate::Iterable for Insn {
     }
 
     fn step(&mut self) -> bool {
-        use crate::Encode;
         if self.0[0] == 0xff {
             false
         } else {
@@ -22,6 +21,10 @@ impl crate::Iterable for Insn {
 }
 
 impl Insn {
+    fn len(&self) -> usize {
+        crate::i80::parse_sm83(&self.0).len
+    }
+
     fn fixup(&mut self) {
         while matches!(
             self.0[0],
@@ -29,6 +32,15 @@ impl Insn {
         ) {
             // illegal opcodes.
             self.0 = [self.0[0] + 1, 0, 0];
+        }
+    }
+
+    fn incr_at_offset(&mut self, offset: usize) {
+        if let Some(nb) = self.0[offset].checked_add(1) {
+            self.0[offset] = nb;
+        } else {
+            self.0[offset] = 0;
+            self.incr_at_offset(offset - 1)
         }
     }
 }
