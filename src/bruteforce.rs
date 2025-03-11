@@ -1,8 +1,7 @@
 use crate::test;
 use crate::test::Vals;
 use crate::Callable;
-use crate::Constrain;
-use crate::Iterable;
+use crate::Step;
 use crate::StropError;
 
 /// Performs a brute force search over a given search space `U`
@@ -11,7 +10,7 @@ pub struct BruteForce<
     InputParameters,
     ReturnValue: Clone,
     T: Callable<InputParameters, ReturnValue> + Clone,
-    U: Callable<InputParameters, ReturnValue> + Iterable,
+    U: Callable<InputParameters, ReturnValue> + Step,
     Insn: Clone,
 > {
     target_function: T,
@@ -32,10 +31,9 @@ impl<
         ReturnValue: Vals + std::cmp::PartialEq + Clone,
         T: Callable<InputParameters, ReturnValue> + Clone,
         U: Callable<InputParameters, ReturnValue>
-            + Iterable
+            + Step
             + Clone
             + crate::Disassemble
-            + Constrain<Insn>,
     > BruteForce<InputParameters, ReturnValue, T, U, Insn>
 {
     /// Constructs a new `BruteForce`
@@ -72,18 +70,12 @@ impl<
     }
 
     /// Advances the candidate to the next position in the search space
-    pub fn step(&mut self) -> bool {
+    pub fn step(&mut self) -> crate::IterationResult {
         self.count += 1;
-        if !self.candidate.step() {
-            if self.trace_enable {
-                self.dasm();
-            }
-            return false;
-        }
         if self.trace_enable {
             self.dasm();
         }
-        true
+        self.candidate.next()
     }
 
     /// Tests that the candidate matches the target function

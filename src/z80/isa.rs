@@ -4,19 +4,19 @@
 #[derive(Clone, Copy, PartialOrd, PartialEq, Default)]
 pub struct Insn([u8; 5]);
 
-impl crate::Iterable for Insn {
+impl crate::Step for Insn {
     fn first() -> Self {
         Self([0, 0, 0, 0, 0])
     }
 
-    fn step(&mut self) -> bool {
+    fn next(&mut self) -> crate::IterationResult {
         use crate::Encode;
         if self.0[0] == 0xff {
-            false
+            Err(crate::StepError::End)
         } else {
             self.incr_at_offset(self.len() - 1);
             self.fixup();
-            true
+            Ok(())
         }
     }
 }
@@ -66,25 +66,32 @@ impl Insn {
     }
 
     /// Increments the opcode, and sets all subsequent bytes (i.e. the operand) to 0.
-    pub fn next_opcode(&mut self) -> bool {
+    pub fn next_opcode(&mut self) -> crate::IterationResult {
         if self.0[0] == 0xff {
-            false
+            Err(crate::StepError::End)
         } else if self.0[0] == 0xcb && self.0[1] < 0xff {
             self.0[1] += 1;
             self.0[2] = 0;
             self.0[3] = 0;
             self.0[4] = 0;
-            self.fixup();
-            true
+            self.fixup()
         } else {
             self.0[0] += 1;
             self.0[1] = 0;
             self.0[2] = 0;
             self.0[3] = 0;
             self.0[4] = 0;
-            self.fixup();
-            true
+            self.fixup()
         }
+    }
+}
+
+impl crate::subroutine::SubroutineT for Insn {
+    fn make_return(&mut self) -> crate::IterationResult {
+        if self.0[0] == 0xc9 {
+            return Ok(());
+        }
+        self.next_opcode()
     }
 }
 
@@ -157,7 +164,7 @@ impl Insn {
         }
     }
 
-    fn fixup(&mut self) {
+    fn fixup(&mut self) -> crate::IterationResult {
         if matches!(self.0[0], 0xdd | 0xed) {
             // since this is a prefixed instruction, make sure it's an instruction that actually
             // needs the prefix
@@ -167,13 +174,13 @@ impl Insn {
             ] {
                 if self.0[1] < opcode {
                     self.0[1] = opcode;
-                    return;
+                    return Ok(());
                 }
             }
 
             // After this range are instructions which do not need the dd/ed prefix.
             self.0 = [self.0[0] + 1, 0, 0, 0, 0];
-            return;
+            return Ok(());
         }
 
         if self.0[0] == 0xfd {
@@ -182,13 +189,14 @@ impl Insn {
             for opcode in [0x09] {
                 if self.0[1] < opcode {
                     self.0[1] = opcode;
-                    return;
+                    return Ok(());
                 }
             }
 
             // After this range are instructions which do not need the dd/ed prefix.
             self.0 = [self.0[0] + 1, 0, 0, 0, 0];
         }
+        Ok(())
     }
 }
 

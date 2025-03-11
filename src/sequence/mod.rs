@@ -3,7 +3,7 @@
 use crate::Disassemble;
 use crate::Encode;
 use crate::Goto;
-use crate::Iterable;
+use crate::Step;
 use std::ops::{Index, IndexMut};
 
 mod mutate;
@@ -12,7 +12,7 @@ mod mutate;
 /// sequences.
 ///
 /// This datatype is intended to represent a point in a search space, and so `impl`s
-/// strop's `Random` and `Iterable` traits.  This means that strop can search across the search
+/// strop's `Random` and `Step` traits.  This means that strop can search across the search
 /// space of things represented by the `Sequence<T>`.
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Sequence<T>(Vec<T>);
@@ -34,52 +34,7 @@ where
     }
 }
 
-impl<T: Iterable, U> crate::dataflow::DataFlow<U> for Sequence<T>
-where
-    T: crate::dataflow::DataFlow<U>,
-{
-    fn reads(&self, t: &U) -> bool {
-        for i in &self.0 {
-            if i.reads(t) {
-                return true;
-            }
-            if i.writes(t) {
-                return false;
-            }
-        }
-        false
-    }
-
-    fn writes(&self, t: &U) -> bool {
-        for i in &self.0 {
-            if i.writes(t) {
-                return true;
-            }
-        }
-        false
-    }
-
-    fn modify(&mut self) -> bool {
-        self.step_at(0);
-        true
-    }
-
-    fn make_read(&mut self, t: &U) -> bool {
-        if !self.0[0].make_read(t) {
-            self.modify();
-        }
-        true
-    }
-
-    fn make_write(&mut self, t: &U) -> bool {
-        if !self.0[0].make_write(t) {
-            self.modify();
-        }
-        true
-    }
-}
-
-impl<T: Iterable> Sequence<T> {
+impl<T: Step> Sequence<T> {
     /// Returns the index to the last element in the sequence
     pub fn last_instruction_offset(&self) -> usize {
         self.0.len() - 1
@@ -146,7 +101,7 @@ where
     }
 }
 
-impl<T: Iterable> Sequence<T> {
+impl<T: Step> Sequence<T> {
     /// steps the sequence at the given offset
     pub fn step_at(&mut self, offs: usize) {
         let mut offset = offs;
@@ -154,7 +109,7 @@ impl<T: Iterable> Sequence<T> {
             if offset == self.0.len() {
                 self.0.push(T::first());
                 break;
-            } else if !self.0[offset].step() {
+            } else if self.0[offset].next().is_err() {
                 self.0[offset] = T::first();
                 offset += 1;
             } else {
@@ -164,14 +119,14 @@ impl<T: Iterable> Sequence<T> {
     }
 }
 
-impl<T: Clone + Iterable> Iterable for Sequence<T> {
+impl<T: Clone + Step> Step for Sequence<T> {
     fn first() -> Self {
         Self(vec![])
     }
 
-    fn step(&mut self) -> bool {
+    fn next(&mut self) -> crate::IterationResult {
         self.step_at(0);
-        true
+        Ok(())
     }
 }
 
@@ -180,3 +135,5 @@ impl<SamplePoint: std::clone::Clone> Goto<SamplePoint> for Sequence<SamplePoint>
         self.0 = other.to_vec();
     }
 }
+
+impl<SamplePoint: crate::subroutine::SubroutineT> crate::subroutine::AsSubroutine<Sequence<SamplePoint>> for Sequence<SamplePoint> {}

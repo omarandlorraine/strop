@@ -1,17 +1,16 @@
 //! A back-end targeting the Z80, a well-known 8-bit retro CPU.
-mod constraints;
-mod dataflow;
 mod diss;
 mod emu;
 mod isa;
-mod peephole;
 mod sdcccall1;
-mod subroutine;
 
-pub mod register_pairs;
-
-pub use constraints::Constraints;
 pub use emu::Emulator;
 pub use isa::Insn;
 pub use sdcccall1::SdccCall1;
-pub use subroutine::Subroutine;
+
+pub fn subroutine() -> crate::Subroutine<crate::Sequence<Insn>> {
+    use crate::Step;
+    use crate::subroutine::AsSubroutine;
+
+    crate::Sequence::<Insn>::first().as_subroutine()
+}

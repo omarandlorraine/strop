@@ -14,20 +14,20 @@
 #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 #![forbid(unsafe_code)]
 
-#[cfg(feature = "armv4t")]
-pub mod armv4t;
-#[cfg(feature = "m6502")]
-pub mod m6502;
-#[cfg(feature = "m68k")]
-pub mod m68000;
-#[cfg(feature = "m6809")]
-pub mod m6809;
+//#[cfg(feature = "armv4t")]
+//pub mod armv4t;
+//#[cfg(feature = "m6502")]
+//pub mod m6502;
+//#[cfg(feature = "m68k")]
+//pub mod m68000;
+//#[cfg(feature = "m6809")]
+//pub mod m6809;
 #[cfg(feature = "z80")]
 pub mod z80;
 
-pub mod dataflow;
-pub mod objectives;
-pub mod peephole;
+// pub mod dataflow;
+// pub mod objectives;
+// pub mod peephole;
 
 mod sequence;
 pub use sequence::Sequence;
@@ -40,22 +40,40 @@ pub use genetic::Generate;
 mod bruteforce;
 pub use bruteforce::BruteForce;
 
+mod subroutine;
+pub use subroutine::Subroutine;
+
+pub trait Step {
+    /// Advances the value to the next state.
+    /// Returns `Ok(())` if the step was successful.
+    /// Returns `Err(StepError::End)` if the end has been reached.
+    fn next(&mut self) -> IterationResult;
+
+    /// Returns the first value
+    fn first() -> Self;
+}
+
+/// Enum representing possible errors when stepping
+#[derive(Debug, PartialEq, Eq)]
+pub enum StepError {
+    End, // Indicates that the iteration has reached its limit
+}
+
+/// Return type for in-place iteration
+pub type IterationResult = Result<(), StepError>;
+
+pub trait Run<Emulator> {
+    //! A trait for running some code sequence on some emulator or VM
+
+    /// Run the code sequence
+    fn run(&self, emulator: &mut Emulator);
+}
+
 pub trait Disassemble {
     //! A trait for printing out the disassembly of an instruction, a subroutine, or anything else
 
     /// Disassemble to stdout
     fn dasm(&self);
-}
-
-pub trait Iterable {
-    //! A trait for anything that can be iterated across in an exhaustive manner. For example, the
-    //! Bruteforce search uses this.
-
-    /// Start from the beginning
-    fn first() -> Self;
-
-    /// Take one step. Returns true if the end of the iteration has not been reached.
-    fn step(&mut self) -> bool;
 }
 
 pub trait Mutate {
@@ -99,19 +117,6 @@ pub trait Encode<T> {
 
     /// Return the encoding
     fn encode(&self) -> Vec<T>;
-}
-
-/// A type implementing the Constraint trait can constrain the search space to, for example,
-/// leaf functions, or programs compatible with certain variants, or programs not liable to be
-/// modified by peephole optimization, etc. etc.
-pub trait Constrain<Insn> {
-    /// Fixes the candidate up in a deterministic way, compatible with the `BruteForce` search.
-    fn fixup(&self, candidate: &mut Sequence<Insn>) -> Option<(usize, &'static str)>;
-
-    /// Fixes the candidate up in a stochastic way
-    fn stochastic_fixup(&self, candidate: &mut Sequence<Insn>) -> Option<(usize, &'static str)> {
-        self.fixup(candidate)
-    }
 }
 
 /// Enumerates reasons why executing a function may fail
