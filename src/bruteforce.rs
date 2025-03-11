@@ -113,7 +113,7 @@ impl<
     /// Returns the next function that matches the target function
     pub fn search(&mut self) -> Option<U> {
         loop {
-            self.step();
+            self.step().ok()?;
             if self.test() {
                 return Some(self.candidate.clone());
             }

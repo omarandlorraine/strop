@@ -43,6 +43,8 @@ pub use bruteforce::BruteForce;
 mod subroutine;
 pub use subroutine::Subroutine;
 
+/// Impl this on a datatype that may be iterated by mutating the datum in place. This is then used
+/// by the library to perform bruteforce searches and such
 pub trait Step {
     /// Advances the value to the next state.
     /// Returns `Ok(())` if the step was successful.
@@ -56,7 +58,8 @@ pub trait Step {
 /// Enum representing possible errors when stepping
 #[derive(Debug, PartialEq, Eq)]
 pub enum StepError {
-    End, // Indicates that the iteration has reached its limit
+    /// No more possible values.
+    End,
 }
 
 /// Return type for in-place iteration

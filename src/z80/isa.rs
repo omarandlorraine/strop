@@ -15,8 +15,7 @@ impl crate::Step for Insn {
             Err(crate::StepError::End)
         } else {
             self.incr_at_offset(self.len() - 1);
-            self.fixup();
-            Ok(())
+            self.fixup()
         }
     }
 }
@@ -108,7 +107,7 @@ impl crate::Encode<u8> for Insn {
 impl crate::Mutate for Insn {
     fn random() -> Self {
         let mut s = Self(rand::random());
-        s.fixup();
+        s.fixup().ok(); // TODO, check for this condition and put it right
         s
     }
 
@@ -125,7 +124,7 @@ impl crate::Mutate for Insn {
             self.0[offset] = rand::random()
         }
 
-        self.fixup();
+        self.fixup().ok(); // TODO, check for this condition and put it right
     }
 }
 
