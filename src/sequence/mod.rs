@@ -72,6 +72,12 @@ impl<T> std::ops::Deref for Sequence<T> {
     }
 }
 
+impl<T> std::ops::DerefMut for Sequence<T> {
+    fn deref_mut(&mut self) -> &mut Vec<T> {
+        &mut self.0
+    }
+}
+
 impl<T> IntoIterator for Sequence<T> {
     type Item = T;
     type IntoIter = <Vec<T> as IntoIterator>::IntoIter;
@@ -136,4 +142,7 @@ impl<SamplePoint: std::clone::Clone> Goto<SamplePoint> for Sequence<SamplePoint>
     }
 }
 
-impl<SamplePoint: crate::subroutine::SubroutineT> crate::subroutine::AsSubroutine<Sequence<SamplePoint>> for Sequence<SamplePoint> {}
+impl<SamplePoint: crate::subroutine::MakeReturn + Step>
+    crate::subroutine::AsSubroutine<Sequence<SamplePoint>> for Sequence<SamplePoint>
+{
+}

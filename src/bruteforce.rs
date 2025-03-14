@@ -2,42 +2,34 @@ use crate::test;
 use crate::test::Vals;
 use crate::Callable;
 use crate::Step;
-use crate::StropError;
 
-/// Performs a brute force search over a given search space `U`
+/// Performs a brute force search over a given search space `Searchable`
 #[derive(Debug, Clone)]
 pub struct BruteForce<
     InputParameters,
     ReturnValue: Clone,
-    T: Callable<InputParameters, ReturnValue> + Clone,
-    U: Callable<InputParameters, ReturnValue> + Step,
-    Insn: Clone,
+    TargetFunction: Callable<InputParameters, ReturnValue>,
+    Searchable: Callable<InputParameters, ReturnValue> + Step,
 > {
-    target_function: T,
-    candidate: U,
+    target_function: TargetFunction,
+    candidate: Searchable,
     tests: Vec<(InputParameters, ReturnValue)>,
     input: std::marker::PhantomData<InputParameters>,
     ret: std::marker::PhantomData<ReturnValue>,
-    insn: std::marker::PhantomData<Insn>,
-    trace_enable: bool,
 
     /// Keeps track of how many iterations the bruteforce search has been through.
     pub count: usize,
 }
 
 impl<
-        Insn: Clone,
         InputParameters: Copy + Vals,
         ReturnValue: Vals + std::cmp::PartialEq + Clone,
-        T: Callable<InputParameters, ReturnValue> + Clone,
-        U: Callable<InputParameters, ReturnValue>
-            + Step
-            + Clone
-            + crate::Disassemble
-    > BruteForce<InputParameters, ReturnValue, T, U, Insn>
+        TargetFunction: Callable<InputParameters, ReturnValue>,
+        Searchable: Callable<InputParameters, ReturnValue> + Step + Clone,
+    > BruteForce<InputParameters, ReturnValue, TargetFunction, Searchable>
 {
     /// Constructs a new `BruteForce`
-    pub fn new(target_function: T, initial_candidate: U) -> Self {
+    pub fn new(target_function: TargetFunction, initial_candidate: Searchable) -> Self {
         let candidate = initial_candidate;
         let tests = test::quick_tests(&target_function);
         Self {
@@ -46,46 +38,25 @@ impl<
             tests,
             input: std::marker::PhantomData,
             ret: std::marker::PhantomData,
-            insn: std::marker::PhantomData,
-            trace_enable: false,
             count: 0,
         }
     }
 
-    /// Enables trace: disassembles each candidate to stdout.
-    pub fn trace(&mut self) -> Self {
-        self.trace_enable = true;
-        self.clone()
-    }
-
     /// Returns the candidate currently under consideration
-    pub fn candidate(&self) -> &U {
+    pub fn candidate(&self) -> &Searchable {
         &self.candidate
-    }
-
-    /// Prints the current candidate to stdout
-    pub fn dasm(&self) {
-        println!("\ncandidate{}:", self.count);
-        self.candidate().dasm();
     }
 
     /// Advances the candidate to the next position in the search space
     pub fn step(&mut self) -> crate::IterationResult {
         self.count += 1;
-        if self.trace_enable {
-            self.dasm();
-        }
         self.candidate.next()
     }
 
     /// Tests that the candidate matches the target function
     pub fn test(&mut self) -> bool {
         match test::passes(&self.candidate, &self.tests) {
-            Err(StropError::DidntReturn) => {
-                // The candidate does not pass the test case(s)
-                false
-            }
-            Err(StropError::Undefined) => {
+            Err(_) => {
                 // The candidate does not pass the test case(s)
                 false
             }
@@ -111,7 +82,7 @@ impl<
     }
 
     /// Returns the next function that matches the target function
-    pub fn search(&mut self) -> Option<U> {
+    pub fn search(&mut self) -> Option<Searchable> {
         loop {
             self.step().ok()?;
             if self.test() {

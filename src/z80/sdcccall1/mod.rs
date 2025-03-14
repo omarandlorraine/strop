@@ -1,9 +1,7 @@
 use crate::test::Vals;
 use crate::z80::Emulator;
-use crate::z80::Insn;
+use crate::BruteForce;
 use crate::Callable;
-use crate::Sequence;
-use crate::StropError;
 
 pub trait ParameterList: Copy + Vals {
     fn put(&self, emu: &mut Emulator);
@@ -54,90 +52,64 @@ impl ReturnValue for i16 {
 /// Mimics the calling convention used by modern-day SDCC. SDCC's internal documentation calls this
 /// `__sdcccall(1)`.
 #[derive(Clone, Debug)]
-pub struct SdccCall1<Params: Copy + Vals, RetVal: Copy + Vals> {
-    seq: Sequence<Insn>,
-    params: std::marker::PhantomData<Params>,
-    return_value: std::marker::PhantomData<RetVal>,
+pub struct SdccCall1 {
+    seq: crate::z80::Subroutine,
 }
 
-impl<Params: ParameterList, RetVal: ReturnValue> Default for SdccCall1<Params, RetVal> {
+impl Default for SdccCall1 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Params: ParameterList, RetVal: ReturnValue> SdccCall1<Params, RetVal> {
+impl SdccCall1 {
     /// Instantiates a new, empty SdccCall1.
     pub fn new() -> Self {
         use crate::Step;
         Self::first()
     }
-
-    /// Instantiates a strop::BruteForce object that searches over functions complying with the
-    /// sdcccall(1) ABI.
-    pub fn bruteforce<C: Clone + Callable<Params, RetVal>>(
-        self,
-        target_function: C,
-    ) -> crate::BruteForce<Params, RetVal, C, SdccCall1<Params, RetVal>, Insn> {
-        crate::BruteForce::new(target_function, self)
-    }
 }
 
-impl<Params: ParameterList, RetVal: ReturnValue> crate::Disassemble for SdccCall1<Params, RetVal> {
+impl crate::Disassemble for SdccCall1 {
     fn dasm(&self) {
         self.seq.dasm()
     }
 }
 
-impl<Params: ParameterList, RetVal: ReturnValue> AsRef<crate::Sequence<Insn>>
-    for SdccCall1<Params, RetVal>
-{
-    fn as_ref(&self) -> &crate::Sequence<Insn> {
-        &self.seq
-    }
-}
-
-impl<Params: ParameterList, RetVal: ReturnValue> std::ops::Deref for SdccCall1<Params, RetVal> {
-    type Target = Sequence<Insn>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.seq
-    }
-}
-
-impl<Params: ParameterList, RetVal: ReturnValue> std::ops::DerefMut for SdccCall1<Params, RetVal> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.seq
-    }
-}
-
-impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal>
-    for SdccCall1<Params, RetVal>
-{
-    fn call(&self, input: Params) -> Result<RetVal, StropError> {
+impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal> for SdccCall1 {
+    fn call(&self, input: Params) -> crate::RunResult<RetVal> {
+        use crate::Run;
         let mut emu = Emulator::default();
         input.put(&mut emu);
-        emu.run(&self.seq)?;
+        self.seq.run(&mut emu)?;
         Ok(RetVal::get(&emu))
     }
+
+    fn dataflow_fixup(&mut self) {}
 }
 
-impl<Params: ParameterList, RetVal: ReturnValue> crate::Goto<Insn> for SdccCall1<Params, RetVal> {
-    fn goto(&mut self, t: &[Insn]) {
-        self.seq.goto(t);
-    }
-}
-
-impl<Params: ParameterList, RetVal: ReturnValue> crate::Step for SdccCall1<Params, RetVal> {
+impl crate::Step for SdccCall1 {
     fn first() -> Self {
         Self {
             seq: crate::Step::first(),
-            params: Default::default(),
-            return_value: Default::default(),
         }
     }
 
     fn next(&mut self) -> crate::IterationResult {
         self.seq.next()
+    }
+}
+
+impl<
+        InputParameters: ParameterList,
+        ReturnType: ReturnValue,
+        TargetFunction: Callable<InputParameters, ReturnType>,
+    > crate::AsBruteforce<InputParameters, ReturnType, TargetFunction> for SdccCall1
+{
+    fn bruteforce(
+        self,
+        function: TargetFunction,
+    ) -> BruteForce<InputParameters, ReturnType, TargetFunction, SdccCall1> {
+        BruteForce::<InputParameters, ReturnType, TargetFunction, SdccCall1>::new(function, self)
     }
 }

@@ -85,12 +85,14 @@ impl Insn {
     }
 }
 
-impl crate::subroutine::SubroutineT for Insn {
+impl crate::subroutine::MakeReturn for Insn {
     fn make_return(&mut self) -> crate::IterationResult {
-        if self.0[0] == 0xc9 {
-            return Ok(());
+        loop {
+            if self.0[0] == 0xc9 {
+                return Ok(());
+            }
+            self.next_opcode()?;
         }
-        self.next_opcode()
     }
 }
 
@@ -204,67 +206,11 @@ mod test {
     #[test]
     fn all_opcodes() {
         use super::Insn;
-        use crate::Encode;
-        use crate::Iterable;
+        use crate::Step;
 
         let mut insn = Insn::first();
-        assert_eq!(insn.len(), 1);
-        while insn.step() {
-            println!("{}; {:?}", insn, insn);
-            let d = insn.decode();
-
-            if !d.ignored_prefixes.is_empty() {
-                let prev = insn;
-                while !insn.decode().ignored_prefixes.is_empty() {
-                    assert!(!insn.step());
-                }
-                panic!(
-                    "{:?} ({}) has ignored prefixes, next one that doesn't is {:?} ({})",
-                    prev, prev, insn, insn
-                );
-            }
+        while insn.next().is_ok() {
+            assert!(insn.decode().ignored_prefixes.is_empty());
         }
-    }
-
-    #[test]
-    fn next_after_or_ffh() {
-        use super::Insn;
-
-        use crate::Iterable;
-
-        let mut insn = Insn([0xf6, 0xff, 0, 0, 0]);
-        println!("{insn} {:?}", insn);
-        insn.step();
-        println!("{insn} {:?}", insn);
-        insn.step();
-        println!("{insn} {:?}", insn);
-    }
-
-    #[test]
-    fn next_opcode() {
-        use super::Insn;
-
-        let mut insn = Insn([0xfd, 0x09, 0, 0, 0]);
-        println!("{insn} {:?}", insn);
-        insn.next_opcode();
-        println!("{insn} {:?}", insn);
-        insn.next_opcode();
-        println!("{insn} {:?}", insn);
-        insn.next_opcode();
-        println!("{insn} {:?}", insn);
-    }
-
-    #[test]
-    fn next_after_add_iy_bc() {
-        use super::Insn;
-
-        use crate::Iterable;
-
-        let mut insn = Insn([0xfd, 0x09, 0, 0, 0]);
-        println!("{insn} {:?}", insn);
-        insn.step();
-        println!("{insn} {:?}", insn);
-        insn.step();
-        println!("{insn} {:?}", insn);
     }
 }

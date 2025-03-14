@@ -1,14 +1,12 @@
-use crate::z80::Insn;
-use crate::Encode;
-use crate::Sequence;
-use crate::StropError;
 use iz80::*;
 
 /// The Z80 emulator.
 #[derive(Default)]
 pub struct Emulator {
-    machine: PlainMachine,
-    cpu: Cpu,
+    /// The machine
+    pub machine: PlainMachine,
+    /// The CPU
+    pub cpu: Cpu,
 }
 
 impl std::fmt::Debug for Emulator {
@@ -50,25 +48,5 @@ impl Emulator {
     /// Returns the value of the emulator's HL register
     pub fn get_hl(&self) -> u16 {
         self.cpu.immutable_registers().get16(Reg16::HL)
-    }
-
-    /// Puts the sequence of instructions into the emulator's memory, starting at address 0, and
-    /// single steps until the end of the program is reached.
-    pub fn run(&mut self, program: &Sequence<Insn>) -> Result<(), StropError> {
-        let encoding = program.encode();
-
-        for (addr, val) in encoding.iter().enumerate() {
-            // TODO: This will panic if the program grows too long to fit in a Z80's address space
-            self.machine.poke(addr.try_into().unwrap(), *val);
-        }
-        self.cpu.registers().set_pc(0);
-
-        for _ in 0..1000 {
-            if usize::from(self.cpu.registers().pc()) > encoding.len() {
-                return Ok(());
-            }
-            self.cpu.execute_instruction(&mut self.machine);
-        }
-        Err(StropError::DidntReturn)
     }
 }

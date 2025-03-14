@@ -43,6 +43,9 @@ pub use bruteforce::BruteForce;
 mod subroutine;
 pub use subroutine::Subroutine;
 
+mod trace;
+pub use trace::{ToTrace, Trace};
+
 /// Impl this on a datatype that may be iterated by mutating the datum in place. This is then used
 /// by the library to perform bruteforce searches and such
 pub trait Step {
@@ -65,11 +68,40 @@ pub enum StepError {
 /// Return type for in-place iteration
 pub type IterationResult = Result<(), StepError>;
 
+/// Enum representing possible errors when running (a subroutine, a function, an interrupt handler,
+/// etc...)
+#[derive(Debug, PartialEq, Eq)]
+pub enum RunError {
+    /// The program ran amok (it jumped to some location outside of itself, or caused a runtime
+    /// exception, or undefined behavior, or ...)
+    RanAmok,
+
+    /// The function is not defined for the given parameters
+    NotDefined,
+}
+
+/// Return type for in-place iteration
+pub type RunResult<T> = Result<T, RunError>;
+
 pub trait Run<Emulator> {
     //! A trait for running some code sequence on some emulator or VM
 
     /// Run the code sequence
-    fn run(&self, emulator: &mut Emulator);
+    fn run(&self, emulator: &mut Emulator) -> RunResult<()>;
+}
+
+/// Trait for returning a BruteForce object
+pub trait AsBruteforce<
+    InputParameters,
+    ReturnType: Clone,
+    Function: Callable<InputParameters, ReturnType>,
+>: Callable<InputParameters, ReturnType> + Clone + Step
+{
+    /// Returns a `BruteForce`
+    fn bruteforce(
+        self,
+        function: Function,
+    ) -> BruteForce<InputParameters, ReturnType, Function, Self>;
 }
 
 pub trait Disassemble {
@@ -122,16 +154,6 @@ pub trait Encode<T> {
     fn encode(&self) -> Vec<T>;
 }
 
-/// Enumerates reasons why executing a function may fail
-#[derive(Debug, PartialEq)]
-pub enum StropError {
-    /// The represented function is not defined for the given inputs
-    Undefined,
-
-    /// The callable object ran amok during emulation, or somehow did not return
-    DidntReturn,
-}
-
 pub trait Callable<InputParameters, ReturnValue> {
     //! A trait for objects which may be called.
     //!
@@ -140,13 +162,17 @@ pub trait Callable<InputParameters, ReturnValue> {
     //! pointers, or lisp expressions, etc.)
 
     /// Calls the given callable object
-    fn call(&self, parameters: InputParameters) -> Result<ReturnValue, StropError>;
+    fn call(&self, parameters: InputParameters) -> RunResult<ReturnValue>;
+
+    /// Performs dataflow analysis on the callable object, possibly mutating it such that it
+    /// doesn't read from anywhere it shouldn't, etc.
+    fn dataflow_fixup(&mut self) {}
 }
 
 impl<InputParameters, ReturnValue> Callable<InputParameters, ReturnValue>
-    for fn(InputParameters) -> Result<ReturnValue, StropError>
+    for fn(InputParameters) -> RunResult<ReturnValue>
 {
-    fn call(&self, parameters: InputParameters) -> Result<ReturnValue, StropError> {
+    fn call(&self, parameters: InputParameters) -> RunResult<ReturnValue> {
         (self)(parameters)
     }
 }

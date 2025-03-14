@@ -1,19 +1,25 @@
 //! A module defining Subroutine<T>
 
-pub trait SubroutineT {
+pub trait MakeReturn {
     fn make_return(&mut self) -> crate::IterationResult;
 }
 
-impl<I: SubroutineT> SubroutineT for crate::Sequence<I> {
+impl<I: crate::Step + MakeReturn> MakeReturn for crate::Sequence<I> {
     fn make_return(&mut self) -> crate::IterationResult {
         let offset_to_last = self.len() - 1;
-        self[offset_to_last].make_return()
+        if self[offset_to_last].make_return().is_err() {
+            self[offset_to_last] = I::first();
+            self.push(I::first());
+            let offset_to_last = self.len() - 1;
+            self[offset_to_last].make_return().unwrap();
+        }
+        Ok(())
     }
 }
 
 /// A type representing a subroutine. This includes the static analysis to make sure that the
 /// instruction sequence ends in the appropriate return instruction, etc.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Subroutine<S>(S);
 
 impl<S> Subroutine<S> {
@@ -23,8 +29,34 @@ impl<S> Subroutine<S> {
     }
 }
 
-pub trait AsSubroutine<T: SubroutineT> {
-    fn as_subroutine(self) -> Subroutine<Self> where Self: Sized {
+pub trait AsSubroutine<T: MakeReturn> {
+    fn as_subroutine(self) -> Subroutine<Self>
+    where
+        Self: Sized,
+    {
         Subroutine::<Self>::new(self)
+    }
+}
+
+impl<T: crate::Disassemble> crate::Disassemble for Subroutine<T> {
+    fn dasm(&self) {
+        self.0.dasm()
+    }
+}
+
+impl<S: crate::Step + MakeReturn> crate::Step for Subroutine<S> {
+    fn first() -> Self {
+        Self(S::first())
+    }
+    fn next(&mut self) -> crate::IterationResult {
+        self.0.next()?;
+        self.0.make_return()?;
+        Ok(())
+    }
+}
+
+impl<S: crate::Encode<E>, E> crate::Encode<E> for Subroutine<S> {
+    fn encode(&self) -> Vec<E> {
+        self.0.encode()
     }
 }
