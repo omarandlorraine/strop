@@ -4,6 +4,7 @@ use crate::Disassemble;
 use crate::Encode;
 use crate::Goto;
 use crate::Step;
+use crate::IterationResult;
 use std::ops::{Index, IndexMut};
 
 mod mutate;
@@ -130,7 +131,7 @@ impl<T: Clone + Step> Step for Sequence<T> {
         Self(vec![])
     }
 
-    fn next(&mut self) -> crate::IterationResult {
+    fn next(&mut self) -> IterationResult {
         self.step_at(0);
         Ok(())
     }
@@ -145,4 +146,35 @@ impl<SamplePoint: std::clone::Clone> Goto<SamplePoint> for Sequence<SamplePoint>
 impl<SamplePoint: crate::subroutine::MakeReturn + Step>
     crate::subroutine::AsSubroutine<Sequence<SamplePoint>> for Sequence<SamplePoint>
 {
+}
+
+impl<T, SamplePoint: crate::dataflow::DataFlow<T> + Step> crate::dataflow::DataFlow<T> for Sequence<SamplePoint> {
+    fn reads(&self, t: &T) -> bool {
+        self.0.iter().any(|insn| insn.reads(t))
+    }
+
+    fn writes(&self, t: &T) -> bool {
+        self.0.iter().any(|insn| insn.writes(t))
+    }
+
+    fn modify(&mut self) -> IterationResult {
+        if self.0[0].modify().is_err() {
+            self.0[0] = SamplePoint::first();
+            self.step_at(1);
+        }
+        Ok(())
+    }
+
+    fn not_live_in(&mut self, t: &T) -> IterationResult {
+        if let Some(first_read) = self.0.iter().position(|insn| insn.reads(t)) {
+            // We found an instruction which reads from `t`. Since `t` is not live, make sure that
+            // `t` has been written to.
+            if self.0.iter().take(first_read).any(|insn| insn.writes(t)) {
+                // `t` has already been written to; all is ok.
+                return Ok(());
+            }
+            self.make_write(t)?;
+        }
+        Ok(())
+    }
 }

@@ -85,7 +85,9 @@ impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal> for Sd
         Ok(RetVal::get(&emu))
     }
 
-    fn dataflow_fixup(&mut self) {}
+    fn dataflow_fixup(&mut self) {
+
+    }
 }
 
 impl crate::Step for SdccCall1 {

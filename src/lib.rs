@@ -46,6 +46,8 @@ pub use subroutine::Subroutine;
 mod trace;
 pub use trace::{ToTrace, Trace};
 
+pub mod dataflow;
+
 /// Impl this on a datatype that may be iterated by mutating the datum in place. This is then used
 /// by the library to perform bruteforce searches and such
 pub trait Step {
