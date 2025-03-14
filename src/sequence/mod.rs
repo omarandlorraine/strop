@@ -3,8 +3,8 @@
 use crate::Disassemble;
 use crate::Encode;
 use crate::Goto;
-use crate::Step;
 use crate::IterationResult;
+use crate::Step;
 use std::ops::{Index, IndexMut};
 
 mod mutate;
@@ -148,7 +148,9 @@ impl<SamplePoint: crate::subroutine::MakeReturn + Step>
 {
 }
 
-impl<T, SamplePoint: crate::dataflow::DataFlow<T> + Step> crate::dataflow::DataFlow<T> for Sequence<SamplePoint> {
+impl<T, SamplePoint: crate::dataflow::DataFlow<T> + Step> crate::dataflow::DataFlow<T>
+    for Sequence<SamplePoint>
+{
     fn reads(&self, t: &T) -> bool {
         self.0.iter().any(|insn| insn.reads(t))
     }

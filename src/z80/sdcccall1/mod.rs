@@ -22,7 +22,10 @@ impl ParameterList for u16 {
         emu.set_hl(*self);
     }
     fn reglist() -> Vec<crate::z80::dataflow::Register> {
-        vec![crate::z80::dataflow::Register::H, crate::z80::dataflow::Register::L]
+        vec![
+            crate::z80::dataflow::Register::H,
+            crate::z80::dataflow::Register::L,
+        ]
     }
 }
 

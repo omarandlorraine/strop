@@ -56,5 +56,3 @@ impl crate::Run<Emulator> for Subroutine {
         return Err(RunError::RanAmok);
     }
 }
-
-
