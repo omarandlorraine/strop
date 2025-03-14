@@ -4,6 +4,7 @@ mod emu;
 mod isa;
 mod sdcccall1;
 mod subroutine;
+mod dataflow;
 
 pub use emu::Emulator;
 pub use isa::Insn;

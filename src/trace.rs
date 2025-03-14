@@ -52,6 +52,10 @@ impl<
     fn call(&self, parameters: InputParameters) -> RunResult<ReturnType> {
         self.0.call(parameters)
     }
+
+    fn dataflow_fixup(&mut self) {
+        self.0.dataflow_fixup()
+    }
 }
 
 impl<

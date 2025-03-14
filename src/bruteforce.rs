@@ -50,7 +50,9 @@ impl<
     /// Advances the candidate to the next position in the search space
     pub fn step(&mut self) -> crate::IterationResult {
         self.count += 1;
-        self.candidate.next()
+        self.candidate.next()?;
+        self.candidate.dataflow_fixup();
+        Ok(())
     }
 
     /// Tests that the candidate matches the target function

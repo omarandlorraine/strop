@@ -122,25 +122,7 @@ impl crate::dataflow::DataFlow<Register> for Insn {
         t.check(d.destination)
     }
 
-    fn modify(&mut self) -> bool {
+    fn modify(&mut self) -> crate::IterationResult {
         self.next_opcode()
-    }
-
-    fn make_read(&mut self, t: &Register) -> bool {
-        while !self.reads(t) {
-            if !self.modify() {
-                return false;
-            }
-        }
-        true
-    }
-
-    fn make_write(&mut self, t: &Register) -> bool {
-        while !self.writes(t) {
-            if self.modify() {
-                return false;
-            }
-        }
-        true
     }
 }

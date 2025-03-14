@@ -5,17 +5,24 @@ use crate::Callable;
 
 pub trait ParameterList: Copy + Vals {
     fn put(&self, emu: &mut Emulator);
+    fn reglist() -> Vec<crate::z80::dataflow::Register>;
 }
 
 impl ParameterList for u8 {
     fn put(&self, emu: &mut Emulator) {
         emu.set_a(*self);
     }
+    fn reglist() -> Vec<crate::z80::dataflow::Register> {
+        vec![crate::z80::dataflow::Register::A]
+    }
 }
 
 impl ParameterList for u16 {
     fn put(&self, emu: &mut Emulator) {
         emu.set_hl(*self);
+    }
+    fn reglist() -> Vec<crate::z80::dataflow::Register> {
+        vec![crate::z80::dataflow::Register::H, crate::z80::dataflow::Register::L]
     }
 }
 
@@ -86,7 +93,12 @@ impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal> for Sd
     }
 
     fn dataflow_fixup(&mut self) {
-
+        use crate::dataflow::DataFlow;
+        /*
+        for i in Params::reglist().iter() {
+            self.seq.make_read(i).unwrap();
+        }
+        */
     }
 }
 

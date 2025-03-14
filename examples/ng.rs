@@ -6,8 +6,8 @@ use strop::RunError;
 use strop::RunResult;
 use strop::ToTrace;
 
-fn zero(_hex: u8) -> RunResult<u8> {
-    Ok(b'0')
+fn zero(i: u8) -> RunResult<u8> {
+    i.checked_add(5).ok_or(RunError::NotDefined)
 }
 
 fn dec_to_hex(hex: u8) -> RunResult<u8> {
