@@ -53,6 +53,6 @@ impl crate::Run<Emulator> for Subroutine {
             emulator.cpu.execute_instruction(&mut emulator.machine);
         }
         // Never even returned!
-        return Err(RunError::RanAmok);
+        Err(RunError::RanAmok)
     }
 }
