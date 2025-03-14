@@ -102,24 +102,21 @@ impl Register {
 impl crate::dataflow::DataFlow<Register> for Insn {
     fn reads(&self, t: &Register) -> bool {
         let d = self.decode();
-
-        if matches!(d.r#type, InstructionType::Nop | InstructionType::Ret(_)) {
-            return false;
+        match d.r#type {
+            InstructionType::Nop => false,
+            something_else => {
+                println!("{:?}", something_else);
+                false
+            }
         }
-
-        if matches!(d.r#type, InstructionType::Inc | InstructionType::Dec) {
-            return t.check(d.destination);
-        }
-        t.check(d.source)
     }
 
     fn writes(&self, t: &Register) -> bool {
         let d = self.decode();
-
-        if matches!(d.r#type, InstructionType::Nop | InstructionType::Ret(_)) {
-            return false;
+        match t {
+            Register::A => true,
+            _ => todo!(),
         }
-        t.check(d.destination)
     }
 
     fn modify(&mut self) -> crate::IterationResult {

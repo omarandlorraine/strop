@@ -94,11 +94,9 @@ impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal> for Sd
 
     fn dataflow_fixup(&mut self) {
         use crate::dataflow::DataFlow;
-        /*
         for i in Params::reglist().iter() {
             self.seq.make_read(i).unwrap();
         }
-        */
     }
 }
 
