@@ -60,11 +60,13 @@ impl<
         match test::passes(&self.candidate, &self.tests) {
             Err(_) => {
                 // The candidate does not pass the test case(s)
+                println!("Err");
                 false
             }
             Ok(false) => {
                 // The candidate does not pass the test case(s)
-                false
+                println!("Ok(false)");
+               false
             }
             Ok(true) => {
                 // Found a candidate which passes all known test cases.

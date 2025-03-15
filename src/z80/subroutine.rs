@@ -7,9 +7,9 @@ pub type Subroutine = crate::Subroutine<crate::Sequence<Insn>>;
 
 impl Default for Subroutine {
     fn default() -> Self {
-        use crate::subroutine::AsSubroutine;
+        use crate::subroutine::ToSubroutine;
         use crate::Step;
-        crate::Sequence::<Insn>::first().as_subroutine()
+        crate::Sequence::<Insn>::first().to_subroutine()
     }
 }
 
@@ -54,5 +54,26 @@ impl crate::Run<Emulator> for Subroutine {
         }
         // Never even returned!
         Err(RunError::RanAmok)
+    }
+}
+
+#[cfg(test)]
+mod amok {
+    #[test]
+    fn stack_overflow() {
+        use crate::z80::Insn;
+        use crate::z80::Subroutine;
+        use crate::Run;
+        use crate::z80::Emulator;
+        use crate::Goto;
+
+        let mut subroutine = Subroutine::default();
+        subroutine.goto(
+        &[
+            Insn::new(&[0xc5]), // push bc
+            Insn::new(&[0xc9]), // ret
+        ]);
+
+        assert!(subroutine.run(&mut Emulator::default()).is_err());
     }
 }

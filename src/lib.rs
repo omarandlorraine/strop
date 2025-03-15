@@ -48,6 +48,14 @@ pub use trace::{ToTrace, Trace};
 
 pub mod dataflow;
 
+/// Result of a static analysis pass. Explains why a code sequence has been found to be illogical
+/// or unsuitable, and provides a way to prune such a sequence from the search.
+pub struct StaticAnalysis<Instruction> {
+    offset: usize,
+    advance: fn(&mut Instruction) -> IterationResult,
+    reason: &'static str,
+}
+
 /// Impl this on a datatype that may be iterated by mutating the datum in place. This is then used
 /// by the library to perform bruteforce searches and such
 pub trait Step {
@@ -169,6 +177,14 @@ pub trait Callable<InputParameters, ReturnValue> {
     /// Performs dataflow analysis on the callable object, possibly mutating it such that it
     /// doesn't read from anywhere it shouldn't, etc.
     fn dataflow_fixup(&mut self) {}
+}
+
+pub trait StaticAnalysis<T> {
+    //! A trait for objects which can do static analysis on themselves
+
+    /// If an issue is found, return an offset to the issue, a way to change the instruction at
+    /// that offset, and a description of the problem.
+    fn static_analysis(&self) -> Option<(usize, fn(&mut T) -> IterationResult, &'static str)>;
 }
 
 impl<InputParameters, ReturnValue> Callable<InputParameters, ReturnValue>

@@ -144,7 +144,7 @@ impl<SamplePoint: std::clone::Clone> Goto<SamplePoint> for Sequence<SamplePoint>
 }
 
 impl<SamplePoint: crate::subroutine::MakeReturn + Step>
-    crate::subroutine::AsSubroutine<Sequence<SamplePoint>> for Sequence<SamplePoint>
+    crate::subroutine::ToSubroutine<Sequence<SamplePoint>> for Sequence<SamplePoint>
 {
 }
 

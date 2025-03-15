@@ -29,12 +29,18 @@ impl<S> Subroutine<S> {
     }
 }
 
-pub trait AsSubroutine<T: MakeReturn> {
-    fn as_subroutine(self) -> Subroutine<Self>
+pub trait ToSubroutine<T: MakeReturn> {
+    fn to_subroutine(self) -> Subroutine<Self>
     where
         Self: Sized,
     {
         Subroutine::<Self>::new(self)
+    }
+}
+
+impl<I, T: crate::Goto<I>> crate::Goto<I> for Subroutine<T> {
+    fn goto(&mut self, code: &[I]) {
+        self.0.goto(code);
     }
 }
 
