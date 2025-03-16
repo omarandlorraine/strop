@@ -21,6 +21,44 @@ pub struct BruteForce<
     pub count: usize,
 }
 
+pub trait ToBruteForce<
+    InputParameters,
+    ReturnValue: Clone,
+    TargetFunction: Callable<InputParameters, ReturnValue>,
+> {
+    fn to_bruteforce(self, target_function: TargetFunction) -> BruteForce<
+    InputParameters,
+    ReturnValue,
+    TargetFunction,
+    Self,
+    >
+    where Self: Callable<InputParameters, ReturnValue> + Step + Sized;
+}
+
+impl<
+T : Callable<InputParameters, ReturnValue> + Step + Clone,
+    InputParameters,
+    ReturnValue: Clone + Vals,
+    TargetFunction: Callable<InputParameters, ReturnValue>,
+>
+ToBruteForce
+    <InputParameters, ReturnValue, TargetFunction>
+
+for T
+where Self: Callable<InputParameters, ReturnValue>
+, InputParameters: test::Vals
+{
+    fn to_bruteforce(self, target_function: TargetFunction) -> BruteForce<
+    InputParameters,
+    ReturnValue,
+    TargetFunction,
+    Self
+    > {
+        BruteForce::new(target_function, self)
+    }
+    
+}
+
 impl<
         InputParameters: Copy + Vals,
         ReturnValue: Vals + std::cmp::PartialEq + Clone,
