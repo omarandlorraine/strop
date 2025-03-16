@@ -18,6 +18,12 @@ mod mutate;
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Sequence<T>(Vec<T>);
 
+impl<T: crate::subroutine::ShouldReturn> crate::subroutine::ToSubroutine<T> for Sequence<T> {
+    fn to_subroutine(self) -> crate::Subroutine<Self> {
+        crate::Subroutine::new(self)
+    }
+}
+
 impl<T> From<Vec<&Vec<T>>> for Sequence<T>
 where
     T: Clone,
@@ -36,18 +42,54 @@ where
 }
 
 impl<T: Step> Sequence<T> {
+
+    /// In a deterministic way compatible with the BruteForce search algorithm, mutates the
+    /// Sequence at the offset in the given way.
+    pub fn mut_at(&mut self, change: fn(&mut T) -> IterationResult, offset: usize) {
+        if change(&mut self[offset]).is_err() {
+            self[offset] = T::first();
+            self.step_at(offset + 1);
+        }
+    }
+}
+
+impl<Insn: Step> crate::BruteforceSearch<Insn> for Sequence<Insn> {
+    fn inner(&self) -> &mut dyn crate::BruteforceSearch<Insn> {
+        unreachable!();
+    }
+
+    fn analyze_this(&self) -> Option<crate::StaticAnalysis<Insn>> {
+        None
+    }
+
+    fn analyze(&self) -> Option<crate::StaticAnalysis<Insn>> {
+        None
+    }
+
+    fn step(&mut self) {
+        self.step_at(0);
+    }
+
+    fn apply(&mut self, static_analysis: &crate::StaticAnalysis<Insn>) {
+        self.mut_at(static_analysis.advance, static_analysis.offset);
+    }
+
+    fn fixup(&mut self) {
+    }
+}
+
+impl<T> Sequence<T> {
     /// Returns the index to the last element in the sequence
     pub fn last_instruction_offset(&self) -> usize {
         self.0.len() - 1
     }
-
-    /// In a deterministic way compatible with the BruteForce search algorithm, mutates the
-    /// Sequence at the offset in the given way.
-    pub fn mut_at(&mut self, change: fn(&mut T) -> bool, offset: usize) {
-        if !change(&mut self[offset]) {
-            self[offset] = T::first();
-            self.step_at(offset + 1);
+    /// queries the item at offset `o` for static analysis
+    pub fn sa<Insn>(&self, o: usize, sa: fn(&T) -> Option<crate::StaticAnalysis<Insn>>) -> Option<crate::StaticAnalysis<Insn>> {
+        if let Some(mut r) = sa(&self.0[o]) {
+            r.offset = o;
+            return Some(r);
         }
+        None
     }
 }
 
@@ -141,11 +183,6 @@ impl<SamplePoint: std::clone::Clone> Goto<SamplePoint> for Sequence<SamplePoint>
     fn goto(&mut self, other: &[SamplePoint]) {
         self.0 = other.to_vec();
     }
-}
-
-impl<SamplePoint: crate::subroutine::MakeReturn + Step>
-    crate::subroutine::ToSubroutine<Sequence<SamplePoint>> for Sequence<SamplePoint>
-{
 }
 
 impl<T, SamplePoint: crate::dataflow::DataFlow<T> + Step> crate::dataflow::DataFlow<T>

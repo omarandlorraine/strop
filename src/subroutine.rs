@@ -1,26 +1,13 @@
 //! A module defining Subroutine<T>
 
-pub trait MakeReturn {
-    fn make_return(&mut self) -> crate::IterationResult;
-}
-
-impl<I: crate::Step + MakeReturn> MakeReturn for crate::Sequence<I> {
-    fn make_return(&mut self) -> crate::IterationResult {
-        let offset_to_last = self.len() - 1;
-        if self[offset_to_last].make_return().is_err() {
-            self[offset_to_last] = I::first();
-            self.push(I::first());
-            let offset_to_last = self.len() - 1;
-            self[offset_to_last].make_return().unwrap();
-        }
-        Ok(())
-    }
-}
-
 /// A type representing a subroutine. This includes the static analysis to make sure that the
 /// instruction sequence ends in the appropriate return instruction, etc.
 #[derive(Debug, Clone)]
 pub struct Subroutine<S>(S);
+
+pub trait ShouldReturn {
+    fn should_return(&self) -> Option<crate::StaticAnalysis<Self>> where Self: Sized;
+}
 
 impl<S> Subroutine<S> {
     /// Wraps the object in the Subroutine struct
@@ -29,7 +16,14 @@ impl<S> Subroutine<S> {
     }
 }
 
-pub trait ToSubroutine<T: MakeReturn> {
+impl<S: AsRef<crate::Sequence<Insn>>, Insn: ShouldReturn> crate::Analyse<Insn> for Subroutine<S> {
+    fn analyse(&self) -> Option<crate::StaticAnalysis<Insn>> {
+        let seq = self.0.as_ref();
+        seq.sa(seq.last_instruction_offset(), Insn::should_return)
+    }
+}
+
+pub trait ToSubroutine<T: ShouldReturn> {
     fn to_subroutine(self) -> Subroutine<Self>
     where
         Self: Sized,
@@ -50,14 +44,12 @@ impl<T: crate::Disassemble> crate::Disassemble for Subroutine<T> {
     }
 }
 
-impl<S: crate::Step + MakeReturn> crate::Step for Subroutine<S> {
+impl<S: crate::Step> crate::Step for Subroutine<S> {
     fn first() -> Self {
         Self(S::first())
     }
     fn next(&mut self) -> crate::IterationResult {
-        self.0.next()?;
-        self.0.make_return()?;
-        Ok(())
+        self.0.next()
     }
 }
 

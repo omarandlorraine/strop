@@ -50,10 +50,15 @@ pub mod dataflow;
 
 /// Result of a static analysis pass. Explains why a code sequence has been found to be illogical
 /// or unsuitable, and provides a way to prune such a sequence from the search.
+#[derive(Debug)]
 pub struct StaticAnalysis<Instruction> {
     offset: usize,
     advance: fn(&mut Instruction) -> IterationResult,
     reason: &'static str,
+}
+
+pub trait Analyse<Instruction> {
+    fn analyse(&self) -> Option<StaticAnalysis<Instruction>>;
 }
 
 /// Impl this on a datatype that may be iterated by mutating the datum in place. This is then used
@@ -66,6 +71,37 @@ pub trait Step {
 
     /// Returns the first value
     fn first() -> Self;
+}
+
+pub trait BruteforceSearch<Insn> {
+    fn analyze_this(&self) -> Option<StaticAnalysis<Insn>> {
+        None
+    }
+
+    fn analyze(&self) -> Option<StaticAnalysis<Insn>> {
+        if let Some(sa) = self.inner().analyze() {
+            return Some(sa);
+        }
+
+        self.analyze_this()
+    }
+
+    fn inner(&self) -> &mut dyn BruteforceSearch<Insn>;
+
+    fn step(&mut self) {
+        self.inner().step();
+        self.fixup();
+    }
+
+    fn apply(&mut self, static_analysis: &StaticAnalysis<Insn>) {
+        self.inner().apply(static_analysis);
+    }
+
+    fn fixup(&mut self) {
+        while let Some(sa) = self.analyze() {
+            self.apply(&sa);
+        }
+    }
 }
 
 /// Enum representing possible errors when stepping
@@ -177,14 +213,6 @@ pub trait Callable<InputParameters, ReturnValue> {
     /// Performs dataflow analysis on the callable object, possibly mutating it such that it
     /// doesn't read from anywhere it shouldn't, etc.
     fn dataflow_fixup(&mut self) {}
-}
-
-pub trait StaticAnalysis<T> {
-    //! A trait for objects which can do static analysis on themselves
-
-    /// If an issue is found, return an offset to the issue, a way to change the instruction at
-    /// that offset, and a description of the problem.
-    fn static_analysis(&self) -> Option<(usize, fn(&mut T) -> IterationResult, &'static str)>;
 }
 
 impl<InputParameters, ReturnValue> Callable<InputParameters, ReturnValue>

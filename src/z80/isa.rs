@@ -85,14 +85,16 @@ impl Insn {
     }
 }
 
-impl crate::subroutine::MakeReturn for Insn {
-    fn make_return(&mut self) -> crate::IterationResult {
-        loop {
-            if self.0[0] == 0xc9 {
-                return Ok(());
-            }
-            self.next_opcode()?;
+impl crate::subroutine::ShouldReturn for Insn {
+    fn should_return(&self) -> Option<crate::StaticAnalysis<Self>> {
+        if self.0[0] == 0xc9 {
+            return None;
         }
+        Some(crate::StaticAnalysis::<Self> {
+            offset: 0,
+            advance: Self::next_opcode,
+            reason: "ShouldReturn",
+        })
     }
 }
 
