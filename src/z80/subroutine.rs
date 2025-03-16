@@ -3,7 +3,7 @@ use crate::z80::Insn;
 use crate::RunError;
 
 /// Represents a Z80 subroutine
-pub type Subroutine = crate::Subroutine<crate::Sequence<Insn>>;
+pub type Subroutine = crate::Subroutine<Insn, crate::Sequence<Insn>>;
 
 impl Default for Subroutine {
     fn default() -> Self {

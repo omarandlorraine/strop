@@ -1,77 +1,73 @@
 //! A module defining Subroutine<T>
 
+
+use crate::BruteforceSearch;
+
 /// A type representing a subroutine. This includes the static analysis to make sure that the
 /// instruction sequence ends in the appropriate return instruction, etc.
 #[derive(Debug, Clone)]
-pub struct Subroutine<S>(S);
+pub struct Subroutine<Insn, S: BruteforceSearch<Insn>>(S, std::marker::PhantomData<Insn>);
 
 pub trait ShouldReturn {
     fn should_return(&self) -> Option<crate::StaticAnalysis<Self>> where Self: Sized;
 }
 
-impl<S> Subroutine<S> {
+impl<Insn, S: BruteforceSearch<Insn>> Subroutine<Insn, S> {
     /// Wraps the object in the Subroutine struct
     pub fn new(s: S) -> Self {
-        Self(s)
+        Self(s, std::marker::PhantomData::default())
     }
 }
 
-impl<S: AsRef<crate::Sequence<Insn>>, Insn: ShouldReturn> crate::Analyse<Insn> for Subroutine<S> {
-    fn analyse(&self) -> Option<crate::StaticAnalysis<Insn>> {
-        let seq = self.0.as_ref();
-        seq.sa(seq.last_instruction_offset(), Insn::should_return)
+impl<Insn: ShouldReturn, S: BruteforceSearch<Insn>> BruteforceSearch<Insn> for Subroutine<Insn, S> {
+    fn inner(&mut self) -> &mut dyn BruteforceSearch<Insn> {
+        &mut self.0
     }
 }
 
 pub trait ToSubroutine<T: ShouldReturn> {
-    fn to_subroutine(self) -> Subroutine<Self>
+    fn to_subroutine(self) -> Subroutine<T, Self>
     where
-        Self: Sized,
+        Self: Sized + BruteforceSearch<T>,
     {
-        Subroutine::<Self>::new(self)
+        Subroutine::<T, Self>::new(self)
     }
 }
 
-impl<I, T: crate::Goto<I>> crate::Goto<I> for Subroutine<T> {
-    fn goto(&mut self, code: &[I]) {
-        self.0.goto(code);
-    }
-}
-
-impl<T: crate::Disassemble> crate::Disassemble for Subroutine<T> {
+impl<Insn, S: crate::Disassemble +   BruteforceSearch<Insn>> crate::Disassemble for Subroutine<Insn, S> {
     fn dasm(&self) {
         self.0.dasm()
     }
 }
 
-impl<S: crate::Step> crate::Step for Subroutine<S> {
+impl<Insn, S: crate::Step +   BruteforceSearch<Insn>> crate::Step for Subroutine<Insn, S> {
     fn first() -> Self {
-        Self(S::first())
+        Self(S::first(), std::marker::PhantomData::default())
     }
     fn next(&mut self) -> crate::IterationResult {
         self.0.next()
     }
 }
 
-impl<S: crate::Encode<E>, E> crate::Encode<E> for Subroutine<S> {
+impl<Insn, S: crate::Encode<E> +   BruteforceSearch<Insn>, E> crate::Encode<E> for Subroutine<Insn, S> {
     fn encode(&self) -> Vec<E> {
         self.0.encode()
     }
 }
 
-impl<T> AsMut<T> for Subroutine<T> {
+impl<Insn, T:   BruteforceSearch<Insn>> AsMut<T> for Subroutine<Insn, T> {
     fn as_mut(&mut self) -> &mut T {
         &mut self.0
     }
 }
 
-impl<T> AsRef<T> for Subroutine<T> {
+impl<Insn, T: BruteforceSearch<Insn>> AsRef<T> for Subroutine<Insn, T> {
     fn as_ref(&self) -> &T {
         &self.0
     }
 }
 
-impl<D, T: crate::dataflow::DataFlow<D>> crate::dataflow::DataFlow<D> for Subroutine<T> {
+impl<Insn, D, T: crate::dataflow::DataFlow<D> + BruteforceSearch<Insn>> crate::dataflow::DataFlow<D> for Subroutine<Insn, T> {
     fn reads(&self, t: &D) -> bool {
         self.0.reads(t)
     }

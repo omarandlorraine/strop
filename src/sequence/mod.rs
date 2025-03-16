@@ -18,8 +18,8 @@ mod mutate;
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Sequence<T>(Vec<T>);
 
-impl<T: crate::subroutine::ShouldReturn> crate::subroutine::ToSubroutine<T> for Sequence<T> {
-    fn to_subroutine(self) -> crate::Subroutine<Self> {
+impl<T: Step + crate::subroutine::ShouldReturn> crate::subroutine::ToSubroutine<T> for Sequence<T> {
+    fn to_subroutine(self) -> crate::Subroutine<T, Self> {
         crate::Subroutine::new(self)
     }
 }
@@ -54,7 +54,7 @@ impl<T: Step> Sequence<T> {
 }
 
 impl<Insn: Step> crate::BruteforceSearch<Insn> for Sequence<Insn> {
-    fn inner(&self) -> &mut dyn crate::BruteforceSearch<Insn> {
+    fn inner(&mut self) -> &mut dyn crate::BruteforceSearch<Insn> {
         unreachable!();
     }
 
@@ -62,7 +62,7 @@ impl<Insn: Step> crate::BruteforceSearch<Insn> for Sequence<Insn> {
         None
     }
 
-    fn analyze(&self) -> Option<crate::StaticAnalysis<Insn>> {
+    fn analyze(&mut self) -> Option<crate::StaticAnalysis<Insn>> {
         None
     }
 
