@@ -24,6 +24,12 @@ impl<T: Step + crate::subroutine::ShouldReturn> crate::subroutine::ToSubroutine<
     }
 }
 
+impl<Insn> AsRef<Sequence<Insn>> for Sequence<Insn> {
+    fn as_ref(&self) -> &Sequence<Insn> {
+        &self
+    }
+}
+
 impl<T> From<Vec<&Vec<T>>> for Sequence<T>
 where
     T: Clone,

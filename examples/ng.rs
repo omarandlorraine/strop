@@ -1,10 +1,10 @@
 //! An example of a program that uses strop to generate machine code computing a given function
 
-use strop::AsBruteforce;
 use strop::Disassemble;
 use strop::RunError;
 use strop::RunResult;
 use strop::ToTrace;
+use strop::ToBruteForce;
 
 fn zero(i: u8) -> RunResult<u8> {
     i.checked_add(5).ok_or(RunError::NotDefined)
@@ -16,7 +16,7 @@ fn main() {
     // do a bruteforce search for Z80 machine code programs implementing the same function
     let mut bruteforce = strop::z80::SdccCall1::default()
         .trace()
-        .bruteforce(target_function);
+        .to_bruteforce(target_function);
 
     let bf = bruteforce.search().unwrap();
 

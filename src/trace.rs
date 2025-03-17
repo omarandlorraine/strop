@@ -1,6 +1,3 @@
-use crate::test::Vals;
-use crate::AsBruteforce;
-use crate::BruteForce;
 use crate::Callable;
 use crate::Disassemble;
 use crate::IterationResult;
@@ -30,6 +27,22 @@ impl<T: Disassemble + Clone> Disassemble for Trace<T> {
     }
 }
 
+
+impl<Insn, S: crate::BruteforceSearch<Insn> + Clone + Disassemble> crate::BruteforceSearch<Insn> for Trace<S> {
+    fn analyze_this(&self) -> Option<crate::StaticAnalysis<Insn>> {
+        None
+    }
+    fn inner(&mut self) -> &mut dyn crate::BruteforceSearch<Insn> {
+        &mut self.0
+    }
+    fn step(&mut self) {
+        self.inner().step();
+        println!("stepped:");
+        self.dasm();
+    }
+}
+
+
 impl<T: Step + Clone + Disassemble> Step for Trace<T> {
     fn next(&mut self) -> IterationResult {
         self.0.next()?;
@@ -51,24 +64,5 @@ impl<
 {
     fn call(&self, parameters: InputParameters) -> RunResult<ReturnType> {
         self.0.call(parameters)
-    }
-
-    fn dataflow_fixup(&mut self) {
-        self.0.dataflow_fixup()
-    }
-}
-
-impl<
-        InputParameters: Copy + Vals,
-        ReturnType: Clone + PartialEq + Vals,
-        TargetFunction: Callable<InputParameters, ReturnType>,
-        T: Step + Clone + Callable<InputParameters, ReturnType> + Disassemble,
-    > AsBruteforce<InputParameters, ReturnType, TargetFunction> for Trace<T>
-{
-    fn bruteforce(
-        self,
-        function: TargetFunction,
-    ) -> BruteForce<InputParameters, ReturnType, TargetFunction, Self> {
-        BruteForce::<InputParameters, ReturnType, TargetFunction, Self>::new(function, self)
     }
 }

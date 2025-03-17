@@ -38,7 +38,7 @@ mod genetic;
 pub use genetic::Generate;
 
 mod bruteforce;
-pub use bruteforce::BruteForce;
+pub use bruteforce::{BruteForce, ToBruteForce};
 
 mod subroutine;
 pub use subroutine::Subroutine;
@@ -72,9 +72,7 @@ pub trait Step {
 }
 
 pub trait BruteforceSearch<Insn> {
-    fn analyze_this(&self) -> Option<StaticAnalysis<Insn>> {
-        None
-    }
+    fn analyze_this(&self) -> Option<StaticAnalysis<Insn>>;
 
     fn analyze(&mut self) -> Option<StaticAnalysis<Insn>> {
         if let Some(sa) = self.inner().analyze() {
@@ -136,16 +134,17 @@ pub trait Run<Emulator> {
 
 /// Trait for returning a BruteForce object
 pub trait AsBruteforce<
+Insn,
     InputParameters,
     ReturnType: Clone,
     Function: Callable<InputParameters, ReturnType>,
->: Callable<InputParameters, ReturnType> + Clone + Step
+>: Callable<InputParameters, ReturnType> + Clone + BruteforceSearch<Insn>
 {
     /// Returns a `BruteForce`
     fn bruteforce(
         self,
         function: Function,
-    ) -> BruteForce<InputParameters, ReturnType, Function, Self>;
+    ) -> BruteForce<Insn,InputParameters, ReturnType, Function, Self>;
 }
 
 pub trait Disassemble {
@@ -174,12 +173,20 @@ pub trait Crossover {
     fn crossover(a: &Self, b: &Self) -> Self;
 }
 
-pub trait Goto<SamplePoint> {
+pub trait Goto<Insn> {
     //! Trait for starting a search from a particular point in the search space.
 
     /// Replace self with some other value
-    fn goto(&mut self, destination: &[SamplePoint]);
+    fn goto(&mut self, destination: &[Insn]);
 }
+
+impl<Insn: Clone, S: ?Sized + Clone + AsMut<Sequence<Insn>>> Goto<Insn> for S {
+    fn goto(&mut self, destination: &[Insn]) {
+        let s = self.as_mut();
+        s.goto(destination);
+    }
+}
+
 
 pub trait Encode<T> {
     //! Trait for things that can be converted to sequences (of bytes, words, etc)
@@ -207,10 +214,6 @@ pub trait Callable<InputParameters, ReturnValue> {
 
     /// Calls the given callable object
     fn call(&self, parameters: InputParameters) -> RunResult<ReturnValue>;
-
-    /// Performs dataflow analysis on the callable object, possibly mutating it such that it
-    /// doesn't read from anywhere it shouldn't, etc.
-    fn dataflow_fixup(&mut self) {}
 }
 
 impl<InputParameters, ReturnValue> Callable<InputParameters, ReturnValue>

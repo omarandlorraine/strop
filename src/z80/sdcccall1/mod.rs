@@ -1,7 +1,10 @@
 use crate::test::Vals;
+use crate::BruteforceSearch;
+use crate::z80::Insn;
 use crate::z80::Emulator;
 use crate::BruteForce;
 use crate::Callable;
+use crate::StaticAnalysis;
 
 pub trait ParameterList: Copy + Vals {
     fn put(&self, emu: &mut Emulator);
@@ -98,16 +101,26 @@ impl crate::Step for SdccCall1 {
     }
 }
 
+impl BruteforceSearch<Insn> for SdccCall1 {
+    fn analyze_this(&self) -> Option<StaticAnalysis<Insn>> {
+        // TODO: dataflow analysis could go here.
+        None
+    }
+    fn inner(&mut self) -> &mut dyn BruteforceSearch<Insn> {
+        &mut self.seq
+    }
+}
+
 impl<
         InputParameters: ParameterList,
         ReturnType: ReturnValue,
         TargetFunction: Callable<InputParameters, ReturnType>,
-    > crate::AsBruteforce<InputParameters, ReturnType, TargetFunction> for SdccCall1
+    > crate::AsBruteforce<Insn, InputParameters, ReturnType, TargetFunction> for SdccCall1
 {
     fn bruteforce(
         self,
         function: TargetFunction,
-    ) -> BruteForce<InputParameters, ReturnType, TargetFunction, SdccCall1> {
-        BruteForce::<InputParameters, ReturnType, TargetFunction, SdccCall1>::new(function, self)
+    ) -> BruteForce<Insn, InputParameters, ReturnType, TargetFunction, SdccCall1> {
+        BruteForce::<Insn, InputParameters, ReturnType, TargetFunction, SdccCall1>::new(function, self)
     }
 }
