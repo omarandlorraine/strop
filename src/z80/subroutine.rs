@@ -61,15 +61,14 @@ impl crate::Run<Emulator> for Subroutine {
 mod amok {
     #[test]
     fn stack_overflow() {
+        use crate::z80::Emulator;
         use crate::z80::Insn;
         use crate::z80::Subroutine;
-        use crate::Run;
-        use crate::z80::Emulator;
         use crate::Goto;
+        use crate::Run;
 
         let mut subroutine = Subroutine::default();
-        subroutine.goto(
-        &[
+        subroutine.goto(&[
             Insn::new(&[0xc5]), // push bc
             Insn::new(&[0xc9]), // ret
         ]);

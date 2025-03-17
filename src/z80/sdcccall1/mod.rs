@@ -1,8 +1,8 @@
 use crate::test::Vals;
-use crate::BruteforceSearch;
-use crate::z80::Insn;
 use crate::z80::Emulator;
+use crate::z80::Insn;
 use crate::BruteForce;
+use crate::BruteforceSearch;
 use crate::Callable;
 use crate::StaticAnalysis;
 
@@ -121,6 +121,8 @@ impl<
         self,
         function: TargetFunction,
     ) -> BruteForce<Insn, InputParameters, ReturnType, TargetFunction, SdccCall1> {
-        BruteForce::<Insn, InputParameters, ReturnType, TargetFunction, SdccCall1>::new(function, self)
+        BruteForce::<Insn, InputParameters, ReturnType, TargetFunction, SdccCall1>::new(
+            function, self,
+        )
     }
 }

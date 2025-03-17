@@ -48,7 +48,6 @@ where
 }
 
 impl<T: Step> Sequence<T> {
-
     /// In a deterministic way compatible with the BruteForce search algorithm, mutates the
     /// Sequence at the offset in the given way.
     pub fn mut_at(&mut self, change: fn(&mut T) -> IterationResult, offset: usize) {
@@ -80,8 +79,7 @@ impl<Insn: Step> crate::BruteforceSearch<Insn> for Sequence<Insn> {
         self.mut_at(static_analysis.advance, static_analysis.offset);
     }
 
-    fn fixup(&mut self) {
-    }
+    fn fixup(&mut self) {}
 }
 
 impl<T> Sequence<T> {
@@ -90,7 +88,11 @@ impl<T> Sequence<T> {
         self.0.len() - 1
     }
     /// queries the item at offset `o` for static analysis
-    pub fn sa<Insn>(&self, o: usize, sa: fn(&T) -> Option<crate::StaticAnalysis<Insn>>) -> Option<crate::StaticAnalysis<Insn>> {
+    pub fn sa<Insn>(
+        &self,
+        o: usize,
+        sa: fn(&T) -> Option<crate::StaticAnalysis<Insn>>,
+    ) -> Option<crate::StaticAnalysis<Insn>> {
         if let Some(mut r) = sa(&self.0[o]) {
             r.offset = o;
             return Some(r);

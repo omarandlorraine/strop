@@ -3,8 +3,8 @@
 use strop::Disassemble;
 use strop::RunError;
 use strop::RunResult;
-use strop::ToTrace;
 use strop::ToBruteForce;
+use strop::ToTrace;
 
 fn zero(i: u8) -> RunResult<u8> {
     i.checked_add(5).ok_or(RunError::NotDefined)

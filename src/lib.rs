@@ -134,7 +134,7 @@ pub trait Run<Emulator> {
 
 /// Trait for returning a BruteForce object
 pub trait AsBruteforce<
-Insn,
+    Insn,
     InputParameters,
     ReturnType: Clone,
     Function: Callable<InputParameters, ReturnType>,
@@ -144,7 +144,7 @@ Insn,
     fn bruteforce(
         self,
         function: Function,
-    ) -> BruteForce<Insn,InputParameters, ReturnType, Function, Self>;
+    ) -> BruteForce<Insn, InputParameters, ReturnType, Function, Self>;
 }
 
 pub trait Disassemble {
@@ -186,7 +186,6 @@ impl<Insn: Clone, S: ?Sized + Clone + AsMut<Sequence<Insn>>> Goto<Insn> for S {
         s.goto(destination);
     }
 }
-
 
 pub trait Encode<T> {
     //! Trait for things that can be converted to sequences (of bytes, words, etc)

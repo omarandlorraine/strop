@@ -1,7 +1,7 @@
 use crate::test;
 use crate::test::Vals;
-use crate::Callable;
 use crate::BruteforceSearch;
+use crate::Callable;
 
 /// Performs a brute force search over a given search space `Searchable`
 #[derive(Debug, Clone)]
@@ -24,49 +24,41 @@ pub struct BruteForce<
 }
 
 pub trait ToBruteForce<
-Insn,
+    Insn,
     InputParameters,
     ReturnValue: Clone,
     TargetFunction: Callable<InputParameters, ReturnValue>,
-> {
-    fn to_bruteforce(self, target_function: TargetFunction) -> BruteForce<
-        Insn,
-    InputParameters,
-    ReturnValue,
-    TargetFunction,
-    Self,
-    >
-    where Self: Callable<InputParameters, ReturnValue> + BruteforceSearch<Insn> + Sized;
+>
+{
+    fn to_bruteforce(
+        self,
+        target_function: TargetFunction,
+    ) -> BruteForce<Insn, InputParameters, ReturnValue, TargetFunction, Self>
+    where
+        Self: Callable<InputParameters, ReturnValue> + BruteforceSearch<Insn> + Sized;
 }
 
 impl<
-Insn,
-T : Callable<InputParameters, ReturnValue> + BruteforceSearch<Insn> + Clone,
-    InputParameters,
-    ReturnValue: Clone + Vals,
-    TargetFunction: Callable<InputParameters, ReturnValue>,
->
-ToBruteForce
-    <Insn, InputParameters, ReturnValue, TargetFunction>
-
-for T
-where Self: Callable<InputParameters, ReturnValue>
-, InputParameters: test::Vals
-{
-    fn to_bruteforce(self, target_function: TargetFunction) -> BruteForce<
         Insn,
-    InputParameters,
-    ReturnValue,
-    TargetFunction,
-    Self
-    > {
+        T: Callable<InputParameters, ReturnValue> + BruteforceSearch<Insn> + Clone,
+        InputParameters,
+        ReturnValue: Clone + Vals,
+        TargetFunction: Callable<InputParameters, ReturnValue>,
+    > ToBruteForce<Insn, InputParameters, ReturnValue, TargetFunction> for T
+where
+    Self: Callable<InputParameters, ReturnValue>,
+    InputParameters: test::Vals,
+{
+    fn to_bruteforce(
+        self,
+        target_function: TargetFunction,
+    ) -> BruteForce<Insn, InputParameters, ReturnValue, TargetFunction, Self> {
         BruteForce::new(target_function, self)
     }
-    
 }
 
 impl<
-Insn,
+        Insn,
         InputParameters: Copy + Vals,
         ReturnValue: Vals + std::cmp::PartialEq + Clone,
         TargetFunction: Callable<InputParameters, ReturnValue>,
@@ -111,7 +103,7 @@ Insn,
             Ok(false) => {
                 // The candidate does not pass the test case(s)
                 println!("Ok(false)");
-               false
+                false
             }
             Ok(true) => {
                 // Found a candidate which passes all known test cases.

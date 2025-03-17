@@ -27,8 +27,9 @@ impl<T: Disassemble + Clone> Disassemble for Trace<T> {
     }
 }
 
-
-impl<Insn, S: crate::BruteforceSearch<Insn> + Clone + Disassemble> crate::BruteforceSearch<Insn> for Trace<S> {
+impl<Insn, S: crate::BruteforceSearch<Insn> + Clone + Disassemble> crate::BruteforceSearch<Insn>
+    for Trace<S>
+{
     fn analyze_this(&self) -> Option<crate::StaticAnalysis<Insn>> {
         None
     }
@@ -41,7 +42,6 @@ impl<Insn, S: crate::BruteforceSearch<Insn> + Clone + Disassemble> crate::Brutef
         self.dasm();
     }
 }
-
 
 impl<T: Step + Clone + Disassemble> Step for Trace<T> {
     fn next(&mut self) -> IterationResult {
