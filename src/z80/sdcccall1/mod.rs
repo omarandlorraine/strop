@@ -59,7 +59,6 @@ pub struct SdccCall1<Params, RetVal> {
     seq: crate::z80::Subroutine,
     params: std::marker::PhantomData<Params>,
     retval: std::marker::PhantomData<RetVal>,
-
 }
 
 impl<Params, RetVal> Default for SdccCall1<Params, RetVal> {
@@ -82,7 +81,9 @@ impl<Params, RetVal> crate::Disassemble for SdccCall1<Params, RetVal> {
     }
 }
 
-impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal> for SdccCall1<Params, RetVal> {
+impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal>
+    for SdccCall1<Params, RetVal>
+{
     fn call(&self, input: Params) -> crate::RunResult<RetVal> {
         use crate::Run;
         let mut emu = Emulator::default();
@@ -116,11 +117,8 @@ impl<Params, RetVal> BruteforceSearch<Insn> for SdccCall1<Params, RetVal> {
     }
 }
 
-impl<
-        Params: ParameterList,
-        RetVal: ReturnValue,
-        TargetFunction: Callable<Params, RetVal>,
-    > crate::AsBruteforce<Insn, Params, RetVal, TargetFunction> for SdccCall1<Params, RetVal>
+impl<Params: ParameterList, RetVal: ReturnValue, TargetFunction: Callable<Params, RetVal>>
+    crate::AsBruteforce<Insn, Params, RetVal, TargetFunction> for SdccCall1<Params, RetVal>
 {
     fn bruteforce(
         self,
