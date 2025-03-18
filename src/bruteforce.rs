@@ -23,6 +23,8 @@ pub struct BruteForce<
     pub count: usize,
 }
 
+/// Converts something to a BruteForce, which performs brute force searches over some search space
+/// for a given function.
 pub trait ToBruteForce<
     Insn,
     InputParameters,
@@ -30,6 +32,7 @@ pub trait ToBruteForce<
     TargetFunction: Callable<InputParameters, ReturnValue>,
 >
 {
+    /// Return a BruteForce
     fn to_bruteforce(
         self,
         target_function: TargetFunction,

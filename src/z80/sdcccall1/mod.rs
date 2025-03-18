@@ -55,17 +55,20 @@ impl ReturnValue for i16 {
 /// Mimics the calling convention used by modern-day SDCC. SDCC's internal documentation calls this
 /// `__sdcccall(1)`.
 #[derive(Clone, Debug)]
-pub struct SdccCall1 {
+pub struct SdccCall1<Params, RetVal> {
     seq: crate::z80::Subroutine,
+    params: std::marker::PhantomData<Params>,
+    retval: std::marker::PhantomData<RetVal>,
+
 }
 
-impl Default for SdccCall1 {
+impl<Params, RetVal> Default for SdccCall1<Params, RetVal> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl SdccCall1 {
+impl<Params, RetVal> SdccCall1<Params, RetVal> {
     /// Instantiates a new, empty SdccCall1.
     pub fn new() -> Self {
         use crate::Step;
@@ -73,13 +76,13 @@ impl SdccCall1 {
     }
 }
 
-impl crate::Disassemble for SdccCall1 {
+impl<Params, RetVal> crate::Disassemble for SdccCall1<Params, RetVal> {
     fn dasm(&self) {
         self.seq.dasm()
     }
 }
 
-impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal> for SdccCall1 {
+impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal> for SdccCall1<Params, RetVal> {
     fn call(&self, input: Params) -> crate::RunResult<RetVal> {
         use crate::Run;
         let mut emu = Emulator::default();
@@ -89,10 +92,12 @@ impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal> for Sd
     }
 }
 
-impl crate::Step for SdccCall1 {
+impl<Params, RetVal> crate::Step for SdccCall1<Params, RetVal> {
     fn first() -> Self {
         Self {
             seq: crate::Step::first(),
+            retval: std::marker::PhantomData::default(),
+            params: std::marker::PhantomData::default(),
         }
     }
 
@@ -101,7 +106,7 @@ impl crate::Step for SdccCall1 {
     }
 }
 
-impl BruteforceSearch<Insn> for SdccCall1 {
+impl<Params, RetVal> BruteforceSearch<Insn> for SdccCall1<Params, RetVal> {
     fn analyze_this(&self) -> Option<StaticAnalysis<Insn>> {
         // TODO: dataflow analysis could go here.
         None
@@ -112,16 +117,16 @@ impl BruteforceSearch<Insn> for SdccCall1 {
 }
 
 impl<
-        InputParameters: ParameterList,
-        ReturnType: ReturnValue,
-        TargetFunction: Callable<InputParameters, ReturnType>,
-    > crate::AsBruteforce<Insn, InputParameters, ReturnType, TargetFunction> for SdccCall1
+        Params: ParameterList,
+        RetVal: ReturnValue,
+        TargetFunction: Callable<Params, RetVal>,
+    > crate::AsBruteforce<Insn, Params, RetVal, TargetFunction> for SdccCall1<Params, RetVal>
 {
     fn bruteforce(
         self,
         function: TargetFunction,
-    ) -> BruteForce<Insn, InputParameters, ReturnType, TargetFunction, SdccCall1> {
-        BruteForce::<Insn, InputParameters, ReturnType, TargetFunction, SdccCall1>::new(
+    ) -> BruteForce<Insn, Params, RetVal, TargetFunction, SdccCall1<Params, RetVal>> {
+        BruteForce::<Insn, Params, RetVal, TargetFunction, SdccCall1<Params, RetVal>>::new(
             function, self,
         )
     }
