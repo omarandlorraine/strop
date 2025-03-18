@@ -191,7 +191,7 @@ pub trait Goto<Insn> {
     fn goto(&mut self, destination: &[Insn]);
 }
 
-impl<Insn: Clone, S: ?Sized + Clone + AsMut<Sequence<Insn>>> Goto<Insn> for S {
+impl<Insn: Clone, S: Clone + AsMut<Sequence<Insn>>> Goto<Insn> for S {
     fn goto(&mut self, destination: &[Insn]) {
         let s = self.as_mut();
         s.goto(destination);

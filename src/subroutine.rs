@@ -28,7 +28,7 @@ impl<Insn, S: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>> AsRef<Sequence<Ins
 impl<Insn, S: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>> Subroutine<Insn, S> {
     /// Wraps the object in the Subroutine struct
     pub fn new(s: S) -> Self {
-        Self(s, std::marker::PhantomData::default())
+        Self(s, std::marker::PhantomData)
     }
 }
 
@@ -70,7 +70,7 @@ impl<Insn, S: crate::Step + BruteforceSearch<Insn> + AsRef<Sequence<Insn>>> crat
     for Subroutine<Insn, S>
 {
     fn first() -> Self {
-        Self(S::first(), std::marker::PhantomData::default())
+        Self(S::first(), std::marker::PhantomData)
     }
     fn next(&mut self) -> crate::IterationResult {
         self.0.next()

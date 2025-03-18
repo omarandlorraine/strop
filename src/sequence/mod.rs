@@ -26,7 +26,7 @@ impl<T: Step + crate::subroutine::ShouldReturn> crate::subroutine::ToSubroutine<
 
 impl<Insn> AsRef<Sequence<Insn>> for Sequence<Insn> {
     fn as_ref(&self) -> &Sequence<Insn> {
-        &self
+        self
     }
 }
 

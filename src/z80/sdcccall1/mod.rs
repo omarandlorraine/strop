@@ -97,8 +97,8 @@ impl<Params, RetVal> crate::Step for SdccCall1<Params, RetVal> {
     fn first() -> Self {
         Self {
             seq: crate::Step::first(),
-            retval: std::marker::PhantomData::default(),
-            params: std::marker::PhantomData::default(),
+            retval: std::marker::PhantomData,
+            params: std::marker::PhantomData,
         }
     }
 
