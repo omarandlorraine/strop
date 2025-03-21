@@ -1,0 +1,10 @@
+[jobs.m68k]
+command = [
+	"cargo",
+	"+nightly",
+	"check",
+	"--all-targets",
+        "--no-default-features",
+	"--features",
+	"m68k"
+]
