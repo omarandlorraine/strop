@@ -1,4 +1,4 @@
-use crate::{StepError, IterationResult};
+use crate::{IterationResult, StepError};
 
 /// Represents one 68000 machine code instruction
 #[derive(Clone, Copy, Default, PartialOrd, PartialEq)]
@@ -74,7 +74,7 @@ impl crate::Step for Insn {
                 return Ok(());
             } else {
                 if offs == 0 {
-            return Err(StepError::End);
+                    return Err(StepError::End);
                 }
                 self.0[offs] = 0;
                 offs -= 1;

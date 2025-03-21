@@ -4,7 +4,8 @@ const MEM_SIZE: u32 = 65536;
 #[derive(Debug)]
 pub struct Memory([u8; MEM_SIZE as usize]); // Define your memory management system.
 
-impl MemoryAccess for Memory { // Implement the MemoryAccess trait.
+impl MemoryAccess for Memory {
+    // Implement the MemoryAccess trait.
     fn get_byte(&mut self, addr: u32) -> Option<u8> {
         if addr < MEM_SIZE {
             Some(self.0[addr as usize])
@@ -43,5 +44,4 @@ pub struct Emulator {
     pub cpu: M68000<m68000::cpu_details::Mc68000>,
 }
 
-impl Emulator {
-}
+impl Emulator {}

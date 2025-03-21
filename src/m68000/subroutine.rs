@@ -25,14 +25,23 @@ impl crate::Run<Emulator> for Subroutine {
         let encoding = self.encode();
         for (addr, val) in encoding.iter().enumerate() {
             let addr = addr as u32;
-            emulator.memory.set_word(SUBROUTINE_START + addr, *val).unwrap();
+            emulator
+                .memory
+                .set_word(SUBROUTINE_START + addr, *val)
+                .unwrap();
         }
 
         // Write the subroutine's address to the RESET vector and initialize the stack pointer
         // thing as well
-        emulator.memory.set_word(0, INITIAL_STACK_POINTER as u16).unwrap();
+        emulator
+            .memory
+            .set_word(0, INITIAL_STACK_POINTER as u16)
+            .unwrap();
         emulator.memory.set_word(2, 0).unwrap();
-        emulator.memory.set_word(4, SUBROUTINE_START as u16).unwrap();
+        emulator
+            .memory
+            .set_word(4, SUBROUTINE_START as u16)
+            .unwrap();
         emulator.memory.set_word(6, 0).unwrap();
 
         let end_of_subroutine = std::num::Wrapping(SUBROUTINE_START + encoding.len() as u32);
