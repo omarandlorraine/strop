@@ -3,7 +3,7 @@ command = [
 	"cargo",
 	"+nightly",
 	"check",
-	"--all-targets",
+	"--lib",
         "--no-default-features",
 	"--features",
 	"m68k"
