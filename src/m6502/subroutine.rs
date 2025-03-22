@@ -6,6 +6,7 @@ use crate::m6502::Insn;
 pub type Subroutine<V> = crate::Subroutine<Insn<V>, crate::Sequence<Insn<V>>>;
 
 impl<V: mos6502::Variant> Subroutine<V> {
+    /// Run the subroutine on a given emulator
     pub fn run(&self, emulator: &mut Emulator<V>) -> crate::RunResult<()> {
         use crate::Encode;
         use mos6502::memory::Bus;
@@ -25,8 +26,6 @@ impl<V: mos6502::Variant> Subroutine<V> {
             mos6502::instruction::Instruction::JSR,
             mos6502::instruction::OpInput::UseAddress(SUBROUTINE_ADDRESS),
         ));
-
-        let new_stack_pointer = emulator.cpu.registers.stack_pointer;
 
         emulator
             .cpu
