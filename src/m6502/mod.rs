@@ -1,9 +1,11 @@
 //! This is the back-end targeting the MOS 6502, a well-known 8-bit retro CPU.
 
 mod diss;
+mod emulator;
 mod isa;
 mod subroutine;
 
+pub use emulator::Emulator;
 pub use isa::Insn;
 pub use subroutine::Subroutine;
 

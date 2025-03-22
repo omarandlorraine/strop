@@ -1,38 +1,43 @@
+use crate::IterationResult;
+use crate::StepError;
 /// Represents a 6502 machine instruction, compatible with some 6502 variant.
 #[derive(Copy, Clone, Default, PartialOrd, PartialEq)]
-pub struct Insn<V: mos6502::Variant + std::clone::Clone>([u8; 3], std::marker::PhantomData<V>)
-where
-    V: std::clone::Clone;
+pub struct Insn<V: mos6502::Variant>([u8; 3], std::marker::PhantomData<V>);
 
-impl<V: mos6502::Variant + std::clone::Clone> crate::Iterable for Insn<V> {
+impl<V: mos6502::Variant> crate::Step for Insn<V> {
     fn first() -> Self {
         Self([0, 0, 0], std::marker::PhantomData::<V>)
     }
 
-    fn step(&mut self) -> bool {
+    fn next(&mut self) -> IterationResult {
         use crate::Encode;
         self.incr_at_offset(self.len() - 1);
-        self.fixup();
-
-        // check if we reached the last opcode
-        // ($ff is not a valid opcode)
-        self.0[0] != 0xff
+        self.fixup()
     }
 }
 
-impl<V: mos6502::Variant + std::clone::Clone> Insn<V> {
+impl<V: mos6502::Variant> crate::subroutine::ShouldReturn for Insn<V> {
+    fn should_return(&self) -> Option<crate::StaticAnalysis<Self>> {
+        if self.0 == Self::rts().0 {
+            return None;
+        }
+        Some(crate::StaticAnalysis::<Self> {
+            offset: 0,
+            advance: Self::skip_to_next_opcode,
+            reason: "ShouldReturn",
+        })
+    }
+}
+
+impl<V: mos6502::Variant> Insn<V> {
     /// Increments the opcode, and sets all subsequent bytes (i.e. the operand) to 0.
-    pub fn skip_to_next_opcode(&mut self) -> bool {
+    pub fn skip_to_next_opcode(&mut self) -> IterationResult {
         self.0 = [self.0[0] + 1, 0, 0];
-        self.fixup();
-
-        // check if we reached the last opcode
-        // ($ff is not a valid opcode)
-        self.0[0] != 0xff
+        self.fixup()
     }
 }
 
-impl<V: mos6502::Variant + std::clone::Clone> crate::Encode<u8> for Insn<V> {
+impl<V: mos6502::Variant> crate::Encode<u8> for Insn<V> {
     fn encode(&self) -> std::vec::Vec<u8> {
         let mut encoding = self.0.to_vec();
         encoding.truncate(self.len());
@@ -61,7 +66,7 @@ impl<V: mos6502::Variant + std::clone::Clone> crate::Encode<u8> for Insn<V> {
     }
 }
 
-impl<V: mos6502::Variant + std::clone::Clone> Insn<V> {
+impl<V: mos6502::Variant> Insn<V> {
     /// constructs a return instruction `rts`.
     pub fn rts() -> Self {
         Self::new(&[0x60])
@@ -201,17 +206,16 @@ impl<V: mos6502::Variant + std::clone::Clone> Insn<V> {
         }
     }
     /// Regardless of the `Insn`'s current value, this mutates it such that it now represents a
-    /// valid 6502 machine instruction. Be sure that the opcode field is not beyond the range of
-    /// valid opcodes.
-    pub fn fixup(&mut self) {
-        use mos6502::Variant;
-        while mos6502::instruction::Cmos6502::decode(self.0[0]).is_none() {
+    /// valid 6502 machine instruction.
+    pub fn fixup(&mut self) -> IterationResult {
+        while V::decode(self.0[0]).is_none() {
             if let Some(new_opcode) = self.0[0].checked_add(1) {
                 self.0[0] = new_opcode;
             } else {
-                break;
+                return Err(StepError::End);
             }
         }
+        Ok(())
     }
 }
 
@@ -220,29 +224,29 @@ mod test {
     #[test]
     fn first_few() {
         use super::Insn;
-        use crate::Iterable;
+        use crate::Step;
         use mos6502::instruction::Cmos6502;
 
         let mut i = Insn::<Cmos6502>::first();
         println!("{} ; {:?}", i, i);
-        assert!(i.step());
+        assert!(i.next().is_ok());
         println!("{} ; {:?}", i, i);
-        assert!(i.step());
+        assert!(i.next().is_ok());
         println!("{} ; {:?}", i, i);
-        assert!(i.step());
+        assert!(i.next().is_ok());
         println!("{} ; {:?}", i, i);
-        assert!(i.step());
+        assert!(i.next().is_ok());
     }
 
     #[test]
     fn all_instructions() {
         use super::Insn;
-        use crate::Iterable;
+        use crate::Step;
         use mos6502::instruction::Cmos6502;
 
         let mut i = Insn::<Cmos6502>::first();
 
-        while i.step() {
+        while i.next().is_ok() {
             println!("{} ; {:?}", i, i);
             i.decode();
         }

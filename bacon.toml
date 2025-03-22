@@ -1,3 +1,13 @@
+[jobs.m6502]
+command = [
+	"cargo",
+	"check",
+	"--lib",
+	"--no-default-features",
+	"--features",
+	"m6502"
+]
+
 [jobs.m68k]
 command = [
 	"cargo",
