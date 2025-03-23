@@ -20,8 +20,8 @@
 pub mod m6502;
 #[cfg(feature = "m68k")]
 pub mod m68000;
-//#[cfg(feature = "m6809")]
-//pub mod m6809;
+#[cfg(feature = "m6809")]
+pub mod m6809;
 #[cfg(feature = "z80")]
 pub mod z80;
 
