@@ -84,20 +84,49 @@ impl Insn {
         // TODO: PSR instructions shouldn't ever take PC or SP or LR as their argument
         true
     }
+
+    /// Increments the isntruction word by 1
+    pub fn increment(&mut self) -> crate::IterationResult {
+        if self.0 > 0xfffffffe {
+            Err(crate::StepError::End)
+        } else {
+            self.0 += 1;
+            Ok(())
+        }
+    }
+
+    fn make_return(&mut self) -> crate::IterationResult {
+        // TODO: There are other possible return instructions here.
+        if self.0 <= Self::bx_lr().0 {
+            *self = Self::bx_lr();
+            Ok(())
+        } else {
+            dbg!(self);
+            Err(crate::StepError::End)
+        }
+    }
 }
 
-impl crate::Iterable for Insn {
+impl crate::Step for Insn {
     fn first() -> Self {
         Insn(0)
     }
 
-    fn step(&mut self) -> bool {
-        if self.0 > 0xfffffffe {
-            false
-        } else {
-            self.0 += 1;
-            true
+    fn next(&mut self) -> crate::IterationResult {
+        self.increment()
+    }
+}
+
+impl crate::subroutine::ShouldReturn for Insn {
+    fn should_return(&self) -> Option<crate::StaticAnalysis<Self>> {
+        if *self == Self::bx_lr() {
+            return None;
         }
+        Some(crate::StaticAnalysis::<Self> {
+            advance: Self::make_return,
+            offset: 0,
+            reason: "ShouldReturn",
+        })
     }
 }
 
@@ -140,12 +169,12 @@ mod test {
     #[test]
     #[ignore]
     fn all_instructions() {
-        use crate::Iterable;
+        use crate::Step;
 
         let mut i = super::Insn(0xff7affff);
         // let mut i = super::Insn::first();
 
-        while i.step() {
+        while i.next().is_ok() {
             // check that the instruction can be disassembled
             assert_eq!(format!("{:?}", i).len(), 95, "{:?}", i);
 
@@ -160,7 +189,7 @@ mod test {
                 while !emulator_knows_it(i) {
                     end = i;
                     println!("the emulator can't run {:?}", i);
-                    i.step();
+                    i.next().unwrap();
                 }
                 println!("the range is {:?}..{:?} inclusive", beginning.0, end.0);
                 panic!("found a range of instructions visited by the .increment method that the emulator doesn't know");

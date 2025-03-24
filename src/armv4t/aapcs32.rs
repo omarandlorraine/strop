@@ -1,10 +1,11 @@
 //! Implements searches for functions complying with the AAPCS32 calling convention, as used by
 //! modern (EABI) linux systems and others.
 
-use crate::armv4t::isa::decode::Register;
 use crate::armv4t::Insn;
-use crate::Sequence;
+use crate::BruteforceSearch;
+use crate::StaticAnalysis;
 
+/*
 fn callee_saved(r: &Register) -> bool {
     match r {
         Register::R0 => false,
@@ -25,69 +26,34 @@ fn callee_saved(r: &Register) -> bool {
         Register::Pc => false,
     }
 }
-
-fn prologue(r: &[Register]) -> Vec<Insn> {
-    if r.is_empty() {
-        vec![]
-    } else {
-        vec![Insn::push(r)]
-    }
-}
-
-fn epilogue(r: &[Register]) -> Vec<Insn> {
-    if r.is_empty() {
-        vec![Insn::bx_lr()]
-    } else {
-        let mut r = r.to_owned();
-        r.push(Register::Pc);
-        vec![Insn::pop(&r)]
-    }
-}
+*/
 
 /// The AAPCS32-compliant function
 #[derive(Debug)]
-pub struct Function(Sequence<Insn>);
-
-impl Function {
-    /// Builds the function by concatenating the prologue, the body of the subroutine, and the
-    /// epilogue. The prologue and epilogue are made to save and restore the callee-saved
-    /// registers.
-    pub fn build(&self) -> Sequence<Insn> {
-        let mut unique_elements = std::collections::HashSet::new();
-
-        let callee_saved_registers: Vec<_> = self
-            .0
-            .iter()
-            .map(|i| i.uses())
-            .flat_map(|v| v.into_iter())
-            .filter(|item| unique_elements.insert(*item))
-            .filter(callee_saved)
-            .collect();
-
-        let prologue = prologue(&callee_saved_registers);
-        let epilogue = epilogue(&callee_saved_registers);
-        vec![&prologue, &self.0, &epilogue].into()
-    }
+pub struct Function<Params, RetVal> {
+    seq: crate::armv4t::Subroutine,
+    params: std::marker::PhantomData<Params>,
+    retval: std::marker::PhantomData<RetVal>,
 }
 
-impl crate::Disassemble for Function {
+impl<Params, RetVal> crate::Disassemble for Function <Params, RetVal>{
     fn dasm(&self) {
-        self.0.dasm()
+        self.seq.dasm()
     }
 }
 
-impl crate::Goto<Insn> for Function {
+impl<Params, RetVal> crate::Goto<Insn> for Function <Params, RetVal>{
     fn goto(&mut self, t: &[Insn]) {
-        self.0.goto(t);
+        self.seq.goto(t);
     }
 }
 
-impl crate::Iterable for Function {
-    fn first() -> Self {
-        Self(crate::Iterable::first())
+impl<Params, RetVal> BruteforceSearch<Insn> for Function<Params, RetVal> {
+    fn analyze_this(&self) -> Option<StaticAnalysis<Insn>> {
+        // TODO: dataflow analysis could go here.
+        None
     }
-
-    fn step(&mut self) -> bool {
-        self.0.step()
+    fn inner(&mut self) -> &mut dyn BruteforceSearch<Insn> {
+        &mut self.seq
     }
 }
