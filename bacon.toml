@@ -18,3 +18,13 @@ command = [
 	"--features",
 	"m68k"
 ]
+
+[jobs.armv4t]
+command = [
+	"cargo",
+	"check",
+	"--lib",
+        "--no-default-features",
+	"--features",
+	"armv4t"
+]
