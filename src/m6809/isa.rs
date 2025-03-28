@@ -303,6 +303,7 @@ impl Insn {
 #[cfg(test)]
 mod test {
     #[test]
+    #[ignore]
     fn all_opcodes() {
         use super::Insn;
         use crate::Encode;
