@@ -221,7 +221,10 @@ impl<V: mos6502::Variant> Insn<V> {
 
 #[cfg(test)]
 mod test {
-    fn check_insn<V>(insn: super::Insn<V>) where V: Clone + mos6502::Variant {
+    fn check_insn<V>(insn: super::Insn<V>)
+    where
+        V: Clone + mos6502::Variant,
+    {
         use crate::Encode;
         insn.decode();
         let mut copy = insn.clone();
@@ -246,7 +249,10 @@ mod test {
         assert!(i.next().is_ok());
     }
 
-    fn all_instructions<V>() where V: Clone + mos6502::Variant {
+    fn all_instructions<V>()
+    where
+        V: Clone + mos6502::Variant,
+    {
         use super::Insn;
         use crate::Step;
 
@@ -260,7 +266,6 @@ mod test {
         }
         println!("Iterated over {count} instructions");
     }
-
 
     #[test]
     fn all_instructions_cmos() {
