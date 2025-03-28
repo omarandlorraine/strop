@@ -221,6 +221,14 @@ impl<V: mos6502::Variant> Insn<V> {
 
 #[cfg(test)]
 mod test {
+    fn check_insn<V>(insn: super::Insn<V>) where V: Clone + mos6502::Variant {
+        use crate::Encode;
+        insn.decode();
+        let mut copy = insn.clone();
+        copy.fixup().unwrap();
+        assert_eq!(copy.encode(), insn.encode());
+    }
+
     #[test]
     fn first_few() {
         use super::Insn;
@@ -238,17 +246,39 @@ mod test {
         assert!(i.next().is_ok());
     }
 
-    #[test]
-    fn all_instructions() {
+    fn all_instructions<V>() where V: Clone + mos6502::Variant {
         use super::Insn;
         use crate::Step;
-        use mos6502::instruction::Cmos6502;
 
-        let mut i = Insn::<Cmos6502>::first();
+        let mut i = Insn::<V>::first();
+
+        let mut count = 0usize;
 
         while i.next().is_ok() {
-            println!("{} ; {:?}", i, i);
-            i.decode();
+            check_insn(i.clone());
+            count += 1;
         }
+        println!("Iterated over {count} instructions");
+    }
+
+
+    #[test]
+    fn all_instructions_cmos() {
+        all_instructions::<mos6502::instruction::Cmos6502>();
+    }
+
+    #[test]
+    fn all_instructions_reva() {
+        all_instructions::<mos6502::instruction::RevisionA>();
+    }
+
+    #[test]
+    fn all_instructions_2a03() {
+        all_instructions::<mos6502::instruction::Ricoh2a03>();
+    }
+
+    #[test]
+    fn all_instructions_nmos() {
+        all_instructions::<mos6502::instruction::Nmos6502>();
     }
 }
