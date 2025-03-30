@@ -2,7 +2,7 @@ use crate::armv4t::Emulator;
 use crate::armv4t::Insn;
 use crate::RunError;
 
-/// Represents a Z80 subroutine
+/// Represents an ARMv4T subroutine
 pub type Subroutine = crate::Subroutine<Insn, crate::Sequence<Insn>>;
 
 impl Default for Subroutine {
