@@ -14,8 +14,8 @@
 #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 #![forbid(unsafe_code)]
 
-//#[cfg(feature = "armv4t")]
-//pub mod armv4t;
+#[cfg(feature = "armv4t")]
+pub mod armv4t;
 #[cfg(feature = "m6502")]
 pub mod m6502;
 #[cfg(feature = "m68k")]
