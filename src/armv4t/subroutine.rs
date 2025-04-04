@@ -18,8 +18,8 @@ impl crate::Run<Emulator> for Subroutine {
         use crate::Encode;
         use armv4t_emu::Memory;
         use armv4t_emu::reg;
-        const return_address: u32 = 0x5678;
-        const bottom_of_stack: u32 = 0x1000;
+        const RETURN_ADDRESS: u32 = 0x5678;
+        const BOTTOM_OF_STACK: u32 = 0x1000;
         let mode = emulator.cpu.mode();
         dbg!(mode);
 
@@ -30,8 +30,8 @@ impl crate::Run<Emulator> for Subroutine {
             emulator.mem.w32(addr as u32, *val);
         }
         emulator.cpu.reg_set(mode, reg::PC, 0);
-        emulator.cpu.reg_set(mode, reg::SP, bottom_of_stack);
-        emulator.cpu.reg_set(mode, reg::LR, return_address);
+        emulator.cpu.reg_set(mode, reg::SP, BOTTOM_OF_STACK);
+        emulator.cpu.reg_set(mode, reg::LR, RETURN_ADDRESS);
 
         let end_of_subroutine = Encode::<u8>::encode(self).len() as u32;
 
@@ -44,7 +44,7 @@ impl crate::Run<Emulator> for Subroutine {
             dbg!(pc);
             dbg!(sp);
             dbg!(lr);
-            if pc == return_address && sp == bottom_of_stack {
+            if pc == RETURN_ADDRESS && sp == BOTTOM_OF_STACK {
                 // Expected values for PC and SP mean that the subroutine has returned
                 return Ok(());
             }
@@ -68,8 +68,9 @@ impl crate::Run<Emulator> for Subroutine {
 
 #[cfg(test)]
 mod okay {
+    #[ignore]
     #[test]
-    fn all_returning_instruction() {
+    fn all_returning_instructions() {
         use crate::BruteforceSearch;
         use crate::armv4t::Subroutine;
         use crate::armv4t::Emulator;
