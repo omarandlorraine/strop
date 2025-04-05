@@ -4,8 +4,8 @@
 use crate::armv4t::Emulator;
 use crate::armv4t::Insn;
 use crate::BruteforceSearch;
-use crate::StaticAnalysis;
 use crate::Callable;
+use crate::StaticAnalysis;
 
 const MODE: armv4t_emu::Mode = armv4t_emu::Mode::User;
 
@@ -59,7 +59,10 @@ trait ParameterList {
     fn put_list(&self, emu: &mut Emulator);
 }
 
-impl<T> ParameterList for T where T: FitsInRegister {
+impl<T> ParameterList for T
+where
+    T: FitsInRegister,
+{
     fn put_list(&self, emu: &mut Emulator) {
         self.put(emu, 0);
     }
@@ -69,7 +72,10 @@ trait ReturnValue {
     fn get_list(emu: &Emulator) -> Self;
 }
 
-impl<T> ReturnValue for T where T: FitsInRegister {
+impl<T> ReturnValue for T
+where
+    T: FitsInRegister,
+{
     fn get_list(emu: &Emulator) -> Self {
         T::get(emu, 0)
     }
@@ -84,7 +90,7 @@ pub struct Function<Params, RetVal> {
 }
 
 impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal>
-     for Function<Params, RetVal>
+    for Function<Params, RetVal>
 {
     fn call(&self, input: Params) -> crate::RunResult<RetVal> {
         use crate::Run;
@@ -95,13 +101,13 @@ impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal>
     }
 }
 
-impl<Params, RetVal> crate::Disassemble for Function <Params, RetVal>{
+impl<Params, RetVal> crate::Disassemble for Function<Params, RetVal> {
     fn dasm(&self) {
         self.seq.dasm()
     }
 }
 
-impl<Params, RetVal> crate::Goto<Insn> for Function <Params, RetVal>{
+impl<Params, RetVal> crate::Goto<Insn> for Function<Params, RetVal> {
     fn goto(&mut self, t: &[Insn]) {
         self.seq.goto(t);
     }

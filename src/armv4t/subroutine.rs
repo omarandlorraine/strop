@@ -16,8 +16,8 @@ impl Default for Subroutine {
 impl crate::Run<Emulator> for Subroutine {
     fn run(&self, emulator: &mut Emulator) -> crate::RunResult<()> {
         use crate::Encode;
-        use armv4t_emu::Memory;
         use armv4t_emu::reg;
+        use armv4t_emu::Memory;
         const RETURN_ADDRESS: u32 = 0x5678;
         const BOTTOM_OF_STACK: u32 = 0x1000;
         let mode = emulator.cpu.mode();
@@ -71,9 +71,9 @@ mod okay {
     #[ignore]
     #[test]
     fn all_returning_instructions() {
-        use crate::BruteforceSearch;
-        use crate::armv4t::Subroutine;
         use crate::armv4t::Emulator;
+        use crate::armv4t::Subroutine;
+        use crate::BruteforceSearch;
         use crate::Disassemble;
         use crate::Encode;
         use crate::Run;
