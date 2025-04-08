@@ -62,17 +62,20 @@ mod iter {
     #[test]
     fn iter() {
         use crate::z80::Emulator;
-        use crate::z80::Insn;
         use crate::z80::Subroutine;
-        use crate::Goto;
         use crate::Run;
         use crate::Step;
         use crate::Disassemble;
+        use crate::BruteforceSearch;
 
         let mut subroutine = Subroutine::first();
 
-        subroutine.dasm();
         assert!(subroutine.run(&mut Emulator::default()).is_ok());
+        for _ in 0..5 {
+            subroutine.dasm();
+            assert!(subroutine.run(&mut Emulator::default()).is_ok());
+            subroutine.step();
+        }
     }
 }
 

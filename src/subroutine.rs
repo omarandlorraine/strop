@@ -76,7 +76,9 @@ impl<Insn: ShouldReturn, S: crate::Step + BruteforceSearch<Insn> + AsRef<Sequenc
         r
     }
     fn next(&mut self) -> crate::IterationResult {
-        self.0.next()
+        self.0.next()?;
+        self.fixup();
+        Ok(())
     }
 }
 

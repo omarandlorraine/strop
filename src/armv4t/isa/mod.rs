@@ -97,12 +97,13 @@ impl Insn {
 
     fn make_return(&mut self) -> crate::IterationResult {
         // TODO: There are other possible return instructions here.
-        if self.0 <= Self::bx_lr().0 {
+        if self.0 < Self::bx_lr().0 {
             *self = Self::bx_lr();
             Ok(())
-        } else {
-            dbg!(self);
+        } else if self.0 > Self::bx_lr().0  {
             Err(crate::StepError::End)
+        } else {
+            unreachable!();
         }
     }
 }
@@ -164,6 +165,33 @@ mod test {
     #[test]
     fn bx_lr() {
         assert_eq!("bx lr", &format!("{}", super::Insn::bx_lr()));
+    }
+
+    #[test]
+    fn should_return() {
+        use crate::Step;
+        use crate::BruteforceSearch;
+        use crate::subroutine::ShouldReturn;
+
+        // get the first instruction which decodes to `andeq r0, r0, r0` or whatever
+        let mut i = super::Insn::first();
+
+        // this should return a static analysis that changes it to `bx lr`
+        let sa = i.should_return().unwrap();
+
+        // so advance it.
+        (sa.advance)(&mut i).unwrap();
+        assert_eq!(i, super::Insn::bx_lr());
+
+        // this time it should not return a static analysis
+        assert!(i.should_return().is_none());
+
+        // but if we advance to some other instruction, ...
+        i.next().unwrap();
+
+        // ... then this should return a static analysis that goes to an error
+        let sa = i.should_return().unwrap();
+        assert!((sa.advance)(&mut i).is_err());
     }
 
     #[test]

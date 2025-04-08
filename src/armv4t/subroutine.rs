@@ -5,14 +5,6 @@ use crate::RunError;
 /// Represents an ARMv4T subroutine
 pub type Subroutine = crate::Subroutine<Insn, crate::Sequence<Insn>>;
 
-impl Default for Subroutine {
-    fn default() -> Self {
-        use crate::subroutine::ToSubroutine;
-        use crate::Step;
-        crate::Sequence::<Insn>::first().to_subroutine()
-    }
-}
-
 impl crate::Run<Emulator> for Subroutine {
     fn run(&self, emulator: &mut Emulator) -> crate::RunResult<()> {
         use crate::Encode;
@@ -68,27 +60,26 @@ impl crate::Run<Emulator> for Subroutine {
 
 #[cfg(test)]
 mod okay {
-    #[ignore]
     #[test]
     fn all_returning_instructions() {
         use crate::armv4t::Emulator;
         use crate::armv4t::Subroutine;
         use crate::BruteforceSearch;
         use crate::Disassemble;
-        use crate::Encode;
         use crate::Run;
         use crate::Step;
 
         let mut subroutine = Subroutine::first();
         let mut emu = Emulator::default();
 
-        for _ in 0..5 {
-            println!("attempt:");
+            println!("attempt:{:?}", subroutine.analyze());
             subroutine.dasm();
 
             assert!(subroutine.run(&mut emu).is_ok());
             println!("returned");
-            subroutine.next().unwrap();
-        }
+
+            subroutine.step();
+            println!("attempt:{:?}", subroutine.analyze());
+            println!("attempt:{:?}", subroutine.analyze());
     }
 }
