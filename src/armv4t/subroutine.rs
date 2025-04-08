@@ -77,18 +77,18 @@ mod okay {
         use crate::Disassemble;
         use crate::Encode;
         use crate::Run;
+        use crate::Step;
 
-        let mut subroutine = Subroutine::default();
+        let mut subroutine = Subroutine::first();
         let mut emu = Emulator::default();
-        subroutine.step();
 
-        while Encode::<u32>::encode(&subroutine).len() == 1 {
+        for _ in 0..5 {
             println!("attempt:");
             subroutine.dasm();
 
             assert!(subroutine.run(&mut emu).is_ok());
             println!("returned");
-            subroutine.step();
+            subroutine.next().unwrap();
         }
     }
 }

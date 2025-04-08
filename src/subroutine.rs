@@ -32,7 +32,7 @@ impl<Insn, S: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>> Subroutine<Insn, S
     }
 }
 
-impl<Insn: ShouldReturn + std::fmt::Debug, S: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>>
+impl<Insn: ShouldReturn, S: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>>
     BruteforceSearch<Insn> for Subroutine<Insn, S>
 {
     fn analyze_this(&self) -> Option<crate::StaticAnalysis<Insn>>
@@ -66,11 +66,14 @@ impl<Insn, S: crate::Disassemble + BruteforceSearch<Insn> + AsRef<Sequence<Insn>
     }
 }
 
-impl<Insn, S: crate::Step + BruteforceSearch<Insn> + AsRef<Sequence<Insn>>> crate::Step
+impl<Insn: ShouldReturn, S: crate::Step + BruteforceSearch<Insn> + AsRef<Sequence<Insn>>> crate::Step
     for Subroutine<Insn, S>
 {
     fn first() -> Self {
-        Self(S::first(), std::marker::PhantomData)
+        let mut r = Self(S::first(), std::marker::PhantomData);
+        r.step();
+        r.fixup();
+        r
     }
     fn next(&mut self) -> crate::IterationResult {
         self.0.next()

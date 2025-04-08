@@ -58,6 +58,25 @@ impl crate::Run<Emulator> for Subroutine {
 }
 
 #[cfg(test)]
+mod iter {
+    #[test]
+    fn iter() {
+        use crate::z80::Emulator;
+        use crate::z80::Insn;
+        use crate::z80::Subroutine;
+        use crate::Goto;
+        use crate::Run;
+        use crate::Step;
+        use crate::Disassemble;
+
+        let mut subroutine = Subroutine::first();
+
+        subroutine.dasm();
+        assert!(subroutine.run(&mut Emulator::default()).is_ok());
+    }
+}
+
+#[cfg(test)]
 mod amok {
     #[test]
     fn stack_overflow() {
