@@ -72,14 +72,14 @@ mod okay {
         let mut subroutine = Subroutine::first();
         let mut emu = Emulator::default();
 
-            println!("attempt:{:?}", subroutine.analyze());
-            subroutine.dasm();
+        println!("attempt:{:?}", subroutine.analyze());
+        subroutine.dasm();
 
-            assert!(subroutine.run(&mut emu).is_ok());
-            println!("returned");
+        assert!(subroutine.run(&mut emu).is_ok());
+        println!("returned");
 
-            subroutine.step();
-            println!("attempt:{:?}", subroutine.analyze());
-            println!("attempt:{:?}", subroutine.analyze());
+        subroutine.step();
+        println!("attempt:{:?}", subroutine.analyze());
+        println!("attempt:{:?}", subroutine.analyze());
     }
 }

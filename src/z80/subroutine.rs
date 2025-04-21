@@ -63,10 +63,10 @@ mod iter {
     fn iter() {
         use crate::z80::Emulator;
         use crate::z80::Subroutine;
+        use crate::BruteforceSearch;
+        use crate::Disassemble;
         use crate::Run;
         use crate::Step;
-        use crate::Disassemble;
-        use crate::BruteforceSearch;
 
         let mut subroutine = Subroutine::first();
 

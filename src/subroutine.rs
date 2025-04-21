@@ -32,8 +32,8 @@ impl<Insn, S: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>> Subroutine<Insn, S
     }
 }
 
-impl<Insn: ShouldReturn, S: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>>
-    BruteforceSearch<Insn> for Subroutine<Insn, S>
+impl<Insn: ShouldReturn, S: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>> BruteforceSearch<Insn>
+    for Subroutine<Insn, S>
 {
     fn analyze_this(&self) -> Option<crate::StaticAnalysis<Insn>>
     where
@@ -66,8 +66,8 @@ impl<Insn, S: crate::Disassemble + BruteforceSearch<Insn> + AsRef<Sequence<Insn>
     }
 }
 
-impl<Insn: ShouldReturn, S: crate::Step + BruteforceSearch<Insn> + AsRef<Sequence<Insn>>> crate::Step
-    for Subroutine<Insn, S>
+impl<Insn: ShouldReturn, S: crate::Step + BruteforceSearch<Insn> + AsRef<Sequence<Insn>>>
+    crate::Step for Subroutine<Insn, S>
 {
     fn first() -> Self {
         let mut r = Self(S::first(), std::marker::PhantomData);

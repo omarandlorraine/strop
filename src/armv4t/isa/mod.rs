@@ -100,7 +100,7 @@ impl Insn {
         if self.0 < Self::bx_lr().0 {
             *self = Self::bx_lr();
             Ok(())
-        } else if self.0 > Self::bx_lr().0  {
+        } else if self.0 > Self::bx_lr().0 {
             Err(crate::StepError::End)
         } else {
             unreachable!();
@@ -169,9 +169,9 @@ mod test {
 
     #[test]
     fn should_return() {
-        use crate::Step;
-        use crate::BruteforceSearch;
         use crate::subroutine::ShouldReturn;
+        use crate::BruteforceSearch;
+        use crate::Step;
 
         // get the first instruction which decodes to `andeq r0, r0, r0` or whatever
         let mut i = super::Insn::first();
