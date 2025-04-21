@@ -107,11 +107,11 @@ impl crate::Mutate for Insn {
 
     fn mutate(&mut self) {
         use rand::Rng;
-        let offset = rand::thread_rng().gen_range(0..5);
+        let offset = rand::rng().random_range(0..5);
 
         if rand::random() {
             // could flip a bit in the instruction word
-            let mask: u8 = 1 << rand::thread_rng().gen_range(0..8);
+            let mask: u8 = 1 << rand::rng().random_range(0..8);
             self.0[offset] ^= mask;
         } else {
             // could completely change the instruction word to something completely different

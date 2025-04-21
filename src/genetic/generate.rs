@@ -61,7 +61,7 @@ impl<
     }
 
     fn roulette_selection(&mut self) -> Vec<ScoredCandidate<InputParameters, ReturnValue, U>> {
-        use rand::thread_rng;
+        use rand::rng;
         use rand::Rng;
 
         let mut next_generation = vec![];
@@ -69,7 +69,7 @@ impl<
         for _ in 0..self.popsize {
             let total_fitness: f64 = self.population.iter().map(|ind| ind.score).sum();
 
-            let mut pick = thread_rng().gen_range(0.0..total_fitness);
+            let mut pick = rng().random_range(0.0..total_fitness);
 
             for i in 0..(self.population.len() - 1) {
                 pick -= self.population[i].score;
@@ -118,7 +118,7 @@ impl<
     /// computes the next generation of the search
     pub fn next_generation(&mut self) {
         use rand::Rng;
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         if self.population.is_empty() {
             self.population
                 .push(ScoredCandidate::new(U::random(), &self.tests));
@@ -134,14 +134,14 @@ impl<
         }
 
         for _ in 0..((self.popsize as f64 * self.crossover_rate) as usize) {
-            let parent_a = rng.gen_range(0..self.population.len());
-            let parent_b = rng.gen_range(0..self.population.len());
+            let parent_a = rng.random_range(0..self.population.len());
+            let parent_b = rng.random_range(0..self.population.len());
             let parent_a = self.population[parent_a].clone();
             let parent_b = self.population[parent_b].clone();
             self.crossover(&parent_a, &parent_b);
         }
         for _ in 0..((self.popsize as f64 * self.mutation_rate) as usize) {
-            let parent = rng.gen_range(0..self.population.len());
+            let parent = rng.random_range(0..self.population.len());
             let parent = &self.population[parent].clone();
             self.mutate(parent);
         }

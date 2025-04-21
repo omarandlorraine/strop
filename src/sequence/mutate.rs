@@ -6,11 +6,11 @@ use rand::Rng;
 
 impl<Insn: Mutate> Sequence<Insn> {
     fn random_offset(&self) -> usize {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         if self.0.is_empty() {
             0
         } else {
-            rng.gen_range(0..self.0.len())
+            rng.random_range(0..self.0.len())
         }
     }
 
@@ -71,7 +71,7 @@ impl<Insn: Mutate> Mutate for Sequence<Insn> {
 
     fn mutate(&mut self) {
         use rand::Rng;
-        let choice = rand::thread_rng().gen_range(0..5);
+        let choice = rand::rng().random_range(0..5);
 
         match choice {
             0 => self.delete_random(),
@@ -90,7 +90,7 @@ impl<Insn: Copy> crate::Crossover for Sequence<Insn> {
         let crossover_point = if min_len == 0 {
             0
         } else {
-            rand::thread_rng().gen_range(0..min_len)
+            rand::rng().random_range(0..min_len)
         };
         Self(
             a.iter()

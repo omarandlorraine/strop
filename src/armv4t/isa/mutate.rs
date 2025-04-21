@@ -13,7 +13,7 @@ impl Mutate for Insn {
 
         if rand::random() {
             // could flip a bit in the instruction word
-            let mask: u32 = 1 << rand::thread_rng().gen_range(0..32);
+            let mask: u32 = 1 << rand::rng().random_range(0..32);
             self.0 ^= mask;
         } else {
             // could completely change the instruction word to something completely different
