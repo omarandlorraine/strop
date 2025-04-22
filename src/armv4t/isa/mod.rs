@@ -97,13 +97,17 @@ impl Insn {
 
     fn make_return(&mut self) -> crate::IterationResult {
         // TODO: There are other possible return instructions here.
-        if self.0 < Self::bx_lr().0 {
-            *self = Self::bx_lr();
-            Ok(())
-        } else if self.0 > Self::bx_lr().0 {
-            Err(crate::StepError::End)
-        } else {
-            unreachable!();
+        use std::cmp::Ordering;
+
+        match self.0.cmp(&Self::bx_lr().0) {
+            Ordering::Less => {
+                *self = Self::bx_lr();
+                Ok(())
+            }
+            Ordering::Greater => {
+                Err(crate::StepError::End)
+            }
+            Ordering::Equal => unreachable!(),
         }
     }
 }
@@ -170,7 +174,7 @@ mod test {
     #[test]
     fn should_return() {
         use crate::subroutine::ShouldReturn;
-        use crate::BruteforceSearch;
+
         use crate::Step;
 
         // get the first instruction which decodes to `andeq r0, r0, r0` or whatever
