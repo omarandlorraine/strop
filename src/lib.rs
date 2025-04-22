@@ -50,13 +50,19 @@ pub mod dataflow;
 
 /// Result of a static analysis pass. Explains why a code sequence has been found to be illogical
 /// or unsuitable, and provides a way to prune such a sequence from the search.
-#[derive(Debug)]
 pub struct StaticAnalysis<Instruction> {
     /// Specifies at what offset into this sequence the problem was found
     pub offset: usize,
     advance: fn(&mut Instruction) -> IterationResult,
     /// Human-readable description of the problem
     pub reason: &'static str,
+}
+
+impl<Instruction> std::fmt::Debug for StaticAnalysis<Instruction> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error
+ > {
+     write!(f, "StaticAnalysis {} offset {}", self.reason, self.offset)
+    }
 }
 
 /// Impl this on a datatype that may be iterated by mutating the datum in place. This is then used
