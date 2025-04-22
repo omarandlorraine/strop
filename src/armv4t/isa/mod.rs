@@ -104,9 +104,7 @@ impl Insn {
                 *self = Self::bx_lr();
                 Ok(())
             }
-            Ordering::Greater => {
-                Err(crate::StepError::End)
-            }
+            Ordering::Greater => Err(crate::StepError::End),
             Ordering::Equal => unreachable!(),
         }
     }

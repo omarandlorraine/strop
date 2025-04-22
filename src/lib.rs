@@ -59,9 +59,8 @@ pub struct StaticAnalysis<Instruction> {
 }
 
 impl<Instruction> std::fmt::Debug for StaticAnalysis<Instruction> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error
- > {
-     write!(f, "StaticAnalysis {} offset {}", self.reason, self.offset)
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        write!(f, "StaticAnalysis {} offset {}", self.reason, self.offset)
     }
 }
 
