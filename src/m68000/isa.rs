@@ -94,7 +94,7 @@ impl Insn {
         };
         match m68000::instruction::Instruction::from_memory(&mut memory) {
             Ok(ins) => (ins, memory.next_addr),
-            Err(e) => panic!("{:?}", e),
+            Err(e) => panic!("{e:?}"),
         }
     }
 
@@ -107,7 +107,7 @@ impl Insn {
     }
 
     fn valid_encoding(&self) -> bool {
-        let diss = format!("{}", self);
+        let diss = format!("{self}");
         !(diss.contains("Unknown") || diss.contains("ILLEGAL"))
     }
 
