@@ -84,20 +84,52 @@ impl Insn {
         // TODO: PSR instructions shouldn't ever take PC or SP or LR as their argument
         true
     }
+
+    /// Increments the isntruction word by 1
+    pub fn increment(&mut self) -> crate::IterationResult {
+        if self.0 > 0xfffffffe {
+            Err(crate::StepError::End)
+        } else {
+            self.0 += 1;
+            Ok(())
+        }
+    }
+
+    fn make_return(&mut self) -> crate::IterationResult {
+        // TODO: There are other possible return instructions here.
+        use std::cmp::Ordering;
+
+        match self.0.cmp(&Self::bx_lr().0) {
+            Ordering::Less => {
+                *self = Self::bx_lr();
+                Ok(())
+            }
+            Ordering::Greater => Err(crate::StepError::End),
+            Ordering::Equal => unreachable!(),
+        }
+    }
 }
 
-impl crate::Iterable for Insn {
+impl crate::Step for Insn {
     fn first() -> Self {
         Insn(0)
     }
 
-    fn step(&mut self) -> bool {
-        if self.0 > 0xfffffffe {
-            false
-        } else {
-            self.0 += 1;
-            true
+    fn next(&mut self) -> crate::IterationResult {
+        self.increment()
+    }
+}
+
+impl crate::subroutine::ShouldReturn for Insn {
+    fn should_return(&self) -> Option<crate::StaticAnalysis<Self>> {
+        if *self == Self::bx_lr() {
+            return None;
         }
+        Some(crate::StaticAnalysis::<Self> {
+            advance: Self::make_return,
+            offset: 0,
+            reason: "ShouldReturn",
+        })
     }
 }
 
@@ -138,14 +170,41 @@ mod test {
     }
 
     #[test]
+    fn should_return() {
+        use crate::subroutine::ShouldReturn;
+
+        use crate::Step;
+
+        // get the first instruction which decodes to `andeq r0, r0, r0` or whatever
+        let mut i = super::Insn::first();
+
+        // this should return a static analysis that changes it to `bx lr`
+        let sa = i.should_return().unwrap();
+
+        // so advance it.
+        (sa.advance)(&mut i).unwrap();
+        assert_eq!(i, super::Insn::bx_lr());
+
+        // this time it should not return a static analysis
+        assert!(i.should_return().is_none());
+
+        // but if we advance to some other instruction, ...
+        i.next().unwrap();
+
+        // ... then this should return a static analysis that goes to an error
+        let sa = i.should_return().unwrap();
+        assert!((sa.advance)(&mut i).is_err());
+    }
+
+    #[test]
     #[ignore]
     fn all_instructions() {
-        use crate::Iterable;
+        use crate::Step;
 
         let mut i = super::Insn(0xff7affff);
         // let mut i = super::Insn::first();
 
-        while i.step() {
+        while i.next().is_ok() {
             // check that the instruction can be disassembled
             assert_eq!(format!("{:?}", i).len(), 95, "{:?}", i);
 
@@ -160,7 +219,7 @@ mod test {
                 while !emulator_knows_it(i) {
                     end = i;
                     println!("the emulator can't run {:?}", i);
-                    i.step();
+                    i.next().unwrap();
                 }
                 println!("the range is {:?}..{:?} inclusive", beginning.0, end.0);
                 panic!("found a range of instructions visited by the .increment method that the emulator doesn't know");

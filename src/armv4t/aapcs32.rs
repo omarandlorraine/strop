@@ -1,10 +1,15 @@
 //! Implements searches for functions complying with the AAPCS32 calling convention, as used by
 //! modern (EABI) linux systems and others.
 
-use crate::armv4t::isa::decode::Register;
+use crate::armv4t::Emulator;
 use crate::armv4t::Insn;
-use crate::Sequence;
+use crate::BruteforceSearch;
+use crate::Callable;
+use crate::StaticAnalysis;
 
+const MODE: armv4t_emu::Mode = armv4t_emu::Mode::User;
+
+/*
 fn callee_saved(r: &Register) -> bool {
     match r {
         Register::R0 => false,
@@ -25,69 +30,95 @@ fn callee_saved(r: &Register) -> bool {
         Register::Pc => false,
     }
 }
+*/
 
-fn prologue(r: &[Register]) -> Vec<Insn> {
-    if r.is_empty() {
-        vec![]
-    } else {
-        vec![Insn::push(r)]
+trait FitsInRegister {
+    fn put(&self, emu: &mut Emulator, pos: u8);
+    fn get(emu: &Emulator, pos: u8) -> Self;
+}
+
+impl FitsInRegister for u32 {
+    fn put(&self, emu: &mut Emulator, pos: u8) {
+        emu.cpu.reg_set(MODE, pos, *self);
+    }
+    fn get(emu: &Emulator, pos: u8) -> Self {
+        emu.cpu.reg_get(MODE, pos)
     }
 }
 
-fn epilogue(r: &[Register]) -> Vec<Insn> {
-    if r.is_empty() {
-        vec![Insn::bx_lr()]
-    } else {
-        let mut r = r.to_owned();
-        r.push(Register::Pc);
-        vec![Insn::pop(&r)]
+impl FitsInRegister for i32 {
+    fn put(&self, emu: &mut Emulator, pos: u8) {
+        emu.cpu.reg_set(MODE, pos, *self as u32);
+    }
+    fn get(emu: &Emulator, pos: u8) -> Self {
+        emu.cpu.reg_get(MODE, pos) as i32
+    }
+}
+
+trait ParameterList {
+    fn put_list(&self, emu: &mut Emulator);
+}
+
+impl<T> ParameterList for T
+where
+    T: FitsInRegister,
+{
+    fn put_list(&self, emu: &mut Emulator) {
+        self.put(emu, 0);
+    }
+}
+
+trait ReturnValue {
+    fn get_list(emu: &Emulator) -> Self;
+}
+
+impl<T> ReturnValue for T
+where
+    T: FitsInRegister,
+{
+    fn get_list(emu: &Emulator) -> Self {
+        T::get(emu, 0)
     }
 }
 
 /// The AAPCS32-compliant function
 #[derive(Debug)]
-pub struct Function(Sequence<Insn>);
+pub struct Function<Params, RetVal> {
+    seq: crate::armv4t::Subroutine,
+    params: std::marker::PhantomData<Params>,
+    retval: std::marker::PhantomData<RetVal>,
+}
 
-impl Function {
-    /// Builds the function by concatenating the prologue, the body of the subroutine, and the
-    /// epilogue. The prologue and epilogue are made to save and restore the callee-saved
-    /// registers.
-    pub fn build(&self) -> Sequence<Insn> {
-        let mut unique_elements = std::collections::HashSet::new();
-
-        let callee_saved_registers: Vec<_> = self
-            .0
-            .iter()
-            .map(|i| i.uses())
-            .flat_map(|v| v.into_iter())
-            .filter(|item| unique_elements.insert(*item))
-            .filter(callee_saved)
-            .collect();
-
-        let prologue = prologue(&callee_saved_registers);
-        let epilogue = epilogue(&callee_saved_registers);
-        vec![&prologue, &self.0, &epilogue].into()
+impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal>
+    for Function<Params, RetVal>
+{
+    fn call(&self, input: Params) -> crate::RunResult<RetVal> {
+        use crate::Run;
+        let mut emu = Emulator::default();
+        input.put_list(&mut emu);
+        self.seq.run(&mut emu)?;
+        Ok(RetVal::get_list(&emu))
     }
 }
 
-impl crate::Disassemble for Function {
+impl<Params, RetVal> crate::Disassemble for Function<Params, RetVal> {
     fn dasm(&self) {
-        self.0.dasm()
+        self.seq.dasm()
     }
 }
 
-impl crate::Goto<Insn> for Function {
+impl<Params, RetVal> crate::Goto<Insn> for Function<Params, RetVal> {
     fn goto(&mut self, t: &[Insn]) {
-        self.0.goto(t);
+        self.seq.goto(t);
     }
 }
 
-impl crate::Iterable for Function {
-    fn first() -> Self {
-        Self(crate::Iterable::first())
+impl<Params, RetVal> BruteforceSearch<Insn> for Function<Params, RetVal> {
+    fn analyze_this(&self) -> Option<StaticAnalysis<Insn>> {
+        // TODO: dataflow analysis could go here.
+        None
     }
-
-    fn step(&mut self) -> bool {
-        self.0.step()
+    fn inner(&mut self) -> &mut dyn BruteforceSearch<Insn> {
+        &mut self.seq
     }
 }

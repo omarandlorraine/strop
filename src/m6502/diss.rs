@@ -1,4 +1,4 @@
-impl<V: mos6502::Variant + std::clone::Clone> std::fmt::Display for crate::m6502::isa::Insn<V> {
+impl<V: mos6502::Variant> std::fmt::Display for crate::m6502::isa::Insn<V> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         use crate::Encode;
         use mos6502::instruction::AddressingMode;
@@ -106,7 +106,7 @@ impl<V: mos6502::Variant + std::clone::Clone> std::fmt::Display for crate::m6502
     }
 }
 
-impl<V: mos6502::Variant + std::clone::Clone> std::fmt::Debug for crate::m6502::isa::Insn<V> {
+impl<V: mos6502::Variant> std::fmt::Debug for crate::m6502::isa::Insn<V> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         use crate::Encode;
 
@@ -117,5 +117,11 @@ impl<V: mos6502::Variant + std::clone::Clone> std::fmt::Debug for crate::m6502::
             .collect::<Vec<String>>()
             .join(" ");
         write!(f, "{}", bytes)
+    }
+}
+
+impl<V: mos6502::Variant> crate::Disassemble for crate::m6502::isa::Insn<V> {
+    fn dasm(&self) {
+        println!("\t{}", self);
     }
 }

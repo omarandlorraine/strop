@@ -3,7 +3,8 @@
 use crate::Disassemble;
 use crate::Encode;
 use crate::Goto;
-use crate::Iterable;
+use crate::IterationResult;
+use crate::Step;
 use std::ops::{Index, IndexMut};
 
 mod mutate;
@@ -12,10 +13,22 @@ mod mutate;
 /// sequences.
 ///
 /// This datatype is intended to represent a point in a search space, and so `impl`s
-/// strop's `Random` and `Iterable` traits.  This means that strop can search across the search
+/// strop's `Random` and `Step` traits.  This means that strop can search across the search
 /// space of things represented by the `Sequence<T>`.
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Sequence<T>(Vec<T>);
+
+impl<T: Step + crate::subroutine::ShouldReturn> crate::subroutine::ToSubroutine<T> for Sequence<T> {
+    fn to_subroutine(self) -> crate::Subroutine<T, Self> {
+        crate::Subroutine::new(self)
+    }
+}
+
+impl<Insn> AsRef<Sequence<Insn>> for Sequence<Insn> {
+    fn as_ref(&self) -> &Sequence<Insn> {
+        self
+    }
+}
 
 impl<T> From<Vec<&Vec<T>>> for Sequence<T>
 where
@@ -34,64 +47,57 @@ where
     }
 }
 
-impl<T: Iterable, U> crate::dataflow::DataFlow<U> for Sequence<T>
-where
-    T: crate::dataflow::DataFlow<U>,
-{
-    fn reads(&self, t: &U) -> bool {
-        for i in &self.0 {
-            if i.reads(t) {
-                return true;
-            }
-            if i.writes(t) {
-                return false;
-            }
+impl<T: Step> Sequence<T> {
+    /// In a deterministic way compatible with the BruteForce search algorithm, mutates the
+    /// Sequence at the offset in the given way.
+    pub fn mut_at(&mut self, change: fn(&mut T) -> IterationResult, offset: usize) {
+        if change(&mut self[offset]).is_err() {
+            self[offset] = T::first();
+            self.step_at(offset + 1);
         }
-        false
-    }
-
-    fn writes(&self, t: &U) -> bool {
-        for i in &self.0 {
-            if i.writes(t) {
-                return true;
-            }
-        }
-        false
-    }
-
-    fn modify(&mut self) -> bool {
-        self.step_at(0);
-        true
-    }
-
-    fn make_read(&mut self, t: &U) -> bool {
-        if !self.0[0].make_read(t) {
-            self.modify();
-        }
-        true
-    }
-
-    fn make_write(&mut self, t: &U) -> bool {
-        if !self.0[0].make_write(t) {
-            self.modify();
-        }
-        true
     }
 }
 
-impl<T: Iterable> Sequence<T> {
+impl<Insn: Step> crate::BruteforceSearch<Insn> for Sequence<Insn> {
+    fn inner(&mut self) -> &mut dyn crate::BruteforceSearch<Insn> {
+        unreachable!();
+    }
+
+    fn analyze_this(&self) -> Option<crate::StaticAnalysis<Insn>> {
+        None
+    }
+
+    fn analyze(&mut self) -> Option<crate::StaticAnalysis<Insn>> {
+        None
+    }
+
+    fn step(&mut self) {
+        self.step_at(0);
+    }
+
+    fn apply(&mut self, static_analysis: &crate::StaticAnalysis<Insn>) {
+        self.mut_at(static_analysis.advance, static_analysis.offset);
+    }
+
+    fn fixup(&mut self) {}
+}
+
+impl<T> Sequence<T> {
     /// Returns the index to the last element in the sequence
     pub fn last_instruction_offset(&self) -> usize {
         self.0.len() - 1
     }
-
-    /// In a deterministic way compatible with the BruteForce search algorithm, mutates the
-    /// Sequence at the offset in the given way.
-    pub fn mut_at(&mut self, change: fn(&mut T) -> bool, offset: usize) {
-        if !change(&mut self[offset]) {
-            self[offset] = T::first();
-            self.step_at(offset + 1);
+    /// queries the item at offset `o` for static analysis
+    pub fn sa<Insn>(
+        &self,
+        o: usize,
+        sa: fn(&T) -> Option<crate::StaticAnalysis<Insn>>,
+    ) -> Option<crate::StaticAnalysis<Insn>> {
+        if let Some(mut r) = sa(&self.0[o]) {
+            r.offset = o;
+            return Some(r);
         }
+        None
     }
 }
 
@@ -114,6 +120,12 @@ impl<T> std::ops::Deref for Sequence<T> {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl<T> std::ops::DerefMut for Sequence<T> {
+    fn deref_mut(&mut self) -> &mut Vec<T> {
+        &mut self.0
     }
 }
 
@@ -146,7 +158,7 @@ where
     }
 }
 
-impl<T: Iterable> Sequence<T> {
+impl<T: Step> Sequence<T> {
     /// steps the sequence at the given offset
     pub fn step_at(&mut self, offs: usize) {
         let mut offset = offs;
@@ -154,7 +166,7 @@ impl<T: Iterable> Sequence<T> {
             if offset == self.0.len() {
                 self.0.push(T::first());
                 break;
-            } else if !self.0[offset].step() {
+            } else if self.0[offset].next().is_err() {
                 self.0[offset] = T::first();
                 offset += 1;
             } else {
@@ -164,19 +176,52 @@ impl<T: Iterable> Sequence<T> {
     }
 }
 
-impl<T: Clone + Iterable> Iterable for Sequence<T> {
+impl<T: Clone + Step> Step for Sequence<T> {
     fn first() -> Self {
         Self(vec![])
     }
 
-    fn step(&mut self) -> bool {
+    fn next(&mut self) -> IterationResult {
         self.step_at(0);
-        true
+        Ok(())
     }
 }
 
 impl<SamplePoint: std::clone::Clone> Goto<SamplePoint> for Sequence<SamplePoint> {
     fn goto(&mut self, other: &[SamplePoint]) {
         self.0 = other.to_vec();
+    }
+}
+
+impl<T, SamplePoint: crate::dataflow::DataFlow<T> + Step> crate::dataflow::DataFlow<T>
+    for Sequence<SamplePoint>
+{
+    fn reads(&self, t: &T) -> bool {
+        self.0.iter().any(|insn| insn.reads(t))
+    }
+
+    fn writes(&self, t: &T) -> bool {
+        self.0.iter().any(|insn| insn.writes(t))
+    }
+
+    fn modify(&mut self) -> IterationResult {
+        if self.0[0].modify().is_err() {
+            self.0[0] = SamplePoint::first();
+            self.step_at(1);
+        }
+        Ok(())
+    }
+
+    fn not_live_in(&mut self, t: &T) -> IterationResult {
+        if let Some(first_read) = self.0.iter().position(|insn| insn.reads(t)) {
+            // We found an instruction which reads from `t`. Since `t` is not live, make sure that
+            // `t` has been written to.
+            if self.0.iter().take(first_read).any(|insn| insn.writes(t)) {
+                // `t` has already been written to; all is ok.
+                return Ok(());
+            }
+            self.make_write(t)?;
+        }
+        Ok(())
     }
 }

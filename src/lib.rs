@@ -25,9 +25,9 @@ pub mod m6809;
 #[cfg(feature = "z80")]
 pub mod z80;
 
-pub mod dataflow;
-pub mod objectives;
-pub mod peephole;
+// pub mod dataflow;
+// pub mod objectives;
+// pub mod peephole;
 
 mod sequence;
 pub use sequence::Sequence;
@@ -38,24 +38,136 @@ mod genetic;
 pub use genetic::Generate;
 
 mod bruteforce;
-pub use bruteforce::BruteForce;
+pub use bruteforce::{BruteForce, ToBruteForce};
+
+mod subroutine;
+pub use subroutine::Subroutine;
+
+mod trace;
+pub use trace::{ToTrace, Trace};
+
+pub mod dataflow;
+
+/// Result of a static analysis pass. Explains why a code sequence has been found to be illogical
+/// or unsuitable, and provides a way to prune such a sequence from the search.
+pub struct StaticAnalysis<Instruction> {
+    /// Specifies at what offset into this sequence the problem was found
+    pub offset: usize,
+    advance: fn(&mut Instruction) -> IterationResult,
+    /// Human-readable description of the problem
+    pub reason: &'static str,
+}
+
+impl<Instruction> std::fmt::Debug for StaticAnalysis<Instruction> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        write!(f, "StaticAnalysis {} offset {}", self.reason, self.offset)
+    }
+}
+
+/// Impl this on a datatype that may be iterated by mutating the datum in place. This is then used
+/// by the library to perform bruteforce searches and such
+pub trait Step {
+    /// Advances the value to the next state.
+    /// Returns `Ok(())` if the step was successful.
+    /// Returns `Err(StepError::End)` if the end has been reached.
+    fn next(&mut self) -> IterationResult;
+
+    /// Returns the first value
+    fn first() -> Self;
+}
+
+/// Impl this trait on any code sequence (a subroutine, a function, other passes) so that the brute
+/// force search can mutate and query it.
+pub trait BruteforceSearch<Insn> {
+    /// Optionally return a `StaticAnalysis` if a code sequence is found to be problematic or in some
+    /// way suboptimal.
+    fn analyze_this(&self) -> Option<StaticAnalysis<Insn>>;
+
+    /// Returns either this pass's `StaticAnalysis<Insn>` or the inner's
+    fn analyze(&mut self) -> Option<StaticAnalysis<Insn>> {
+        if let Some(sa) = self.inner().analyze() {
+            return Some(sa);
+        }
+
+        self.analyze_this()
+    }
+
+    /// Since client code can arbitrarily chain these passes together, return the next node in the
+    /// "linked list".
+    fn inner(&mut self) -> &mut dyn BruteforceSearch<Insn>;
+
+    /// Step through the search space. Apply any static analysis results.
+    fn step(&mut self) {
+        self.inner().step();
+        self.fixup();
+    }
+
+    /// Applies a `StaticAnalysis`, which means fixing whatever problem the `StaticAnalysis`
+    /// represents.
+    fn apply(&mut self, static_analysis: &StaticAnalysis<Insn>) {
+        self.inner().apply(static_analysis);
+    }
+
+    /// Applies all `StaticAnalysis` instances.
+    fn fixup(&mut self) {
+        while let Some(sa) = self.analyze() {
+            self.apply(&sa);
+        }
+    }
+}
+
+/// Enum representing possible errors when stepping
+#[derive(Debug, PartialEq, Eq)]
+pub enum StepError {
+    /// No more possible values.
+    End,
+}
+
+/// Return type for in-place iteration
+pub type IterationResult = Result<(), StepError>;
+
+/// Enum representing possible errors when running (a subroutine, a function, an interrupt handler,
+/// etc...)
+#[derive(Debug, PartialEq, Eq)]
+pub enum RunError {
+    /// The program ran amok (it jumped to some location outside of itself, or caused a runtime
+    /// exception, or undefined behavior, or ...)
+    RanAmok,
+
+    /// The function is not defined for the given parameters
+    NotDefined,
+}
+
+/// Return type for in-place iteration
+pub type RunResult<T> = Result<T, RunError>;
+
+pub trait Run<Emulator> {
+    //! A trait for running some code sequence on some emulator or VM
+
+    /// Run the code sequence
+    fn run(&self, emulator: &mut Emulator) -> RunResult<()>;
+}
+
+/// Trait for returning a BruteForce object
+pub trait AsBruteforce<
+    Insn,
+    InputParameters,
+    ReturnType: Clone,
+    Function: Callable<InputParameters, ReturnType>,
+>: Callable<InputParameters, ReturnType> + Clone + BruteforceSearch<Insn>
+{
+    /// Returns a `BruteForce`
+    fn bruteforce(
+        self,
+        function: Function,
+    ) -> BruteForce<Insn, InputParameters, ReturnType, Function, Self>;
+}
 
 pub trait Disassemble {
     //! A trait for printing out the disassembly of an instruction, a subroutine, or anything else
 
     /// Disassemble to stdout
     fn dasm(&self);
-}
-
-pub trait Iterable {
-    //! A trait for anything that can be iterated across in an exhaustive manner. For example, the
-    //! Bruteforce search uses this.
-
-    /// Start from the beginning
-    fn first() -> Self;
-
-    /// Take one step. Returns true if the end of the iteration has not been reached.
-    fn step(&mut self) -> bool;
 }
 
 pub trait Mutate {
@@ -77,11 +189,18 @@ pub trait Crossover {
     fn crossover(a: &Self, b: &Self) -> Self;
 }
 
-pub trait Goto<SamplePoint> {
+pub trait Goto<Insn> {
     //! Trait for starting a search from a particular point in the search space.
 
     /// Replace self with some other value
-    fn goto(&mut self, destination: &[SamplePoint]);
+    fn goto(&mut self, destination: &[Insn]);
+}
+
+impl<Insn: Clone, S: Clone + AsMut<Sequence<Insn>>> Goto<Insn> for S {
+    fn goto(&mut self, destination: &[Insn]) {
+        let s = self.as_mut();
+        s.goto(destination);
+    }
 }
 
 pub trait Encode<T> {
@@ -101,29 +220,6 @@ pub trait Encode<T> {
     fn encode(&self) -> Vec<T>;
 }
 
-/// A type implementing the Constraint trait can constrain the search space to, for example,
-/// leaf functions, or programs compatible with certain variants, or programs not liable to be
-/// modified by peephole optimization, etc. etc.
-pub trait Constrain<Insn> {
-    /// Fixes the candidate up in a deterministic way, compatible with the `BruteForce` search.
-    fn fixup(&self, candidate: &mut Sequence<Insn>) -> Option<(usize, &'static str)>;
-
-    /// Fixes the candidate up in a stochastic way
-    fn stochastic_fixup(&self, candidate: &mut Sequence<Insn>) -> Option<(usize, &'static str)> {
-        self.fixup(candidate)
-    }
-}
-
-/// Enumerates reasons why executing a function may fail
-#[derive(Debug, PartialEq)]
-pub enum StropError {
-    /// The represented function is not defined for the given inputs
-    Undefined,
-
-    /// The callable object ran amok during emulation, or somehow did not return
-    DidntReturn,
-}
-
 pub trait Callable<InputParameters, ReturnValue> {
     //! A trait for objects which may be called.
     //!
@@ -132,13 +228,13 @@ pub trait Callable<InputParameters, ReturnValue> {
     //! pointers, or lisp expressions, etc.)
 
     /// Calls the given callable object
-    fn call(&self, parameters: InputParameters) -> Result<ReturnValue, StropError>;
+    fn call(&self, parameters: InputParameters) -> RunResult<ReturnValue>;
 }
 
 impl<InputParameters, ReturnValue> Callable<InputParameters, ReturnValue>
-    for fn(InputParameters) -> Result<ReturnValue, StropError>
+    for fn(InputParameters) -> RunResult<ReturnValue>
 {
-    fn call(&self, parameters: InputParameters) -> Result<ReturnValue, StropError> {
+    fn call(&self, parameters: InputParameters) -> RunResult<ReturnValue> {
         (self)(parameters)
     }
 }

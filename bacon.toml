@@ -1,0 +1,30 @@
+[jobs.m6502]
+command = [
+	"cargo",
+	"check",
+	"--lib",
+	"--no-default-features",
+	"--features",
+	"m6502"
+]
+
+[jobs.m68k]
+command = [
+	"cargo",
+	"+nightly",
+	"check",
+	"--lib",
+        "--no-default-features",
+	"--features",
+	"m68k"
+]
+
+[jobs.armv4t]
+command = [
+	"cargo",
+	"check",
+	"--lib",
+        "--no-default-features",
+	"--features",
+	"armv4t"
+]

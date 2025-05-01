@@ -1,6 +1,5 @@
 //! Module containing miscellaneous functions for testing callables
 use crate::Callable;
-use crate::StropError;
 use rand;
 
 /// Returns a few representative values for a given type
@@ -204,20 +203,13 @@ pub fn fuzz<P: Vals + Copy, R: Vals + std::cmp::PartialEq, T: Callable<P, R>, U:
 pub fn passes<P: Vals + Copy, R: Vals + std::cmp::PartialEq, T: Callable<P, R>>(
     callable: &T,
     suite: &Vec<(P, R)>,
-) -> Result<bool, StropError> {
+) -> crate::RunResult<bool> {
     for t in suite {
-        match callable.call(t.0) {
-            Err(e) => {
-                // The function doesn't pass the test because of some error during execution
-                return Err(e);
-            }
-            Ok(r) => {
-                if r != t.1 {
-                    // The function doesn't pass the test because it returned some (valid) value
-                    // different from the expected one
-                    return Ok(false);
-                }
-            }
+        let r = callable.call(t.0)?;
+        if r != t.1 {
+            // The function doesn't pass the test because it returned some (valid) value
+            // different from the expected one
+            return Ok(false);
         }
     }
     Ok(true)

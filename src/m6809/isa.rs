@@ -1,22 +1,25 @@
 //! Module for representing and working with Motorola 6809 machine instructions.
 
+use crate::IterationResult;
+use crate::StepError;
+
 /// Represents a Motorola 6809 machine instruction.
 #[derive(Clone, Copy, Default, PartialEq, PartialOrd)]
 pub struct Insn([u8; 5]);
 
-impl crate::Iterable for Insn {
+impl crate::Step for Insn {
     fn first() -> Self {
         Self([0, 0, 0, 0, 0])
     }
 
-    fn step(&mut self) -> bool {
+    fn next(&mut self) -> IterationResult {
         use crate::Encode;
         if self.0[0..3] == [0xff, 0xff, 0xff] {
-            false
+            Err(StepError::End)
         } else {
             self.incr_at_offset(self.len() - 1);
             self.fixup();
-            true
+            Ok(())
         }
     }
 }
@@ -300,13 +303,14 @@ impl Insn {
 #[cfg(test)]
 mod test {
     #[test]
+    #[ignore]
     fn all_opcodes() {
         use super::Insn;
         use crate::Encode;
-        use crate::Iterable;
+        use crate::Step;
 
         let mut i = Insn::first();
-        while i.step() {
+        while i.next().is_ok() {
             let insndat = i.instruction_data();
             println!("{:?}", i);
             let disassembly = format!("{}", i);

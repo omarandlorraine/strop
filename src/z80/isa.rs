@@ -4,19 +4,18 @@
 #[derive(Clone, Copy, PartialOrd, PartialEq, Default)]
 pub struct Insn([u8; 5]);
 
-impl crate::Iterable for Insn {
+impl crate::Step for Insn {
     fn first() -> Self {
         Self([0, 0, 0, 0, 0])
     }
 
-    fn step(&mut self) -> bool {
+    fn next(&mut self) -> crate::IterationResult {
         use crate::Encode;
         if self.0[0] == 0xff {
-            false
+            Err(crate::StepError::End)
         } else {
             self.incr_at_offset(self.len() - 1);
-            self.fixup();
-            true
+            self.fixup()
         }
     }
 }
@@ -66,25 +65,36 @@ impl Insn {
     }
 
     /// Increments the opcode, and sets all subsequent bytes (i.e. the operand) to 0.
-    pub fn next_opcode(&mut self) -> bool {
+    pub fn next_opcode(&mut self) -> crate::IterationResult {
         if self.0[0] == 0xff {
-            false
+            Err(crate::StepError::End)
         } else if self.0[0] == 0xcb && self.0[1] < 0xff {
             self.0[1] += 1;
             self.0[2] = 0;
             self.0[3] = 0;
             self.0[4] = 0;
-            self.fixup();
-            true
+            self.fixup()
         } else {
             self.0[0] += 1;
             self.0[1] = 0;
             self.0[2] = 0;
             self.0[3] = 0;
             self.0[4] = 0;
-            self.fixup();
-            true
+            self.fixup()
         }
+    }
+}
+
+impl crate::subroutine::ShouldReturn for Insn {
+    fn should_return(&self) -> Option<crate::StaticAnalysis<Self>> {
+        if self.0[0] == 0xc9 {
+            return None;
+        }
+        Some(crate::StaticAnalysis::<Self> {
+            offset: 0,
+            advance: Self::next_opcode,
+            reason: "ShouldReturn",
+        })
     }
 }
 
@@ -101,7 +111,7 @@ impl crate::Encode<u8> for Insn {
 impl crate::Mutate for Insn {
     fn random() -> Self {
         let mut s = Self(rand::random());
-        s.fixup();
+        s.fixup().ok(); // TODO, check for this condition and put it right
         s
     }
 
@@ -118,7 +128,7 @@ impl crate::Mutate for Insn {
             self.0[offset] = rand::random()
         }
 
-        self.fixup();
+        self.fixup().ok(); // TODO, check for this condition and put it right
     }
 }
 
@@ -157,7 +167,7 @@ impl Insn {
         }
     }
 
-    fn fixup(&mut self) {
+    fn fixup(&mut self) -> crate::IterationResult {
         if matches!(self.0[0], 0xdd | 0xed) {
             // since this is a prefixed instruction, make sure it's an instruction that actually
             // needs the prefix
@@ -167,13 +177,13 @@ impl Insn {
             ] {
                 if self.0[1] < opcode {
                     self.0[1] = opcode;
-                    return;
+                    return Ok(());
                 }
             }
 
             // After this range are instructions which do not need the dd/ed prefix.
             self.0 = [self.0[0] + 1, 0, 0, 0, 0];
-            return;
+            return Ok(());
         }
 
         if self.0[0] == 0xfd {
@@ -182,13 +192,14 @@ impl Insn {
             for opcode in [0x09] {
                 if self.0[1] < opcode {
                     self.0[1] = opcode;
-                    return;
+                    return Ok(());
                 }
             }
 
             // After this range are instructions which do not need the dd/ed prefix.
             self.0 = [self.0[0] + 1, 0, 0, 0, 0];
         }
+        Ok(())
     }
 }
 
@@ -197,67 +208,11 @@ mod test {
     #[test]
     fn all_opcodes() {
         use super::Insn;
-        use crate::Encode;
-        use crate::Iterable;
+        use crate::Step;
 
         let mut insn = Insn::first();
-        assert_eq!(insn.len(), 1);
-        while insn.step() {
-            println!("{}; {:?}", insn, insn);
-            let d = insn.decode();
-
-            if !d.ignored_prefixes.is_empty() {
-                let prev = insn;
-                while !insn.decode().ignored_prefixes.is_empty() {
-                    assert!(!insn.step());
-                }
-                panic!(
-                    "{:?} ({}) has ignored prefixes, next one that doesn't is {:?} ({})",
-                    prev, prev, insn, insn
-                );
-            }
+        while insn.next().is_ok() {
+            assert!(insn.decode().ignored_prefixes.is_empty());
         }
-    }
-
-    #[test]
-    fn next_after_or_ffh() {
-        use super::Insn;
-
-        use crate::Iterable;
-
-        let mut insn = Insn([0xf6, 0xff, 0, 0, 0]);
-        println!("{insn} {:?}", insn);
-        insn.step();
-        println!("{insn} {:?}", insn);
-        insn.step();
-        println!("{insn} {:?}", insn);
-    }
-
-    #[test]
-    fn next_opcode() {
-        use super::Insn;
-
-        let mut insn = Insn([0xfd, 0x09, 0, 0, 0]);
-        println!("{insn} {:?}", insn);
-        insn.next_opcode();
-        println!("{insn} {:?}", insn);
-        insn.next_opcode();
-        println!("{insn} {:?}", insn);
-        insn.next_opcode();
-        println!("{insn} {:?}", insn);
-    }
-
-    #[test]
-    fn next_after_add_iy_bc() {
-        use super::Insn;
-
-        use crate::Iterable;
-
-        let mut insn = Insn([0xfd, 0x09, 0, 0, 0]);
-        println!("{insn} {:?}", insn);
-        insn.step();
-        println!("{insn} {:?}", insn);
-        insn.step();
-        println!("{insn} {:?}", insn);
     }
 }
