@@ -6,8 +6,8 @@ impl std::fmt::Display for crate::m68000::Insn {
             next_addr: 0,
         };
         match m68000::instruction::Instruction::from_memory(&mut memory) {
-            Ok(ins) => write!(f, "{}", ins),
-            Err(e) => panic!("{:?}", e),
+            Ok(ins) => write!(f, "{ins}"),
+            Err(e) => panic!("{e:?}"),
         }
     }
 }
