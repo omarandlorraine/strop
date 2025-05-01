@@ -40,7 +40,11 @@ impl<Insn: ShouldReturn, S: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>> Brut
         Self: Sized,
     {
         let seq = self.0.as_ref();
-        seq[seq.len() - 1].should_return()
+        if let Some(mut sa) = seq[seq.len() - 1].should_return() {
+            sa.offset = seq.len() - 1;
+            return Some(sa);
+        }
+        None
     }
 
     fn inner(&mut self) -> &mut dyn BruteforceSearch<Insn> {
