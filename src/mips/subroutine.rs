@@ -10,5 +10,3 @@ impl Default for Subroutine {
         crate::Sequence::<Insn>::first().to_subroutine()
     }
 }
-
-

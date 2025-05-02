@@ -22,7 +22,7 @@ impl std::fmt::Debug for Insn {
 
 impl crate::subroutine::ShouldReturn for Insn {
     fn should_return(&self) -> Option<crate::StaticAnalysis<Self>> {
-                if *self == Self::jr_ra() {
+        if *self == Self::jr_ra() {
             return None;
         }
         Some(crate::StaticAnalysis::<Self> {
@@ -30,7 +30,6 @@ impl crate::subroutine::ShouldReturn for Insn {
             offset: 0,
             reason: "ShouldReturn",
         })
-
     }
 }
 
@@ -44,7 +43,7 @@ impl Insn {
         Self(0x03E00008)
     }
 
-        fn make_return(&mut self) -> crate::IterationResult {
+    fn make_return(&mut self) -> crate::IterationResult {
         // TODO: There are other possible return instructions here.
         use std::cmp::Ordering;
 
@@ -57,7 +56,6 @@ impl Insn {
             Ordering::Equal => unreachable!(),
         }
     }
-
 
     /// Called after a mutation; this ensures that the u32 member encodes an actually valid MIPS
     /// instruction

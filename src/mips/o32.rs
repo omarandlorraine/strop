@@ -6,8 +6,8 @@ use crate::mips::Insn;
 use crate::test::Vals;
 use crate::Callable;
 use crate::Disassemble;
-use crate::Step;
 use crate::Sequence;
+use crate::Step;
 
 /// Searches for functions complying to the O32 calling convention
 #[derive(Clone, Debug)]
@@ -57,8 +57,7 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> Disass
     }
 }
 
-impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> O32<Params, RetVal> 
-{
+impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> O32<Params, RetVal> {
     /// Instantiates a new, empty O32.
     pub fn new() -> Self {
         use crate::Step;
