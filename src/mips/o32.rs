@@ -6,13 +6,12 @@ use crate::mips::Insn;
 use crate::test::Vals;
 use crate::Callable;
 use crate::Disassemble;
-use crate::Sequence;
 use crate::Step;
 
 /// Searches for functions complying to the O32 calling convention
 #[derive(Clone, Debug)]
 pub struct O32<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> {
-    seq: Sequence<Insn>,
+    seq: crate::mips::Subroutine,
     params: std::marker::PhantomData<Params>,
     return_value: std::marker::PhantomData<RetVal>,
 }
@@ -30,7 +29,7 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> Step
 {
     fn first() -> Self {
         Self {
-            seq: Sequence::<Insn>::first(),
+            seq: Default::default(),
             params: Default::default(),
             return_value: Default::default(),
         }

@@ -1,7 +1,5 @@
 //! A module making possible the execution of MIPS subroutine in emulation
-use crate::mips::Insn;
 use crate::Encode;
-use crate::Sequence;
 use trapezoid_core::cpu::{BusLine, Cpu, CpuBusProvider, RegisterType};
 
 struct Bus {
@@ -109,7 +107,7 @@ impl ReturnValue for u8 {
 
 /// Puts the arguments into the CPU's registers, then puts the subroutine into kseg1, and then
 /// calls the subroutine. After this, it returns the return value.
-pub fn call<P: Parameters, R: ReturnValue>(subroutine: &Sequence<Insn>, params: P) -> R {
+pub fn call<P: Parameters, R: ReturnValue>(subroutine: &crate::mips::Subroutine, params: P) -> R {
     let mut cpu = Cpu::new();
     let mut kseg1 = [0; 0x10000];
     let subroutine = subroutine.encode();
