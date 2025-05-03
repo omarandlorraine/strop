@@ -1,0 +1,135 @@
+//! A module making possible the execution of MIPS subroutine in emulation
+use crate::Encode;
+use trapezoid_core::cpu::{BusLine, Cpu, CpuBusProvider, RegisterType};
+
+struct Bus {
+    kseg1: [u8; 0x10000],
+    is_done: bool,
+}
+
+impl BusLine for Bus {
+    // just maps the kseg1 memory to the CPU
+    fn read_u32(&mut self, addr: u32) -> Result<u32, String> {
+        match addr {
+            0xBFC00000..=0xBFC0FFFF => {
+                let offset = addr - 0xBFC00000;
+                let word = u32::from_le_bytes([
+                    self.kseg1[offset as usize],
+                    self.kseg1[(offset + 1) as usize],
+                    self.kseg1[(offset + 2) as usize],
+                    self.kseg1[(offset + 3) as usize],
+                ]);
+                Ok(word)
+            }
+            _ => Ok(0),
+        }
+    }
+
+    // just maps the kseg1 memory to the CPU, needed to read the string data
+    fn read_u8(&mut self, addr: u32) -> Result<u8, String> {
+        match addr {
+            0xBFC00000..=0xBFC0FFFF => {
+                let offset = addr - 0xBFC00000;
+                Ok(self.kseg1[offset as usize])
+            }
+            _ => Ok(0),
+        }
+    }
+
+    // Ability to write to the stack location, here we allow whole kseg1, but can be limited as
+    // needed
+    fn write_u32(&mut self, addr: u32, data: u32) -> Result<(), String> {
+        match addr {
+            0xBFC00000..=0xBFC0FFFF => {
+                let offset = addr - 0xBFC00000;
+                self.kseg1[offset as usize] = data as u8;
+                self.kseg1[(offset + 1) as usize] = (data >> 8) as u8;
+                self.kseg1[(offset + 2) as usize] = (data >> 16) as u8;
+                self.kseg1[(offset + 3) as usize] = (data >> 24) as u8;
+                Ok(())
+            }
+            _ => Ok(()),
+        }
+    }
+
+    // support our custom registers
+    fn write_u8(&mut self, addr: u32, data: u8) -> Result<(), String> {
+        match addr {
+            // exit
+            0x0 => {
+                println!("Write to address 0x0: {:08X}, exiting", data);
+                self.is_done = data != 0x0;
+                Ok(())
+            }
+            // write a character
+            0x4 => {
+                print!("{}", data as char);
+                Ok(())
+            }
+            _ => Ok(()),
+        }
+    }
+}
+
+// Not used for now, we don't have interrupts handling from the hardware
+// If we do, when `pending_interrupts` returns true, the CPU will jump to the interrupt vector with
+// cause `Interrupt` (not available for public API), but the interrupt vector is
+// `0xBFC00180` or `0x80000080`.
+impl CpuBusProvider for Bus {
+    fn pending_interrupts(&self) -> bool {
+        false
+    }
+
+    fn should_run_dma(&self) -> bool {
+        false
+    }
+}
+
+pub trait Parameters {
+    fn install(self, cpu: &mut Cpu);
+}
+
+pub trait ReturnValue {
+    fn extract(cpu: &Cpu) -> Self;
+}
+
+impl Parameters for u8 {
+    fn install(self, cpu: &mut Cpu) {
+        cpu.registers_mut().write(RegisterType::V1, self as u32)
+    }
+}
+
+impl ReturnValue for u8 {
+    fn extract(cpu: &Cpu) -> Self {
+        cpu.registers().read(RegisterType::V1) as u8
+    }
+}
+
+/// Puts the arguments into the CPU's registers, then puts the subroutine into kseg1, and then
+/// calls the subroutine. After this, it returns the return value.
+pub fn call<P: Parameters, R: ReturnValue>(
+    subroutine: &crate::mips::Subroutine,
+    params: P,
+) -> crate::RunResult<R> {
+    let mut cpu = Cpu::new();
+    let mut kseg1 = [0; 0x10000];
+    let subroutine = subroutine.encode();
+    kseg1[0..subroutine.len()].copy_from_slice(&subroutine);
+
+    let mut bus = Bus {
+        kseg1,
+        is_done: false,
+    };
+
+    let end_pc = 0xBFC00000 + subroutine.len() as u32;
+
+    params.install(&mut cpu);
+
+    for _ in 0..10000 {
+        if cpu.registers().read(RegisterType::Pc) == end_pc {
+            return Ok(R::extract(&cpu));
+        }
+        cpu.clock(&mut bus, 1);
+    }
+    Err(crate::RunError::RanAmok)
+}
