@@ -44,7 +44,7 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> Callab
     for O32<Params, RetVal>
 {
     fn call(&self, p: Params) -> Result<RetVal, crate::RunError> {
-        Ok(crate::mips::emu::call(&self.seq, p)?)
+        crate::mips::emu::call(&self.seq, p)
     }
 }
 
