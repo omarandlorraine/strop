@@ -104,7 +104,7 @@ impl Insn {
 
 impl crate::Disassemble for Insn {
     fn dasm(&self) {
-        println!("{:?}", self.0);
+        println!("\t{}", self.decode());
     }
 }
 
