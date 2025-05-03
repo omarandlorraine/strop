@@ -63,12 +63,12 @@ impl<Insn: Step> crate::BruteforceSearch<Insn> for Sequence<Insn> {
         unreachable!();
     }
 
-    fn analyze_this(&self) -> Option<crate::StaticAnalysis<Insn>> {
-        None
+    fn analyze_this(&self) -> Result<(), crate::StaticAnalysis<Insn>> {
+        Ok(())
     }
 
-    fn analyze(&mut self) -> Option<crate::StaticAnalysis<Insn>> {
-        None
+    fn analyze(&mut self) -> Result<(), crate::StaticAnalysis<Insn>> {
+        Ok(())
     }
 
     fn step(&mut self) {

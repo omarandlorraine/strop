@@ -43,16 +43,16 @@ impl<Insn, S: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>> Subroutine<Insn, S
 impl<Insn: ShouldReturn, S: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>> BruteforceSearch<Insn>
     for Subroutine<Insn, S>
 {
-    fn analyze_this(&self) -> Option<crate::StaticAnalysis<Insn>>
+    fn analyze_this(&self) -> Result<(), crate::StaticAnalysis<Insn>>
     where
         Self: Sized,
     {
         let seq = self.0.as_ref();
         if let Some(mut sa) = seq[seq.len() - 1].should_return() {
             sa.offset = seq.len() - 1;
-            return Some(sa);
+            return Err(sa);
         }
-        None
+        Ok(())
     }
 
     fn inner(&mut self) -> &mut dyn BruteforceSearch<Insn> {

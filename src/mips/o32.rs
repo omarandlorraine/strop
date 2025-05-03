@@ -67,9 +67,9 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> O32<Pa
 impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue>
     crate::BruteforceSearch<Insn> for O32<Params, RetVal>
 {
-    fn analyze_this(&self) -> Option<crate::StaticAnalysis<Insn>> {
+    fn analyze_this(&self) -> Result<(), crate::StaticAnalysis<Insn>> {
         // TODO: dataflow analysis could go here.
-        None
+        Ok(())
     }
     fn inner(&mut self) -> &mut dyn crate::BruteforceSearch<Insn> {
         &mut self.seq
