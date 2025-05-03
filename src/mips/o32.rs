@@ -64,3 +64,26 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> O32<Pa
         Self::first()
     }
 }
+
+impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> crate::BruteforceSearch<Insn> for O32<Params, RetVal> {
+    fn analyze_this(&self) -> Option<crate::StaticAnalysis<Insn>> {
+        // TODO: dataflow analysis could go here.
+        None
+    }
+    fn inner(&mut self) -> &mut dyn crate::BruteforceSearch<Insn> {
+        &mut self.seq
+    }
+}
+
+impl<Params: Vals + Parameters, RetVal: ReturnValue + Vals + Clone, TargetFunction: Callable<Params, RetVal>>
+    crate::AsBruteforce<Insn, Params, RetVal, TargetFunction> for O32<Params, RetVal>
+{
+    fn bruteforce(
+        self,
+        function: TargetFunction,
+    ) -> crate::BruteForce<Insn, Params, RetVal, TargetFunction, O32<Params, RetVal>> {
+        crate::BruteForce::<Insn, Params, RetVal, TargetFunction, O32<Params, RetVal>>::new(
+            function, self,
+        )
+    }
+}
