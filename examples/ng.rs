@@ -14,7 +14,7 @@ fn main() {
     let target_function = zero as fn(u8) -> RunResult<u8>;
 
     // do a bruteforce search for Z80 machine code programs implementing the same function
-    let mut bruteforce = strop::z80::SdccCall1::default()
+    let mut bruteforce = strop::mips::O32::default()
         .trace()
         .to_bruteforce(target_function);
 

@@ -44,7 +44,7 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> Callab
     for O32<Params, RetVal>
 {
     fn call(&self, p: Params) -> Result<RetVal, crate::RunError> {
-        Ok(crate::mips::emu::call(&self.seq, p))
+        Ok(crate::mips::emu::call(&self.seq, p)?)
     }
 }
 
@@ -64,7 +64,9 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> O32<Pa
     }
 }
 
-impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> crate::BruteforceSearch<Insn> for O32<Params, RetVal> {
+impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue>
+    crate::BruteforceSearch<Insn> for O32<Params, RetVal>
+{
     fn analyze_this(&self) -> Option<crate::StaticAnalysis<Insn>> {
         // TODO: dataflow analysis could go here.
         None
@@ -74,8 +76,11 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> crate:
     }
 }
 
-impl<Params: Vals + Parameters, RetVal: ReturnValue + Vals + Clone, TargetFunction: Callable<Params, RetVal>>
-    crate::AsBruteforce<Insn, Params, RetVal, TargetFunction> for O32<Params, RetVal>
+impl<
+        Params: Vals + Parameters,
+        RetVal: ReturnValue + Vals + Clone,
+        TargetFunction: Callable<Params, RetVal>,
+    > crate::AsBruteforce<Insn, Params, RetVal, TargetFunction> for O32<Params, RetVal>
 {
     fn bruteforce(
         self,

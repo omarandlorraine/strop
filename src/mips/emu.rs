@@ -21,7 +21,7 @@ impl BusLine for Bus {
                 ]);
                 Ok(word)
             }
-            _ => Err(format!("Unimplemented read at address {:08X}", addr)),
+            _ => Ok(0),
         }
     }
 
@@ -32,7 +32,7 @@ impl BusLine for Bus {
                 let offset = addr - 0xBFC00000;
                 Ok(self.kseg1[offset as usize])
             }
-            _ => Err(format!("Unimplemented read at address {:08X}", addr)),
+            _ => Ok(0),
         }
     }
 
@@ -48,7 +48,7 @@ impl BusLine for Bus {
                 self.kseg1[(offset + 3) as usize] = (data >> 24) as u8;
                 Ok(())
             }
-            _ => Err(format!("Unimplemented write at address {:08X}", addr)),
+            _ => Ok(()),
         }
     }
 
@@ -66,7 +66,7 @@ impl BusLine for Bus {
                 print!("{}", data as char);
                 Ok(())
             }
-            _ => Err(format!("Unimplemented write at address {:08X}", addr)),
+            _ => Ok(()),
         }
     }
 }
@@ -107,7 +107,10 @@ impl ReturnValue for u8 {
 
 /// Puts the arguments into the CPU's registers, then puts the subroutine into kseg1, and then
 /// calls the subroutine. After this, it returns the return value.
-pub fn call<P: Parameters, R: ReturnValue>(subroutine: &crate::mips::Subroutine, params: P) -> R {
+pub fn call<P: Parameters, R: ReturnValue>(
+    subroutine: &crate::mips::Subroutine,
+    params: P,
+) -> crate::RunResult<R> {
     let mut cpu = Cpu::new();
     let mut kseg1 = [0; 0x10000];
     let subroutine = subroutine.encode();
@@ -122,14 +125,11 @@ pub fn call<P: Parameters, R: ReturnValue>(subroutine: &crate::mips::Subroutine,
 
     params.install(&mut cpu);
 
-    while cpu.registers().read(RegisterType::Pc) != end_pc {
+    for _ in 0..10000 {
+        if cpu.registers().read(RegisterType::Pc) == end_pc {
+            return Ok(R::extract(&cpu));
+        }
         cpu.clock(&mut bus, 1);
-        println!(
-            "{:x} {:x}",
-            cpu.registers().read(RegisterType::Pc),
-            bus.read_u32(cpu.registers().read(RegisterType::Pc))
-                .unwrap()
-        );
     }
-    R::extract(&cpu)
+    Err(crate::RunError::RanAmok)
 }

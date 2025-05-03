@@ -143,7 +143,8 @@ mod test {
         let mut i = Insn::first();
 
         while i.next().is_ok() {
-            assert_ne!(format!("{}", i), "Invalid instruction", "{:08x}", i.0);
+            println!("{i}");
+            assert!(u32::from_str_radix(&format!("{i}"), 16).is_err());
         }
     }
 
