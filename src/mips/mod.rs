@@ -1,6 +1,6 @@
 //! A back-end targeting MIPS processors.
 
-mod emu;
+pub mod emu;
 mod isa;
 mod o32;
 mod subroutine;
