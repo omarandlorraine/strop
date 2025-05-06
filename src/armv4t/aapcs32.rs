@@ -82,7 +82,7 @@ where
 }
 
 /// The AAPCS32-compliant function
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Function<Params, RetVal> {
     seq: crate::armv4t::Subroutine,
     params: std::marker::PhantomData<Params>,
