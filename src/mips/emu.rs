@@ -85,11 +85,15 @@ impl CpuBusProvider for Bus {
     }
 }
 
+/// Trait for types which may be used as a function's parameter list.
 pub trait Parameters {
+    /// Puts the parameters into the emulator in the expected way.
     fn install(self, cpu: &mut Cpu);
 }
 
+/// Trait for types which may be used as a function's return value
 pub trait ReturnValue {
+    /// Gets the parameters out of the emulator's register file
     fn extract(cpu: &Cpu) -> Self;
 }
 

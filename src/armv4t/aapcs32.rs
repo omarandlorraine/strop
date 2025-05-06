@@ -64,7 +64,11 @@ impl FitsInRegister for f32 {
     }
 }
 
+/// Trait for any type which may be used and the functino parameters (i.e. a single scalar or tuple
+/// of scalars, I think that's what AAPCS32 defines as permissible)
 pub trait ParameterList {
+    /// Puts the parameters into the expected place in the emulator (that is, the parameters are
+    /// written to the register file in the expected way for the function call)
     fn put_list(&self, emu: &mut Emulator);
 }
 
@@ -77,7 +81,9 @@ where
     }
 }
 
+/// Trait for any type which may be used as a function's return value
 pub trait ReturnValue {
+    /// Gets the return value from the emulator's register file
     fn get_list(emu: &Emulator) -> Self;
 }
 

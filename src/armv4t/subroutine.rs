@@ -29,7 +29,6 @@ impl crate::Run<Emulator> for Subroutine {
         for _ in 0..10 {
             let pc = emulator.cpu.reg_get(mode, reg::PC);
             let sp = emulator.cpu.reg_get(mode, reg::SP);
-            let lr = emulator.cpu.reg_get(mode, reg::SP);
 
             if pc == RETURN_ADDRESS && sp == BOTTOM_OF_STACK {
                 // Expected values for PC and SP mean that the subroutine has returned
