@@ -55,7 +55,7 @@ impl FitsInRegister for i32 {
     }
 }
 
-trait ParameterList {
+pub trait ParameterList {
     fn put_list(&self, emu: &mut Emulator);
 }
 
@@ -68,7 +68,7 @@ where
     }
 }
 
-trait ReturnValue {
+pub trait ReturnValue {
     fn get_list(emu: &Emulator) -> Self;
 }
 
