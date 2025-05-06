@@ -5,14 +5,6 @@ use crate::RunError;
 /// Represents a Z80 subroutine
 pub type Subroutine = crate::Subroutine<Insn, crate::Sequence<Insn>>;
 
-impl Default for Subroutine {
-    fn default() -> Self {
-        use crate::subroutine::ToSubroutine;
-        use crate::Step;
-        crate::Sequence::<Insn>::first().to_subroutine()
-    }
-}
-
 impl crate::Run<Emulator> for Subroutine {
     fn run(&self, emulator: &mut Emulator) -> crate::RunResult<()> {
         use crate::Encode;
