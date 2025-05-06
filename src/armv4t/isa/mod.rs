@@ -147,7 +147,7 @@ impl crate::Encode<u32> for Insn {
 
 impl crate::Disassemble for Insn {
     fn dasm(&self) {
-        println!("{:?}", self);
+        println!("\t{:?}", self);
     }
 }
 
