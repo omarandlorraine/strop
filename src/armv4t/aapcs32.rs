@@ -55,6 +55,15 @@ impl FitsInRegister for i32 {
     }
 }
 
+impl FitsInRegister for f32 {
+    fn put(&self, emu: &mut Emulator, pos: u8) {
+        emu.cpu.reg_set(MODE, pos, self.to_bits())
+    }
+    fn get(emu: &Emulator, pos: u8) -> Self {
+        Self::from_bits(emu.cpu.reg_get(MODE, pos))
+    }
+}
+
 pub trait ParameterList {
     fn put_list(&self, emu: &mut Emulator);
 }
