@@ -105,6 +105,18 @@ impl ReturnValue for u8 {
     }
 }
 
+impl Parameters for f32 {
+    fn install(self, cpu: &mut Cpu) {
+        cpu.registers_mut().write(RegisterType::V1, self.to_bits())
+    }
+}
+
+impl ReturnValue for f32 {
+    fn extract(cpu: &Cpu) -> Self {
+        Self::from_bits(cpu.registers().read(RegisterType::V1))
+    }
+}
+
 /// Puts the arguments into the CPU's registers, then puts the subroutine into kseg1, and then
 /// calls the subroutine. After this, it returns the return value.
 pub fn call<P: Parameters, R: ReturnValue>(
