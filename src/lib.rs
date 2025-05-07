@@ -16,6 +16,8 @@
 
 #[cfg(feature = "armv4t")]
 pub mod armv4t;
+#[cfg(any(feature = "sm83", feature = "z80"))]
+pub mod i80;
 #[cfg(feature = "m6502")]
 pub mod m6502;
 #[cfg(feature = "m68k")]
@@ -28,8 +30,6 @@ pub mod mips;
 pub mod sm83;
 #[cfg(feature = "z80")]
 pub mod z80;
-#[cfg(any(feature = "sm83", feature = "z80"))]
-pub mod i80;
 
 mod sequence;
 pub use sequence::Sequence;

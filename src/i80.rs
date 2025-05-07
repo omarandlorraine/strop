@@ -4,22 +4,57 @@
 /// An 8-bit register
 #[allow(missing_docs)]
 #[derive(Clone, Debug)]
-pub enum R8 { A, B, C, D, E, H, L, M, Ixh, Ixl, Iyh, Iyl }
+pub enum R8 {
+    A,
+    B,
+    C,
+    D,
+    E,
+    H,
+    L,
+    M,
+    Ixh,
+    Ixl,
+    Iyh,
+    Iyl,
+}
 /// A register pair
 #[derive(Clone, Debug)]
 #[allow(missing_docs)]
-pub enum R16 { Bc, De, Hl, Ix, Iy, Sp, Pc }
+pub enum R16 {
+    Bc,
+    De,
+    Hl,
+    Ix,
+    Iy,
+    Sp,
+    Pc,
+}
 
 /// A condition (as used, for example, by conditional call etc)
 #[derive(Clone, Debug)]
 #[allow(missing_docs)]
-pub enum Cond { NZ	,Z	,NC	,C	,PO	,PE	,P	,M , None}
+pub enum Cond {
+    NZ,
+    Z,
+    NC,
+    C,
+    PO,
+    PE,
+    P,
+    M,
+    None,
+}
 /// An IM mode
 #[derive(Clone, Debug)]
 #[allow(missing_docs)]
-pub enum Im { Im0, Im1, Im2}
+pub enum Im {
+    Im0,
+    Im1,
+    Im2,
+}
 
-/// An instruction. 
+/// An instruction.
 #[derive(Clone, Debug)]
 #[allow(missing_docs)]
 pub enum Instruction {
@@ -31,12 +66,14 @@ pub enum Instruction {
 #[derive(Clone, Debug)]
 #[allow(missing_docs)]
 pub struct InstructionData {
-    pub insn: Instruction ,
-        pub len: usize
+    pub insn: Instruction,
+    pub len: usize,
 }
 
 impl InstructionData {
-    fn new(insn: Instruction, len: usize) -> Self { Self { insn, len} }
+    fn new(insn: Instruction, len: usize) -> Self {
+        Self { insn, len }
+    }
 }
 
 fn x(i: u8) -> u8 {
@@ -64,9 +101,9 @@ pub fn parse_i8080(encoding: &[u8]) -> InstructionData {
     let opcode = encoding[0];
     match (x(opcode), y(opcode), z(opcode)) {
         (0, 0, 0) => InstructionData::new(Instruction::Nop, 1),
-        (0, 1, 0) =>  InstructionData::new(Instruction::Exaf, 1),
-        
-        _=> panic!("Couldn't parse opcode {opcode:x?}"),
+        (0, 1, 0) => InstructionData::new(Instruction::Exaf, 1),
+
+        _ => panic!("Couldn't parse opcode {opcode:x?}"),
     }
 }
 
