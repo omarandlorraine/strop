@@ -55,7 +55,20 @@ impl FitsInRegister for i32 {
     }
 }
 
-trait ParameterList {
+impl FitsInRegister for f32 {
+    fn put(&self, emu: &mut Emulator, pos: u8) {
+        emu.cpu.reg_set(MODE, pos, self.to_bits())
+    }
+    fn get(emu: &Emulator, pos: u8) -> Self {
+        Self::from_bits(emu.cpu.reg_get(MODE, pos))
+    }
+}
+
+/// Trait for any type which may be used and the functino parameters (i.e. a single scalar or tuple
+/// of scalars, I think that's what AAPCS32 defines as permissible)
+pub trait ParameterList {
+    /// Puts the parameters into the expected place in the emulator (that is, the parameters are
+    /// written to the register file in the expected way for the function call)
     fn put_list(&self, emu: &mut Emulator);
 }
 
@@ -68,7 +81,9 @@ where
     }
 }
 
-trait ReturnValue {
+/// Trait for any type which may be used as a function's return value
+pub trait ReturnValue {
+    /// Gets the return value from the emulator's register file
     fn get_list(emu: &Emulator) -> Self;
 }
 
@@ -82,7 +97,7 @@ where
 }
 
 /// The AAPCS32-compliant function
-#[derive(Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Function<Params, RetVal> {
     seq: crate::armv4t::Subroutine,
     params: std::marker::PhantomData<Params>,

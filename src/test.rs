@@ -121,6 +121,20 @@ impl Vals for u16 {
     }
 }
 
+impl Vals for f32 {
+    fn vals() -> Vec<Self> {
+        vec![0.0, -1.0, 1.0, -0.5, 0.5]
+    }
+
+    fn rand() -> Self {
+        rand::random()
+    }
+
+    fn error(self, other: Self) -> f64 {
+        (self - other).abs().into()
+    }
+}
+
 impl<A: Vals + Copy, B: Vals + Copy> Vals for (A, B) {
     fn vals() -> Vec<Self> {
         let mut v = vec![];

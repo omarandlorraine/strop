@@ -85,11 +85,15 @@ impl CpuBusProvider for Bus {
     }
 }
 
+/// Trait for types which may be used as a function's parameter list.
 pub trait Parameters {
+    /// Puts the parameters into the emulator in the expected way.
     fn install(self, cpu: &mut Cpu);
 }
 
+/// Trait for types which may be used as a function's return value
 pub trait ReturnValue {
+    /// Gets the parameters out of the emulator's register file
     fn extract(cpu: &Cpu) -> Self;
 }
 
@@ -102,6 +106,18 @@ impl Parameters for u8 {
 impl ReturnValue for u8 {
     fn extract(cpu: &Cpu) -> Self {
         cpu.registers().read(RegisterType::V1) as u8
+    }
+}
+
+impl Parameters for f32 {
+    fn install(self, cpu: &mut Cpu) {
+        cpu.registers_mut().write(RegisterType::V1, self.to_bits())
+    }
+}
+
+impl ReturnValue for f32 {
+    fn extract(cpu: &Cpu) -> Self {
+        Self::from_bits(cpu.registers().read(RegisterType::V1))
     }
 }
 

@@ -11,6 +11,14 @@ pub struct Subroutine<Insn, S: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>>(
     std::marker::PhantomData<Insn>,
 );
 
+impl<Insn: crate::Step + Clone + ShouldReturn> Default for Subroutine<Insn, Sequence<Insn>> {
+    fn default() -> Self {
+        use crate::subroutine::ToSubroutine;
+        use crate::Step;
+        crate::Sequence::<Insn>::first().to_subroutine()
+    }
+}
+
 pub trait ShouldReturn {
     fn should_return(&self) -> Option<crate::StaticAnalysis<Self>>
     where
