@@ -56,6 +56,14 @@ pub struct StaticAnalysis<Instruction> {
     pub reason: &'static str,
 }
 
+impl<Instruction> StaticAnalysis<Instruction> {
+    /// Constructs a new `StaticAnalysis` object, replacing the offset value.
+    pub fn set_offset(&self, offset: usize) -> Self {
+        let Self { offset:_, advance, reason } = self;
+        Self { offset: offset, advance: *advance, reason }
+    }
+}
+
 impl<Instruction> std::fmt::Debug for StaticAnalysis<Instruction> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         write!(f, "StaticAnalysis {} offset {}", self.reason, self.offset)

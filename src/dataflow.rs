@@ -1,58 +1,63 @@
 //! This module contains miscellaneous conveniences for performing dataflow analysis on code
 //! sequences.
 
-use crate::IterationResult;
+use crate::StaticAnalysis;
+use crate::Sequence;
 
-pub trait DataFlow<T> {
-    //! A trait for very local dataflow. It's generic across `T`, a type intended to represent
-    //! "things" a machine instruction may read from or write to.
-    //!
-    //! For example, a type representing a Z80 machine code instruction could implement this for
-    //! the Z80's register file, the flags, the I/O space and the address space.
+/// Implement this trait on an instruction to communicate that the instruction reads from or writes
+/// to a datum of some type. For example, if you have a type representing the register file, and
+/// some type represents the machine's instruction, these methods can communicate what use the
+/// instruction makes of each register.
+pub trait DataFlow<Datum> {
+    /// Returns `true` iff the instruction reads from `datum`.
+    fn reads(&self, datum: &Datum) -> bool;
 
-    /// returns true iff the variable `t` is read (used) by the instruction or basic block before
-    /// any assignment. Such a variables must be live at the start of the block.
-    fn reads(&self, t: &T) -> bool;
+    /// Returns `true` iff the instruction writes to `datum`.
+    fn writes(&self, datum: &Datum) -> bool;
 
-    /// returns true iff the variable `t` is assigned (written to) by the instruction or basic
-    /// block, effectively "killing" any previous value it held.
-    fn writes(&self, t: &T) -> bool;
+    /// Returns a `StaticAnalysis` for advancing the instruction.
+    fn sa(&self) -> StaticAnalysis<Self> where Self: Sized;
+}
 
-    /// Modifies the instruction
-    fn modify(&mut self) -> IterationResult;
+/// Returns a static analysis modifying any instructions that read from or writes to `datum`.
+pub fn leave_alone<Datum, Insn: DataFlow<Datum>>(sequence: &Sequence<Insn>, datum: &Datum) -> Result<(), StaticAnalysis<Insn>> {
+    sequence.iter()
+        .enumerate()
+        .find(|(_offs, i)| i.reads(datum) || i.writes(datum))
+        .map(|(offs, i)| i.sa().set_offset(offs))
+        .map_or(Ok(()), Err)
+}
 
-    /// Modifies the instruction so that it reads from `t`.
-    fn make_read(&mut self, t: &T) -> IterationResult {
-        while !self.reads(t) {
-            self.modify()?;
-        }
-        Ok(())
+/// If the sequence reads from `datum` before writing to it, then this function returns a
+/// StaticAnalysis modifying the first instruction in the sequence. Successively applying these
+/// ensures that the sequence will not read from the `datum` before it has been initialized.
+pub fn uninitialized<Datum, Insn: DataFlow<Datum>>(sequence: &Sequence<Insn>, datum: &Datum) -> Result<(), StaticAnalysis<Insn>> {
+    let Some(read) = sequence.iter().enumerate().find(|(_offs, insn)| insn.reads(datum)) else {
+        // There's no instruction in the sequence reading from `datum`
+        return Ok(());
+    };
+
+    let Some(write) = sequence.iter().enumerate().find(|(_offs, insn)| insn.writes(datum)) else {
+        // There's no instruction in the sequence writing to `datum`, so `datum` is uninitialized
+        // wherever it's read.
+        return Err(read.1.sa());
+    };
+
+    if write.0 < read.0 {
+        // The write to `datum` happened before the read, so that's okay.
+        return Ok(());
     }
 
-    /// Modifies the instruction so that it writes to `t`.
-    fn make_write(&mut self, t: &T) -> IterationResult {
-        while !self.writes(t) {
-            self.modify()?;
-        }
-        Ok(())
-    }
+    return Err(read.1.sa());
+}
 
-    /// Modifies the instruction so that it does not read from `t` without having written to `t`
-    /// first.
-    fn not_live_in(&mut self, t: &T) -> IterationResult {
-        if !self.writes(t) {
-            while self.reads(t) {
-                self.modify()?;
-            }
-        }
-        Ok(())
-    }
-
-    /// Modifies the instruction so that it does not write to `t`.
-    fn not_live_out(&mut self, t: &T) -> IterationResult {
-        while self.writes(t) {
-            self.modify()?;
-        }
-        Ok(())
-    }
+/// If the sequence does not contains any instruction that writes to `datum`, then this returns a
+/// StaticAnalysis modifying the first instruction in the sequence. Successively applying these
+/// will make sure that the sequence writes to `datum`.
+pub fn expect_write<Datum, Insn: DataFlow<Datum>>(sequence: &Sequence<Insn>, datum: &Datum) -> Result<(), StaticAnalysis<Insn>> {
+    if sequence.iter().find(|insn| insn.writes(datum)).is_none() {
+        // There's no instruction in the sequence writing to `datum`
+        return Err(sequence[0].sa());
+    };
+    Ok(())
 }

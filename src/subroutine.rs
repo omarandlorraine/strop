@@ -48,9 +48,9 @@ impl<Insn: ShouldReturn, S: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>> Brut
         Self: Sized,
     {
         let seq = self.0.as_ref();
-        if let Some(mut sa) = seq[seq.len() - 1].should_return() {
-            sa.offset = seq.len() - 1;
-            return Err(sa);
+        let offs = seq.len() - 1;
+        if let Some(sa) = seq[offs].should_return() {
+            return Err(sa.set_offset(offs));
         }
         Ok(())
     }
@@ -105,19 +105,5 @@ impl<Insn, S: crate::Encode<E> + BruteforceSearch<Insn> + AsRef<Sequence<Insn>>,
 impl<Insn, T: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>> AsMut<T> for Subroutine<Insn, T> {
     fn as_mut(&mut self) -> &mut T {
         &mut self.0
-    }
-}
-
-impl<Insn, D, T: crate::dataflow::DataFlow<D> + BruteforceSearch<Insn> + AsRef<Sequence<Insn>>>
-    crate::dataflow::DataFlow<D> for Subroutine<Insn, T>
-{
-    fn reads(&self, t: &D) -> bool {
-        self.0.reads(t)
-    }
-    fn writes(&self, t: &D) -> bool {
-        self.0.writes(t)
-    }
-    fn modify(&mut self) -> crate::IterationResult {
-        self.0.modify()
     }
 }

@@ -317,6 +317,87 @@ impl Encode<u8> for Insn {
     }
 }
 
+mod datatype {
+    use crate::dataflow::DataFlow;
+    use trapezoid_core::cpu::RegisterType;
+    use trapezoid_core::cpu::Opcode;
+    use super::Insn;
+
+    impl DataFlow<RegisterType> for Insn {
+        fn reads(&self, datum: &RegisterType) -> bool {
+            let rs = self.decode().rs() == *datum;
+            let rt = self.decode().rt() == *datum;
+            let rd = self.decode().rd() == *datum;
+
+            match self.decode().opcode {
+                Opcode::Invalid=> false,
+                Opcode::Nop=> false,
+                Opcode::Lui => false,
+                Opcode::Lb | Opcode::Lbu | Opcode::Lh | Opcode::Lhu | Opcode::Lw | Opcode::Lwl | Opcode::Lwr => rs,
+                Opcode::Sb | Opcode::Sh | Opcode::Sw | Opcode::Swl | Opcode::Swr => rt | rs,
+                Opcode::Slt | Opcode::Sltu => rd| rs,
+                Opcode::Slti | Opcode::Sltiu => rs,
+                
+                Opcode::And | Opcode::Or | Opcode::Xor | Opcode::Nor => rs | rt,
+                Opcode::Addu | Opcode::Add | Opcode::Sub | Opcode::Subu => rs | rt,
+                Opcode::Addi | Opcode::Addiu | Opcode::Andi | Opcode::Ori | Opcode::Xori => rs,
+
+                Opcode::Sll | Opcode::Sra | Opcode::Srl  => rt,
+
+                Opcode::Srlv | Opcode::Srav | Opcode::Sllv => rs | rt,
+                
+                Opcode::Mult | Opcode::Multu => rs | rd,
+                Opcode::Div | Opcode::Divu => rs | rd,
+
+                Opcode::Mfhi => *datum == RegisterType::Hi,
+                Opcode::Mflo => *datum == RegisterType::Lo,
+                Opcode::Mthi | Opcode::Mtlo => rs,
+                Opcode::J | Opcode::Jal => false,
+                Opcode::Jr | Opcode::Jalr => rs,
+
+                Opcode::Sb | Opcode::Sh | Opcode::Sw => rt,
+
+                Opcode::Beq | Opcode::Bne => rs | rt, 
+                Opcode::Bgtz | Opcode::Blez | Opcode::Bltz | Opcode::Bgez | Opcode::Bltzal | Opcode::Bgezal | Opcode::Bcondz => rs,
+                Opcode::Syscall | Opcode::Break | Opcode::Cop(_) => false,
+                Opcode::Mfc(_) | Opcode::Cfc(_) => false,
+                Opcode::Ctc(_) => rt,
+            }
+        }
+
+        fn writes(&self, datum: &RegisterType) -> bool {
+            let rs = self.decode().rs() == *datum;
+            let rt = self.decode().rt() == *datum;
+            let rd = self.decode().rd() == *datum;
+
+            let hi = *datum == RegisterType::Hi;
+            let lo = *datum == RegisterType::Lo;
+
+            match self.decode().opcode {
+                Opcode::Invalid=> false,
+                Opcode::Nop=> false,
+                Opcode::Lb | Opcode::Lbu | Opcode::Lh | Opcode::Lhu | Opcode::Lw | Opcode::Lwl | Opcode::Lwr => rt,
+                Opcode::Sb | Opcode::Sh | Opcode::Sw | Opcode::Swl | Opcode::Swr => false,
+                Opcode::Slt | Opcode::Sltu => rs,
+                Opcode::Slti | Opcode::Sltiu => rs,
+                Opcode::Addu | Opcode::Subu | Opcode::Sub | Opcode::Add | Opcode::Addiu | Opcode::Addi => rd,
+                Opcode::And | Opcode::Or | Opcode::Xor | Opcode::Nor => rd,
+                Opcode::Andi | Opcode::Ori | Opcode::Xori => rd,
+                Opcode::Srlv | Opcode::Srav | Opcode::Sllv => rd,
+                Opcode::Sll | Opcode::Sra | Opcode::Srl  => rd,
+                Opcode::Lui => rt,
+
+                Opcode::Mult | Opcode::Multu | Opcode::Div | Opcode::Divu => hi | lo,
+
+                Opcode::Beq | Opcode::Bne | Opcode::Bgtz | Opcode::Blez | Opcode::Bcondz => false,
+
+                Opcode::Mfc(_) | Opcode::Cfc(_) => rt,
+                Opcode::Syscall => false,
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
 
