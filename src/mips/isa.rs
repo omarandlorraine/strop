@@ -385,8 +385,11 @@ mod test {
         }
 
         // Make sure the disassembly doesn't just give us a hexadecimal value.
-        assert!(u32::from_str_radix(&format!("{insn}"), 16).is_err(), "check_instruction(&Insn(0x{:08x})); // disassembly missing.", insn.0);
-
+        assert!(
+            u32::from_str_radix(&format!("{insn}"), 16).is_err(),
+            "check_instruction(&Insn(0x{:08x})); // disassembly missing.",
+            insn.0
+        );
     }
 
     #[test]
@@ -405,7 +408,7 @@ mod test {
 
         // because of dont-care fields in some of the instructions, the same instruction may have
         // two encodings. I consider it an error to use the "wrong one".
-        // 
+        //
         // For example, the `and` opcode ignored the `shamt` field. So there's 32 possible
         // encodings for every `and` instruction. This is going to have an obvious negative impact
         // on the bruteforce search.
