@@ -16,6 +16,8 @@
 
 #[cfg(feature = "armv4t")]
 pub mod armv4t;
+#[cfg(any(feature = "sm83", feature = "z80"))]
+pub mod i80;
 #[cfg(feature = "m6502")]
 pub mod m6502;
 #[cfg(feature = "m68k")]
@@ -24,6 +26,8 @@ pub mod m68000;
 pub mod m6809;
 #[cfg(feature = "mips")]
 pub mod mips;
+#[cfg(feature = "sm83")]
+pub mod sm83;
 #[cfg(feature = "z80")]
 pub mod z80;
 
