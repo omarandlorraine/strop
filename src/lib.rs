@@ -27,10 +27,6 @@ pub mod mips;
 #[cfg(feature = "z80")]
 pub mod z80;
 
-// pub mod dataflow;
-// pub mod objectives;
-// pub mod peephole;
-
 mod sequence;
 pub use sequence::Sequence;
 
@@ -60,6 +56,22 @@ pub struct StaticAnalysis<Instruction> {
     pub reason: &'static str,
 }
 
+impl<Instruction> StaticAnalysis<Instruction> {
+    /// Constructs a new `StaticAnalysis` object, replacing the offset value.
+    pub fn set_offset(&self, offset: usize) -> Self {
+        let Self {
+            offset: _,
+            advance,
+            reason,
+        } = self;
+        Self {
+            offset,
+            advance: *advance,
+            reason,
+        }
+    }
+}
+
 impl<Instruction> std::fmt::Debug for StaticAnalysis<Instruction> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         write!(f, "StaticAnalysis {} offset {}", self.reason, self.offset)
@@ -83,14 +95,11 @@ pub trait Step {
 pub trait BruteforceSearch<Insn> {
     /// Optionally return a `StaticAnalysis` if a code sequence is found to be problematic or in some
     /// way suboptimal.
-    fn analyze_this(&self) -> Option<StaticAnalysis<Insn>>;
+    fn analyze_this(&self) -> Result<(), StaticAnalysis<Insn>>;
 
     /// Returns either this pass's `StaticAnalysis<Insn>` or the inner's
-    fn analyze(&mut self) -> Option<StaticAnalysis<Insn>> {
-        if let Some(sa) = self.inner().analyze() {
-            return Some(sa);
-        }
-
+    fn analyze(&mut self) -> Result<(), StaticAnalysis<Insn>> {
+        self.inner().analyze()?;
         self.analyze_this()
     }
 
@@ -112,7 +121,7 @@ pub trait BruteforceSearch<Insn> {
 
     /// Applies all `StaticAnalysis` instances.
     fn fixup(&mut self) {
-        while let Some(sa) = self.analyze() {
+        while let Err(sa) = self.analyze() {
             self.apply(&sa);
         }
     }

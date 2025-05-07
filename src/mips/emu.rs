@@ -1,5 +1,7 @@
 //! A module making possible the execution of MIPS subroutine in emulation
+use crate::mips::Insn;
 use crate::Encode;
+use crate::Sequence;
 use trapezoid_core::cpu::{BusLine, Cpu, CpuBusProvider, RegisterType};
 
 struct Bus {
@@ -89,17 +91,26 @@ impl CpuBusProvider for Bus {
 pub trait Parameters {
     /// Puts the parameters into the emulator in the expected way.
     fn install(self, cpu: &mut Cpu);
+    /// Performs dataflow analysis; ensuring that the sequence reads from the necessary argument
+    /// registers.
+    fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>>;
 }
 
 /// Trait for types which may be used as a function's return value
 pub trait ReturnValue {
     /// Gets the parameters out of the emulator's register file
     fn extract(cpu: &Cpu) -> Self;
+    /// Performs dataflow analysis; ensuring that the sequence writes to V0 (and, V1 if necessary)
+    fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>>;
 }
 
 impl Parameters for u8 {
     fn install(self, cpu: &mut Cpu) {
-        cpu.registers_mut().write(RegisterType::V1, self as u32)
+        cpu.registers_mut().write(RegisterType::A0, self as u32)
+    }
+
+    fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>> {
+        crate::dataflow::expect_read(seq, &RegisterType::A0)
     }
 }
 
@@ -107,17 +118,29 @@ impl ReturnValue for u8 {
     fn extract(cpu: &Cpu) -> Self {
         cpu.registers().read(RegisterType::V1) as u8
     }
+
+    fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>> {
+        crate::dataflow::expect_write(seq, &RegisterType::V0)
+    }
 }
 
 impl Parameters for f32 {
     fn install(self, cpu: &mut Cpu) {
         cpu.registers_mut().write(RegisterType::V1, self.to_bits())
     }
+
+    fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>> {
+        crate::dataflow::expect_read(seq, &RegisterType::A0)
+    }
 }
 
 impl ReturnValue for f32 {
     fn extract(cpu: &Cpu) -> Self {
         Self::from_bits(cpu.registers().read(RegisterType::V1))
+    }
+
+    fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>> {
+        crate::dataflow::expect_write(seq, &RegisterType::V0)
     }
 }
 

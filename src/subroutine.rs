@@ -43,16 +43,16 @@ impl<Insn, S: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>> Subroutine<Insn, S
 impl<Insn: ShouldReturn, S: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>> BruteforceSearch<Insn>
     for Subroutine<Insn, S>
 {
-    fn analyze_this(&self) -> Option<crate::StaticAnalysis<Insn>>
+    fn analyze_this(&self) -> Result<(), crate::StaticAnalysis<Insn>>
     where
         Self: Sized,
     {
         let seq = self.0.as_ref();
-        if let Some(mut sa) = seq[seq.len() - 1].should_return() {
-            sa.offset = seq.len() - 1;
-            return Some(sa);
+        let offs = seq.len() - 1;
+        if let Some(sa) = seq[offs].should_return() {
+            return Err(sa.set_offset(offs));
         }
-        None
+        Ok(())
     }
 
     fn inner(&mut self) -> &mut dyn BruteforceSearch<Insn> {
@@ -105,19 +105,5 @@ impl<Insn, S: crate::Encode<E> + BruteforceSearch<Insn> + AsRef<Sequence<Insn>>,
 impl<Insn, T: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>> AsMut<T> for Subroutine<Insn, T> {
     fn as_mut(&mut self) -> &mut T {
         &mut self.0
-    }
-}
-
-impl<Insn, D, T: crate::dataflow::DataFlow<D> + BruteforceSearch<Insn> + AsRef<Sequence<Insn>>>
-    crate::dataflow::DataFlow<D> for Subroutine<Insn, T>
-{
-    fn reads(&self, t: &D) -> bool {
-        self.0.reads(t)
-    }
-    fn writes(&self, t: &D) -> bool {
-        self.0.writes(t)
-    }
-    fn modify(&mut self) -> crate::IterationResult {
-        self.0.modify()
     }
 }
