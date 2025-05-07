@@ -106,7 +106,7 @@ impl Insn {
         {
             return None;
         }
-        return Some(self.decode().rs());
+        Some(self.decode().rs())
     }
 
     /// Returns the `rt` if the instruction actually writes to the `rt`
@@ -154,7 +154,7 @@ impl Insn {
         {
             return None;
         }
-        return Some(self.decode().rt());
+        Some(self.decode().rt())
     }
 
     /// Returns the `rt` if the instruction actually reads from the `rt`
@@ -176,7 +176,7 @@ impl Insn {
         {
             return None;
         }
-        return Some(self.decode().rt());
+        Some(self.decode().rt())
     }
 
     /// Returns the `shamt` if the instruction actually uses the `shamt`

@@ -65,7 +65,7 @@ impl<Instruction> StaticAnalysis<Instruction> {
             reason,
         } = self;
         Self {
-            offset: offset,
+            offset,
             advance: *advance,
             reason,
         }

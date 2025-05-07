@@ -70,8 +70,8 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue>
     fn analyze_this(&self) -> Result<(), crate::StaticAnalysis<Insn>> {
         use trapezoid_core::cpu::RegisterType;
 
-        Params::analyze_this(&self.seq.as_ref())?;
-        RetVal::analyze_this(&self.seq.as_ref())?;
+        Params::analyze_this(self.seq.as_ref())?;
+        RetVal::analyze_this(self.seq.as_ref())?;
 
         for reg in [
             RegisterType::T0,
@@ -85,7 +85,7 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue>
             RegisterType::T8,
             RegisterType::T9,
         ] {
-            crate::dataflow::uninitialized(&self.seq.as_ref(), &reg)?;
+            crate::dataflow::uninitialized(self.seq.as_ref(), &reg)?;
         }
 
         for reg in [
@@ -104,7 +104,7 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue>
             RegisterType::Sp,
             RegisterType::Fp,
         ] {
-            crate::dataflow::leave_alone(&self.seq.as_ref(), &reg)?;
+            crate::dataflow::leave_alone(self.seq.as_ref(), &reg)?;
         }
         Ok(())
     }

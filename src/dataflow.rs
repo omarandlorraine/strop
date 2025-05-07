@@ -65,7 +65,7 @@ pub fn uninitialized<Datum, Insn: DataFlow<Datum>>(
         return Ok(());
     }
 
-    return Err(read.1.sa());
+    Err(read.1.sa())
 }
 
 /// If the sequence does not contains any instruction that writes to `datum`, then this returns a
@@ -75,7 +75,7 @@ pub fn expect_write<Datum, Insn: DataFlow<Datum>>(
     sequence: &Sequence<Insn>,
     datum: &Datum,
 ) -> Result<(), StaticAnalysis<Insn>> {
-    if sequence.iter().find(|insn| insn.writes(datum)).is_none() {
+    if !sequence.iter().any(|insn| insn.writes(datum)) {
         // There's no instruction in the sequence writing to `datum`
         return Err(sequence[0].sa());
     };
@@ -89,7 +89,7 @@ pub fn expect_read<Datum, Insn: DataFlow<Datum>>(
     sequence: &Sequence<Insn>,
     datum: &Datum,
 ) -> Result<(), StaticAnalysis<Insn>> {
-    if sequence.iter().find(|insn| insn.reads(datum)).is_none() {
+    if !sequence.iter().any(|insn| insn.reads(datum)) {
         // There's no instruction in the sequence writing to `datum`
         return Err(sequence[0].sa());
     };
