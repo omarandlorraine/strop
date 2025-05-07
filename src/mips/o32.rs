@@ -68,9 +68,47 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue>
     crate::BruteforceSearch<Insn> for O32<Params, RetVal>
 {
     fn analyze_this(&self) -> Result<(), crate::StaticAnalysis<Insn>> {
-        // TODO: dataflow analysis could go here.
+        use trapezoid_core::cpu::RegisterType;
+
+        Params::analyze_this(&self.seq.as_ref())?;
+        RetVal::analyze_this(&self.seq.as_ref())?;
+
+        for reg in [
+            RegisterType::T0,
+            RegisterType::T1,
+            RegisterType::T2,
+            RegisterType::T3,
+            RegisterType::T4,
+            RegisterType::T5,
+            RegisterType::T6,
+            RegisterType::T7,
+            RegisterType::T8,
+            RegisterType::T9,
+        ] {
+            crate::dataflow::uninitialized(&self.seq.as_ref(), &reg)?;
+        }
+
+        for reg in [
+            RegisterType::At,
+            RegisterType::S0,
+            RegisterType::S1,
+            RegisterType::S2,
+            RegisterType::S3,
+            RegisterType::S4,
+            RegisterType::S5,
+            RegisterType::S6,
+            RegisterType::S7,
+            RegisterType::K0,
+            RegisterType::K1,
+            RegisterType::Gp,
+            RegisterType::Sp,
+            RegisterType::Fp,
+        ] {
+            crate::dataflow::leave_alone(&self.seq.as_ref(), &reg)?;
+        }
         Ok(())
     }
+
     fn inner(&mut self) -> &mut dyn crate::BruteforceSearch<Insn> {
         &mut self.seq
     }

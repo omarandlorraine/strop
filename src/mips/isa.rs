@@ -49,6 +49,21 @@ impl Insn {
         self.0 & 0xfc000000 == 0
     }
 
+    /// Returns true if the instruction is an `J` format instruction
+    pub fn i(&self) -> bool {
+        !self.r() && !self.j()
+    }
+
+    /// Returns true if the instruction is an `J` format instruction
+    pub fn j(&self) -> bool {
+        use trapezoid_core::cpu::Opcode;
+        if self.r() {
+            false
+        } else {
+            matches!(self.decode().opcode, Opcode::J | Opcode::Jal)
+        }
+    }
+
     /// Returns the `rd` if the instruction actually writes to `rd`
     pub fn rd(&self) -> Option<RegisterType> {
         use trapezoid_core::cpu::Opcode;
@@ -215,6 +230,25 @@ impl Insn {
         }
     }
 
+    /// Changes the registers which an instruction refers to.
+    fn next_registers(&mut self) -> crate::IterationResult {
+        use crate::Step;
+        if self.r() {
+            // R format instruction: mask off the shamt and func fields, and then increment.
+            self.0 |= 0x7ff;
+            self.next()
+        } else if self.i() {
+            // I format instruction: mask off the imm field, and then increment.
+            self.0 |= 0xffff;
+            self.next()?;
+            dbg!(&self);
+            Ok(())
+        } else {
+            // J format instruction: this shouldn't really even be reachable.
+            self.next_opcode()
+        }
+    }
+
     /// Called after a mutation; this ensures that the u32 member encodes an actually valid MIPS
     /// instruction
     fn fixup(&mut self) -> crate::IterationResult {
@@ -318,23 +352,22 @@ impl Encode<u8> for Insn {
 }
 
 mod datatype {
+    use super::Insn;
     use crate::dataflow::DataFlow;
     use trapezoid_core::cpu::RegisterType;
-    use trapezoid_core::cpu::Opcode;
-    use super::Insn;
 
     impl DataFlow<RegisterType> for Insn {
-        fn reads(&self, _datum: &RegisterType) -> bool {
-            todo!()
+        fn reads(&self, datum: &RegisterType) -> bool {
+            Some(datum) == self.rs().as_ref() || Some(datum) == self.read_rt().as_ref()
         }
 
-        fn writes(&self, _datum: &RegisterType) -> bool {
-            todo!()
+        fn writes(&self, datum: &RegisterType) -> bool {
+            Some(datum) == self.rd().as_ref() || Some(datum) == self.write_rt().as_ref()
         }
 
         fn sa(&self) -> crate::StaticAnalysis<Self> {
             crate::StaticAnalysis::<Self> {
-                advance: Self::next_registers(),
+                advance: Self::next_registers,
                 offset: 0,
                 reason: "Dataflow",
             }

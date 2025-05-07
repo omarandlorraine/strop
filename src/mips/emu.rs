@@ -1,7 +1,7 @@
 //! A module making possible the execution of MIPS subroutine in emulation
+use crate::mips::Insn;
 use crate::Encode;
 use crate::Sequence;
-use crate::mips::Insn;
 use trapezoid_core::cpu::{BusLine, Cpu, CpuBusProvider, RegisterType};
 
 struct Bus {
@@ -91,6 +91,7 @@ impl CpuBusProvider for Bus {
 pub trait Parameters {
     /// Puts the parameters into the emulator in the expected way.
     fn install(self, cpu: &mut Cpu);
+    fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>>;
 }
 
 /// Trait for types which may be used as a function's return value
@@ -102,7 +103,11 @@ pub trait ReturnValue {
 
 impl Parameters for u8 {
     fn install(self, cpu: &mut Cpu) {
-        cpu.registers_mut().write(RegisterType::V1, self as u32)
+        cpu.registers_mut().write(RegisterType::A0, self as u32)
+    }
+
+    fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>> {
+        crate::dataflow::expect_read(seq, &RegisterType::A0)
     }
 }
 
