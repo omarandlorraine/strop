@@ -3,6 +3,7 @@
 pub mod emu;
 mod isa;
 mod o32;
+mod optimizer;
 mod subroutine;
 
 pub use isa::Insn;

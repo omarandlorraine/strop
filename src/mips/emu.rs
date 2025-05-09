@@ -116,7 +116,7 @@ impl Parameters for u8 {
 
 impl ReturnValue for u8 {
     fn extract(cpu: &Cpu) -> Self {
-        cpu.registers().read(RegisterType::V1) as u8
+        cpu.registers().read(RegisterType::V0) as u8
     }
 
     fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>> {
@@ -126,17 +126,20 @@ impl ReturnValue for u8 {
 
 impl Parameters for f32 {
     fn install(self, cpu: &mut Cpu) {
-        cpu.registers_mut().write(RegisterType::V1, self.to_bits())
+        cpu.registers_mut().write(RegisterType::A0, self.to_bits())
     }
 
     fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>> {
-        crate::dataflow::expect_read(seq, &RegisterType::A0)
+        crate::dataflow::expect_read(seq, &RegisterType::A0)?;
+        crate::dataflow::uninitialized(seq, &RegisterType::A1)?;
+        crate::dataflow::uninitialized(seq, &RegisterType::A2)?;
+        crate::dataflow::uninitialized(seq, &RegisterType::A3)
     }
 }
 
 impl ReturnValue for f32 {
     fn extract(cpu: &Cpu) -> Self {
-        Self::from_bits(cpu.registers().read(RegisterType::V1))
+        Self::from_bits(cpu.registers().read(RegisterType::V0))
     }
 
     fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>> {
