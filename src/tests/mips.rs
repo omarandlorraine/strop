@@ -1,7 +1,3 @@
-fn identity(f: f32) -> strop::RunResult<f32> {
-    Ok(f)
-}
-
 #[cfg(not(feature = "mips"))]
 fn run_test() {
     unreachable!("the mips module has been configured out!");
@@ -11,6 +7,10 @@ fn run_test() {
 fn run_test() {
     use strop::Disassemble;
     use strop::ToBruteForce;
+
+    fn identity(f: f32) -> strop::RunResult<f32> {
+        Ok(f)
+    }
 
     let mut search =
         strop::mips::O32::default().to_bruteforce(identity as fn(f32) -> strop::RunResult<f32>);
