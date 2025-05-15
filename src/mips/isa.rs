@@ -37,13 +37,13 @@ impl crate::subroutine::ShouldReturn for Insn {
         }
     }
 
-    fn should_return(&self) -> Result<(), crate::StaticAnalysis<Self>> {
+    fn should_return(&self, offset: usize) -> Result<(), crate::StaticAnalysis<Self>> {
         if *self == Self::jr_ra() {
             return Ok(());
         }
         Err(crate::StaticAnalysis::<Self> {
             advance: Self::make_return,
-            offset: 0,
+            offset,
             reason: "ShouldReturn",
         })
     }

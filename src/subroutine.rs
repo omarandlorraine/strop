@@ -24,7 +24,7 @@ impl<Insn: Encode<u8> + Branch + crate::Step + Clone + ShouldReturn> Default
 }
 
 pub trait ShouldReturn {
-    fn should_return(&self) -> Result<(), crate::StaticAnalysis<Self>>
+    fn should_return(&self, offset: usize) -> Result<(), crate::StaticAnalysis<Self>>
     where
         Self: Sized;
 
@@ -63,11 +63,12 @@ impl<
         Self: Sized,
     {
         let seq = self.0.as_ref();
-        let offs = seq.last_instruction_offset();
-        if let Err(sa) = seq[offs].should_return() {
-            return Err(sa.set_offset(offs));
-        }
 
+        // Make sure the last instruction returns
+        let offs = seq.last_instruction_offset();
+        seq[offs].should_return(offs)?;
+
+        // Make a note of the start addresses of all instructions in the subroutine
         let start_addresses = seq
             .iter()
             .map(|insn| insn.len())
@@ -77,6 +78,9 @@ impl<
             })
             .collect::<Vec<isize>>();
 
+        // Make sure all branches target an actual instruction in the subroutine (that is,
+        // disallow instructions that jump out of the subroutine, or that jump to the middle of an
+        // instruction)
         let mut backward = 0;
         for insn in seq.iter() {
             let permissibles = start_addresses
@@ -85,7 +89,10 @@ impl<
                 .collect::<Vec<isize>>();
             insn.branch_fixup(&permissibles)?;
             backward += insn.len() as isize;
+        }
 
+        // Any other instructions not allowed to appear in subroutines
+        for insn in seq.iter() {
             insn.allowed_in_subroutine()?;
         }
         Ok(())

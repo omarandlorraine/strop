@@ -86,12 +86,12 @@ impl Insn {
 }
 
 impl crate::subroutine::ShouldReturn for Insn {
-    fn should_return(&self) -> Result<(), crate::StaticAnalysis<Self>> {
+    fn should_return(&self, offset: usize) -> Result<(), crate::StaticAnalysis<Self>> {
         if self.0[0] == 0xc9 {
             return Ok(());
         }
         Err(crate::StaticAnalysis::<Self> {
-            offset: 0,
+            offset,
             advance: Self::next_opcode,
             reason: "ShouldReturn",
         })

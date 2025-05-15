@@ -16,15 +16,13 @@ mod test {
         use crate::Disassemble;
         use crate::Encode;
 
-        use crate::Subroutine;
-
         let mut sub = super::Subroutine::first();
         sub.dasm();
         while sub.len() <= 8 {
             println!("trying to run this subroutine:");
             sub.dasm();
-            crate::mips::emu::call_raw(&sub);
-            sub.next();
+            crate::mips::emu::call_raw(&sub).unwrap();
+            sub.next().unwrap();
         }
     }
 }

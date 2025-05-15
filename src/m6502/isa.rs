@@ -17,12 +17,12 @@ impl<V: mos6502::Variant> crate::Step for Insn<V> {
 }
 
 impl<V: mos6502::Variant> crate::subroutine::ShouldReturn for Insn<V> {
-    fn should_return(&self) -> Result<(), crate::StaticAnalysis<Self>> {
+    fn should_return(&self, offset: usize) -> Result<(), crate::StaticAnalysis<Self>> {
         if self.0 == Self::rts().0 {
             return Ok(());
         }
         Err(crate::StaticAnalysis::<Self> {
-            offset: 0,
+            offset,
             advance: Self::skip_to_next_opcode,
             reason: "ShouldReturn",
         })
