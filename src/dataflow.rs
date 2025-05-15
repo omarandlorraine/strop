@@ -85,6 +85,37 @@ pub fn uninitialized<Datum, Insn: DataFlow<Datum>>(
     Err(read.1.sa())
 }
 
+/// If the sequence writes to `datum` without reading from it afterward, then this function returns a
+/// StaticAnalysis modifying the first instruction in the sequence that writes to `datum`. This
+/// means that The sequence will not write to `datum` unless it is later used.
+pub fn dont_expect_write<Datum, Insn: DataFlow<Datum>>(
+    sequence: &Sequence<Insn>,
+    datum: &Datum,
+) -> Result<(), StaticAnalysis<Insn>> {
+    'outer: for (offset, write) in sequence
+        .iter()
+        .enumerate()
+        .filter(|(_offs, insn)| insn.writes(datum))
+    {
+        for insn in sequence.iter().skip(offset) {
+            if insn.reads(datum) {
+                // The write I found is followed by a read,
+                // so there's nothing to do here.
+                continue 'outer;
+            }
+
+            if insn.writes(datum) {
+                // The write I found gets been clobbered,
+                // so let's return a StaticAnalysis
+                break;
+            }
+        }
+
+        return Err(write.sa().set_offset(offset));
+    }
+    Ok(())
+}
+
 /// If the sequence does not contains any instruction that writes to `datum`, then this returns a
 /// StaticAnalysis modifying the first instruction in the sequence. Successively applying these
 /// will make sure that the sequence writes to `datum`.

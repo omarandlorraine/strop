@@ -18,7 +18,9 @@ mod mutate;
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Sequence<T>(Vec<T>);
 
-impl<T: Step + crate::subroutine::ShouldReturn> crate::subroutine::ToSubroutine<T> for Sequence<T> {
+impl<T: Step + crate::Encode<u8> + crate::Branch + crate::subroutine::ShouldReturn>
+    crate::subroutine::ToSubroutine<T> for Sequence<T>
+{
     fn to_subroutine(self) -> crate::Subroutine<T, Self> {
         crate::Subroutine::new(self)
     }

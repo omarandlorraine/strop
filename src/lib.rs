@@ -44,7 +44,9 @@ pub use subroutine::Subroutine;
 mod trace;
 pub use trace::{ToTrace, Trace};
 
+pub mod branches;
 pub mod dataflow;
+pub use branches::Branch;
 
 /// Result of a static analysis pass. Explains why a code sequence has been found to be illogical
 /// or unsuitable, and provides a way to prune such a sequence from the search.

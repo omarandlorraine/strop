@@ -18,20 +18,69 @@ impl std::fmt::Display for Insn {
 
 impl std::fmt::Debug for Insn {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{} 0x{:08x}", self.decode(), self.0)
+        write!(f, "{}\t; 0x{:08x}", self.decode(), self.0)
     }
 }
 
 impl crate::subroutine::ShouldReturn for Insn {
-    fn should_return(&self) -> Option<crate::StaticAnalysis<Self>> {
-        if *self == Self::jr_ra() {
-            return None;
+    fn allowed_in_subroutine(&self) -> Result<(), crate::StaticAnalysis<Self>> {
+        use trapezoid_core::cpu::Opcode;
+        let decoded = self.decode();
+
+        match decoded.opcode {
+            Opcode::J | Opcode::Jal => Err(crate::StaticAnalysis::<Self> {
+                advance: Self::next_opcode,
+                offset: 0,
+                reason: "OpcodeNotAllowedInSubroutines",
+            }),
+            _ => Ok(()),
         }
-        Some(crate::StaticAnalysis::<Self> {
+    }
+
+    fn should_return(&self) -> Result<(), crate::StaticAnalysis<Self>> {
+        if *self == Self::jr_ra() {
+            return Ok(());
+        }
+        Err(crate::StaticAnalysis::<Self> {
             advance: Self::make_return,
             offset: 0,
             reason: "ShouldReturn",
         })
+    }
+}
+
+impl crate::Branch for Insn {
+    fn offset(&self) -> Option<isize> {
+        use trapezoid_core::cpu::Opcode;
+        let decoded = self.decode();
+
+        match decoded.opcode {
+            Opcode::Beq
+            | Opcode::Bne
+            | Opcode::Bgtz
+            | Opcode::Blez
+            | Opcode::Bltz
+            | Opcode::Bgez
+            | Opcode::Bltzal
+            | Opcode::Bgezal => Some(decoded.imm16() as i16 as isize),
+            _ => None,
+        }
+    }
+
+    fn branch_fixup(&self, permissibles: &[isize]) -> Result<(), crate::StaticAnalysis<Self>> {
+        let Some(offset) = self.offset() else {
+            return Ok(());
+        };
+        if !permissibles.contains(&offset) {
+            Err(crate::StaticAnalysis::<Self> {
+                advance: Self::next,
+                offset: 0,
+                reason: "BackwardBranchNotInRange",
+            })
+        } else {
+            // backward branch in range
+            Ok(())
+        }
     }
 }
 
@@ -195,6 +244,12 @@ impl Insn {
                 | Opcode::Lw
                 | Opcode::Lwl
                 | Opcode::Lwr
+                | Opcode::Bgtz
+                | Opcode::Blez
+                | Opcode::Bltz
+                | Opcode::Bgez
+                | Opcode::Bltzal
+                | Opcode::Bgezal
                 | Opcode::Mfc(_)
                 | Opcode::Swc(_)
         ) {
@@ -411,7 +466,7 @@ impl Insn {
 
 impl crate::Disassemble for Insn {
     fn dasm(&self) {
-        println!("\t{}", self);
+        println!("\t{:?}", self);
     }
 }
 
@@ -540,10 +595,6 @@ mod test {
             println!("Checking for duplicates of {i}");
             let mut j = i.clone();
             while j.next().is_ok() {
-                if !j.r() {
-                    break;
-                }
-
                 if format!("{i}") == format!("{j}") {
                     if i.decode().rd() != j.decode().rd() {
                         println!("they differ in $rd");

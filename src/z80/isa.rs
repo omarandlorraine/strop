@@ -86,11 +86,11 @@ impl Insn {
 }
 
 impl crate::subroutine::ShouldReturn for Insn {
-    fn should_return(&self) -> Option<crate::StaticAnalysis<Self>> {
+    fn should_return(&self) -> Result<(), crate::StaticAnalysis<Self>> {
         if self.0[0] == 0xc9 {
-            return None;
+            return Ok(());
         }
-        Some(crate::StaticAnalysis::<Self> {
+        Err(crate::StaticAnalysis::<Self> {
             offset: 0,
             advance: Self::next_opcode,
             reason: "ShouldReturn",
@@ -131,6 +131,8 @@ impl crate::Mutate for Insn {
         self.fixup().ok(); // TODO, check for this condition and put it right
     }
 }
+
+impl crate::Branch for Insn {}
 
 impl Insn {
     /// Constructs a new Insn from a slice of bytes

@@ -74,6 +74,10 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue>
         Params::analyze_this(self.seq.as_ref())?;
         RetVal::analyze_this(self.seq.as_ref())?;
 
+        for reg in [RegisterType::Zero, RegisterType::At, RegisterType::Sp] {
+            crate::dataflow::dont_expect_write(self.seq.as_ref(), &reg)?;
+        }
+
         for reg in [
             RegisterType::V0,
             RegisterType::V1,

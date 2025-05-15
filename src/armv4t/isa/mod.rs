@@ -121,11 +121,11 @@ impl crate::Step for Insn {
 }
 
 impl crate::subroutine::ShouldReturn for Insn {
-    fn should_return(&self) -> Option<crate::StaticAnalysis<Self>> {
+    fn should_return(&self) -> Result<(), crate::StaticAnalysis<Self>> {
         if *self == Self::bx_lr() {
-            return None;
+            return Ok(());
         }
-        Some(crate::StaticAnalysis::<Self> {
+        Err(crate::StaticAnalysis::<Self> {
             advance: Self::make_return,
             offset: 0,
             reason: "ShouldReturn",
@@ -150,6 +150,8 @@ impl crate::Disassemble for Insn {
         println!("\t{:?}", self);
     }
 }
+
+impl crate::Branch for Insn {}
 
 #[cfg(test)]
 mod test {
@@ -179,20 +181,20 @@ mod test {
         let mut i = super::Insn::first();
 
         // this should return a static analysis that changes it to `bx lr`
-        let sa = i.should_return().unwrap();
+        let sa = i.should_return().err().unwrap();
 
         // so advance it.
         (sa.advance)(&mut i).unwrap();
         assert_eq!(i, super::Insn::bx_lr());
 
         // this time it should not return a static analysis
-        assert!(i.should_return().is_none());
+        assert!(i.should_return().is_ok());
 
         // but if we advance to some other instruction, ...
         i.next().unwrap();
 
         // ... then this should return a static analysis that goes to an error
-        let sa = i.should_return().unwrap();
+        let sa = i.should_return().err().unwrap();
         assert!((sa.advance)(&mut i).is_err());
     }
 
