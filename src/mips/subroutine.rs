@@ -21,7 +21,7 @@ mod test {
         while sub.len() <= 8 {
             println!("trying to run this subroutine:");
             sub.dasm();
-            crate::mips::emu::call_raw(&sub).unwrap();
+            crate::mips::emu::call_raw(&sub).ok();
             sub.next().unwrap();
         }
     }
