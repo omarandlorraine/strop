@@ -332,6 +332,7 @@ impl Insn {
     /// instruction
     fn fixup(&mut self) -> crate::IterationResult {
         use trapezoid_core::cpu::Opcode;
+        use trapezoid_core::cpu::RegisterType;
 
         loop {
             let opcode = self.decode().opcode;
@@ -340,6 +341,36 @@ impl Insn {
                 // Some instructions do not encode a valid opcode, skip these.
                 self.next_opcode()?;
                 continue;
+            }
+
+            if let Opcode::Mfc(coprocessor) = opcode {
+                if coprocessor == 0 {
+                    // COP0; the MIPS exception handling coprocessor thing
+                    match self.decode().rd() as u8 {
+                        // Reading from some coprocessor registers works okay.
+                        6 => {}  // JMP_DEST
+                        7 => {}  // DCIC
+                        8 => {}  // BAD_VADDR
+                        12 => {} // SR
+                        13 => {} // CAUSE
+                        14 => {} // EPC
+                        15 => {} // PRID
+
+                        // Some COP0 registers read garbage; I guess those instructions are
+                        // pointless
+                        16..=31 => self.next()?,
+
+                        // Reading from other coprocessor registers seems to crash the emulator, so
+                        // we need to exclude the instructions from being generated
+                        _ => self.next()?,
+                    }
+                } else if coprocessor == 2 {
+                    // COP2; the Playstation 1 Geometry Transform thing
+                } else {
+                    // unknown coprocessor; the emulator does not implement it, don't generate
+                    // these instructions.
+                    self.next_opcode()?;
+                }
             }
 
             if self.r() {

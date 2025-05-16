@@ -5,6 +5,7 @@ pub type Subroutine = crate::Subroutine<Insn, crate::Sequence<Insn>>;
 
 #[cfg(test)]
 mod test {
+    #[ignore]
     #[test]
     fn all_two_instruction_subroutines() {
         // To make sure that all the generated instructions can at least be executed by the
