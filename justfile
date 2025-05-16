@@ -4,7 +4,8 @@ export RUST_BACKTRACE := "1"
 
 [group: 'CI/CD']
 ci-stable:
-	# There is a github workflow which performs miscellaneous checks in the event of a push to a feature-branch.
+	# There is a github workflow which performs miscellaneous checks in the
+	# event of a push to a feature-branch.
 	# This ought to perform the same checks, but locally.
 	cargo fmt --check
 	cargo clippy -- -Dwarnings
@@ -17,7 +18,6 @@ ci-nightly:
 
 [group: 'CI/CD']
 ci: ci-stable ci-nightly
-
 
 [group: 'Long-running tests']
 mips_no_duplicates:
@@ -35,4 +35,6 @@ mips_all_two_instruction_subroutines:
 	# is such an instruction
 	cargo test --release -- mips::subroutine::test::all_two_instruction_subroutines --nocapture --include-ignored | tail -n 50
 
-
+[group: 'Long-running tests']
+mips_can_iterate_over_all_instructions:
+	cargo test --release -- mips::isa::test::can_iterate_over_all_instructions
