@@ -209,6 +209,7 @@ impl Insn {
                 | Opcode::Swl
                 | Opcode::Swr
                 | Opcode::Swc(_)
+                | Opcode::Lwc(_)
         ) {
             return None;
         }
@@ -252,6 +253,7 @@ impl Insn {
                 | Opcode::Bltzal
                 | Opcode::Bgezal
                 | Opcode::Mfc(_)
+                | Opcode::Lwc(_)
                 | Opcode::Swc(_)
         ) {
             return None;
@@ -605,6 +607,7 @@ mod test {
         check_instruction(&Insn(0xa0000000));
         check_instruction(&Insn(0xa8000000));
         check_instruction(&Insn(0xb8000000));
+        check_instruction(&Insn(0xc0000000));
     }
 
     #[test]
