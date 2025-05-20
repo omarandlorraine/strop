@@ -375,6 +375,32 @@ impl Insn {
                 }
             }
 
+            if let Opcode::Lwc(coprocessor) = opcode {
+                if coprocessor == 0 {
+                    // COP0; the MIPS exception handling coprocessor thing
+                    match self.decode().rt() as u8 {
+                        // writing some coprocessor registers works okay.
+                        3 => {} // BPC
+                        5 => {} // BDA
+                        7 => {} // DCIC
+                        9 => {} // BDAM
+                        11 => {} // BPCM
+                        12 => {} // SR
+                        13 => {} // CAUSE
+
+                        // writing to other coprocessor registers seems to crash the emulator, so
+                        // we need to exclude the instructions from being generated
+                        _ => self.next()?,
+                    }
+                } else if coprocessor == 2 {
+                    // COP2; the Playstation 1 Geometry Transform thing
+                } else {
+                    // unknown coprocessor; the emulator does not implement it, don't generate
+                    // these instructions.
+                    self.next_opcode()?;
+                }
+            }
+
             if self.r() {
                 let rs = self.decode().rs();
                 let rt = self.decode().rt();
