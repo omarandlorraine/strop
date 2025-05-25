@@ -1,9 +1,11 @@
 use crate::test::Vals;
+use crate::z80::dataflow::Register;
 use crate::z80::Emulator;
 use crate::z80::Insn;
 use crate::BruteForce;
 use crate::BruteforceSearch;
 use crate::Callable;
+use crate::Sequence;
 use crate::StaticAnalysis;
 
 pub trait ParameterList: Copy + Vals {
@@ -26,11 +28,15 @@ impl ParameterList for u16 {
 // types, and perhaps others which are not supported (yet)
 pub trait ReturnValue: Copy + Vals + PartialEq {
     fn get(emu: &Emulator) -> Self;
+    fn fixup(seq: &Sequence<Insn>) -> Result<(), StaticAnalysis<Insn>>;
 }
 
 impl ReturnValue for u8 {
     fn get(emu: &Emulator) -> u8 {
         emu.get_a()
+    }
+    fn fixup(seq: &Sequence<Insn>) -> Result<(), StaticAnalysis<Insn>> {
+        crate::dataflow::dont_expect_write(seq, &Register::B)
     }
 }
 
@@ -38,17 +44,37 @@ impl ReturnValue for i8 {
     fn get(emu: &Emulator) -> i8 {
         emu.get_a() as i8
     }
+    fn fixup(seq: &Sequence<Insn>) -> Result<(), StaticAnalysis<Insn>> {
+        crate::dataflow::dont_expect_write(seq, &Register::B)
+    }
 }
 
 impl ReturnValue for u16 {
     fn get(emu: &Emulator) -> u16 {
         emu.get_hl()
     }
+    fn fixup(seq: &Sequence<Insn>) -> Result<(), StaticAnalysis<Insn>> {
+        for reg in [Register::B, Register::C, Register::D, Register::E] {
+            crate::dataflow::dont_expect_write(seq, &reg)?;
+            crate::dataflow::uninitialized(seq, &reg)?;
+        }
+        for reg in [Register::H, Register::L] {
+            crate::dataflow::uninitialized(seq, &reg)?;
+        }
+        Ok(())
+    }
 }
 
 impl ReturnValue for i16 {
     fn get(emu: &Emulator) -> i16 {
         emu.get_hl() as i16
+    }
+    fn fixup(seq: &Sequence<Insn>) -> Result<(), StaticAnalysis<Insn>> {
+        for reg in [Register::B, Register::C, Register::D, Register::E, Register::H, Register::L] {
+            crate::dataflow::dont_expect_write(seq, &reg)?;
+            crate::dataflow::uninitialized(seq, &reg)?;
+        }
+        Ok(())
     }
 }
 
@@ -107,9 +133,11 @@ impl<Params, RetVal> crate::Step for SdccCall1<Params, RetVal> {
     }
 }
 
-impl<Params, RetVal> BruteforceSearch<Insn> for SdccCall1<Params, RetVal> {
+impl<Params, RetVal: ReturnValue> BruteforceSearch<Insn> for SdccCall1<Params, RetVal> {
     fn analyze_this(&self) -> Result<(), StaticAnalysis<Insn>> {
-        // TODO: dataflow analysis could go here.
+        RetVal::fixup(self.seq.as_ref())?;
+        crate::dataflow::uninitialized(self.seq.as_ref(), &dez80::register::Flag::C)?;
+        crate::dataflow::uninitialized(self.seq.as_ref(), &dez80::register::Flag::Z)?;
         Ok(())
     }
     fn inner(&mut self) -> &mut dyn BruteforceSearch<Insn> {
