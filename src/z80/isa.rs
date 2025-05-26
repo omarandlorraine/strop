@@ -208,13 +208,28 @@ impl Insn {
 #[cfg(test)]
 mod test {
     #[test]
-    fn all_opcodes() {
+    fn no_ignored_prefixes() {
         use super::Insn;
         use crate::Step;
 
         let mut insn = Insn::first();
         while insn.next().is_ok() {
             assert!(insn.decode().ignored_prefixes.is_empty());
+        }
+    }
+
+    #[test]
+    fn no_duplicate_encodings() {
+        use super::Insn;
+        use crate::Step;
+
+        let mut a = Insn::first();
+        while a.next_opcode().is_ok() {
+            println!("Checking for duplicates of {a}");
+            let mut b = a;
+            while b.next_opcode().is_ok() {
+                assert_ne!(format!("{a}"), format!("{b}"), "These two instructions disassemble the same way! {:?}, {:?}", a.0, b.0);
+            }
         }
     }
 }
