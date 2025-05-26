@@ -380,10 +380,10 @@ impl Insn {
                     // COP0; the MIPS exception handling coprocessor thing
                     match self.decode().rt() as u8 {
                         // writing some coprocessor registers works okay.
-                        3 => {} // BPC
-                        5 => {} // BDA
-                        7 => {} // DCIC
-                        9 => {} // BDAM
+                        3 => {}  // BPC
+                        5 => {}  // BDA
+                        7 => {}  // DCIC
+                        9 => {}  // BDAM
                         11 => {} // BPCM
                         12 => {} // SR
                         13 => {} // CAUSE
