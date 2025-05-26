@@ -69,6 +69,30 @@ mod iter {
             subroutine.step();
         }
     }
+
+    #[ignore]
+    #[test]
+    fn all_two_instruction_subroutines() {
+        // To make sure that all the generated instructions can at least be executed by the
+        // emulator, I'm going to generate all subroutines having a length of two (the last
+        // instruction is of course always going to be `ret`) and run them all in the emulator.
+
+        use crate::Run;
+        use crate::Step;
+        use crate::Disassemble;
+        use crate::Encode;
+        use crate::z80::Emulator;
+
+        let mut sub = super::Subroutine::first();
+        sub.dasm();
+        while sub.len() <= 6 {
+            println!("trying to run this subroutine:");
+            sub.dasm();
+            let mut emu = Emulator::default();
+            sub.run(&mut emu).ok();
+            sub.next().unwrap();
+        }
+    }
 }
 
 #[cfg(test)]
