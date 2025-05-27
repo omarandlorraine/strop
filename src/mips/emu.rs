@@ -6,7 +6,6 @@ use trapezoid_core::cpu::{BusLine, Cpu, CpuBusProvider, RegisterType};
 
 struct Bus {
     kseg1: [u8; 0x10000],
-    is_done: bool,
 }
 
 impl BusLine for Bus {
@@ -57,15 +56,9 @@ impl BusLine for Bus {
     // support our custom registers
     fn write_u8(&mut self, addr: u32, data: u8) -> Result<(), String> {
         match addr {
-            // exit
-            0x0 => {
-                println!("Write to address 0x0: {:08X}, exiting", data);
-                self.is_done = data != 0x0;
-                Ok(())
-            }
-            // write a character
-            0x4 => {
-                print!("{}", data as char);
+            0xbfc00000..=0xbfc0ffff => {
+                let offset = addr - 0xbfc00000;
+                self.kseg1[offset as usize] = data;
                 Ok(())
             }
             _ => Ok(()),
@@ -160,7 +153,6 @@ pub fn call<P: Parameters, R: ReturnValue>(
 
     let mut bus = Bus {
         kseg1,
-        is_done: false,
     };
 
     let end_pc = 0xBFC00000 + subroutine.len() as u32;
@@ -185,7 +177,6 @@ pub fn call_raw(subroutine: &crate::mips::Subroutine) -> crate::RunResult<()> {
 
     let mut bus = Bus {
         kseg1,
-        is_done: false,
     };
 
     let end_pc = 0xBFC00000 + subroutine.len() as u32;
