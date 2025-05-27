@@ -23,7 +23,9 @@ mod test {
             println!("trying to run this subroutine:");
             sub.dasm();
             crate::mips::emu::call_raw(&sub).ok();
-            sub.next().unwrap();
+            for _ in 0..15 {
+                sub.next().unwrap();
+            }
         }
     }
 }
