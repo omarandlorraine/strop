@@ -364,7 +364,10 @@ impl Insn {
 
                         // Reading from other coprocessor registers seems to crash the emulator, so
                         // we need to exclude the instructions from being generated
-                        _ => self.next()?,
+                        _ => {
+                            self.0 = self.0.checked_add(1).unwrap();
+                            continue;
+                        }
                     }
                 } else if coprocessor == 2 {
                     // COP2; the Playstation 1 Geometry Transform thing
@@ -390,7 +393,10 @@ impl Insn {
 
                         // writing to other coprocessor registers seems to crash the emulator, so
                         // we need to exclude the instructions from being generated
-                        _ => self.next()?,
+                        _ => {
+                            self.0 = self.0.checked_add(1).unwrap();
+                            continue;
+                        }
                     }
                 } else if coprocessor == 2 {
                     // COP2; the Playstation 1 Geometry Transform thing
