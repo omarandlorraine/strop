@@ -379,7 +379,7 @@ impl Insn {
                     // unknown coprocessor; the emulator does not implement it, don't generate
                     // these instructions.
                     self.next_opcode()?;
-                        continue;
+                    continue;
                 }
             }
 
@@ -396,7 +396,7 @@ impl Insn {
                     // unknown coprocessor; the emulator does not implement it, don't generate
                     // these instructions.
                     self.next_opcode()?;
-                        continue;
+                    continue;
                 }
             }
 
@@ -405,10 +405,10 @@ impl Insn {
                     // COP0; the MIPS exception handling coprocessor thing
                     match self.decode().rt() as u8 {
                         // writing some coprocessor registers works okay.
-                        3 => {} // BPC
-                        5 => {} // BDA
-                        7 => {} // DCIC
-                        9 => {} // BDAM
+                        3 => {}  // BPC
+                        5 => {}  // BDA
+                        7 => {}  // DCIC
+                        9 => {}  // BDAM
                         11 => {} // BPCM
                         12 => {} // SR
                         13 => {} // CAUSE
@@ -426,7 +426,7 @@ impl Insn {
                     // unknown coprocessor; the emulator does not implement it, don't generate
                     // these instructions.
                     self.next_opcode()?;
-                        continue;
+                    continue;
                 }
             }
 
@@ -618,7 +618,10 @@ mod test {
 
         // If the disassembly contains the substring "a2", then the instruction needs to report
         // that it reads/writes that register.
-        if !matches!(insn.decode().opcode, trapezoid_core::cpu::Opcode::Swc(_)|trapezoid_core::cpu::Opcode::Lwc(_)) {
+        if !matches!(
+            insn.decode().opcode,
+            trapezoid_core::cpu::Opcode::Swc(_) | trapezoid_core::cpu::Opcode::Lwc(_)
+        ) {
             if format!("{}", insn).contains("a2") {
                 use trapezoid_core::cpu::RegisterType;
                 match (insn.rs(), insn.rd(), insn.read_rt(), insn.write_rt()) {

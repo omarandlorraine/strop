@@ -151,9 +151,7 @@ pub fn call<P: Parameters, R: ReturnValue>(
     let subroutine = subroutine.encode();
     kseg1[0..subroutine.len()].copy_from_slice(&subroutine);
 
-    let mut bus = Bus {
-        kseg1,
-    };
+    let mut bus = Bus { kseg1 };
 
     let end_pc = 0xBFC00000 + subroutine.len() as u32;
 
@@ -189,9 +187,7 @@ pub fn call_raw(subroutine: &crate::mips::Subroutine) -> crate::RunResult<()> {
     let subroutine = subroutine.encode();
     kseg1[0..subroutine.len()].copy_from_slice(&subroutine);
 
-    let mut bus = Bus {
-        kseg1,
-    };
+    let mut bus = Bus { kseg1 };
 
     let end_pc = 0xBFC00000 + subroutine.len() as u32;
 
