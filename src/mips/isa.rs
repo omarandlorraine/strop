@@ -369,7 +369,7 @@ impl Insn {
             if let Opcode::Swc(coprocessor) = opcode {
                 if coprocessor == 0 {
                     // COP0; the MIPS exception handling coprocessor thing
-                    if !cop0readable(self.decode().rd() as u8) {
+                    if !cop0readable(self.decode().rt() as u8) {
                         self.0 = self.0.checked_add(1).unwrap();
                         continue;
                     }
@@ -603,7 +603,9 @@ impl DataFlow<RegisterType> for Insn {
 #[cfg(test)]
 mod test {
 
-    fn check_instruction(insn: &super::Insn) {
+    fn check_instruction(mut insn: super::Insn) {
+        insn.fixup().unwrap();
+
         // Make sure the instruction doesn't think it's both reading from and writing to $rt.
         if insn.read_rt().is_some() {
             assert!(insn.write_rt().is_none(), "check_instruction(&Insn(0x{:08x})); // {insn} seems to both read and write for $rt.", insn.0);
@@ -650,27 +652,28 @@ mod test {
     #[test]
     fn regressions() {
         use super::Insn;
-        check_instruction(&Insn(0x0000001a));
-        check_instruction(&Insn(0x04000000));
-        check_instruction(&Insn(0x08000000));
-        check_instruction(&Insn(0x10060000));
-        check_instruction(&Insn(0x14000000));
-        check_instruction(&Insn(0x18000000));
-        check_instruction(&Insn(0x1c000000));
-        check_instruction(&Insn(0x20000000));
-        check_instruction(&Insn(0x28000000));
-        check_instruction(&Insn(0x30000000));
-        check_instruction(&Insn(0x34000000));
-        check_instruction(&Insn(0x38000000));
-        check_instruction(&Insn(0x3c000000));
-        check_instruction(&Insn(0x40000000));
-        check_instruction(&Insn(0x80000001));
-        check_instruction(&Insn(0x88000000));
-        check_instruction(&Insn(0xa0000000));
-        check_instruction(&Insn(0xa8000000));
-        check_instruction(&Insn(0xb8000000));
-        check_instruction(&Insn(0xc0000000));
-        check_instruction(&Insn(0xc8060000));
+        check_instruction(Insn(0x0000001a));
+        check_instruction(Insn(0x04000000));
+        check_instruction(Insn(0x08000000));
+        check_instruction(Insn(0x10060000));
+        check_instruction(Insn(0x14000000));
+        check_instruction(Insn(0x18000000));
+        check_instruction(Insn(0x1c000000));
+        check_instruction(Insn(0x20000000));
+        check_instruction(Insn(0x28000000));
+        check_instruction(Insn(0x30000000));
+        check_instruction(Insn(0x34000000));
+        check_instruction(Insn(0x38000000));
+        check_instruction(Insn(0x3c000000));
+        check_instruction(Insn(0x40000000));
+        check_instruction(Insn(0x80000001));
+        check_instruction(Insn(0x88000000));
+        check_instruction(Insn(0xa0000000));
+        check_instruction(Insn(0xa8000000));
+        check_instruction(Insn(0xb8000000));
+        check_instruction(Insn(0xc0000000));
+        check_instruction(Insn(0xc8060000));
+        check_instruction(Insn(0xe0003000));
     }
 
     #[test]
@@ -738,7 +741,7 @@ mod test {
 
         for _ in 0..0xffff {
             assert!(i.next().is_ok());
-            check_instruction(&i);
+            check_instruction(i.clone());
         }
     }
 
@@ -750,7 +753,7 @@ mod test {
         let mut i = Insn(0xefff_ff00);
 
         while i.next().is_ok() {
-            check_instruction(&i);
+            check_instruction(i.clone());
         }
     }
 
