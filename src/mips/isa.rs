@@ -723,12 +723,14 @@ mod test {
     #[ignore]
     fn can_iterate_over_all_instructions() {
         use super::Insn;
+        use crate::Disassemble;
         use crate::Step;
 
         let mut i = Insn::first();
 
         while i.next().is_ok() {
-            check_instruction(&i);
+            i.dasm();
+            check_instruction(i.clone());
         }
     }
 
