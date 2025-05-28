@@ -168,6 +168,20 @@ pub fn call<P: Parameters, R: ReturnValue>(
     Err(crate::RunError::RanAmok)
 }
 
+#[cfg(test)]
+/// Puts the instruction into kseg1, and then signle-steps across it. Useful for unit tests
+/// ensuring that the emulator can run all the instructions
+pub fn call_instruction(insn: &Insn) {
+    let mut cpu = Cpu::new();
+    let mut kseg1 = [0; 0x10000];
+    let bin = insn.encode();
+    kseg1[0..bin.len()].copy_from_slice(&bin);
+
+    let mut bus = Bus { kseg1 };
+
+    cpu.clock(&mut bus, 1);
+}
+
 /// Puts the subroutine into kseg1, and then calls the subroutine.
 pub fn call_raw(subroutine: &crate::mips::Subroutine) -> crate::RunResult<()> {
     let mut cpu = Cpu::new();

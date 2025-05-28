@@ -336,6 +336,27 @@ impl Insn {
         use trapezoid_core::cpu::Opcode;
         use trapezoid_core::cpu::RegisterType;
 
+        fn cop0readable(reg: u8) -> bool {
+            match reg {
+                // Reading from some coprocessor registers works okay.
+                6 => true,  // JMP_DEST
+                7 => true,  // DCIC
+                8 => true,  // BAD_VADDR
+                12 => true, // SR
+                13 => true, // CAUSE
+                14 => true, // EPC
+                15 => true, // PRID
+
+                // Some COP0 registers read garbage; I guess those instructions are
+                // pointless
+                16..=31 => false,
+
+                // Reading from other coprocessor registers seems to crash the emulator, so
+                // we need to exclude the instructions from being generated
+                _ => false,
+            }
+        }
+
         loop {
             let opcode = self.decode().opcode;
 
@@ -345,29 +366,12 @@ impl Insn {
                 continue;
             }
 
-            if let Opcode::Mfc(coprocessor) = opcode {
+            if let Opcode::Swc(coprocessor) = opcode {
                 if coprocessor == 0 {
                     // COP0; the MIPS exception handling coprocessor thing
-                    match self.decode().rd() as u8 {
-                        // Reading from some coprocessor registers works okay.
-                        6 => {}  // JMP_DEST
-                        7 => {}  // DCIC
-                        8 => {}  // BAD_VADDR
-                        12 => {} // SR
-                        13 => {} // CAUSE
-                        14 => {} // EPC
-                        15 => {} // PRID
-
-                        // Some COP0 registers read garbage; I guess those instructions are
-                        // pointless
-                        16..=31 => self.next()?,
-
-                        // Reading from other coprocessor registers seems to crash the emulator, so
-                        // we need to exclude the instructions from being generated
-                        _ => {
-                            self.0 = self.0.checked_add(1).unwrap();
-                            continue;
-                        }
+                    if !cop0readable(self.decode().rd() as u8) {
+                        self.0 = self.0.checked_add(1).unwrap();
+                        continue;
                     }
                 } else if coprocessor == 2 {
                     // COP2; the Playstation 1 Geometry Transform thing
@@ -375,6 +379,24 @@ impl Insn {
                     // unknown coprocessor; the emulator does not implement it, don't generate
                     // these instructions.
                     self.next_opcode()?;
+                        continue;
+                }
+            }
+
+            if let Opcode::Mfc(coprocessor) = opcode {
+                if coprocessor == 0 {
+                    // COP0; the MIPS exception handling coprocessor thing
+                    if !cop0readable(self.decode().rd() as u8) {
+                        self.0 = self.0.checked_add(1).unwrap();
+                        continue;
+                    }
+                } else if coprocessor == 2 {
+                    // COP2; the Playstation 1 Geometry Transform thing
+                } else {
+                    // unknown coprocessor; the emulator does not implement it, don't generate
+                    // these instructions.
+                    self.next_opcode()?;
+                        continue;
                 }
             }
 
@@ -404,6 +426,7 @@ impl Insn {
                     // unknown coprocessor; the emulator does not implement it, don't generate
                     // these instructions.
                     self.next_opcode()?;
+                        continue;
                 }
             }
 
@@ -595,17 +618,19 @@ mod test {
 
         // If the disassembly contains the substring "a2", then the instruction needs to report
         // that it reads/writes that register.
-        if format!("{}", insn).contains("a2") {
-            use trapezoid_core::cpu::RegisterType;
-            match (insn.rs(), insn.rd(), insn.read_rt(), insn.write_rt()) {
-                (Some(RegisterType::A2), _, _, _) => {}
-                (_, Some(RegisterType::A2), _, _) => {}
-                (_, _, Some(RegisterType::A2), _) => {}
-                (_, _, _, Some(RegisterType::A2)) => {}
-                _ => panic!(
-                    "check_instruction(&Insn(0x{:08x})); // register checks for \"{insn}\"",
-                    insn.0
-                ),
+        if !matches!(insn.decode().opcode, trapezoid_core::cpu::Opcode::Swc(_)|trapezoid_core::cpu::Opcode::Lwc(_)) {
+            if format!("{}", insn).contains("a2") {
+                use trapezoid_core::cpu::RegisterType;
+                match (insn.rs(), insn.rd(), insn.read_rt(), insn.write_rt()) {
+                    (Some(RegisterType::A2), _, _, _) => {}
+                    (_, Some(RegisterType::A2), _, _) => {}
+                    (_, _, Some(RegisterType::A2), _) => {}
+                    (_, _, _, Some(RegisterType::A2)) => {}
+                    _ => panic!(
+                        "check_instruction(&Insn(0x{:08x})); // register checks for \"{insn}\"",
+                        insn.0
+                    ),
+                }
             }
         }
 
@@ -615,6 +640,8 @@ mod test {
             "check_instruction(&Insn(0x{:08x})); // couldn't disassemble \"{insn}\"",
             insn.0
         );
+
+        crate::mips::emu::call_instruction(&insn);
     }
 
     #[test]
@@ -640,6 +667,7 @@ mod test {
         check_instruction(&Insn(0xa8000000));
         check_instruction(&Insn(0xb8000000));
         check_instruction(&Insn(0xc0000000));
+        check_instruction(&Insn(0xc8060000));
     }
 
     #[test]
