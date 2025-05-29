@@ -548,6 +548,14 @@ impl Insn {
 
             // Why would you want to generate a sequence that has NOPs in it
             Opcode::Nop => true,
+
+            // I happened to spot that these opcodes are left unimplemented in the emulator
+            Opcode::Bcf(_) => true,
+            Opcode::Bct(_) => true,
+
+            // To be on the safe side
+            Opcode::Invalid => true,
+            Opcode::SecondaryOpcode => true,
             _ => false,
         }
     }
