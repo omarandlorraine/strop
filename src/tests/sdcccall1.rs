@@ -7,12 +7,14 @@ fn run_test() {
 fn run_test() {
     use strop::Disassemble;
     use strop::ToBruteForce;
+    use strop::ToTrace;
 
     fn identity(f: u16) -> strop::RunResult<u16> {
         Ok(f)
     }
 
     let mut search = strop::z80::SdccCall1::default()
+        .trace()
         .to_bruteforce(identity as fn(u16) -> strop::RunResult<u16>);
 
     while let Some(id) = search.search() {
