@@ -132,7 +132,36 @@ impl crate::Mutate for Insn {
     }
 }
 
-impl crate::Branch for Insn {}
+impl crate::Branch for Insn {
+    fn offset(&self) -> Option<isize> {
+        use crate::Encode;
+        use dez80::instruction::Operand;
+        let decoded = self.decode();
+        if let Some(Operand::ProgramCounterRelative(offset)) = decoded.source {
+            let len = self.len() as isize;
+            return Some(len + offset as isize);
+        } else {
+            return None;
+        }
+    }
+
+    fn branch_fixup(&self, permissibles: &[isize]) -> Result<(), crate::StaticAnalysis<Self>> {
+        use crate::Step;
+        let Some(offset) = self.offset() else {
+            return Ok(());
+        };
+        if !permissibles.contains(&offset) {
+            Err(crate::StaticAnalysis::<Self> {
+                advance: Self::next,
+                offset: 0,
+                reason: "BackwardBranchNotInRange",
+            })
+        } else {
+            // backward branch in range
+            Ok(())
+        }
+    }
+}
 
 impl Insn {
     /// Constructs a new Insn from a slice of bytes
