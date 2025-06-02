@@ -631,19 +631,18 @@ mod test {
         if !matches!(
             insn.decode().opcode,
             trapezoid_core::cpu::Opcode::Swc(_) | trapezoid_core::cpu::Opcode::Lwc(_)
-        ) {
-            if format!("{}", insn).contains("a2") {
-                use trapezoid_core::cpu::RegisterType;
-                match (insn.rs(), insn.rd(), insn.read_rt(), insn.write_rt()) {
-                    (Some(RegisterType::A2), _, _, _) => {}
-                    (_, Some(RegisterType::A2), _, _) => {}
-                    (_, _, Some(RegisterType::A2), _) => {}
-                    (_, _, _, Some(RegisterType::A2)) => {}
-                    _ => panic!(
-                        "check_instruction(&Insn(0x{:08x})); // register checks for \"{insn}\"",
-                        insn.0
-                    ),
-                }
+        ) && format!("{}", insn).contains("a2")
+        {
+            use trapezoid_core::cpu::RegisterType;
+            match (insn.rs(), insn.rd(), insn.read_rt(), insn.write_rt()) {
+                (Some(RegisterType::A2), _, _, _) => {}
+                (_, Some(RegisterType::A2), _, _) => {}
+                (_, _, Some(RegisterType::A2), _) => {}
+                (_, _, _, Some(RegisterType::A2)) => {}
+                _ => panic!(
+                    "check_instruction(&Insn(0x{:08x})); // register checks for \"{insn}\"",
+                    insn.0
+                ),
             }
         }
 
