@@ -1,27 +1,7 @@
 //! A module defining Subroutine<T>
 
-use crate::Branch;
-use crate::BruteforceSearch;
-use crate::Encode;
 use crate::Sequence;
-
-/// A type representing a subroutine. This includes the static analysis to make sure that the
-/// instruction sequence ends in the appropriate return instruction, etc.
-#[derive(Debug, Clone)]
-pub struct Subroutine<Insn: Encode<u8> + Branch, S: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>>(
-    S,
-    std::marker::PhantomData<Insn>,
-);
-
-impl<Insn: Encode<u8> + Branch + crate::Step + Clone + ShouldReturn> Default
-    for Subroutine<Insn, Sequence<Insn>>
-{
-    fn default() -> Self {
-        use crate::subroutine::ToSubroutine;
-        use crate::Step;
-        crate::Sequence::<Insn>::first().to_subroutine()
-    }
-}
+use crate::StaticAnalysis;
 
 pub trait ShouldReturn {
     fn should_return(&self, offset: usize) -> Result<(), crate::StaticAnalysis<Self>>
@@ -36,126 +16,38 @@ pub trait ShouldReturn {
     }
 }
 
-impl<Insn: Encode<u8> + Branch, S: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>>
-    AsRef<Sequence<Insn>> for Subroutine<Insn, S>
-{
-    fn as_ref(&self) -> &Sequence<Insn> {
-        self.0.as_ref()
-    }
+pub fn make_return<Insn: ShouldReturn>(
+    sequence: &Sequence<Insn>,
+) -> Result<(), StaticAnalysis<Insn>> {
+    let offs = sequence.last_instruction_offset();
+    sequence[offs].should_return(offs)
 }
 
-impl<Insn: Encode<u8> + Branch, S: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>>
-    Subroutine<Insn, S>
-{
-    /// Wraps the object in the Subroutine struct
-    pub fn new(s: S) -> Self {
-        Self(s, std::marker::PhantomData)
-    }
-}
+pub fn branches_in_range<Insn: crate::Branch + crate::Encode<u8>>(
+    sequence: &Sequence<Insn>,
+) -> Result<(), crate::StaticAnalysis<Insn>> {
+    // Make a note of the start addresses of all instructions in the subroutine
+    let start_addresses = sequence
+        .iter()
+        .map(|insn| insn.len())
+        .scan(0, |sum, x| {
+            *sum += x;
+            Some(*sum as isize)
+        })
+        .collect::<Vec<isize>>();
 
-impl<
-        Insn: crate::Encode<u8> + Branch + ShouldReturn,
-        S: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>,
-    > BruteforceSearch<Insn> for Subroutine<Insn, S>
-{
-    fn analyze_this(&self) -> Result<(), crate::StaticAnalysis<Insn>>
-    where
-        Self: Sized,
-    {
-        let seq = self.0.as_ref();
-
-        // Make sure the last instruction returns
-        let offs = seq.last_instruction_offset();
-        seq[offs].should_return(offs)?;
-
-        // Make a note of the start addresses of all instructions in the subroutine
-        let start_addresses = seq
+    // Make sure all branches target an actual instruction in the subroutine (that is,
+    // disallow instructions that jump out of the subroutine, or that jump to the middle of an
+    // instruction)
+    let mut backward = 0;
+    for insn in sequence.iter() {
+        let permissibles = start_addresses
             .iter()
-            .map(|insn| insn.len())
-            .scan(0, |sum, x| {
-                *sum += x;
-                Some(*sum as isize)
-            })
+            .flat_map(|x| x.checked_sub(backward))
             .collect::<Vec<isize>>();
-
-        // Make sure all branches target an actual instruction in the subroutine (that is,
-        // disallow instructions that jump out of the subroutine, or that jump to the middle of an
-        // instruction)
-        let mut backward = 0;
-        for insn in seq.iter() {
-            let permissibles = start_addresses
-                .iter()
-                .flat_map(|x| x.checked_sub(backward))
-                .collect::<Vec<isize>>();
-            insn.branch_fixup(&permissibles)?;
-            backward += insn.len() as isize;
-        }
-
-        // Any other instructions not allowed to appear in subroutines
-        for insn in seq.iter() {
-            insn.allowed_in_subroutine()?;
-        }
-        Ok(())
+        insn.branch_fixup(&permissibles)?;
+        backward += insn.len() as isize;
     }
 
-    fn inner(&mut self) -> &mut dyn BruteforceSearch<Insn> {
-        &mut self.0
-    }
-}
-
-pub trait ToSubroutine<T: Encode<u8> + ShouldReturn + Branch> {
-    fn to_subroutine(self) -> Subroutine<T, Self>
-    where
-        Self: Sized + BruteforceSearch<T>,
-        Self: AsRef<Sequence<T>>,
-    {
-        Subroutine::<T, Self>::new(self)
-    }
-}
-
-impl<
-        Insn: Encode<u8> + Branch,
-        S: crate::Disassemble + BruteforceSearch<Insn> + AsRef<Sequence<Insn>>,
-    > crate::Disassemble for Subroutine<Insn, S>
-{
-    fn dasm(&self) {
-        self.0.dasm()
-    }
-}
-
-impl<
-        Insn: Encode<u8> + ShouldReturn + Branch,
-        S: crate::Step + BruteforceSearch<Insn> + AsRef<Sequence<Insn>>,
-    > crate::Step for Subroutine<Insn, S>
-{
-    fn first() -> Self {
-        let mut r = Self(S::first(), std::marker::PhantomData);
-        r.step();
-        r.fixup();
-        r
-    }
-    fn next(&mut self) -> crate::IterationResult {
-        self.0.next()?;
-        self.fixup();
-        Ok(())
-    }
-}
-
-impl<
-        Insn: Encode<u8> + Branch,
-        S: crate::Encode<E> + BruteforceSearch<Insn> + AsRef<Sequence<Insn>>,
-        E,
-    > crate::Encode<E> for Subroutine<Insn, S>
-{
-    fn encode(&self) -> Vec<E> {
-        self.0.encode()
-    }
-}
-
-impl<Insn: Encode<u8> + Branch, T: BruteforceSearch<Insn> + AsRef<Sequence<Insn>>> AsMut<T>
-    for Subroutine<Insn, T>
-{
-    fn as_mut(&mut self) -> &mut T {
-        &mut self.0
-    }
+    Ok(())
 }

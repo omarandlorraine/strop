@@ -3,8 +3,6 @@ pub mod aapcs32;
 mod diss;
 mod emu;
 pub mod isa;
-mod subroutine;
 
 pub use emu::Emulator;
 pub use isa::Insn;
-pub use subroutine::Subroutine;

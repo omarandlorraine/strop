@@ -143,7 +143,7 @@ impl ReturnValue for f32 {
 /// Puts the arguments into the CPU's registers, then puts the subroutine into kseg1, and then
 /// calls the subroutine. After this, it returns the return value.
 pub fn call<P: Parameters, R: ReturnValue>(
-    subroutine: &crate::mips::Subroutine,
+    subroutine: &Sequence<Insn>,
     params: P,
 ) -> crate::RunResult<R> {
     let mut cpu = Cpu::new();
@@ -181,7 +181,7 @@ pub fn call_instruction(insn: &Insn) {
 }
 
 /// Puts the subroutine into kseg1, and then calls the subroutine.
-pub fn call_raw(subroutine: &crate::mips::Subroutine) -> crate::RunResult<()> {
+pub fn call_raw(subroutine: &Sequence<Insn>) -> crate::RunResult<()> {
     let mut cpu = Cpu::new();
     let mut kseg1 = [0; 0x10000];
     let subroutine = subroutine.encode();

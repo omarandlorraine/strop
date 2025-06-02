@@ -4,6 +4,7 @@ use crate::z80::Insn;
 use crate::BruteForce;
 use crate::BruteforceSearch;
 use crate::Callable;
+use crate::Sequence;
 use crate::StaticAnalysis;
 
 pub trait ParameterList: Copy + Vals {
@@ -56,7 +57,7 @@ impl ReturnValue for i16 {
 /// `__sdcccall(1)`.
 #[derive(Clone, Debug)]
 pub struct SdccCall1<Params, RetVal> {
-    seq: crate::z80::Subroutine,
+    seq: Sequence<Insn>,
     params: std::marker::PhantomData<Params>,
     retval: std::marker::PhantomData<RetVal>,
 }
@@ -85,10 +86,8 @@ impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal>
     for SdccCall1<Params, RetVal>
 {
     fn call(&self, input: Params) -> crate::RunResult<RetVal> {
-        use crate::Run;
-        let mut emu = Emulator::default();
-        input.put(&mut emu);
-        self.seq.run(&mut emu)?;
+        let mut emu = Emulator::init(&input);
+        emu.call_subroutine(&self.seq)?;
         Ok(RetVal::get(&emu))
     }
 }
@@ -109,7 +108,7 @@ impl<Params, RetVal> crate::Step for SdccCall1<Params, RetVal> {
 
 impl<Params, RetVal> BruteforceSearch<Insn> for SdccCall1<Params, RetVal> {
     fn analyze_this(&self) -> Result<(), StaticAnalysis<Insn>> {
-        // TODO: dataflow analysis could go here.
+        crate::subroutine::make_return(&self.seq)?;
         Ok(())
     }
     fn inner(&mut self) -> &mut dyn BruteforceSearch<Insn> {

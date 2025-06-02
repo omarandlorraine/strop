@@ -3,12 +3,10 @@ mod diss;
 mod emu;
 mod isa;
 mod sdcccall1;
-mod subroutine;
 
 pub use emu::Emulator;
 pub use isa::Insn;
 pub use sdcccall1::SdccCall1;
-pub use subroutine::Subroutine;
 
 /// Returns an empty `__sdcccall(1)` function
 pub fn sdcccall1<Params, RetVal>() -> SdccCall1<Params, RetVal> {
