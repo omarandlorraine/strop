@@ -28,3 +28,8 @@ command = [
 	"--features",
 	"armv4t"
 ]
+
+[jobs.mips_isa]
+command = [
+"cargo", "test", "--", "mips::isa", "--include-ignored", "--nocapture"
+]

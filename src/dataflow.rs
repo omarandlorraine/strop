@@ -34,6 +34,23 @@ pub fn leave_alone<Datum, Insn: DataFlow<Datum>>(
         .map_or(Ok(()), Err)
 }
 
+/// Returns a static analysis modifying any instructions that read from or writes to `datum`, but
+/// ignores the last instruction in the sequence. Handy for cases like leaf subroutines on MIPS or ARM,
+/// where only the last instruction should use the link register.
+pub fn leave_alone_except_last<Datum, Insn: DataFlow<Datum>>(
+    sequence: &Sequence<Insn>,
+    datum: &Datum,
+) -> Result<(), StaticAnalysis<Insn>> {
+    let len = sequence.len();
+    sequence
+        .iter()
+        .take(len - 1)
+        .enumerate()
+        .find(|(_offs, i)| i.reads(datum) || i.writes(datum))
+        .map(|(offs, i)| i.sa().set_offset(offs))
+        .map_or(Ok(()), Err)
+}
+
 /// If the sequence reads from `datum` before writing to it, then this function returns a
 /// StaticAnalysis modifying the first instruction in the sequence. Successively applying these
 /// ensures that the sequence will not read from the `datum` before it has been initialized.
@@ -66,6 +83,37 @@ pub fn uninitialized<Datum, Insn: DataFlow<Datum>>(
     }
 
     Err(read.1.sa())
+}
+
+/// If the sequence writes to `datum` without reading from it afterward, then this function returns a
+/// StaticAnalysis modifying the first instruction in the sequence that writes to `datum`. This
+/// means that The sequence will not write to `datum` unless it is later used.
+pub fn dont_expect_write<Datum, Insn: DataFlow<Datum>>(
+    sequence: &Sequence<Insn>,
+    datum: &Datum,
+) -> Result<(), StaticAnalysis<Insn>> {
+    'outer: for (offset, write) in sequence
+        .iter()
+        .enumerate()
+        .filter(|(_offs, insn)| insn.writes(datum))
+    {
+        for insn in sequence.iter().skip(offset) {
+            if insn.reads(datum) {
+                // The write I found is followed by a read,
+                // so there's nothing to do here.
+                continue 'outer;
+            }
+
+            if insn.writes(datum) {
+                // The write I found gets been clobbered,
+                // so let's return a StaticAnalysis
+                break;
+            }
+        }
+
+        return Err(write.sa().set_offset(offset));
+    }
+    Ok(())
 }
 
 /// If the sequence does not contains any instruction that writes to `datum`, then this returns a

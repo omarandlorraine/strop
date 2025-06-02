@@ -6,7 +6,6 @@ use trapezoid_core::cpu::{BusLine, Cpu, CpuBusProvider, RegisterType};
 
 struct Bus {
     kseg1: [u8; 0x10000],
-    is_done: bool,
 }
 
 impl BusLine for Bus {
@@ -57,15 +56,9 @@ impl BusLine for Bus {
     // support our custom registers
     fn write_u8(&mut self, addr: u32, data: u8) -> Result<(), String> {
         match addr {
-            // exit
-            0x0 => {
-                println!("Write to address 0x0: {:08X}, exiting", data);
-                self.is_done = data != 0x0;
-                Ok(())
-            }
-            // write a character
-            0x4 => {
-                print!("{}", data as char);
+            0xbfc00000..=0xbfc0ffff => {
+                let offset = addr - 0xbfc00000;
+                self.kseg1[offset as usize] = data;
                 Ok(())
             }
             _ => Ok(()),
@@ -116,7 +109,7 @@ impl Parameters for u8 {
 
 impl ReturnValue for u8 {
     fn extract(cpu: &Cpu) -> Self {
-        cpu.registers().read(RegisterType::V1) as u8
+        cpu.registers().read(RegisterType::V0) as u8
     }
 
     fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>> {
@@ -126,17 +119,20 @@ impl ReturnValue for u8 {
 
 impl Parameters for f32 {
     fn install(self, cpu: &mut Cpu) {
-        cpu.registers_mut().write(RegisterType::V1, self.to_bits())
+        cpu.registers_mut().write(RegisterType::A0, self.to_bits())
     }
 
     fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>> {
-        crate::dataflow::expect_read(seq, &RegisterType::A0)
+        crate::dataflow::expect_read(seq, &RegisterType::A0)?;
+        crate::dataflow::uninitialized(seq, &RegisterType::A1)?;
+        crate::dataflow::uninitialized(seq, &RegisterType::A2)?;
+        crate::dataflow::uninitialized(seq, &RegisterType::A3)
     }
 }
 
 impl ReturnValue for f32 {
     fn extract(cpu: &Cpu) -> Self {
-        Self::from_bits(cpu.registers().read(RegisterType::V1))
+        Self::from_bits(cpu.registers().read(RegisterType::V0))
     }
 
     fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>> {
@@ -155,10 +151,7 @@ pub fn call<P: Parameters, R: ReturnValue>(
     let subroutine = subroutine.encode();
     kseg1[0..subroutine.len()].copy_from_slice(&subroutine);
 
-    let mut bus = Bus {
-        kseg1,
-        is_done: false,
-    };
+    let mut bus = Bus { kseg1 };
 
     let end_pc = 0xBFC00000 + subroutine.len() as u32;
 
@@ -167,6 +160,40 @@ pub fn call<P: Parameters, R: ReturnValue>(
     for _ in 0..10000 {
         if cpu.registers().read(RegisterType::Pc) == end_pc {
             return Ok(R::extract(&cpu));
+        }
+        cpu.clock(&mut bus, 1);
+    }
+    Err(crate::RunError::RanAmok)
+}
+
+#[cfg(test)]
+/// Puts the instruction into kseg1, and then signle-steps across it. Useful for unit tests
+/// ensuring that the emulator can run all the instructions
+pub fn call_instruction(insn: &Insn) {
+    let mut cpu = Cpu::new();
+    let mut kseg1 = [0; 0x10000];
+    let bin = insn.encode();
+    kseg1[0..bin.len()].copy_from_slice(&bin);
+
+    let mut bus = Bus { kseg1 };
+
+    cpu.clock(&mut bus, 1);
+}
+
+/// Puts the subroutine into kseg1, and then calls the subroutine.
+pub fn call_raw(subroutine: &crate::mips::Subroutine) -> crate::RunResult<()> {
+    let mut cpu = Cpu::new();
+    let mut kseg1 = [0; 0x10000];
+    let subroutine = subroutine.encode();
+    kseg1[0..subroutine.len()].copy_from_slice(&subroutine);
+
+    let mut bus = Bus { kseg1 };
+
+    let end_pc = 0xBFC00000 + subroutine.len() as u32;
+
+    for _ in 0..10000 {
+        if cpu.registers().read(RegisterType::Pc) == end_pc {
+            return Ok(());
         }
         cpu.clock(&mut bus, 1);
     }

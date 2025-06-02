@@ -32,13 +32,15 @@ impl crate::Encode<u16> for Insn {
     }
 }
 
+impl crate::Branch for Insn {}
+
 impl crate::subroutine::ShouldReturn for Insn {
-    fn should_return(&self) -> Option<crate::StaticAnalysis<Self>> {
+    fn should_return(&self, offset: usize) -> Result<(), crate::StaticAnalysis<Self>> {
         if self.0[0] == 0x4e75 {
-            return None;
+            return Ok(());
         }
-        Some(crate::StaticAnalysis::<Self> {
-            offset: 0,
+        Err(crate::StaticAnalysis::<Self> {
+            offset,
             advance: Self::next_opcode,
             reason: "ShouldReturn",
         })

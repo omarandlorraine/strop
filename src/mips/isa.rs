@@ -1,5 +1,6 @@
 //! Module representing MIPS I instruction set architecture
 
+use crate::dataflow::DataFlow;
 use crate::Encode;
 use crate::Step;
 use trapezoid_core::cpu::Instruction;
@@ -17,20 +18,69 @@ impl std::fmt::Display for Insn {
 
 impl std::fmt::Debug for Insn {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{} 0x{:08x}", self.decode(), self.0)
+        write!(f, "{}\t; 0x{:08x}", self.decode(), self.0)
     }
 }
 
 impl crate::subroutine::ShouldReturn for Insn {
-    fn should_return(&self) -> Option<crate::StaticAnalysis<Self>> {
-        if *self == Self::jr_ra() {
-            return None;
+    fn allowed_in_subroutine(&self) -> Result<(), crate::StaticAnalysis<Self>> {
+        use trapezoid_core::cpu::Opcode;
+        let decoded = self.decode();
+
+        match decoded.opcode {
+            Opcode::J | Opcode::Jal => Err(crate::StaticAnalysis::<Self> {
+                advance: Self::next_opcode,
+                offset: 0,
+                reason: "OpcodeNotAllowedInSubroutines",
+            }),
+            _ => Ok(()),
         }
-        Some(crate::StaticAnalysis::<Self> {
+    }
+
+    fn should_return(&self, offset: usize) -> Result<(), crate::StaticAnalysis<Self>> {
+        if *self == Self::jr_ra() {
+            return Ok(());
+        }
+        Err(crate::StaticAnalysis::<Self> {
             advance: Self::make_return,
-            offset: 0,
+            offset,
             reason: "ShouldReturn",
         })
+    }
+}
+
+impl crate::Branch for Insn {
+    fn offset(&self) -> Option<isize> {
+        use trapezoid_core::cpu::Opcode;
+        let decoded = self.decode();
+
+        match decoded.opcode {
+            Opcode::Beq
+            | Opcode::Bne
+            | Opcode::Bgtz
+            | Opcode::Blez
+            | Opcode::Bltz
+            | Opcode::Bgez
+            | Opcode::Bltzal
+            | Opcode::Bgezal => Some(decoded.imm16() as i16 as isize),
+            _ => None,
+        }
+    }
+
+    fn branch_fixup(&self, permissibles: &[isize]) -> Result<(), crate::StaticAnalysis<Self>> {
+        let Some(offset) = self.offset() else {
+            return Ok(());
+        };
+        if !permissibles.contains(&offset) {
+            Err(crate::StaticAnalysis::<Self> {
+                advance: Self::next,
+                offset: 0,
+                reason: "BackwardBranchNotInRange",
+            })
+        } else {
+            // backward branch in range
+            Ok(())
+        }
     }
 }
 
@@ -78,6 +128,7 @@ impl Insn {
             Opcode::Mtlo,
             Opcode::Mult,
             Opcode::Multu,
+            Opcode::Div,
             Opcode::Divu,
             Opcode::Jr,
         ]
@@ -112,46 +163,54 @@ impl Insn {
     /// Returns the `rt` if the instruction actually writes to the `rt`
     pub fn write_rt(&self) -> Option<RegisterType> {
         use trapezoid_core::cpu::Opcode;
-        if [
-            Opcode::Srl,
-            Opcode::Sra,
-            Opcode::Sllv,
-            Opcode::Srlv,
-            Opcode::Srav,
-            Opcode::Jr,
-            Opcode::Jalr,
-            Opcode::Syscall,
-            Opcode::Break,
-            Opcode::Mfhi,
-            Opcode::Mthi,
-            Opcode::Mflo,
-            Opcode::Mtlo,
-            Opcode::Mult,
-            Opcode::Multu,
-            Opcode::Div,
-            Opcode::Divu,
-            Opcode::Add,
-            Opcode::Addu,
-            Opcode::Sub,
-            Opcode::Subu,
-            Opcode::And,
-            Opcode::Or,
-            Opcode::Nor,
-            Opcode::Xor,
-            Opcode::Slt,
-            Opcode::Sltu,
-            Opcode::Sll,
-            Opcode::Bltz,
-            Opcode::Bgez,
-            Opcode::Bltzal,
-            Opcode::Bgezal,
-            Opcode::J,
-            Opcode::Jal,
-            Opcode::Beq,
-            Opcode::Bne,
-        ]
-        .contains(&self.decode().opcode)
-        {
+        if matches!(
+            &self.decode().opcode,
+            Opcode::Srl
+                | Opcode::Sra
+                | Opcode::Sllv
+                | Opcode::Srlv
+                | Opcode::Srav
+                | Opcode::Jr
+                | Opcode::Jalr
+                | Opcode::Syscall
+                | Opcode::Break
+                | Opcode::Mfhi
+                | Opcode::Mthi
+                | Opcode::Mflo
+                | Opcode::Mtlo
+                | Opcode::Mult
+                | Opcode::Multu
+                | Opcode::Div
+                | Opcode::Divu
+                | Opcode::Add
+                | Opcode::Addu
+                | Opcode::Sub
+                | Opcode::Subu
+                | Opcode::And
+                | Opcode::Or
+                | Opcode::Nor
+                | Opcode::Xor
+                | Opcode::Slt
+                | Opcode::Sltu
+                | Opcode::Sll
+                | Opcode::Bltz
+                | Opcode::Bgez
+                | Opcode::Bltzal
+                | Opcode::Bgezal
+                | Opcode::J
+                | Opcode::Jal
+                | Opcode::Beq
+                | Opcode::Bne
+                | Opcode::Blez
+                | Opcode::Bgtz
+                | Opcode::Sb
+                | Opcode::Sh
+                | Opcode::Sw
+                | Opcode::Swl
+                | Opcode::Swr
+                | Opcode::Swc(_)
+                | Opcode::Lwc(_)
+        ) {
             return None;
         }
         Some(self.decode().rt())
@@ -160,20 +219,43 @@ impl Insn {
     /// Returns the `rt` if the instruction actually reads from the `rt`
     pub fn read_rt(&self) -> Option<RegisterType> {
         use trapezoid_core::cpu::Opcode;
-        if [
-            Opcode::Jr,
-            Opcode::Jalr,
-            Opcode::Syscall,
-            Opcode::Break,
-            Opcode::Mfhi,
-            Opcode::Mthi,
-            Opcode::Mflo,
-            Opcode::Mtlo,
-            Opcode::J,
-            Opcode::Jal,
-        ]
-        .contains(&self.decode().opcode)
-        {
+        if matches!(
+            self.decode().opcode,
+            Opcode::Jr
+                | Opcode::Jalr
+                | Opcode::Syscall
+                | Opcode::Break
+                | Opcode::Mfhi
+                | Opcode::Mthi
+                | Opcode::Mflo
+                | Opcode::Mtlo
+                | Opcode::J
+                | Opcode::Jal
+                | Opcode::Addi
+                | Opcode::Addiu
+                | Opcode::Slti
+                | Opcode::Sltiu
+                | Opcode::Andi
+                | Opcode::Ori
+                | Opcode::Xori
+                | Opcode::Lui
+                | Opcode::Lb
+                | Opcode::Lbu
+                | Opcode::Lh
+                | Opcode::Lhu
+                | Opcode::Lw
+                | Opcode::Lwl
+                | Opcode::Lwr
+                | Opcode::Bgtz
+                | Opcode::Blez
+                | Opcode::Bltz
+                | Opcode::Bgez
+                | Opcode::Bltzal
+                | Opcode::Bgezal
+                | Opcode::Mfc(_)
+                | Opcode::Lwc(_)
+                | Opcode::Swc(_)
+        ) {
             return None;
         }
         Some(self.decode().rt())
@@ -241,7 +323,6 @@ impl Insn {
             // I format instruction: mask off the imm field, and then increment.
             self.0 |= 0xffff;
             self.next()?;
-            dbg!(&self);
             Ok(())
         } else {
             // J format instruction: this shouldn't really even be reachable.
@@ -253,6 +334,28 @@ impl Insn {
     /// instruction
     fn fixup(&mut self) -> crate::IterationResult {
         use trapezoid_core::cpu::Opcode;
+        use trapezoid_core::cpu::RegisterType;
+
+        fn cop0readable(reg: u8) -> bool {
+            match reg {
+                // Reading from some coprocessor registers works okay.
+                6 => true,  // JMP_DEST
+                7 => true,  // DCIC
+                8 => true,  // BAD_VADDR
+                12 => true, // SR
+                13 => true, // CAUSE
+                14 => true, // EPC
+                15 => true, // PRID
+
+                // Some COP0 registers read garbage; I guess those instructions are
+                // pointless
+                16..=31 => false,
+
+                // Reading from other coprocessor registers seems to crash the emulator, so
+                // we need to exclude the instructions from being generated
+                _ => false,
+            }
+        }
 
         loop {
             let opcode = self.decode().opcode;
@@ -261,6 +364,70 @@ impl Insn {
                 // Some instructions do not encode a valid opcode, skip these.
                 self.next_opcode()?;
                 continue;
+            }
+
+            if let Opcode::Swc(coprocessor) = opcode {
+                if coprocessor == 0 {
+                    // COP0; the MIPS exception handling coprocessor thing
+                    if !cop0readable(self.decode().rt() as u8) {
+                        self.0 = self.0.checked_add(1).unwrap();
+                        continue;
+                    }
+                } else if coprocessor == 2 {
+                    // COP2; the Playstation 1 Geometry Transform thing
+                } else {
+                    // unknown coprocessor; the emulator does not implement it, don't generate
+                    // these instructions.
+                    self.next_opcode()?;
+                    continue;
+                }
+            }
+
+            if let Opcode::Mfc(coprocessor) = opcode {
+                if coprocessor == 0 {
+                    // COP0; the MIPS exception handling coprocessor thing
+                    if !cop0readable(self.decode().rd() as u8) {
+                        self.0 = self.0.checked_add(1).unwrap();
+                        continue;
+                    }
+                } else if coprocessor == 2 {
+                    // COP2; the Playstation 1 Geometry Transform thing
+                } else {
+                    // unknown coprocessor; the emulator does not implement it, don't generate
+                    // these instructions.
+                    self.next_opcode()?;
+                    continue;
+                }
+            }
+
+            if let Opcode::Lwc(coprocessor) = opcode {
+                if coprocessor == 0 {
+                    // COP0; the MIPS exception handling coprocessor thing
+                    match self.decode().rt() as u8 {
+                        // writing some coprocessor registers works okay.
+                        3 => {}  // BPC
+                        5 => {}  // BDA
+                        7 => {}  // DCIC
+                        9 => {}  // BDAM
+                        11 => {} // BPCM
+                        12 => {} // SR
+                        13 => {} // CAUSE
+
+                        // writing to other coprocessor registers seems to crash the emulator, so
+                        // we need to exclude the instructions from being generated
+                        _ => {
+                            self.0 = self.0.checked_add(1).unwrap();
+                            continue;
+                        }
+                    }
+                } else if coprocessor == 2 {
+                    // COP2; the Playstation 1 Geometry Transform thing
+                } else {
+                    // unknown coprocessor; the emulator does not implement it, don't generate
+                    // these instructions.
+                    self.next_opcode()?;
+                    continue;
+                }
             }
 
             if self.r() {
@@ -320,11 +487,83 @@ impl Insn {
             self.fixup()
         }
     }
+
+    /// true if the instruction reads from register $zero.
+    fn reads_or_writes_zero(&self) -> bool {
+        use trapezoid_core::cpu::RegisterType;
+        self.reads(&RegisterType::Zero) | self.writes(&RegisterType::Zero)
+    }
+
+    /// true if the instruction reads from two registers but $rs and $rt are not in canonical
+    /// order. (This is useful for culling the search space because A+B is the same as B+A. But the
+    /// bruteforce search only needs to visit one of these.)
+    fn commutative_reads_out_of_order(&self) -> bool {
+        if self.rs().is_none() {
+            return false;
+        };
+
+        if self.read_rt().is_none() {
+            return false;
+        };
+
+        let rt_raw = (self.0 >> 16) as u8 & 0x1f;
+        let rs_raw = (self.0 >> 21) as u8 & 0x1f;
+        rt_raw < rs_raw
+    }
+
+    /// Returns true if the immediate value is Zero;
+    fn immediate_zero(&self) -> bool {
+        self.0 & 0x0000ffff == 0x00000000
+    }
+
+    /// Returns true iff I have deemed the instruction to be a pointless one
+    pub fn pointless(&self) -> bool {
+        use trapezoid_core::cpu::Opcode;
+        use trapezoid_core::cpu::RegisterType;
+        let d = self.decode();
+
+        match d.opcode {
+            // Shift instructions shouldn't need to shift by zero.
+            Opcode::Srl | Opcode::Sra | Opcode::Sll => d.imm5() == 0,
+            Opcode::Sllv | Opcode::Srav | Opcode::Srlv => d.rs() == RegisterType::Zero,
+
+            // Arithmetic instructions don't need to read from $zero. (The exception is `or`; `or`
+            // with $zero is the idiomatic way to copy a value from one register to another.
+
+            // Also some of these operations are commutative; let's make sure that they don't read
+            // from two registers in the "wrong" order.
+            Opcode::Add => self.commutative_reads_out_of_order() | self.reads_or_writes_zero(),
+            Opcode::Or => self.commutative_reads_out_of_order(),
+            Opcode::Addu => self.commutative_reads_out_of_order() | self.reads_or_writes_zero(),
+            Opcode::Xor => self.commutative_reads_out_of_order() | self.reads_or_writes_zero(),
+            Opcode::And => self.commutative_reads_out_of_order() | self.reads_or_writes_zero(),
+            Opcode::Sub => self.reads_or_writes_zero(),
+            Opcode::Subu => self.reads_or_writes_zero(),
+
+            // Some immediate values shouldn't be 0x0000
+            Opcode::Addi => self.immediate_zero(),
+            Opcode::Addiu => self.immediate_zero(),
+            Opcode::Ori => self.immediate_zero(),
+            Opcode::Xori => self.immediate_zero(),
+
+            // Why would you want to generate a sequence that has NOPs in it
+            Opcode::Nop => true,
+
+            // I happened to spot that these opcodes are left unimplemented in the emulator
+            Opcode::Bcf(_) => true,
+            Opcode::Bct(_) => true,
+
+            // To be on the safe side
+            Opcode::Invalid => true,
+            Opcode::SecondaryOpcode => true,
+            _ => false,
+        }
+    }
 }
 
 impl crate::Disassemble for Insn {
     fn dasm(&self) {
-        println!("\t{}", self.decode());
+        println!("\t{:?}", self);
     }
 }
 
@@ -351,26 +590,20 @@ impl Encode<u8> for Insn {
     }
 }
 
-mod datatype {
-    use super::Insn;
-    use crate::dataflow::DataFlow;
-    use trapezoid_core::cpu::RegisterType;
+impl DataFlow<RegisterType> for Insn {
+    fn reads(&self, datum: &RegisterType) -> bool {
+        Some(datum) == self.rs().as_ref() || Some(datum) == self.read_rt().as_ref()
+    }
 
-    impl DataFlow<RegisterType> for Insn {
-        fn reads(&self, datum: &RegisterType) -> bool {
-            Some(datum) == self.rs().as_ref() || Some(datum) == self.read_rt().as_ref()
-        }
+    fn writes(&self, datum: &RegisterType) -> bool {
+        Some(datum) == self.rd().as_ref() || Some(datum) == self.write_rt().as_ref()
+    }
 
-        fn writes(&self, datum: &RegisterType) -> bool {
-            Some(datum) == self.rd().as_ref() || Some(datum) == self.write_rt().as_ref()
-        }
-
-        fn sa(&self) -> crate::StaticAnalysis<Self> {
-            crate::StaticAnalysis::<Self> {
-                advance: Self::next_registers,
-                offset: 0,
-                reason: "Dataflow",
-            }
+    fn sa(&self) -> crate::StaticAnalysis<Self> {
+        crate::StaticAnalysis::<Self> {
+            advance: Self::next_registers,
+            offset: 0,
+            reason: "Dataflow",
         }
     }
 }
@@ -378,7 +611,9 @@ mod datatype {
 #[cfg(test)]
 mod test {
 
-    fn check_instruction(insn: &super::Insn) {
+    fn check_instruction(mut insn: super::Insn) {
+        insn.fixup().unwrap();
+
         // Make sure the instruction doesn't think it's both reading from and writing to $rt.
         if insn.read_rt().is_some() {
             assert!(insn.write_rt().is_none(), "check_instruction(&Insn(0x{:08x})); // {insn} seems to both read and write for $rt.", insn.0);
@@ -390,14 +625,63 @@ mod test {
             "check_instruction(&Insn(0x{:08x})); // disassembly missing.",
             insn.0
         );
+
+        // If the disassembly contains the substring "a2", then the instruction needs to report
+        // that it reads/writes that register.
+        if !matches!(
+            insn.decode().opcode,
+            trapezoid_core::cpu::Opcode::Swc(_) | trapezoid_core::cpu::Opcode::Lwc(_)
+        ) {
+            if format!("{}", insn).contains("a2") {
+                use trapezoid_core::cpu::RegisterType;
+                match (insn.rs(), insn.rd(), insn.read_rt(), insn.write_rt()) {
+                    (Some(RegisterType::A2), _, _, _) => {}
+                    (_, Some(RegisterType::A2), _, _) => {}
+                    (_, _, Some(RegisterType::A2), _) => {}
+                    (_, _, _, Some(RegisterType::A2)) => {}
+                    _ => panic!(
+                        "check_instruction(&Insn(0x{:08x})); // register checks for \"{insn}\"",
+                        insn.0
+                    ),
+                }
+            }
+        }
+
+        assert_ne!(
+            format!("{}", insn),
+            "Invalid instruction",
+            "check_instruction(&Insn(0x{:08x})); // couldn't disassemble \"{insn}\"",
+            insn.0
+        );
+
+        crate::mips::emu::call_instruction(&insn);
     }
 
     #[test]
     fn regressions() {
         use super::Insn;
-        check_instruction(&Insn(0x04000000));
-        check_instruction(&Insn(0x08000000));
-        check_instruction(&Insn(0x14000000));
+        check_instruction(Insn(0x0000001a));
+        check_instruction(Insn(0x04000000));
+        check_instruction(Insn(0x08000000));
+        check_instruction(Insn(0x10060000));
+        check_instruction(Insn(0x14000000));
+        check_instruction(Insn(0x18000000));
+        check_instruction(Insn(0x1c000000));
+        check_instruction(Insn(0x20000000));
+        check_instruction(Insn(0x28000000));
+        check_instruction(Insn(0x30000000));
+        check_instruction(Insn(0x34000000));
+        check_instruction(Insn(0x38000000));
+        check_instruction(Insn(0x3c000000));
+        check_instruction(Insn(0x40000000));
+        check_instruction(Insn(0x80000001));
+        check_instruction(Insn(0x88000000));
+        check_instruction(Insn(0xa0000000));
+        check_instruction(Insn(0xa8000000));
+        check_instruction(Insn(0xb8000000));
+        check_instruction(Insn(0xc0000000));
+        check_instruction(Insn(0xc8060000));
+        check_instruction(Insn(0xe0003000));
     }
 
     #[test]
@@ -409,22 +693,18 @@ mod test {
         // because of dont-care fields in some of the instructions, the same instruction may have
         // two encodings. I consider it an error to use the "wrong one".
         //
-        // For example, the `and` opcode ignored the `shamt` field. So there's 32 possible
+        // For example, the `and` opcode ignores the five bit `shamt` field, so there's 32 possible
         // encodings for every `and` instruction. This is going to have an obvious negative impact
         // on the bruteforce search.
         //
         // So this test finds these guys.
 
-        let mut i = Insn(0x00000000);
+        let mut i = Insn::first();
 
         while i.next().is_ok() {
             println!("Checking for duplicates of {i}");
             let mut j = i.clone();
             while j.next().is_ok() {
-                if !j.r() {
-                    break;
-                }
-
                 if format!("{i}") == format!("{j}") {
                     if i.decode().rd() != j.decode().rd() {
                         println!("they differ in $rd");
@@ -451,14 +731,14 @@ mod test {
     #[ignore]
     fn can_iterate_over_all_instructions() {
         use super::Insn;
+        use crate::Disassemble;
         use crate::Step;
 
-        let mut i = Insn(0x08000000);
+        let mut i = Insn::first();
 
         while i.next().is_ok() {
-            println!("{i}");
-
-            check_instruction(&i);
+            i.dasm();
+            check_instruction(i.clone());
         }
     }
 
@@ -471,7 +751,7 @@ mod test {
 
         for _ in 0..0xffff {
             assert!(i.next().is_ok());
-            assert_ne!(format!("{}", i), "Invalid instruction", "{:08x}", i.0);
+            check_instruction(i.clone());
         }
     }
 
@@ -483,7 +763,7 @@ mod test {
         let mut i = Insn(0xefff_ff00);
 
         while i.next().is_ok() {
-            assert_ne!(format!("{}", i), "Invalid instruction", "{:08x}", i.0);
+            check_instruction(i.clone());
         }
     }
 

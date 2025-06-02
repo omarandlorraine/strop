@@ -69,11 +69,18 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue>
 {
     fn analyze_this(&self) -> Result<(), crate::StaticAnalysis<Insn>> {
         use trapezoid_core::cpu::RegisterType;
+        crate::mips::optimizer::skip_pointless_instructions(self.seq.as_ref())?;
 
         Params::analyze_this(self.seq.as_ref())?;
         RetVal::analyze_this(self.seq.as_ref())?;
 
+        for reg in [RegisterType::Zero, RegisterType::At, RegisterType::Sp] {
+            crate::dataflow::dont_expect_write(self.seq.as_ref(), &reg)?;
+        }
+
         for reg in [
+            RegisterType::V0,
+            RegisterType::V1,
             RegisterType::T0,
             RegisterType::T1,
             RegisterType::T2,
@@ -106,6 +113,7 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue>
         ] {
             crate::dataflow::leave_alone(self.seq.as_ref(), &reg)?;
         }
+        crate::dataflow::leave_alone_except_last(self.seq.as_ref(), &RegisterType::Ra)?;
         Ok(())
     }
 

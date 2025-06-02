@@ -17,12 +17,12 @@ impl<V: mos6502::Variant> crate::Step for Insn<V> {
 }
 
 impl<V: mos6502::Variant> crate::subroutine::ShouldReturn for Insn<V> {
-    fn should_return(&self) -> Option<crate::StaticAnalysis<Self>> {
+    fn should_return(&self, offset: usize) -> Result<(), crate::StaticAnalysis<Self>> {
         if self.0 == Self::rts().0 {
-            return None;
+            return Ok(());
         }
-        Some(crate::StaticAnalysis::<Self> {
-            offset: 0,
+        Err(crate::StaticAnalysis::<Self> {
+            offset,
             advance: Self::skip_to_next_opcode,
             reason: "ShouldReturn",
         })
@@ -36,6 +36,8 @@ impl<V: mos6502::Variant> Insn<V> {
         self.fixup()
     }
 }
+
+impl<V: mos6502::Variant> crate::Branch for Insn<V> {}
 
 impl<V: mos6502::Variant> crate::Encode<u8> for Insn<V> {
     fn encode(&self) -> std::vec::Vec<u8> {
