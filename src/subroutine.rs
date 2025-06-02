@@ -23,6 +23,17 @@ pub fn make_return<Insn: ShouldReturn>(
     sequence[offs].should_return(offs)
 }
 
+pub fn not_allowed_in_subroutine<Insn: ShouldReturn>(
+    sequence: &Sequence<Insn>,
+) -> Result<(), StaticAnalysis<Insn>> {
+    for (offs, insn) in sequence.iter().enumerate() {
+        if let Err(e) = insn.allowed_in_subroutine() {
+            return Err(e.set_offset(offs));
+        }
+    }
+    Ok(())
+}
+
 pub fn branches_in_range<Insn: crate::Branch + crate::Encode<u8>>(
     sequence: &Sequence<Insn>,
 ) -> Result<(), crate::StaticAnalysis<Insn>> {
@@ -49,5 +60,14 @@ pub fn branches_in_range<Insn: crate::Branch + crate::Encode<u8>>(
         backward += insn.len() as isize;
     }
 
+    Ok(())
+}
+
+pub fn std_subroutine<Insn: crate::Branch + crate::Encode<u8> + ShouldReturn>(
+    sequence: &Sequence<Insn>,
+) -> Result<(), crate::StaticAnalysis<Insn>> {
+    make_return(sequence)?;
+    branches_in_range(sequence)?;
+    not_allowed_in_subroutine(sequence)?;
     Ok(())
 }
