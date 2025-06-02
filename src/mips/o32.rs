@@ -97,6 +97,22 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue>
             crate::dataflow::uninitialized(self.seq.as_ref(), &reg)?;
         }
 
+        crate::dataflow::allocate_registers(
+            self.seq.as_ref(),
+            &[
+                RegisterType::T0,
+                RegisterType::T1,
+                RegisterType::T2,
+                RegisterType::T3,
+                RegisterType::T4,
+                RegisterType::T5,
+                RegisterType::T6,
+                RegisterType::T7,
+                RegisterType::T8,
+                RegisterType::T9,
+            ],
+        )?;
+
         for reg in [
             RegisterType::At,
             RegisterType::S0,
