@@ -6,12 +6,13 @@ use crate::mips::Insn;
 use crate::test::Vals;
 use crate::Callable;
 use crate::Disassemble;
+use crate::Sequence;
 use crate::Step;
 
 /// Searches for functions complying to the O32 calling convention
 #[derive(Clone, Debug)]
 pub struct O32<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> {
-    seq: crate::mips::Subroutine,
+    seq: Sequence<Insn>,
     params: std::marker::PhantomData<Params>,
     return_value: std::marker::PhantomData<RetVal>,
 }
@@ -29,7 +30,7 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> Step
 {
     fn first() -> Self {
         Self {
-            seq: Default::default(),
+            seq: Step::first(),
             params: Default::default(),
             return_value: Default::default(),
         }
@@ -70,6 +71,7 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue>
     fn analyze_this(&self) -> Result<(), crate::StaticAnalysis<Insn>> {
         use trapezoid_core::cpu::RegisterType;
         crate::mips::optimizer::skip_pointless_instructions(self.seq.as_ref())?;
+        crate::subroutine::std_subroutine(&self.seq)?;
 
         Params::analyze_this(self.seq.as_ref())?;
         RetVal::analyze_this(self.seq.as_ref())?;

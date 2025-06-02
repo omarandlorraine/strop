@@ -37,7 +37,6 @@ mod bruteforce;
 pub use bruteforce::{BruteForce, ToBruteForce};
 
 mod subroutine;
-pub use subroutine::Subroutine;
 
 mod trace;
 pub use trace::{ToTrace, Trace};
@@ -151,13 +150,6 @@ pub enum RunError {
 
 /// Return type for in-place iteration
 pub type RunResult<T> = Result<T, RunError>;
-
-pub trait Run<Emulator> {
-    //! A trait for running some code sequence on some emulator or VM
-
-    /// Run the code sequence
-    fn run(&self, emulator: &mut Emulator) -> RunResult<()>;
-}
 
 /// Trait for returning a BruteForce object
 pub trait AsBruteforce<

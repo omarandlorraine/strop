@@ -99,7 +99,7 @@ where
 /// The AAPCS32-compliant function
 #[derive(Clone, Debug, Default)]
 pub struct Function<Params, RetVal> {
-    seq: crate::armv4t::Subroutine,
+    seq: crate::Sequence<Insn>,
     params: std::marker::PhantomData<Params>,
     retval: std::marker::PhantomData<RetVal>,
 }
@@ -108,10 +108,8 @@ impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal>
     for Function<Params, RetVal>
 {
     fn call(&self, input: Params) -> crate::RunResult<RetVal> {
-        use crate::Run;
-        let mut emu = Emulator::default();
-        input.put_list(&mut emu);
-        self.seq.run(&mut emu)?;
+        let mut emu = Emulator::init(&input);
+        emu.call_subroutine(&self.seq)?;
         Ok(RetVal::get_list(&emu))
     }
 }
@@ -131,6 +129,7 @@ impl<Params, RetVal> crate::Goto<Insn> for Function<Params, RetVal> {
 impl<Params, RetVal> BruteforceSearch<Insn> for Function<Params, RetVal> {
     fn analyze_this(&self) -> Result<(), StaticAnalysis<Insn>> {
         // TODO: dataflow analysis could go here.
+        crate::subroutine::make_return(&self.seq)?;
         Ok(())
     }
     fn inner(&mut self) -> &mut dyn BruteforceSearch<Insn> {
