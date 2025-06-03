@@ -71,7 +71,7 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue>
     fn analyze_this(&self) -> Result<(), crate::StaticAnalysis<Insn>> {
         use trapezoid_core::cpu::RegisterType;
         crate::mips::optimizer::skip_pointless_instructions(self.seq.as_ref())?;
-        crate::subroutine::std_subroutine(&self.seq)?;
+        crate::subroutine::leaf_subroutine(&self.seq)?;
 
         Params::analyze_this(self.seq.as_ref())?;
         RetVal::analyze_this(self.seq.as_ref())?;
