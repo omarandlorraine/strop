@@ -37,6 +37,7 @@ mod bruteforce;
 pub use bruteforce::{BruteForce, ToBruteForce};
 
 mod subroutine;
+pub use subroutine::ShouldReturn;
 
 mod trace;
 pub use trace::{ToTrace, Trace};

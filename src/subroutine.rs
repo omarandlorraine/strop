@@ -3,11 +3,17 @@
 use crate::Sequence;
 use crate::StaticAnalysis;
 
+/// Trait for selecting instructions at various points of a subroutine.
 pub trait ShouldReturn {
+    /// Returns an Err(static_analysis) if the instruction does not return from a subroutine, and
+    /// Ok(()) otherwise.
     fn should_return(&self, offset: usize) -> Result<(), crate::StaticAnalysis<Self>>
     where
         Self: Sized;
 
+    /// Returns an Err(static_analysis) if the instruction is not permissible inside of a subroutine
+    /// (For example, some types of stack manipulations are not valid inside of a subroutine, so
+    /// this method makes sure that such instructions are not emitted inside of subroutines)
     fn allowed_in_subroutine(&self, _offset: usize) -> Result<(), crate::StaticAnalysis<Self>>
     where
         Self: Sized,
@@ -15,6 +21,9 @@ pub trait ShouldReturn {
         Ok(())
     }
 
+    /// Returns an Err(static_analysis) if the instruction is not permissible inside of a leaf subroutine
+    /// (for example, a leaf subroutine may not call other instructions, so this method would
+    /// eliminate call instructions from the search).
     fn allowed_in_leaf(&self, _offset: usize) -> Result<(), crate::StaticAnalysis<Self>>
     where
         Self: Sized,
