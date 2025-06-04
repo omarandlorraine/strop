@@ -57,6 +57,20 @@ pub struct StaticAnalysis<Instruction> {
 }
 
 impl<Instruction> StaticAnalysis<Instruction> {
+    pub fn new(
+        reason: &'static str,
+        advance: fn(&mut Instruction) -> IterationResult,
+        offset: usize,
+    ) -> Self {
+        Self {
+            offset,
+            advance,
+            reason,
+        }
+    }
+}
+
+impl<Instruction> StaticAnalysis<Instruction> {
     /// Constructs a new `StaticAnalysis` object, replacing the offset value.
     pub fn set_offset(&self, offset: usize) -> Self {
         let Self {
