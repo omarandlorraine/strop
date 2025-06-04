@@ -57,16 +57,22 @@ pub struct StaticAnalysis<Instruction> {
 }
 
 impl<Instruction> StaticAnalysis<Instruction> {
-    pub fn new(
+    /// Constructs an Err(self)
+    pub fn err(
         reason: &'static str,
         advance: fn(&mut Instruction) -> IterationResult,
         offset: usize,
-    ) -> Self {
-        Self {
+    ) -> Result<(), Self> {
+        Err(Self {
             offset,
             advance,
             reason,
-        }
+        })
+    }
+
+    /// Constructs an Ok(())
+    pub fn ok() -> Result<(), Self> {
+        Ok(())
     }
 }
 
