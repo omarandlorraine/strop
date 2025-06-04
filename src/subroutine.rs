@@ -95,7 +95,7 @@ pub fn std_subroutine<Insn: crate::Branch + crate::Encode<u8> + ShouldReturn>(
 pub fn leaf_subroutine<Insn: crate::Branch + crate::Encode<u8> + ShouldReturn>(
     sequence: &Sequence<Insn>,
 ) -> Result<(), crate::StaticAnalysis<Insn>> {
-    std_subroutine(&sequence)?;
+    std_subroutine(sequence)?;
     not_allowed_in_leaf(sequence)?;
     Ok(())
 }
