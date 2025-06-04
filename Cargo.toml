@@ -1,6 +1,6 @@
 [package]
 name = "strop"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Sam M W <you@example.com>"]
 edition = "2021"
 description = "stochastically generates machine code"

@@ -143,3 +143,26 @@ pub fn expect_read<Datum, Insn: DataFlow<Datum>>(
     };
     Ok(())
 }
+
+/// Returns true if the datum is in use by the sequence, that is, either read from or written to.
+pub fn in_use<Datum, Insn: DataFlow<Datum>>(sequence: &Sequence<Insn>, datum: &Datum) -> bool {
+    sequence
+        .iter()
+        .any(|insn| insn.reads(datum) || insn.writes(datum))
+}
+
+/// Makes sure that the sequence uses the given registers in order. This mechanism can be used, for
+/// example, to make sure that a program does not use register 2 if if could be equivalently
+/// rewritten to use register 1, and so this can reduce the search space by the number of
+/// registers.
+pub fn allocate_registers<Datum, Insn: DataFlow<Datum>>(
+    sequence: &Sequence<Insn>,
+    registers: &[Datum],
+) -> Result<(), StaticAnalysis<Insn>> {
+    for window in registers.windows(2) {
+        if !in_use(sequence, &window[0]) {
+            leave_alone(sequence, &window[1])?;
+        }
+    }
+    Ok(())
+}

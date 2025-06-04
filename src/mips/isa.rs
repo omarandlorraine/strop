@@ -23,16 +23,34 @@ impl std::fmt::Debug for Insn {
 }
 
 impl crate::subroutine::ShouldReturn for Insn {
-    fn allowed_in_subroutine(&self) -> Result<(), crate::StaticAnalysis<Self>> {
+    fn allowed_in_leaf(&self, offset: usize) -> Result<(), crate::StaticAnalysis<Self>> {
         use trapezoid_core::cpu::Opcode;
         let decoded = self.decode();
 
         match decoded.opcode {
-            Opcode::J | Opcode::Jal => Err(crate::StaticAnalysis::<Self> {
-                advance: Self::next_opcode,
-                offset: 0,
-                reason: "OpcodeNotAllowedInSubroutines",
-            }),
+            Opcode::Syscall | Opcode::J | Opcode::Jr | Opcode::Jal | Opcode::Jalr => {
+                Err(crate::StaticAnalysis::<Self> {
+                    advance: Self::next_opcode,
+                    offset,
+                    reason: "OpcodeNotAllowedInSubroutines",
+                })
+            }
+            _ => Ok(()),
+        }
+    }
+
+    fn allowed_in_subroutine(&self, offset: usize) -> Result<(), crate::StaticAnalysis<Self>> {
+        use trapezoid_core::cpu::Opcode;
+        let decoded = self.decode();
+
+        match decoded.opcode {
+            Opcode::J | Opcode::Jr | Opcode::Jal | Opcode::Jalr => {
+                Err(crate::StaticAnalysis::<Self> {
+                    advance: Self::next_opcode,
+                    offset,
+                    reason: "OpcodeNotAllowedInSubroutines",
+                })
+            }
             _ => Ok(()),
         }
     }

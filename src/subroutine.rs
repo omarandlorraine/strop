@@ -8,7 +8,14 @@ pub trait ShouldReturn {
     where
         Self: Sized;
 
-    fn allowed_in_subroutine(&self) -> Result<(), crate::StaticAnalysis<Self>>
+    fn allowed_in_subroutine(&self, _offset: usize) -> Result<(), crate::StaticAnalysis<Self>>
+    where
+        Self: Sized,
+    {
+        Ok(())
+    }
+
+    fn allowed_in_leaf(&self, _offset: usize) -> Result<(), crate::StaticAnalysis<Self>>
     where
         Self: Sized,
     {
@@ -26,10 +33,23 @@ pub fn make_return<Insn: ShouldReturn>(
 pub fn not_allowed_in_subroutine<Insn: ShouldReturn>(
     sequence: &Sequence<Insn>,
 ) -> Result<(), StaticAnalysis<Insn>> {
-    for (offs, insn) in sequence.iter().enumerate() {
-        if let Err(e) = insn.allowed_in_subroutine() {
-            return Err(e.set_offset(offs));
-        }
+    let last = sequence.last_instruction_offset();
+    for offs in 0..last {
+        // For all but the last instruction (which would be the return instruction), check it's
+        // permissible in a subroutine.
+        sequence[offs].allowed_in_subroutine(offs)?;
+    }
+    Ok(())
+}
+
+pub fn not_allowed_in_leaf<Insn: ShouldReturn>(
+    sequence: &Sequence<Insn>,
+) -> Result<(), StaticAnalysis<Insn>> {
+    let last = sequence.last_instruction_offset();
+    for offs in 0..last {
+        // For all but the last instruction (which would be the return instruction), check it's
+        // permissible in a subroutine.
+        sequence[offs].allowed_in_leaf(offs)?;
     }
     Ok(())
 }
@@ -69,5 +89,13 @@ pub fn std_subroutine<Insn: crate::Branch + crate::Encode<u8> + ShouldReturn>(
     make_return(sequence)?;
     branches_in_range(sequence)?;
     not_allowed_in_subroutine(sequence)?;
+    Ok(())
+}
+
+pub fn leaf_subroutine<Insn: crate::Branch + crate::Encode<u8> + ShouldReturn>(
+    sequence: &Sequence<Insn>,
+) -> Result<(), crate::StaticAnalysis<Insn>> {
+    std_subroutine(sequence)?;
+    not_allowed_in_leaf(sequence)?;
     Ok(())
 }
