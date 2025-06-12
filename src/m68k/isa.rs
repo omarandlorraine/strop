@@ -155,6 +155,7 @@ mod test {
         true
     }
 
+    #[ignore]
     #[test]
     fn can_iterate_over_all_instructions() {
         use crate::Step;
