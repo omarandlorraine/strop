@@ -37,6 +37,7 @@ mod bruteforce;
 pub use bruteforce::{BruteForce, ToBruteForce};
 
 mod subroutine;
+pub use subroutine::ShouldReturn;
 
 mod trace;
 pub use trace::{ToTrace, Trace};
@@ -53,6 +54,26 @@ pub struct StaticAnalysis<Instruction> {
     advance: fn(&mut Instruction) -> IterationResult,
     /// Human-readable description of the problem
     pub reason: &'static str,
+}
+
+impl<Instruction> StaticAnalysis<Instruction> {
+    /// Constructs an Err(self)
+    pub fn err(
+        reason: &'static str,
+        advance: fn(&mut Instruction) -> IterationResult,
+        offset: usize,
+    ) -> Result<(), Self> {
+        Err(Self {
+            offset,
+            advance,
+            reason,
+        })
+    }
+
+    /// Constructs an Ok(())
+    pub fn ok() -> Result<(), Self> {
+        Ok(())
+    }
 }
 
 impl<Instruction> StaticAnalysis<Instruction> {
