@@ -1,5 +1,6 @@
 //! A module defining `Sequence<T>`.
 
+use crate::static_analysis::Fixup;
 use crate::Disassemble;
 use crate::Encode;
 use crate::Goto;
@@ -57,11 +58,11 @@ impl<Insn: Step> crate::BruteforceSearch<Insn> for Sequence<Insn> {
         unreachable!();
     }
 
-    fn analyze_this(&self) -> Result<(), crate::StaticAnalysis<Insn>> {
+    fn analyze_this(&self) -> crate::StaticAnalysis<Insn> {
         Ok(())
     }
 
-    fn analyze(&mut self) -> Result<(), crate::StaticAnalysis<Insn>> {
+    fn analyze(&mut self) -> crate::StaticAnalysis<Insn> {
         Ok(())
     }
 
@@ -69,8 +70,8 @@ impl<Insn: Step> crate::BruteforceSearch<Insn> for Sequence<Insn> {
         self.step_at(0);
     }
 
-    fn apply(&mut self, static_analysis: &crate::StaticAnalysis<Insn>) {
-        self.mut_at(static_analysis.advance, static_analysis.offset);
+    fn apply(&mut self, fixup: &Fixup<Insn>) {
+        self.mut_at(fixup.advance, fixup.offset);
     }
 
     fn fixup(&mut self) {}
@@ -80,18 +81,6 @@ impl<T> Sequence<T> {
     /// Returns the index to the last element in the sequence
     pub fn last_instruction_offset(&self) -> usize {
         self.0.len() - 1
-    }
-    /// queries the item at offset `o` for static analysis
-    pub fn sa<Insn>(
-        &self,
-        o: usize,
-        sa: fn(&T) -> Option<crate::StaticAnalysis<Insn>>,
-    ) -> Option<crate::StaticAnalysis<Insn>> {
-        if let Some(mut r) = sa(&self.0[o]) {
-            r.offset = o;
-            return Some(r);
-        }
-        None
     }
 }
 

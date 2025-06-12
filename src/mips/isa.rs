@@ -1,7 +1,9 @@
 //! Module representing MIPS I instruction set architecture
 
 use crate::dataflow::DataFlow;
+use crate::static_analysis::Fixup;
 use crate::Encode;
+use crate::StaticAnalysis;
 use crate::Step;
 use trapezoid_core::cpu::Instruction;
 use trapezoid_core::cpu::RegisterType;
@@ -23,47 +25,42 @@ impl std::fmt::Debug for Insn {
 }
 
 impl crate::subroutine::ShouldReturn for Insn {
-    fn allowed_in_leaf(&self, offset: usize) -> Result<(), crate::StaticAnalysis<Self>> {
+    fn allowed_in_leaf(&self, offset: usize) -> crate::StaticAnalysis<Self> {
         use trapezoid_core::cpu::Opcode;
         let decoded = self.decode();
 
-        match decoded.opcode {
-            Opcode::Syscall | Opcode::J | Opcode::Jr | Opcode::Jal | Opcode::Jalr => {
-                Err(crate::StaticAnalysis::<Self> {
-                    advance: Self::next_opcode,
-                    offset,
-                    reason: "OpcodeNotAllowedInSubroutines",
-                })
-            }
-            _ => Ok(()),
-        }
-    }
-
-    fn allowed_in_subroutine(&self, offset: usize) -> Result<(), crate::StaticAnalysis<Self>> {
-        use trapezoid_core::cpu::Opcode;
-        let decoded = self.decode();
-
-        match decoded.opcode {
-            Opcode::J | Opcode::Jr | Opcode::Jal | Opcode::Jalr => {
-                Err(crate::StaticAnalysis::<Self> {
-                    advance: Self::next_opcode,
-                    offset,
-                    reason: "OpcodeNotAllowedInSubroutines",
-                })
-            }
-            _ => Ok(()),
-        }
-    }
-
-    fn should_return(&self, offset: usize) -> Result<(), crate::StaticAnalysis<Self>> {
-        if *self == Self::jr_ra() {
-            return Ok(());
-        }
-        Err(crate::StaticAnalysis::<Self> {
-            advance: Self::make_return,
+        Fixup::check(
+            !matches!(
+                decoded.opcode,
+                Opcode::Syscall | Opcode::J | Opcode::Jr | Opcode::Jal | Opcode::Jalr
+            ),
+            "OpcodeNotAllowedInSubroutines",
+            Self::next_opcode,
             offset,
-            reason: "ShouldReturn",
-        })
+        )
+    }
+
+    fn allowed_in_subroutine(&self, offset: usize) -> crate::StaticAnalysis<Self> {
+        use trapezoid_core::cpu::Opcode;
+        let decoded = self.decode();
+        Fixup::check(
+            !matches!(
+                decoded.opcode,
+                Opcode::J | Opcode::Jr | Opcode::Jal | Opcode::Jalr
+            ),
+            "OpcodeNotAllowedInSubroutines",
+            Self::next_opcode,
+            offset,
+        )
+    }
+
+    fn should_return(&self, offset: usize) -> StaticAnalysis<Self> {
+        Fixup::check(
+            *self == Self::jr_ra(),
+            "ShouldReturn",
+            Self::make_return,
+            offset,
+        )
     }
 }
 
@@ -85,16 +82,12 @@ impl crate::Branch for Insn {
         }
     }
 
-    fn branch_fixup(&self, permissibles: &[isize]) -> Result<(), crate::StaticAnalysis<Self>> {
+    fn branch_fixup(&self, permissibles: &[isize]) -> crate::StaticAnalysis<Self> {
         let Some(offset) = self.offset() else {
             return Ok(());
         };
         if !permissibles.contains(&offset) {
-            Err(crate::StaticAnalysis::<Self> {
-                advance: Self::next,
-                offset: 0,
-                reason: "BackwardBranchNotInRange",
-            })
+            Fixup::err("InvalidBranchTarget", Self::next, 0)
         } else {
             // backward branch in range
             Ok(())
@@ -617,12 +610,8 @@ impl DataFlow<RegisterType> for Insn {
         Some(datum) == self.rd().as_ref() || Some(datum) == self.write_rt().as_ref()
     }
 
-    fn sa(&self) -> crate::StaticAnalysis<Self> {
-        crate::StaticAnalysis::<Self> {
-            advance: Self::next_registers,
-            offset: 0,
-            reason: "Dataflow",
-        }
+    fn sa(&self, offset: usize) -> Fixup<Self> {
+        Fixup::new("Dataflow", Self::next_registers, offset)
     }
 }
 

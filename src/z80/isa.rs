@@ -1,5 +1,8 @@
 //! A module for the representation of Z80 machine instructions.
 
+use crate::static_analysis::Fixup;
+use crate::StaticAnalysis;
+
 /// Represents a Z80 machine instruction
 #[derive(Clone, Copy, PartialOrd, PartialEq, Default)]
 pub struct Insn([u8; 5]);
@@ -86,15 +89,8 @@ impl Insn {
 }
 
 impl crate::subroutine::ShouldReturn for Insn {
-    fn should_return(&self, offset: usize) -> Result<(), crate::StaticAnalysis<Self>> {
-        if self.0[0] == 0xc9 {
-            return Ok(());
-        }
-        Err(crate::StaticAnalysis::<Self> {
-            offset,
-            advance: Self::next_opcode,
-            reason: "ShouldReturn",
-        })
+    fn should_return(&self, offset: usize) -> StaticAnalysis<Self> {
+        Fixup::check(self.0[0] == 0xc9, "ShouldReturn", Self::next_opcode, offset)
     }
 }
 

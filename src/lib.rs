@@ -14,6 +14,9 @@
 #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 #![forbid(unsafe_code)]
 
+mod static_analysis;
+pub use static_analysis::StaticAnalysis;
+
 #[cfg(feature = "armv4t")]
 pub mod armv4t;
 #[cfg(feature = "m6502")]
@@ -46,58 +49,6 @@ pub mod branches;
 pub mod dataflow;
 pub use branches::Branch;
 
-/// Result of a static analysis pass. Explains why a code sequence has been found to be illogical
-/// or unsuitable, and provides a way to prune such a sequence from the search.
-pub struct StaticAnalysis<Instruction> {
-    /// Specifies at what offset into this sequence the problem was found
-    pub offset: usize,
-    advance: fn(&mut Instruction) -> IterationResult,
-    /// Human-readable description of the problem
-    pub reason: &'static str,
-}
-
-impl<Instruction> StaticAnalysis<Instruction> {
-    /// Constructs an Err(self)
-    pub fn err(
-        reason: &'static str,
-        advance: fn(&mut Instruction) -> IterationResult,
-        offset: usize,
-    ) -> Result<(), Self> {
-        Err(Self {
-            offset,
-            advance,
-            reason,
-        })
-    }
-
-    /// Constructs an Ok(())
-    pub fn ok() -> Result<(), Self> {
-        Ok(())
-    }
-}
-
-impl<Instruction> StaticAnalysis<Instruction> {
-    /// Constructs a new `StaticAnalysis` object, replacing the offset value.
-    pub fn set_offset(&self, offset: usize) -> Self {
-        let Self {
-            offset: _,
-            advance,
-            reason,
-        } = self;
-        Self {
-            offset,
-            advance: *advance,
-            reason,
-        }
-    }
-}
-
-impl<Instruction> std::fmt::Debug for StaticAnalysis<Instruction> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        write!(f, "StaticAnalysis {} offset {}", self.reason, self.offset)
-    }
-}
-
 /// Impl this on a datatype that may be iterated by mutating the datum in place. This is then used
 /// by the library to perform bruteforce searches and such
 pub trait Step {
@@ -115,10 +66,10 @@ pub trait Step {
 pub trait BruteforceSearch<Insn> {
     /// Optionally return a `StaticAnalysis` if a code sequence is found to be problematic or in some
     /// way suboptimal.
-    fn analyze_this(&self) -> Result<(), StaticAnalysis<Insn>>;
+    fn analyze_this(&self) -> StaticAnalysis<Insn>;
 
     /// Returns either this pass's `StaticAnalysis<Insn>` or the inner's
-    fn analyze(&mut self) -> Result<(), StaticAnalysis<Insn>> {
+    fn analyze(&mut self) -> StaticAnalysis<Insn> {
         self.inner().analyze()?;
         self.analyze_this()
     }
@@ -135,8 +86,8 @@ pub trait BruteforceSearch<Insn> {
 
     /// Applies a `StaticAnalysis`, which means fixing whatever problem the `StaticAnalysis`
     /// represents.
-    fn apply(&mut self, static_analysis: &StaticAnalysis<Insn>) {
-        self.inner().apply(static_analysis);
+    fn apply(&mut self, fixup: &crate::static_analysis::Fixup<Insn>) {
+        self.inner().apply(fixup);
     }
 
     /// Applies all `StaticAnalysis` instances.

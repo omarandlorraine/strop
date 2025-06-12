@@ -2,6 +2,8 @@
 
 pub mod decode;
 mod mutate;
+use crate::static_analysis::Fixup;
+use crate::StaticAnalysis;
 
 /// Represents an ARMv4T machine code instruction.
 #[derive(Clone, Copy, Default, PartialOrd, PartialEq)]
@@ -121,15 +123,12 @@ impl crate::Step for Insn {
 }
 
 impl crate::subroutine::ShouldReturn for Insn {
-    fn should_return(&self, offset: usize) -> Result<(), crate::StaticAnalysis<Self>> {
+    fn should_return(&self, offset: usize) -> StaticAnalysis<Self> {
         if *self == Self::bx_lr() {
-            return Ok(());
+            Ok(())
+        } else {
+            Fixup::err("ShouldReturn", Self::make_return, offset)
         }
-        Err(crate::StaticAnalysis::<Self> {
-            advance: Self::make_return,
-            offset,
-            reason: "ShouldReturn",
-        })
     }
 }
 
