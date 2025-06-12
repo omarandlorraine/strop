@@ -23,7 +23,7 @@ pub trait Branch: Sized {
     }
 
     /// Returns a StaticAnalysis if the forward branch is out of bounds
-    fn branch_fixup(&self, _permissibles: &[isize]) -> Result<(), StaticAnalysis<Self>> {
+    fn branch_fixup(&self, _permissibles: &[isize]) -> StaticAnalysis<Self> {
         Ok(())
     }
 }

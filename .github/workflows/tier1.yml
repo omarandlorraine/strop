@@ -21,4 +21,4 @@ jobs:
     - name: lint
       run: cargo clippy -- -Dwarnings
     - name: test
-      run: cargo test
+      run: cargo test --release

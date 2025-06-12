@@ -86,7 +86,7 @@ pub trait Parameters {
     fn install(self, cpu: &mut Cpu);
     /// Performs dataflow analysis; ensuring that the sequence reads from the necessary argument
     /// registers.
-    fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>>;
+    fn analyze_this(seq: &Sequence<Insn>) -> crate::StaticAnalysis<Insn>;
 }
 
 /// Trait for types which may be used as a function's return value
@@ -94,7 +94,7 @@ pub trait ReturnValue {
     /// Gets the parameters out of the emulator's register file
     fn extract(cpu: &Cpu) -> Self;
     /// Performs dataflow analysis; ensuring that the sequence writes to V0 (and, V1 if necessary)
-    fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>>;
+    fn analyze_this(seq: &Sequence<Insn>) -> crate::StaticAnalysis<Insn>;
 }
 
 impl Parameters for u8 {
@@ -102,7 +102,7 @@ impl Parameters for u8 {
         cpu.registers_mut().write(RegisterType::A0, self as u32)
     }
 
-    fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>> {
+    fn analyze_this(seq: &Sequence<Insn>) -> crate::StaticAnalysis<Insn> {
         crate::dataflow::expect_read(seq, &RegisterType::A0)
     }
 }
@@ -112,7 +112,7 @@ impl ReturnValue for u8 {
         cpu.registers().read(RegisterType::V0) as u8
     }
 
-    fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>> {
+    fn analyze_this(seq: &Sequence<Insn>) -> crate::StaticAnalysis<Insn> {
         crate::dataflow::expect_write(seq, &RegisterType::V0)
     }
 }
@@ -122,7 +122,7 @@ impl Parameters for f32 {
         cpu.registers_mut().write(RegisterType::A0, self.to_bits())
     }
 
-    fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>> {
+    fn analyze_this(seq: &Sequence<Insn>) -> crate::StaticAnalysis<Insn> {
         crate::dataflow::expect_read(seq, &RegisterType::A0)?;
         crate::dataflow::uninitialized(seq, &RegisterType::A1)?;
         crate::dataflow::uninitialized(seq, &RegisterType::A2)?;
@@ -135,7 +135,7 @@ impl ReturnValue for f32 {
         Self::from_bits(cpu.registers().read(RegisterType::V0))
     }
 
-    fn analyze_this(seq: &Sequence<Insn>) -> Result<(), crate::StaticAnalysis<Insn>> {
+    fn analyze_this(seq: &Sequence<Insn>) -> crate::StaticAnalysis<Insn> {
         crate::dataflow::expect_write(seq, &RegisterType::V0)
     }
 }

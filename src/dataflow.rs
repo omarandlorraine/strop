@@ -1,6 +1,7 @@
 //! This module contains miscellaneous conveniences for performing dataflow analysis on code
 //! sequences.
 
+use crate::static_analysis::Fixup;
 use crate::Sequence;
 use crate::StaticAnalysis;
 
@@ -16,7 +17,7 @@ pub trait DataFlow<Datum> {
     fn writes(&self, datum: &Datum) -> bool;
 
     /// Returns a `StaticAnalysis` for advancing the instruction.
-    fn sa(&self) -> StaticAnalysis<Self>
+    fn sa(&self, offset: usize) -> Fixup<Self>
     where
         Self: Sized;
 }
@@ -25,12 +26,12 @@ pub trait DataFlow<Datum> {
 pub fn leave_alone<Datum, Insn: DataFlow<Datum>>(
     sequence: &Sequence<Insn>,
     datum: &Datum,
-) -> Result<(), StaticAnalysis<Insn>> {
+) -> StaticAnalysis<Insn> {
     sequence
         .iter()
         .enumerate()
         .find(|(_offs, i)| i.reads(datum) || i.writes(datum))
-        .map(|(offs, i)| i.sa().set_offset(offs))
+        .map(|(offs, i)| i.sa(offs))
         .map_or(Ok(()), Err)
 }
 
@@ -40,14 +41,14 @@ pub fn leave_alone<Datum, Insn: DataFlow<Datum>>(
 pub fn leave_alone_except_last<Datum, Insn: DataFlow<Datum>>(
     sequence: &Sequence<Insn>,
     datum: &Datum,
-) -> Result<(), StaticAnalysis<Insn>> {
+) -> StaticAnalysis<Insn> {
     let len = sequence.len();
     sequence
         .iter()
         .take(len - 1)
         .enumerate()
         .find(|(_offs, i)| i.reads(datum) || i.writes(datum))
-        .map(|(offs, i)| i.sa().set_offset(offs))
+        .map(|(offs, i)| i.sa(offs))
         .map_or(Ok(()), Err)
 }
 
@@ -57,7 +58,7 @@ pub fn leave_alone_except_last<Datum, Insn: DataFlow<Datum>>(
 pub fn uninitialized<Datum, Insn: DataFlow<Datum>>(
     sequence: &Sequence<Insn>,
     datum: &Datum,
-) -> Result<(), StaticAnalysis<Insn>> {
+) -> StaticAnalysis<Insn> {
     let Some(read) = sequence
         .iter()
         .enumerate()
@@ -74,7 +75,7 @@ pub fn uninitialized<Datum, Insn: DataFlow<Datum>>(
     else {
         // There's no instruction in the sequence writing to `datum`, so `datum` is uninitialized
         // wherever it's read.
-        return Err(read.1.sa());
+        return Err(read.1.sa(0));
     };
 
     if write.0 < read.0 {
@@ -82,7 +83,7 @@ pub fn uninitialized<Datum, Insn: DataFlow<Datum>>(
         return Ok(());
     }
 
-    Err(read.1.sa())
+    Err(read.1.sa(0))
 }
 
 /// If the sequence writes to `datum` without reading from it afterward, then this function returns a
@@ -91,7 +92,7 @@ pub fn uninitialized<Datum, Insn: DataFlow<Datum>>(
 pub fn dont_expect_write<Datum, Insn: DataFlow<Datum>>(
     sequence: &Sequence<Insn>,
     datum: &Datum,
-) -> Result<(), StaticAnalysis<Insn>> {
+) -> StaticAnalysis<Insn> {
     'outer: for (offset, write) in sequence
         .iter()
         .enumerate()
@@ -111,7 +112,7 @@ pub fn dont_expect_write<Datum, Insn: DataFlow<Datum>>(
             }
         }
 
-        return Err(write.sa().set_offset(offset));
+        return Err(write.sa(offset));
     }
     Ok(())
 }
@@ -122,10 +123,10 @@ pub fn dont_expect_write<Datum, Insn: DataFlow<Datum>>(
 pub fn expect_write<Datum, Insn: DataFlow<Datum>>(
     sequence: &Sequence<Insn>,
     datum: &Datum,
-) -> Result<(), StaticAnalysis<Insn>> {
+) -> StaticAnalysis<Insn> {
     if !sequence.iter().any(|insn| insn.writes(datum)) {
         // There's no instruction in the sequence writing to `datum`
-        return Err(sequence[0].sa());
+        return Err(sequence[0].sa(0));
     };
     Ok(())
 }
@@ -136,10 +137,10 @@ pub fn expect_write<Datum, Insn: DataFlow<Datum>>(
 pub fn expect_read<Datum, Insn: DataFlow<Datum>>(
     sequence: &Sequence<Insn>,
     datum: &Datum,
-) -> Result<(), StaticAnalysis<Insn>> {
+) -> StaticAnalysis<Insn> {
     if !sequence.iter().any(|insn| insn.reads(datum)) {
         // There's no instruction in the sequence writing to `datum`
-        return Err(sequence[0].sa());
+        return Err(sequence[0].sa(0));
     };
     Ok(())
 }
@@ -158,7 +159,7 @@ pub fn in_use<Datum, Insn: DataFlow<Datum>>(sequence: &Sequence<Insn>, datum: &D
 pub fn allocate_registers<Datum, Insn: DataFlow<Datum>>(
     sequence: &Sequence<Insn>,
     registers: &[Datum],
-) -> Result<(), StaticAnalysis<Insn>> {
+) -> StaticAnalysis<Insn> {
     for window in registers.windows(2) {
         if !in_use(sequence, &window[0]) {
             leave_alone(sequence, &window[1])?;

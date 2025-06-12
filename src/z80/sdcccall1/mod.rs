@@ -107,7 +107,7 @@ impl<Params, RetVal> crate::Step for SdccCall1<Params, RetVal> {
 }
 
 impl<Params, RetVal> BruteforceSearch<Insn> for SdccCall1<Params, RetVal> {
-    fn analyze_this(&self) -> Result<(), StaticAnalysis<Insn>> {
+    fn analyze_this(&self) -> StaticAnalysis<Insn> {
         crate::subroutine::make_return(&self.seq)?;
         Ok(())
     }

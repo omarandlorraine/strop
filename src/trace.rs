@@ -30,7 +30,7 @@ impl<T: Disassemble + Clone> Disassemble for Trace<T> {
 impl<Insn, S: crate::BruteforceSearch<Insn> + Clone + Disassemble> crate::BruteforceSearch<Insn>
     for Trace<S>
 {
-    fn analyze_this(&self) -> Result<(), crate::StaticAnalysis<Insn>> {
+    fn analyze_this(&self) -> crate::StaticAnalysis<Insn> {
         Ok(())
     }
     fn inner(&mut self) -> &mut dyn crate::BruteforceSearch<Insn> {

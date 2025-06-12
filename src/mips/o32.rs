@@ -68,7 +68,7 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> O32<Pa
 impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue>
     crate::BruteforceSearch<Insn> for O32<Params, RetVal>
 {
-    fn analyze_this(&self) -> Result<(), crate::StaticAnalysis<Insn>> {
+    fn analyze_this(&self) -> crate::StaticAnalysis<Insn> {
         use trapezoid_core::cpu::RegisterType;
         crate::mips::optimizer::skip_pointless_instructions(self.seq.as_ref())?;
         crate::subroutine::leaf_subroutine(&self.seq)?;
