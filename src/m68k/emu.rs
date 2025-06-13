@@ -65,11 +65,11 @@ impl Emulator {
     }
 
     pub fn set_d0(&mut self, value: u32) {
-        self.cpu.regs.d[0] = std::num::Wrapping(value)
+        self.cpu.regs.d[0] = std::num::Wrapping(value);
     }
 
     pub fn get_d0(&self) -> u32 {
-        self.cpu.regs.d[0] as u32
+        self.cpu.regs.d[0].0
     }
 
     pub fn call_subroutine(&mut self, seq: &Sequence<Insn>) -> RunResult<()> {
@@ -82,23 +82,23 @@ impl Emulator {
             self.memory.set_word(START_ADDRESS + ((address * 2) as u32), *word).unwrap();
         }
 
-        let address_of_last_instruction = std::num::Wrapping(START_ADDRESS + ((bin.len() * 2) as u32));
+        let address_of_last_instruction = std::num::Wrapping(START_ADDRESS + (((bin.len()-1) * 2) as u32));
         let address_of_first_instruction = std::num::Wrapping(START_ADDRESS);
 
         self.cpu.regs.pc = std::num::Wrapping(START_ADDRESS);
 
         for _ in 0..40000 {
-            self.cpu.interpreter(&mut self.memory);
             if self.cpu.regs.pc == address_of_last_instruction {
                 // The subroutine has reached the last instruction (which is assumed to be a return
                 // instruction)
-                if self.cpu.regs.sp() == top_of_stack {
+                if self.cpu.regs.sp() != top_of_stack {
                     // the stack either underflowed at the last minute or things have been left on
                     // there
                     return Err(RunError::RanAmok);
                 }
                 return Ok(());
             }
+            self.cpu.interpreter(&mut self.memory);
             if !(address_of_first_instruction..address_of_last_instruction).contains(&self.cpu.regs.pc) {
                 // The subroutine has jumped to outside of itself.
                 return Err(RunError::RanAmok);

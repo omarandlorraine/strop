@@ -19,6 +19,12 @@ impl Parameters for u32 {
     }
 }
 
+impl Parameters for u16 {
+    fn install(&self, emu: &mut Emulator) {
+        emu.set_d0(*self as u32);
+    }
+}
+
 pub trait ReturnValue {
     fn extract(emu: &Emulator) -> Self;
 }
@@ -29,9 +35,21 @@ impl ReturnValue for u32 {
     }
 }
 
+impl ReturnValue for u16 {
+    fn extract(emu: &Emulator) -> Self {
+        emu.get_d0() as u16
+    }
+}
+
 #[derive(Clone, Default)]
 pub struct Regparm {
     seq: Sequence<Insn>
+}
+
+impl crate::Disassemble for Regparm {
+    fn dasm(&self) {
+        self.seq.dasm()
+    }
 }
 
 impl<Params: Parameters, RetVal: ReturnValue> Callable<Params, RetVal> for Regparm {

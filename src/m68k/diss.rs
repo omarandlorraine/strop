@@ -31,3 +31,9 @@ impl std::fmt::Debug for Insn {
         write!(f, "{:<25} ; {}", dasm, hex)
     }
 }
+
+impl crate::Disassemble for Insn {
+    fn dasm(&self) {
+        println!("\t{self}");
+    }
+}
