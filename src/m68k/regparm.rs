@@ -5,9 +5,9 @@ use crate::m68k::emu::Emulator;
 use crate::m68k::isa::Insn;
 use crate::BruteforceSearch;
 use crate::Callable;
-use crate::StaticAnalysis;
-use crate::Sequence;
 use crate::RunResult;
+use crate::Sequence;
+use crate::StaticAnalysis;
 
 pub trait Parameters {
     fn install(&self, emu: &mut Emulator);
@@ -43,7 +43,7 @@ impl ReturnValue for u16 {
 
 #[derive(Clone, Default)]
 pub struct Regparm {
-    seq: Sequence<Insn>
+    seq: Sequence<Insn>,
 }
 
 impl crate::Disassemble for Regparm {

@@ -1,8 +1,8 @@
-use crate::Sequence;
-use crate::RunError;
-use crate::Encode;
 use crate::m68k::Insn;
+use crate::Encode;
+use crate::RunError;
 use crate::RunResult;
+use crate::Sequence;
 
 use m68000::*;
 
@@ -79,10 +79,13 @@ impl Emulator {
         let top_of_stack = self.cpu.regs.sp();
 
         for (address, word) in bin.iter().enumerate() {
-            self.memory.set_word(START_ADDRESS + ((address * 2) as u32), *word).unwrap();
+            self.memory
+                .set_word(START_ADDRESS + ((address * 2) as u32), *word)
+                .unwrap();
         }
 
-        let address_of_last_instruction = std::num::Wrapping(START_ADDRESS + (((bin.len()-1) * 2) as u32));
+        let address_of_last_instruction =
+            std::num::Wrapping(START_ADDRESS + (((bin.len() - 1) * 2) as u32));
         let address_of_first_instruction = std::num::Wrapping(START_ADDRESS);
 
         self.cpu.regs.pc = std::num::Wrapping(START_ADDRESS);
@@ -99,7 +102,9 @@ impl Emulator {
                 return Ok(());
             }
             self.cpu.interpreter(&mut self.memory);
-            if !(address_of_first_instruction..address_of_last_instruction).contains(&self.cpu.regs.pc) {
+            if !(address_of_first_instruction..address_of_last_instruction)
+                .contains(&self.cpu.regs.pc)
+            {
                 // The subroutine has jumped to outside of itself.
                 return Err(RunError::RanAmok);
             }
