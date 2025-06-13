@@ -4,3 +4,4 @@ mod isa;
 mod regparm;
 
 pub use isa::Insn;
+pub use regparm::Regparm;

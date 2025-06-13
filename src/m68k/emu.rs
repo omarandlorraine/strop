@@ -1,3 +1,9 @@
+use crate::Sequence;
+use crate::RunError;
+use crate::Encode;
+use crate::m68k::Insn;
+use crate::RunResult;
+
 use m68000::*;
 
 const MEM_SIZE: u32 = 65536;
@@ -5,7 +11,7 @@ const MEM_SIZE: u32 = 65536;
 pub struct Memory([u8; MEM_SIZE as usize]); // Define your memory management system.
 
 impl Memory {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self([0; MEM_SIZE as usize])
     }
 }
@@ -56,5 +62,54 @@ impl Emulator {
             memory: Memory::new(),
             cpu: M68000::<m68000::cpu_details::Mc68000>::new(),
         }
+    }
+
+    pub fn set_d0(&mut self, value: u32) {
+        self.cpu.regs.d[0] = std::num::Wrapping(value)
+    }
+
+    pub fn get_d0(&self) -> u32 {
+        self.cpu.regs.d[0] as u32
+    }
+
+    pub fn call_subroutine(&mut self, seq: &Sequence<Insn>) -> RunResult<()> {
+        let bin = Encode::<u16>::encode(seq);
+
+        const START_ADDRESS: u32 = 418;
+        let top_of_stack = self.cpu.regs.sp();
+
+        for (address, word) in bin.iter().enumerate() {
+            self.memory.set_word(START_ADDRESS + ((address * 2) as u32), *word).unwrap();
+        }
+
+        let address_of_last_instruction = std::num::Wrapping(START_ADDRESS + ((bin.len() * 2) as u32));
+        let address_of_first_instruction = std::num::Wrapping(START_ADDRESS);
+
+        self.cpu.regs.pc = std::num::Wrapping(START_ADDRESS);
+
+        for _ in 0..40000 {
+            self.cpu.interpreter(&mut self.memory);
+            if self.cpu.regs.pc == address_of_last_instruction {
+                // The subroutine has reached the last instruction (which is assumed to be a return
+                // instruction)
+                if self.cpu.regs.sp() == top_of_stack {
+                    // the stack either underflowed at the last minute or things have been left on
+                    // there
+                    return Err(RunError::RanAmok);
+                }
+                return Ok(());
+            }
+            if !(address_of_first_instruction..address_of_last_instruction).contains(&self.cpu.regs.pc) {
+                // The subroutine has jumped to outside of itself.
+                return Err(RunError::RanAmok);
+            }
+            if self.cpu.regs.sp() > top_of_stack {
+                // The subroutine has underflowed the stack
+                return Err(RunError::RanAmok);
+            }
+        }
+
+        // Perhaps the subroutine contained an infinite loop or otherwise took too long.
+        return Err(RunError::RanAmok);
     }
 }

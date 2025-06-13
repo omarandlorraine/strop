@@ -12,6 +12,10 @@ homepage = "https://github.com/omarandlorraine/strop"
 name = "mips"
 path = "src/tests/mips.rs"
 
+[[bin]]
+name = "m68k"
+path = "src/tests/m68k.rs"
+
 [features]
 default = ["armv4t", "m6502", "m6809", "z80", "mips", "m68k"]
 armv4t = ["armv4t_emu", "unarm"]
