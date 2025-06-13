@@ -117,6 +117,6 @@ impl Emulator {
         }
 
         // Perhaps the subroutine contained an infinite loop or otherwise took too long.
-        return Err(RunError::RanAmok);
+        Err(RunError::RanAmok)
     }
 }

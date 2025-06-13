@@ -96,7 +96,7 @@ impl Insn {
         }
     }
 
-    pub fn duff_immediates_check(&mut self) -> crate::IterationResult {
+    fn duff_immediates_check(&mut self) -> crate::IterationResult {
         use m68000::instruction::Operands;
         use m68000::instruction::Size;
 

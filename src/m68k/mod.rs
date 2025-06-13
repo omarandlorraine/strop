@@ -1,3 +1,4 @@
+//! A backend for generating code that will run on the Motorola 68000
 mod diss;
 mod emu;
 mod isa;

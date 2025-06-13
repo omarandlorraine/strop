@@ -41,7 +41,9 @@ impl ReturnValue for u16 {
     }
 }
 
-#[derive(Clone, Default)]
+/// Represents a function callable by the regparm calling convention. Put the first two parameters
+/// in D0 and D1, and get the return value out of D0.
+#[derive(Clone, Debug, Default)]
 pub struct Regparm {
     seq: Sequence<Insn>,
 }
