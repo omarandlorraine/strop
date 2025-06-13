@@ -14,7 +14,7 @@ fn run_test() {
     }
 
     let mut search = strop::m68k::Regparm::default()
-        //.trace()
+        .trace()
         .to_bruteforce(identity as fn(u32) -> strop::RunResult<u32>);
 
     while let Some(id) = search.search() {
