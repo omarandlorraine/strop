@@ -54,7 +54,7 @@ impl crate::Disassemble for Regparm {
 
 impl<Params: Parameters, RetVal: ReturnValue> Callable<Params, RetVal> for Regparm {
     fn call(&self, parameters: Params) -> RunResult<RetVal> {
-        let mut emu = Emulator::new();
+        let mut emu = Emulator::default();
         parameters.install(&mut emu);
         emu.call_subroutine(&self.seq)?;
         Ok(RetVal::extract(&emu))

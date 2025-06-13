@@ -10,8 +10,8 @@ const MEM_SIZE: u32 = 65536;
 #[derive(Debug)]
 pub struct Memory([u8; MEM_SIZE as usize]); // Define your memory management system.
 
-impl Memory {
-    pub fn new() -> Self {
+impl Default for Memory {
+    fn default() -> Self {
         Self([0; MEM_SIZE as usize])
     }
 }
@@ -56,14 +56,16 @@ pub struct Emulator {
     pub cpu: M68000<m68000::cpu_details::Mc68000>,
 }
 
-impl Emulator {
-    pub fn new() -> Self {
+impl Default for Emulator {
+    fn default() -> Self {
         Self {
-            memory: Memory::new(),
+            memory: Memory::default(),
             cpu: M68000::<m68000::cpu_details::Mc68000>::new(),
         }
     }
+}
 
+impl Emulator {
     pub fn set_d0(&mut self, value: u32) {
         self.cpu.regs.d[0] = std::num::Wrapping(value);
     }
