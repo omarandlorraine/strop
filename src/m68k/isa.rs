@@ -180,9 +180,9 @@ mod test {
             println!("{i:?}");
             let mut j = i;
             while j.decode().0.opcode == i.decode().0.opcode {
-                j.next();
+                j.next().unwrap();
             }
-            i.next_opcode();
+            i.next_opcode().unwrap();
             assert_eq!(j.decode().0.opcode, i.decode().0.opcode);
         }
     }
@@ -232,7 +232,6 @@ mod test {
         let mut i = Insn::first();
 
         while i.next().is_ok() {
-            println!("{i}");
             let dasm = format!("{i}");
             let mut words = dasm.split_whitespace();
 
@@ -245,7 +244,6 @@ mod test {
             // chars off, the octothorpe and the comma, so we can get at the number, 42.
             let immediate = words.next().unwrap();
             let immediate = &immediate[1..immediate.len() - 1];
-            println!("{opcode} {immediate}");
             let immediate: u32 = immediate.parse().expect(&format!("{immediate}"));
 
             assert!(immediate < 256, "{i:?}");
