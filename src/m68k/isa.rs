@@ -75,6 +75,7 @@ impl crate::Step for Insn {
             Err(crate::StepError::End)
         } else {
             self.incr_at_offset(self.len_w() - 1);
+            self.duff_immediates_check()?;
             self.fixup()
         }
     }
@@ -92,6 +93,19 @@ impl Insn {
         match m68000::instruction::Instruction::from_memory(&mut memory) {
             Ok(ins) => (ins, memory.next_addr),
             Err(e) => panic!("{e:?}"),
+        }
+    }
+
+    pub fn duff_immediates_check(&mut self) -> crate::IterationResult {
+        use m68000::instruction::Operands;
+        use m68000::instruction::Size;
+
+        let i = self.decode().0;
+        match i.operands {
+            Operands::SizeEffectiveAddressImmediate(Size::Byte, _, imm) if imm > 255 => {
+                self.next_opcode()
+            }
+            _ => Ok(()),
         }
     }
 
@@ -204,6 +218,36 @@ mod test {
                     panic!("These two instructions both encode {i}: {i:?} and {j:?}");
                 }
             }
+        }
+    }
+
+    #[test]
+    fn skip_duff_immediate_values() {
+        // for instructions ending in i.b (such as ori.b, eori.b, etc), the iterator should skip
+        // instructions with immediate values greater than 256. See
+        // https://retrocomputing.stackexchange.com/questions/30419/ for details
+        use crate::Step;
+
+        let mut i = Insn::first();
+
+        while i.next().is_ok() {
+            println!("{i}");
+            let dasm = format!("{i}");
+            let mut words = dasm.split_whitespace();
+
+            let opcode = words.next().unwrap();
+            if !opcode.ends_with("I.B") {
+                continue;
+            }
+
+            // Here's the immediate value. It's disassembled and #42, so strip the first and last
+            // chars off, the octothorpe and the comma, so we can get at the number, 42.
+            let immediate = words.next().unwrap();
+            let immediate = &immediate[1..immediate.len() - 1];
+            println!("{opcode} {immediate}");
+            let immediate: u32 = immediate.parse().expect(&format!("{immediate}"));
+
+            assert!(immediate < 256, "{i:?}");
         }
     }
 }
