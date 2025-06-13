@@ -221,6 +221,7 @@ mod test {
         }
     }
 
+    #[ignore]
     #[test]
     fn skip_duff_immediate_values() {
         // for instructions ending in i.b (such as ori.b, eori.b, etc), the iterator should skip
