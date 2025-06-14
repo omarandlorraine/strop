@@ -2,6 +2,7 @@ use crate::test::Vals;
 use crate::Callable;
 use crate::Crossover;
 use crate::Mutate;
+use crate::TestSuite;
 
 use crate::genetic::ScoredCandidate;
 
@@ -16,7 +17,7 @@ pub struct Generate<
 > {
     target_function: T,
     population: Vec<ScoredCandidate<InputParameters, ReturnValue, U>>,
-    tests: Vec<(InputParameters, ReturnValue)>,
+    tests: TestSuite<InputParameters, ReturnValue>,
     popsize: usize,
     input: std::marker::PhantomData<InputParameters>,
     ret: std::marker::PhantomData<ReturnValue>,
@@ -34,7 +35,7 @@ impl<
     /// Constructs a new `GeneticSearch`
     pub fn new(target_function: T) -> Self {
         Self {
-            tests: crate::test::quick_tests(&target_function),
+            tests: TestSuite::generate(&target_function),
             target_function,
             population: vec![],
             popsize: 100,

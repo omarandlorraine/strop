@@ -32,6 +32,7 @@ mod sequence;
 pub use sequence::Sequence;
 
 pub mod test;
+pub use test::TestSuite;
 
 mod genetic;
 pub use genetic::Generate;

@@ -1,7 +1,7 @@
-use crate::test;
 use crate::test::Vals;
 use crate::BruteforceSearch;
 use crate::Callable;
+use crate::TestSuite;
 
 /// Performs a brute force search over a given search space `Searchable`
 #[derive(Debug, Clone)]
@@ -14,7 +14,7 @@ pub struct BruteForce<
 > {
     target_function: TargetFunction,
     candidate: Searchable,
-    tests: Vec<(InputParameters, ReturnValue)>,
+    tests: TestSuite<InputParameters, ReturnValue>,
     input: std::marker::PhantomData<InputParameters>,
     ret: std::marker::PhantomData<ReturnValue>,
     insn: std::marker::PhantomData<Insn>,
@@ -50,7 +50,7 @@ impl<
     > ToBruteForce<Insn, InputParameters, ReturnValue, TargetFunction> for T
 where
     Self: Callable<InputParameters, ReturnValue>,
-    InputParameters: test::Vals,
+    InputParameters: Vals,
 {
     fn to_bruteforce(
         self,
@@ -71,7 +71,7 @@ impl<
     /// Constructs a new `BruteForce`
     pub fn new(target_function: TargetFunction, initial_candidate: Searchable) -> Self {
         let candidate = initial_candidate;
-        let tests = test::quick_tests(&target_function);
+        let tests = TestSuite::generate(&target_function);
         Self {
             target_function,
             candidate,
@@ -97,30 +97,8 @@ impl<
 
     /// Tests that the candidate matches the target function
     pub fn test(&mut self) -> bool {
-        match test::passes(&self.candidate, &self.tests) {
-            Err(_) => {
-                // The candidate does not pass the test case(s)
-                false
-            }
-            Ok(false) => {
-                // The candidate does not pass the test case(s)
-                false
-            }
-            Ok(true) => {
-                // Found a candidate which passes all known test cases.
-                // Let's fuzz test the candidate
-                if let Some(test_case) = test::fuzz(&self.target_function, &self.candidate, 5000) {
-                    // We've fuzzed the functions against eachother and found another test case.
-                    // So keep hold of this new test case
-                    self.tests.push(test_case);
-                    false
-                } else {
-                    // The candidate passed all known test cases and also a fuzz test, so let's say
-                    // it's good enough and return it
-                    true
-                }
-            }
-        }
+        self.tests
+            .checked_fuzz(&self.target_function, &self.candidate, 5000)
     }
 
     /// Returns the next function that matches the target function
