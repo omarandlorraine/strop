@@ -100,6 +100,27 @@ impl Vals for i16 {
     }
 }
 
+impl Vals for u32 {
+    fn vals() -> Vec<Self> {
+        let mut v = vec![0];
+        for i in 0..16 {
+            v.push(1 << i);
+            v.push(i);
+            v.push(u32::MAX - i);
+            v.push(u32::MIN + i);
+        }
+        v
+    }
+
+    fn rand() -> Self {
+        rand::random()
+    }
+
+    fn error(self, other: Self) -> f64 {
+        (self ^ other).count_ones() as f64
+    }
+}
+
 impl Vals for u16 {
     fn vals() -> Vec<Self> {
         let mut v = vec![0];
