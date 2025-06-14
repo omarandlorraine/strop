@@ -1,3 +1,4 @@
+use crate::static_analysis::Fixup;
 use crate::{IterationResult, StaticAnalysis, StepError};
 
 mod data;
@@ -44,12 +45,8 @@ impl crate::Encode<u16> for Insn {
 impl crate::Branch for Insn {}
 
 impl crate::subroutine::ShouldReturn for Insn {
-    fn should_return(&self, offset: usize) -> Result<(), crate::StaticAnalysis<Self>> {
-        if self.0[0] == 0x4e75 {
-            StaticAnalysis::ok()
-        } else {
-            StaticAnalysis::err("ShouldReturn", Self::next_opcode, offset)
-        }
+    fn should_return(&self, offs: usize) -> StaticAnalysis<Self> {
+        Fixup::check(self.0[0] == 0x4e75, "ShouldReturn", Self::next_opcode, offs)
     }
 }
 

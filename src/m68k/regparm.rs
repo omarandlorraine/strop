@@ -64,7 +64,7 @@ impl<Params: Parameters, RetVal: ReturnValue> Callable<Params, RetVal> for Regpa
 }
 
 impl BruteforceSearch<Insn> for Regparm {
-    fn analyze_this(&self) -> Result<(), StaticAnalysis<Insn>> {
+    fn analyze_this(&self) -> StaticAnalysis<Insn> {
         crate::subroutine::make_return(&self.seq)?;
         Ok(())
     }
