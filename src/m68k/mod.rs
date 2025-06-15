@@ -3,6 +3,7 @@ mod diss;
 mod emu;
 mod isa;
 mod regparm;
+mod dataflow;
 
 pub use isa::Insn;
 pub use regparm::Regparm;
