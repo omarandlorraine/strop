@@ -146,7 +146,7 @@ impl crate::Encode<u32> for Insn {
 
 impl crate::Disassemble for Insn {
     fn dasm(&self) {
-        println!("\t{:?}", self);
+        println!("\t{self:?}");
     }
 }
 
@@ -207,11 +207,11 @@ mod test {
 
         while i.next().is_ok() {
             // check that the instruction can be disassembled
-            assert_eq!(format!("{:?}", i).len(), 95, "{:?}", i);
+            assert_eq!(format!("{i:?}").len(), 95, "{i:?}");
 
             // println!("{:?}", i);
 
-            assert!(!format!("{:?}", i).contains("illegal"), "{:?}", i);
+            assert!(!format!("{i:?}").contains("illegal"), "{i:?}");
 
             // check that the emulator can execute the instruction
             if !emulator_knows_it(i) {
@@ -219,7 +219,7 @@ mod test {
                 let mut end = i;
                 while !emulator_knows_it(i) {
                     end = i;
-                    println!("the emulator can't run {:?}", i);
+                    println!("the emulator can't run {i:?}");
                     i.next().unwrap();
                 }
                 println!("the range is {:?}..{:?} inclusive", beginning.0, end.0);

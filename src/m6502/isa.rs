@@ -241,13 +241,13 @@ mod test {
         use mos6502::instruction::Cmos6502;
 
         let mut i = Insn::<Cmos6502>::first();
-        println!("{} ; {:?}", i, i);
+        println!("{i} ; {i:?}");
         assert!(i.next().is_ok());
-        println!("{} ; {:?}", i, i);
+        println!("{i} ; {i:?}");
         assert!(i.next().is_ok());
-        println!("{} ; {:?}", i, i);
+        println!("{i} ; {i:?}");
         assert!(i.next().is_ok());
-        println!("{} ; {:?}", i, i);
+        println!("{i} ; {i:?}");
         assert!(i.next().is_ok());
     }
 

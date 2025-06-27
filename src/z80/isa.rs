@@ -148,7 +148,7 @@ impl Insn {
                 "couldn't encode {:?}: {:?}",
                 self.0
                     .iter()
-                    .map(|byte| format!("{:02x}", byte))
+                    .map(|byte| format!("{byte:02x}"))
                     .collect::<Vec<String>>()
                     .join(" "),
                 e
