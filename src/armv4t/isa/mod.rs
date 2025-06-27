@@ -214,6 +214,7 @@ impl crate::Branch for Insn {}
 
 #[cfg(test)]
 mod test {
+    use super::Insn;
 
     fn emulator_knows_it(i9n: super::Insn) -> bool {
         use crate::Encode;
@@ -269,34 +270,31 @@ mod test {
         assert!((sa.advance)(&mut i).is_err());
     }
 
+    fn check(i: &super::Insn) {
+        use crate::armv4t::data::Register;
+        use crate::dataflow::DataFlow;
+
+        assert!(emulator_knows_it(*i));
+        assert!(!format!("{:?}", i).contains("illegal"), "{:?}", i);
+
+        if format!("{i}").contains("r4") {
+            assert!(i.reads(&Register::R4) || i.writes(&Register::R4), "{i:?} doesn't read or write R4. {:?}", i.decode().defs(&Default::default()));
+        }
+    }
+
+    #[test]
+    fn regressions() {
+        check(&Insn(0x00001094));
+    }
+
     #[test]
     #[ignore]
     fn all_instructions() {
         use crate::Step;
 
-        let mut i = super::Insn(0xff7affff);
-        // let mut i = super::Insn::first();
-
+        let mut i = super::Insn::first();
         while i.next().is_ok() {
-            // check that the instruction can be disassembled
-            assert_eq!(format!("{:?}", i).len(), 95, "{:?}", i);
-
-            // println!("{:?}", i);
-
-            assert!(!format!("{:?}", i).contains("illegal"), "{:?}", i);
-
-            // check that the emulator can execute the instruction
-            if !emulator_knows_it(i) {
-                let beginning = i;
-                let mut end = i;
-                while !emulator_knows_it(i) {
-                    end = i;
-                    println!("the emulator can't run {:?}", i);
-                    i.next().unwrap();
-                }
-                println!("the range is {:?}..{:?} inclusive", beginning.0, end.0);
-                panic!("found a range of instructions visited by the .increment method that the emulator doesn't know");
-            }
+            check(&i);
         }
     }
 }
