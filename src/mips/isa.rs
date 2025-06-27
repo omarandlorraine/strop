@@ -1,10 +1,10 @@
 //! Module representing MIPS I instruction set architecture
 
-use crate::dataflow::DataFlow;
-use crate::static_analysis::Fixup;
 use crate::Encode;
 use crate::StaticAnalysis;
 use crate::Step;
+use crate::dataflow::DataFlow;
+use crate::static_analysis::Fixup;
 use trapezoid_core::cpu::Instruction;
 use trapezoid_core::cpu::RegisterType;
 
@@ -623,7 +623,11 @@ mod test {
 
         // Make sure the instruction doesn't think it's both reading from and writing to $rt.
         if insn.read_rt().is_some() {
-            assert!(insn.write_rt().is_none(), "check_instruction(&Insn(0x{:08x})); // {insn} seems to both read and write for $rt.", insn.0);
+            assert!(
+                insn.write_rt().is_none(),
+                "check_instruction(&Insn(0x{:08x})); // {insn} seems to both read and write for $rt.",
+                insn.0
+            );
         }
 
         // Make sure the disassembly doesn't just give us a hexadecimal value.

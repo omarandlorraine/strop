@@ -1,5 +1,5 @@
-use crate::armv4t::Insn;
 use crate::Mutate;
+use crate::armv4t::Insn;
 
 impl Mutate for Insn {
     fn random() -> Self {

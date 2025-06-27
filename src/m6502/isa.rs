@@ -1,7 +1,7 @@
-use crate::static_analysis::Fixup;
 use crate::IterationResult;
 use crate::StaticAnalysis;
 use crate::StepError;
+use crate::static_analysis::Fixup;
 /// Represents a 6502 machine instruction, compatible with some 6502 variant.
 #[derive(Copy, Clone, Default, PartialOrd, PartialEq)]
 pub struct Insn<V: mos6502::Variant>([u8; 3], std::marker::PhantomData<V>);
