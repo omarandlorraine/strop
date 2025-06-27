@@ -5,32 +5,12 @@ use crate::armv4t::Emulator;
 use crate::armv4t::Insn;
 use crate::BruteforceSearch;
 use crate::Callable;
+use crate::Sequence;
 use crate::StaticAnalysis;
 
 const MODE: armv4t_emu::Mode = armv4t_emu::Mode::User;
 
-/*
-fn callee_saved(r: &Register) -> bool {
-    match r {
-        Register::R0 => false,
-        Register::R1 => false,
-        Register::R2 => false,
-        Register::R3 => false,
-        Register::R4 => true,
-        Register::R5 => true,
-        Register::R6 => true,
-        Register::R7 => true,
-        Register::R8 => true,
-        Register::R9 => true,
-        Register::R10 => true,
-        Register::R11 => true,
-        Register::R12 => false,
-        Register::Sp => false,
-        Register::Lr => false,
-        Register::Pc => false,
-    }
-}
-*/
+use crate::armv4t::data::Register;
 
 trait FitsInRegister {
     fn put(&self, emu: &mut Emulator, pos: u8);
@@ -70,6 +50,9 @@ pub trait ParameterList {
     /// Puts the parameters into the expected place in the emulator (that is, the parameters are
     /// written to the register file in the expected way for the function call)
     fn put_list(&self, emu: &mut Emulator);
+    /// Performs data analysis on the instruction sequence, making sure it does not read from a
+    /// non-argument register, etc.
+    fn analyze(seq: &Sequence<Insn>) -> crate::StaticAnalysis<Insn>;
 }
 
 impl<T> ParameterList for T
@@ -78,6 +61,22 @@ where
 {
     fn put_list(&self, emu: &mut Emulator) {
         self.put(emu, 0);
+    }
+
+    fn analyze(seq: &Sequence<Insn>) -> crate::StaticAnalysis<Insn> {
+        crate::dataflow::leave_alone(seq, &Register::R1)?;
+        crate::dataflow::leave_alone(seq, &Register::R2)?;
+        crate::dataflow::leave_alone(seq, &Register::R3)?;
+        crate::dataflow::uninitialized(seq, &Register::R4)?;
+        crate::dataflow::uninitialized(seq, &Register::R5)?;
+        crate::dataflow::uninitialized(seq, &Register::R6)?;
+        crate::dataflow::uninitialized(seq, &Register::R7)?;
+        crate::dataflow::uninitialized(seq, &Register::R8)?;
+        crate::dataflow::uninitialized(seq, &Register::R9)?;
+        crate::dataflow::uninitialized(seq, &Register::R10)?;
+        crate::dataflow::uninitialized(seq, &Register::R11)?;
+        crate::dataflow::uninitialized(seq, &Register::R12)?;
+        crate::dataflow::leave_alone(seq, &Register::Sp)
     }
 }
 
@@ -126,11 +125,13 @@ impl<Params, RetVal> crate::Goto<Insn> for Function<Params, RetVal> {
     }
 }
 
-impl<Params, RetVal> BruteforceSearch<Insn> for Function<Params, RetVal> {
+impl<Params: ParameterList, RetVal> BruteforceSearch<Insn> for Function<Params, RetVal> {
     fn analyze_this(&self) -> StaticAnalysis<Insn> {
         // TODO: dataflow analysis could go here.
         crate::dataflow::uninitialized(&self.seq, &crate::armv4t::data::ConditionFlags)?;
+        crate::subroutine::leaf_subroutine(&self.seq)?;
         crate::subroutine::make_return(&self.seq)?;
+        Params::analyze(&self.seq)?;
         Ok(())
     }
     fn inner(&mut self) -> &mut dyn BruteforceSearch<Insn> {
