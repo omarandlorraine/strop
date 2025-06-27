@@ -91,13 +91,13 @@ impl Insn {
         Fixup::check(
             self.decode().op != Opcode::Illegal,
             "IllegalInstruction",
-            Self::next,
+            Self::increment,
             0,
         )?;
         Fixup::check(
             self.decode().parse(&Default::default()).mnemonic != "<illegal>",
             "IllegalInstruction",
-            Self::next,
+            Self::increment,
             0,
         )?;
 
