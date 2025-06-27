@@ -82,9 +82,9 @@ impl Insn {
     /// Makes sure that the instruction is a valid one. If it does not encode a valid instruction
     /// it gets incremented until it does. If this approach does not result in a valid instruction,
     /// the method returns false.
-    pub fn fixup(&mut self) -> bool {
+    pub fn fixup(&mut self) -> crate::StaticAnalysis<Self> {
         // TODO: PSR instructions shouldn't ever take PC or SP or LR as their argument
-        true
+        Ok(())
     }
 
     /// Increments the isntruction word by 1
@@ -132,7 +132,11 @@ impl crate::Step for Insn {
     }
 
     fn next(&mut self) -> crate::IterationResult {
-        self.increment()
+        self.increment()?;
+        while let Err(e) = self.fixup() {
+            (e.advance)(self)?;
+        }
+        Ok(())
     }
 }
 
