@@ -80,16 +80,26 @@ impl Insn {
     }
 
     /// Makes sure that the instruction is a valid one. If it does not encode a valid instruction
-    /// it gets incremented until it does. If this approach does not result in a valid instruction,
-    /// the method returns false.
+    /// then this method returns a Fixup rectifying the problem
     pub fn fixup(&mut self) -> crate::StaticAnalysis<Self> {
         // TODO: PSR instructions shouldn't ever take PC or SP or LR as their argument
-        use unarm::arm::Opcode;
         use crate::static_analysis::Fixup;
         use crate::Step;
+        use unarm::arm::Opcode;
 
         // Don't generate any illegal instructions.
-        Fixup::check(self.decode().op != Opcode::Illegal, "IllegalInstruction", Self::next, 0)?;
+        Fixup::check(
+            self.decode().op != Opcode::Illegal,
+            "IllegalInstruction",
+            Self::next,
+            0,
+        )?;
+        Fixup::check(
+            self.decode().parse(&Default::default()).mnemonic != "<illegal>",
+            "IllegalInstruction",
+            Self::next,
+            0,
+        )?;
 
         Ok(())
     }
@@ -107,6 +117,14 @@ impl Insn {
     /// Decodes the instruction
     pub fn decode(&self) -> unarm::arm::Ins {
         unarm::arm::Ins::new(self.0, &Default::default())
+    }
+
+    /// Skips to the "horrid nybble". ignores the bottom four bits, since for all instruyctions,
+    /// decoding that is trivial. It's for the Horrid Nybble that things get messy.
+    pub fn next_horrid_nybble(&mut self) -> crate::IterationResult {
+        use crate::Step;
+        self.0 |= 0x0000_000f;
+        self.next()
     }
 
     /// Skips to the "next opcode". ignores the fields like `Rn`, and `Rm`, the register lists and
@@ -155,6 +173,23 @@ impl crate::subroutine::ShouldReturn for Insn {
             Fixup::err("ShouldReturn", Self::make_return, offset)
         }
     }
+
+    fn allowed_in_subroutine(&self, offset: usize) -> crate::StaticAnalysis<Self> {
+        use crate::armv4t::data::Register;
+        use crate::dataflow::DataFlow;
+        use crate::Step;
+        Fixup::check(
+            !(self.reads(&Register::Sp)
+                || self.writes(&Register::Sp)
+                || self.reads(&Register::Lr)
+                || self.writes(&Register::Lr)
+                || self.reads(&Register::Pc)
+                || self.writes(&Register::Pc)),
+            "LeaveSpLrAndPcAlone",
+            Self::next,
+            offset,
+        )
+    }
 }
 
 impl crate::Encode<u8> for Insn {
@@ -193,6 +228,18 @@ mod test {
     #[test]
     fn bx_lr() {
         assert_eq!("bx lr", &format!("{}", super::Insn::bx_lr()));
+    }
+
+    #[test]
+    fn should_skip() {
+        use super::Insn;
+
+        // If it disassembles as `<illegal>` then the fixup method should fix it up!
+        assert!(
+            Insn(0xe01001bb).fixup().is_err(),
+            "{:?}",
+            Insn(0xe01001bb).decode().parse(&Default::default())
+        );
     }
 
     #[test]
