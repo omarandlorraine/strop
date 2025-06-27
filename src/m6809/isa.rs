@@ -326,11 +326,7 @@ mod test {
                 insndat.action, "unknown",
                 "{i:?} is not a valid instruction, yet it is visited by the .increment() method"
             );
-            assert_eq!(
-                insndat.size,
-                i.encode().len(),
-                "{i:?} has the wrong length"
-            );
+            assert_eq!(insndat.size, i.encode().len(), "{i:?} has the wrong length");
         }
     }
 }
