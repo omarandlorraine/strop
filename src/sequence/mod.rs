@@ -1,11 +1,11 @@
 //! A module defining `Sequence<T>`.
 
-use crate::static_analysis::Fixup;
 use crate::Disassemble;
 use crate::Encode;
 use crate::Goto;
 use crate::IterationResult;
 use crate::Step;
+use crate::static_analysis::Fixup;
 use std::ops::{Index, IndexMut};
 
 mod mutate;

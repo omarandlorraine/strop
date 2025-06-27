@@ -1,13 +1,13 @@
 //! Mimics the O32 calling convention
 
-use crate::mips::emu::Parameters;
-use crate::mips::emu::ReturnValue;
-use crate::mips::Insn;
-use crate::test::Vals;
 use crate::Callable;
 use crate::Disassemble;
 use crate::Sequence;
 use crate::Step;
+use crate::mips::Insn;
+use crate::mips::emu::Parameters;
+use crate::mips::emu::ReturnValue;
+use crate::test::Vals;
 
 /// Searches for functions complying to the O32 calling convention
 #[derive(Clone, Debug)]
@@ -141,10 +141,10 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue>
 }
 
 impl<
-        Params: Vals + Parameters,
-        RetVal: ReturnValue + Vals + Clone,
-        TargetFunction: Callable<Params, RetVal>,
-    > crate::AsBruteforce<Insn, Params, RetVal, TargetFunction> for O32<Params, RetVal>
+    Params: Vals + Parameters,
+    RetVal: ReturnValue + Vals + Clone,
+    TargetFunction: Callable<Params, RetVal>,
+> crate::AsBruteforce<Insn, Params, RetVal, TargetFunction> for O32<Params, RetVal>
 {
     fn bruteforce(
         self,
