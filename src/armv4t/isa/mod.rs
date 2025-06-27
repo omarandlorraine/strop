@@ -84,6 +84,13 @@ impl Insn {
     /// the method returns false.
     pub fn fixup(&mut self) -> crate::StaticAnalysis<Self> {
         // TODO: PSR instructions shouldn't ever take PC or SP or LR as their argument
+        use unarm::arm::Opcode;
+        use crate::static_analysis::Fixup;
+        use crate::Step;
+
+        // Don't generate any illegal instructions.
+        Fixup::check(self.decode().op != Opcode::Illegal, "IllegalInstruction", Self::next, 0)?;
+
         Ok(())
     }
 
