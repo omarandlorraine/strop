@@ -97,6 +97,20 @@ impl Insn {
         }
     }
 
+    /// Decodes the instruction
+    pub fn decode(&self) -> unarm::arm::Ins {
+        unarm::arm::Ins::new(self.0, &Default::default())
+    }
+
+    /// Skips to the "next opcode". ignores the fields like `Rn`, and `Rm`, the register lists and
+    /// offsets and things, in the hope of hitting on the next instruction. This method won't hit
+    /// on the branch exchange instruction.
+    pub fn next_opcode(&mut self) -> crate::IterationResult {
+        use crate::Step;
+        self.0 |= 0x000f_ffff;
+        self.next()
+    }
+
     fn make_return(&mut self) -> crate::IterationResult {
         // TODO: There are other possible return instructions here.
         use std::cmp::Ordering;
