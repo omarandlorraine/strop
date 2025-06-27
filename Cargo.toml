@@ -2,7 +2,7 @@
 name = "strop"
 version = "0.3.0"
 authors = ["Sam M W <you@example.com>"]
-edition = "2021"
+edition = "2024"
 description = "stochastically generates machine code"
 license = "MIT"
 repository = "https://github.com/omarandlorraine/strop"
