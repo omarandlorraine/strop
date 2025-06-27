@@ -129,6 +129,7 @@ impl<Params, RetVal> crate::Goto<Insn> for Function<Params, RetVal> {
 impl<Params, RetVal> BruteforceSearch<Insn> for Function<Params, RetVal> {
     fn analyze_this(&self) -> StaticAnalysis<Insn> {
         // TODO: dataflow analysis could go here.
+        crate::dataflow::uninitialized(&self.seq, &crate::armv4t::data::ConditionFlags)?;
         crate::subroutine::make_return(&self.seq)?;
         Ok(())
     }
