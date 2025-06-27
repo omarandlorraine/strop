@@ -1,7 +1,7 @@
 //! A module making possible the execution of MIPS subroutine in emulation
-use crate::mips::Insn;
 use crate::Encode;
 use crate::Sequence;
+use crate::mips::Insn;
 use trapezoid_core::cpu::{BusLine, Cpu, CpuBusProvider, RegisterType};
 
 struct Bus {

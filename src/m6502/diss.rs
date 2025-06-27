@@ -113,15 +113,15 @@ impl<V: mos6502::Variant> std::fmt::Debug for crate::m6502::isa::Insn<V> {
         let bytes = self
             .encode()
             .iter()
-            .map(|b| format!("{:02x}", b))
+            .map(|b| format!("{b:02x}"))
             .collect::<Vec<String>>()
             .join(" ");
-        write!(f, "{}", bytes)
+        write!(f, "{bytes}")
     }
 }
 
 impl<V: mos6502::Variant> crate::Disassemble for crate::m6502::isa::Insn<V> {
     fn dasm(&self) {
-        println!("\t{}", self);
+        println!("\t{self}");
     }
 }

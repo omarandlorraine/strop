@@ -8,7 +8,7 @@ impl std::fmt::Display for Insn {
             rs: u8,
             other_stack: &'static str,
         ) -> std::result::Result<(), std::fmt::Error> {
-            write!(f, "{} ", i9n)?;
+            write!(f, "{i9n} ")?;
             if rs & 0x01 != 0 {
                 write!(f, "cc ")?;
             }
@@ -28,7 +28,7 @@ impl std::fmt::Display for Insn {
                 write!(f, "y ")?;
             }
             if rs & 0x40 != 0 {
-                write!(f, "{} ", other_stack)?;
+                write!(f, "{other_stack} ")?;
             }
             if rs & 0x80 != 0 {
                 write!(f, "pc ")?;
@@ -63,9 +63,9 @@ impl std::fmt::Debug for Insn {
         let bytes = self
             .encode()
             .iter()
-            .map(|b| format!("{:02x}", b))
+            .map(|b| format!("{b:02x}"))
             .collect::<Vec<String>>()
             .join(" ");
-        write!(f, "{}", bytes)
+        write!(f, "{bytes}")
     }
 }

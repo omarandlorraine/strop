@@ -1,7 +1,7 @@
 //! A module for the representation of Z80 machine instructions.
 
-use crate::static_analysis::Fixup;
 use crate::StaticAnalysis;
+use crate::static_analysis::Fixup;
 
 /// Represents a Z80 machine instruction
 #[derive(Clone, Copy, PartialOrd, PartialEq, Default)]
@@ -148,7 +148,7 @@ impl Insn {
                 "couldn't encode {:?}: {:?}",
                 self.0
                     .iter()
-                    .map(|byte| format!("{:02x}", byte))
+                    .map(|byte| format!("{byte:02x}"))
                     .collect::<Vec<String>>()
                     .join(" "),
                 e

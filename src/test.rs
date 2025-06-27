@@ -28,11 +28,7 @@ impl Vals for bool {
     }
 
     fn error(self, other: bool) -> f64 {
-        if self == other {
-            1.0
-        } else {
-            0.0
-        }
+        if self == other { 1.0 } else { 0.0 }
     }
 }
 

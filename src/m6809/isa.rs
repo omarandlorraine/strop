@@ -312,31 +312,21 @@ mod test {
         let mut i = Insn::first();
         while i.next().is_ok() {
             let insndat = i.instruction_data();
-            println!("{:?}", i);
-            let disassembly = format!("{}", i);
+            println!("{i:?}");
+            let disassembly = format!("{i}");
             assert!(
                 !disassembly.contains("SET TBD"),
-                "The disassembly for {} ({:?}) contains the forbidden substring: SET TBD",
-                i,
-                i
+                "The disassembly for {i} ({i:?}) contains the forbidden substring: SET TBD"
             );
             assert!(
                 !disassembly.contains("ILLEGAL"),
-                "The disassembly for {} ({:?}) contains the forbidden substring: ILLEGAL",
-                i,
-                i
+                "The disassembly for {i} ({i:?}) contains the forbidden substring: ILLEGAL"
             );
             assert_ne!(
                 insndat.action, "unknown",
-                "{:?} is not a valid instruction, yet it is visited by the .increment() method",
-                i
+                "{i:?} is not a valid instruction, yet it is visited by the .increment() method"
             );
-            assert_eq!(
-                insndat.size,
-                i.encode().len(),
-                "{:?} has the wrong length",
-                i
-            );
+            assert_eq!(insndat.size, i.encode().len(), "{i:?} has the wrong length");
         }
     }
 }

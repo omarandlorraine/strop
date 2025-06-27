@@ -2,8 +2,8 @@
 
 pub mod decode;
 mod mutate;
-use crate::static_analysis::Fixup;
 use crate::StaticAnalysis;
+use crate::static_analysis::Fixup;
 
 /// Represents an ARMv4T machine code instruction.
 #[derive(Clone, Copy, Default, PartialOrd, PartialEq)]
@@ -146,7 +146,7 @@ impl crate::Encode<u32> for Insn {
 
 impl crate::Disassemble for Insn {
     fn dasm(&self) {
-        println!("\t{:?}", self);
+        println!("\t{self:?}");
     }
 }
 
@@ -157,7 +157,7 @@ mod test {
 
     fn emulator_knows_it(i9n: super::Insn) -> bool {
         use crate::Encode;
-        use armv4t_emu::{reg, Cpu, ExampleMem, Mode};
+        use armv4t_emu::{Cpu, ExampleMem, Mode, reg};
         let mut mem = ExampleMem::new_with_data(&i9n.encode());
         let mut cpu = Cpu::new();
         cpu.reg_set(Mode::User, reg::PC, 0x00);
@@ -207,11 +207,11 @@ mod test {
 
         while i.next().is_ok() {
             // check that the instruction can be disassembled
-            assert_eq!(format!("{:?}", i).len(), 95, "{:?}", i);
+            assert_eq!(format!("{i:?}").len(), 95, "{i:?}");
 
             // println!("{:?}", i);
 
-            assert!(!format!("{:?}", i).contains("illegal"), "{:?}", i);
+            assert!(!format!("{i:?}").contains("illegal"), "{i:?}");
 
             // check that the emulator can execute the instruction
             if !emulator_knows_it(i) {
@@ -219,11 +219,13 @@ mod test {
                 let mut end = i;
                 while !emulator_knows_it(i) {
                     end = i;
-                    println!("the emulator can't run {:?}", i);
+                    println!("the emulator can't run {i:?}");
                     i.next().unwrap();
                 }
                 println!("the range is {:?}..{:?} inclusive", beginning.0, end.0);
-                panic!("found a range of instructions visited by the .increment method that the emulator doesn't know");
+                panic!(
+                    "found a range of instructions visited by the .increment method that the emulator doesn't know"
+                );
             }
         }
     }

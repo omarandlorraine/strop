@@ -1,8 +1,8 @@
-use crate::test::Vals;
 use crate::Callable;
 use crate::Crossover;
 use crate::Mutate;
 use crate::TestSuite;
+use crate::test::Vals;
 
 use crate::genetic::ScoredCandidate;
 
@@ -26,11 +26,11 @@ pub struct Generate<
 }
 
 impl<
-        InputParameters: Vals,
-        ReturnValue: Vals,
-        T: Callable<InputParameters, ReturnValue>,
-        U: Callable<InputParameters, ReturnValue> + Mutate + Crossover + Clone + crate::Disassemble,
-    > Generate<InputParameters, ReturnValue, T, U>
+    InputParameters: Vals,
+    ReturnValue: Vals,
+    T: Callable<InputParameters, ReturnValue>,
+    U: Callable<InputParameters, ReturnValue> + Mutate + Crossover + Clone + crate::Disassemble,
+> Generate<InputParameters, ReturnValue, T, U>
 {
     /// Constructs a new `GeneticSearch`
     pub fn new(target_function: T) -> Self {
@@ -62,8 +62,8 @@ impl<
     }
 
     fn roulette_selection(&mut self) -> Vec<ScoredCandidate<InputParameters, ReturnValue, U>> {
-        use rand::rng;
         use rand::Rng;
+        use rand::rng;
 
         let mut next_generation = vec![];
 
