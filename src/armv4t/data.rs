@@ -77,7 +77,7 @@ impl crate::dataflow::DataFlow<Register> for Insn {
 
     fn writes(&self, reg: &Register) -> bool {
         use unarm::args::Argument;
-        let argl = self.decode().uses(&Default::default());
+        let argl = self.decode().defs(&Default::default());
         for arg in argl {
             match arg {
                 Argument::Reg(r) => {
