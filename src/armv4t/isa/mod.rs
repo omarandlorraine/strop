@@ -4,6 +4,7 @@ pub mod decode;
 mod mutate;
 use crate::static_analysis::Fixup;
 use crate::StaticAnalysis;
+use crate::{Step, StepError};
 
 /// Represents an ARMv4T machine code instruction.
 #[derive(Clone, Copy, Default, PartialOrd, PartialEq)]
@@ -84,7 +85,6 @@ impl Insn {
     pub fn fixup(&mut self) -> crate::StaticAnalysis<Self> {
         // TODO: PSR instructions shouldn't ever take PC or SP or LR as their argument
         use crate::static_analysis::Fixup;
-        use crate::Step;
         use unarm::arm::Opcode;
 
         // Don't generate any illegal instructions.
@@ -107,7 +107,7 @@ impl Insn {
     /// Increments the isntruction word by 1
     pub fn increment(&mut self) -> crate::IterationResult {
         if self.0 > 0xfffffffe {
-            Err(crate::StepError::End)
+            Err(StepError::End)
         } else {
             self.0 += 1;
             Ok(())
@@ -122,7 +122,6 @@ impl Insn {
     /// Skips to the "horrid nybble". ignores the bottom four bits, since for all instruyctions,
     /// decoding that is trivial. It's for the Horrid Nybble that things get messy.
     pub fn next_horrid_nybble(&mut self) -> crate::IterationResult {
-        use crate::Step;
         self.0 |= 0x0000_000f;
         self.next()
     }
@@ -131,7 +130,6 @@ impl Insn {
     /// offsets and things, in the hope of hitting on the next instruction. This method won't hit
     /// on the branch exchange instruction.
     pub fn next_opcode(&mut self) -> crate::IterationResult {
-        use crate::Step;
         self.0 |= 0x000f_ffff;
         self.next()
     }
@@ -145,13 +143,13 @@ impl Insn {
                 *self = Self::bx_lr();
                 Ok(())
             }
-            Ordering::Greater => Err(crate::StepError::End),
+            Ordering::Greater => Err(StepError::End),
             Ordering::Equal => unreachable!(),
         }
     }
 }
 
-impl crate::Step for Insn {
+impl Step for Insn {
     fn first() -> Self {
         Insn(0)
     }
@@ -177,7 +175,6 @@ impl crate::subroutine::ShouldReturn for Insn {
     fn allowed_in_subroutine(&self, offset: usize) -> crate::StaticAnalysis<Self> {
         use crate::armv4t::data::Register;
         use crate::dataflow::DataFlow;
-        use crate::Step;
         Fixup::check(
             !(self.reads(&Register::Sp)
                 || self.writes(&Register::Sp)
@@ -215,6 +212,7 @@ impl crate::Branch for Insn {}
 #[cfg(test)]
 mod test {
     use super::Insn;
+    use crate::Step;
 
     fn emulator_knows_it(i9n: super::Insn) -> bool {
         use crate::Encode;
@@ -246,8 +244,6 @@ mod test {
     #[test]
     fn should_return() {
         use crate::subroutine::ShouldReturn;
-
-        use crate::Step;
 
         // get the first instruction which decodes to `andeq r0, r0, r0` or whatever
         let mut i = super::Insn::first();
