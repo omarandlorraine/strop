@@ -280,7 +280,25 @@ mod test {
 
     #[test]
     fn regressions() {
-        check(&Insn(0x00001094));
+        // All these instructions have been found to have bugs in the past, here is the regression
+        // tests.
+        for i in vec![
+            0x00004000,
+            0x01a00410
+        ] {
+            assert!(Insn(i).fixup().is_err());
+        }
+    }
+
+    #[test]
+    fn regressions_unpredictable() {
+        // All these instructions should be unpredictable, and therefore the .fixup() method should
+        // change them.
+        for i in vec![
+            0x00001094
+        ] {
+            assert!(Insn(i).fixup().is_err());
+        }
     }
 
     #[test]
