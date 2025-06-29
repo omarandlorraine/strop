@@ -274,7 +274,11 @@ mod test {
         assert!(!format!("{:?}", i).contains("illegal"), "{:?}", i);
 
         if format!("{i}").contains("r4") {
-            assert!(i.reads(&Register::R4) || i.writes(&Register::R4), "{i:?} doesn't read or write R4. {:?}", i.decode().defs(&Default::default()));
+            assert!(
+                i.reads(&Register::R4) || i.writes(&Register::R4),
+                "{i:?} doesn't read or write R4. {:?}",
+                i.decode().defs(&Default::default())
+            );
         }
     }
 
@@ -282,10 +286,7 @@ mod test {
     fn regressions() {
         // All these instructions have been found to have bugs in the past, here is the regression
         // tests.
-        for i in vec![
-            0x00004000,
-            0x01a00410
-        ] {
+        for i in vec![0x00004000, 0x01a00410] {
             assert!(Insn(i).fixup().is_err());
         }
     }
@@ -294,9 +295,7 @@ mod test {
     fn regressions_unpredictable() {
         // All these instructions should be unpredictable, and therefore the .fixup() method should
         // change them.
-        for i in vec![
-            0x00001094
-        ] {
+        for i in vec![0x00001094] {
             assert!(Insn(i).fixup().is_err());
         }
     }
