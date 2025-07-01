@@ -3,9 +3,14 @@ use crate::Mutate;
 
 impl Mutate for Insn {
     fn random() -> Self {
-        let mut s = Self(rand::random());
-        s.fixup();
-        s
+        // rejection sampling. In the relatively unlikely event that the randomly generated
+        // instruction is wrong somehow, then just discard it! and try again.
+        loop {
+            let mut s = Self(rand::random());
+            if s.fixup().is_ok() {
+                return s;
+            }
+        }
     }
 
     fn mutate(&mut self) {
@@ -20,7 +25,7 @@ impl Mutate for Insn {
             self.0 = rand::random()
         }
 
-        while !self.fixup() {
+        while self.fixup().is_err() {
             self.0 = rand::random()
         }
     }

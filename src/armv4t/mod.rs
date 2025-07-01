@@ -1,5 +1,6 @@
 //! The `armv4t` module, the strop back-end for targeting the ARMv4T CPUs, including the ARM7TDMI.
 pub mod aapcs32;
+pub mod data;
 mod diss;
 mod emu;
 pub mod isa;
