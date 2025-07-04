@@ -23,6 +23,8 @@ pub mod armv4t;
 pub mod m6502;
 #[cfg(feature = "m6809")]
 pub mod m6809;
+#[cfg(feature = "m68k")]
+pub mod m68k;
 #[cfg(feature = "mips")]
 pub mod mips;
 #[cfg(feature = "z80")]
