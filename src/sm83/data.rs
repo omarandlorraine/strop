@@ -12516,3 +12516,22 @@ pub const CBPREFIXED: [Option<InstructionData>; 256] = [
         i: ReadWrite::N,
     }),
 ];
+
+#[cfg(test)]
+mod test {
+    use super::UNPREFIXED;
+    use super::CBPREFIXED;
+    #[test]
+    fn opcodes() {
+        for (opcode, idata) in UNPREFIXED.iter().enumerate() {
+            if let Some(idata) = idata {
+                assert_eq!(opcode as u8, idata.opcode);
+            }
+        }
+        for (opcode, idata) in CBPREFIXED.iter().enumerate() {
+            if let Some(idata) = idata {
+                assert_eq!(opcode as u8, idata.opcode);
+            }
+        }
+    }
+}
