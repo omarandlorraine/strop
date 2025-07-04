@@ -2,3 +2,6 @@
 //! Gameboy CPU)
 
 pub mod isa;
+mod data;
+
+pub(crate) use isa::{ReadWrite, InstructionData};
