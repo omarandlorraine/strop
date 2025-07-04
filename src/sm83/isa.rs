@@ -28,7 +28,7 @@ impl crate::Encode<u8> for Insn {
     fn len(&self) -> usize {
         self.decode().as_ref().map(|data| data.bytes).unwrap() as usize
     }
-    
+
     fn encode(&self) -> Vec<u8> {
         let mut encoding = self.0.to_vec();
         encoding.truncate(self.len());

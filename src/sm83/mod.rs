@@ -1,7 +1,7 @@
 //! A back-end supporting the SM83 (which is also known by other names, including LR35902, or the
 //! Gameboy CPU)
 
-pub mod isa;
 mod data;
+pub mod isa;
 
-pub(crate) use isa::{ReadWrite, InstructionData};
+pub(crate) use isa::{InstructionData, ReadWrite};
