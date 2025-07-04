@@ -1,18 +1,20 @@
 //! A module for the representation of SM83 machine instructions.
 
+use crate::{IterationResult, StepError};
+
 /// Represents a SM83 machine instruction
 #[derive(Clone, Copy, PartialOrd, PartialEq, Default)]
 pub struct Insn([u8; 3]);
 
-impl crate::Iterable for Insn {
+impl crate::Step for Insn {
     fn first() -> Self {
         Self([0, 0, 0])
     }
 
-    fn step(&mut self) -> bool {
+    fn next(&mut self) -> IterationResult {
         use crate::Encode;
         if self.0[0] == 0xff {
-            false
+            Err(StepError::End)
         } else {
             self.incr_at_offset(self.len() - 1);
             self.fixup();
