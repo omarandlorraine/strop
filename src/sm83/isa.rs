@@ -75,14 +75,9 @@ pub(crate) enum ReadWrite {
     R,
     ///Write,
     W,
-    ///Dereference,
-    D,
-    ///Dereference with post-increment,
-    Dp,
-    ///Dereference with pre-decrement,
-    Dm,
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub(crate) struct InstructionData {
     pub mnemonic: &'static str,
