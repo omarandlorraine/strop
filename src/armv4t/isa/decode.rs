@@ -25,7 +25,7 @@ pub enum Register {
 impl crate::armv4t::Insn {
     /// Returns list of registers written to or read by the instruction
     pub fn uses(&self) -> Vec<Register> {
-        let dasm = format!("{}", self);
+        let dasm = format!("{self}");
 
         [
             (Register::R1, "r1"),

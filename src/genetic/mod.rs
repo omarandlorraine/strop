@@ -1,9 +1,9 @@
 mod generate;
 pub use generate::Generate;
 
-use crate::test::Vals;
 use crate::Callable;
 use crate::TestSuite;
+use crate::test::Vals;
 
 #[derive(Clone, Debug)]
 struct ScoredCandidate<InputParameters, ReturnValue, T: Callable<InputParameters, ReturnValue>> {

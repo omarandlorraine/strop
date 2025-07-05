@@ -1,11 +1,11 @@
 //! Implements searches for functions complying with the AAPCS32 calling convention, as used by
 //! modern (EABI) linux systems and others.
 
-use crate::armv4t::Emulator;
-use crate::armv4t::Insn;
 use crate::BruteforceSearch;
 use crate::Callable;
 use crate::StaticAnalysis;
+use crate::armv4t::Emulator;
+use crate::armv4t::Insn;
 
 const MODE: armv4t_emu::Mode = armv4t_emu::Mode::User;
 

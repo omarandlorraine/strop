@@ -1,7 +1,7 @@
-use crate::test::Vals;
 use crate::BruteforceSearch;
 use crate::Callable;
 use crate::TestSuite;
+use crate::test::Vals;
 
 /// Performs a brute force search over a given search space `Searchable`
 #[derive(Debug, Clone)]
@@ -42,12 +42,12 @@ pub trait ToBruteForce<
 }
 
 impl<
-        Insn,
-        T: Callable<InputParameters, ReturnValue> + BruteforceSearch<Insn> + Clone,
-        InputParameters,
-        ReturnValue: Clone + Vals,
-        TargetFunction: Callable<InputParameters, ReturnValue>,
-    > ToBruteForce<Insn, InputParameters, ReturnValue, TargetFunction> for T
+    Insn,
+    T: Callable<InputParameters, ReturnValue> + BruteforceSearch<Insn> + Clone,
+    InputParameters,
+    ReturnValue: Clone + Vals,
+    TargetFunction: Callable<InputParameters, ReturnValue>,
+> ToBruteForce<Insn, InputParameters, ReturnValue, TargetFunction> for T
 where
     Self: Callable<InputParameters, ReturnValue>,
     InputParameters: Vals,
@@ -61,12 +61,12 @@ where
 }
 
 impl<
-        Insn,
-        InputParameters: Copy + Vals,
-        ReturnValue: Vals + std::cmp::PartialEq + Clone,
-        TargetFunction: Callable<InputParameters, ReturnValue>,
-        Searchable: Callable<InputParameters, ReturnValue> + crate::BruteforceSearch<Insn> + Clone,
-    > BruteForce<Insn, InputParameters, ReturnValue, TargetFunction, Searchable>
+    Insn,
+    InputParameters: Copy + Vals,
+    ReturnValue: Vals + std::cmp::PartialEq + Clone,
+    TargetFunction: Callable<InputParameters, ReturnValue>,
+    Searchable: Callable<InputParameters, ReturnValue> + crate::BruteforceSearch<Insn> + Clone,
+> BruteForce<Insn, InputParameters, ReturnValue, TargetFunction, Searchable>
 {
     /// Constructs a new `BruteForce`
     pub fn new(target_function: TargetFunction, initial_candidate: Searchable) -> Self {

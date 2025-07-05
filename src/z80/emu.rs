@@ -1,5 +1,5 @@
-use crate::z80::Insn;
 use crate::Sequence;
+use crate::z80::Insn;
 use crate::{RunError, RunResult};
 use iz80::*;
 
