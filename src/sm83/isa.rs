@@ -26,7 +26,7 @@ impl crate::Step for Insn {
 
 impl crate::Encode<u8> for Insn {
     fn len(&self) -> usize {
-        self.decode().as_ref().map(|data| data.bytes).unwrap() as usize
+        self.decode().as_ref().map(|data| data.bytes).unwrap()
     }
 
     fn encode(&self) -> Vec<u8> {
@@ -60,7 +60,7 @@ impl Insn {
         if self.0[0] == 0xcb {
             return &crate::sm83::data::CBPREFIXED[self.0[1] as usize];
         }
-        return &crate::sm83::data::UNPREFIXED[self.0[0] as usize];
+        &crate::sm83::data::UNPREFIXED[self.0[0] as usize]
     }
 }
 
