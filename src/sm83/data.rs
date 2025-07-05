@@ -12519,8 +12519,8 @@ pub const CBPREFIXED: [Option<InstructionData>; 256] = [
 
 #[cfg(test)]
 mod test {
-    use super::UNPREFIXED;
     use super::CBPREFIXED;
+    use super::UNPREFIXED;
     #[test]
     fn opcodes() {
         for (opcode, idata) in UNPREFIXED.iter().enumerate() {
