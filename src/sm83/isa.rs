@@ -1,6 +1,7 @@
 //! A module for the representation of SM83 machine instructions.
 use crate::static_analysis::Fixup;
 use crate::x80::data::InstructionData;
+use crate::x80::X80;
 use crate::{IterationResult, StepError};
 
 /// Represents a SM83 machine instruction
@@ -9,11 +10,9 @@ pub struct Insn([u8; 3]);
 
 impl std::fmt::Display for Insn {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{} ", self.decode().as_ref().unwrap().mnemonic)?;
+        write!(f, "{} ", self.decode().mnemonic)?;
         for i in self
             .decode()
-            .as_ref()
-            .unwrap()
             .operands
             .iter()
             .filter(|i| !i.is_empty())
@@ -27,7 +26,7 @@ impl std::fmt::Display for Insn {
 impl crate::Disassemble for Insn {
     fn dasm(&self) {
         let mut operands = String::new();
-        let data = self.decode().as_ref().unwrap();
+        let data = self.decode();
         for op in data.operands.iter().filter(|op| !op.is_empty()) {
             if !operands.is_empty() {
                 operands.push_str(", ");
@@ -51,8 +50,15 @@ impl crate::Disassemble for Insn {
     }
 }
 
-impl crate::x80::X80 for Insn {
+impl X80 for Insn {
     type Emulator = crate::sm83::emu::Emu;
+
+    fn decode(&self) -> &'static InstructionData {
+        if self.0[0] == 0xcb {
+            return &crate::sm83::data::CBPREFIXED[self.0[1] as usize].as_ref().unwrap();
+        }
+    &crate::sm83::data::UNPREFIXED[self.0[0] as usize].as_ref().unwrap()
+    }
 }
 
 impl crate::ShouldReturn for Insn {
@@ -64,7 +70,7 @@ impl crate::ShouldReturn for Insn {
 impl std::fmt::Debug for Insn {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{self}     \t;")?;
-        for i in 0..self.decode().as_ref().unwrap().bytes {
+        for i in 0..self.decode().bytes {
             write!(f, "{:#02x}", self.0[i])?;
         }
         Ok(())
@@ -83,8 +89,8 @@ impl crate::Step for Insn {
             Err(StepError::End)
         } else {
             self.incr_at_offset(len - 1);
-            while self.decode().is_none() {
-                // If there's no instruction data for this instruction then the precisely, the
+            while crate::sm83::data::UNPREFIXED[self.0[0] as usize].is_none() && self.0[0] != 0xcb {
+                // If there's no instruction data for this instruction (or more precisely, the
                 // first byte of the instruction) is invalid. this is because there are no invalid
                 // but prefixed instructions
                 self.0[0] += 1;
@@ -98,7 +104,7 @@ impl crate::Step for Insn {
 
 impl crate::Encode<u8> for Insn {
     fn len(&self) -> usize {
-        self.decode().as_ref().map(|data| data.bytes).unwrap()
+        self.decode().bytes
     }
 
     fn encode(&self) -> Vec<u8> {
@@ -116,13 +122,6 @@ impl Insn {
             self.0[offset] = 0;
             self.incr_at_offset(offset - 1)
         }
-    }
-
-    fn decode(&self) -> &'static Option<InstructionData> {
-        if self.0[0] == 0xcb {
-            return &crate::sm83::data::CBPREFIXED[self.0[1] as usize];
-        }
-        &crate::sm83::data::UNPREFIXED[self.0[0] as usize]
     }
 
     fn next_opcode(&mut self) -> IterationResult {

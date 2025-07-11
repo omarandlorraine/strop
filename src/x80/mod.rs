@@ -81,4 +81,7 @@ pub trait EmuInterface {
 pub trait X80: Step + ShouldReturn + Clone {
     /// The type of emulator used for this instruction set
     type Emulator: EmuInterface;
+
+    /// returns a reference to an InstructionData
+    fn decode(&self) -> &'static data::InstructionData;
 }
