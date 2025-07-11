@@ -34,3 +34,4 @@ Strop currently has the following back-ends:
  * **mips**, which targets the MIPS I architecture
     * Supports the GTE coprocessor found in a Playstation 1, thanks to the
       [trapezoid-core](https://github.com/Amjad50/Trapezoid) dependency.
+ * **sm83**, which targets the SM83, also known as the Gameboy CPU
