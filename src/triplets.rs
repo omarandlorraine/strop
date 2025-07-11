@@ -23,6 +23,8 @@ pub enum Triplet {
     MipsUnknownLinuxMusl,
     #[cfg(feature = "mips")]
     MipsUnknownLinuxUclibc,
+    #[cfg(feature = "armv4t")]
+    Armv4tUnknownLinuxGnueabi,
 }
 
 impl Triplet {
@@ -35,6 +37,8 @@ impl Triplet {
             Self::MipsUnknownLinuxMusl,
             #[cfg(feature = "mips")]
             Self::MipsUnknownLinuxUclibc,
+            #[cfg(feature = "armv4t")]
+            Self::Armv4tUnknownLinuxGnueabi,
         ]
     }
 
@@ -59,6 +63,7 @@ impl std::fmt::Display for Triplet {
             Self::MipsUnknownLinuxGnu => write!(f, "mips-unknown-linux-gnu"),
             Self::MipsUnknownLinuxMusl => write!(f, "mips-unknown-linux-musl"),
             Self::MipsUnknownLinuxUclibc => write!(f, "mips-unknown-linux-uclibc"),
+            Self::Armv4tUnknownLinuxGnueabi => write!(f, "armv4t-unknown-linux-gnueabi"),
         }
     }
 }
