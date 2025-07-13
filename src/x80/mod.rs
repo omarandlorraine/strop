@@ -84,4 +84,7 @@ pub trait X80: Step + ShouldReturn + Clone {
 
     /// returns a reference to an InstructionData
     fn decode(&self) -> &'static data::InstructionData;
+
+    /// advances to the next opcode;
+    fn next_opcode(&mut self) -> crate::IterationResult;
 }

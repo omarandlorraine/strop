@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+#!/usr/bin/python3
 
 import sys
 import json
@@ -11,7 +11,7 @@ def parse_operand(operand):
     name = operand['name'].lower()
 
     prefix = '-' if operand.get('decrement') else ''
-    postfix = '-' if operand.get('increment') else ''
+    postfix = '+' if operand.get('increment') else ''
 
     circumfix = ('', '') if operand['immediate'] else ('(', ')')
 

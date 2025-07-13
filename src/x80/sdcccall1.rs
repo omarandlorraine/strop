@@ -11,6 +11,7 @@ use crate::test::Vals;
 
 use crate::x80::EmuInterface;
 use crate::x80::X80;
+use crate::x80::data::Datum;
 
 // TODO: Implement ParameterList and ReturnValue for more types. The calling convention supports
 // signed types, 32-bit types, and perhaps others which are not supported (yet)
@@ -20,17 +21,33 @@ use crate::x80::X80;
 pub trait ParameterList: Copy + Vals {
     /// Put the value(s) into the expected location(s) in the emulator.
     fn put<E: EmuInterface>(&self, emu: &mut E);
+
+    /// Performs dataflow analysis on the sequence
+    fn analyze<Insn: X80>(seq: &Sequence<Insn>) -> crate::StaticAnalysis<Insn>;
 }
 
 impl ParameterList for u8 {
     fn put<E: EmuInterface>(&self, emu: &mut E) {
         emu.set_a(*self);
     }
+
+    fn analyze<Insn: X80>(seq: &Sequence<Insn>) -> crate::StaticAnalysis<Insn> {
+        crate::dataflow::expect_read(seq, &Datum::A)?;
+        crate::dataflow::uninitialized(seq, &Datum::B)?;
+        crate::dataflow::uninitialized(seq, &Datum::C)
+    }
 }
 
 impl ParameterList for u16 {
     fn put<E: EmuInterface>(&self, emu: &mut E) {
         emu.set_hl(*self);
+    }
+
+    fn analyze<Insn: X80>(seq: &Sequence<Insn>) -> crate::StaticAnalysis<Insn> {
+        crate::dataflow::expect_read(seq, &Datum::H)?;
+        crate::dataflow::expect_read(seq, &Datum::L)?;
+        crate::dataflow::uninitialized(seq, &Datum::B)?;
+        crate::dataflow::uninitialized(seq, &Datum::C)
     }
 }
 
@@ -40,11 +57,19 @@ impl ParameterList for u16 {
 pub trait ReturnValue: Copy + Vals + PartialEq {
     /// Get the value from the emulator
     fn get<E: EmuInterface>(emu: &E) -> Self;
+
+    /// Performs dataflow analysis on the sequence
+    fn analyze<Insn: X80>(seq: &Sequence<Insn>) -> crate::StaticAnalysis<Insn>;
 }
 
 impl ReturnValue for u8 {
     fn get<E: EmuInterface>(emu: &E) -> u8 {
         emu.get_a()
+    }
+
+    fn analyze<Insn: X80>(seq: &Sequence<Insn>) -> crate::StaticAnalysis<Insn> {
+        crate::dataflow::expect_write(seq, &Datum::A)?;
+        crate::dataflow::dont_expect_write(seq, &Datum::B)
     }
 }
 
@@ -52,17 +77,38 @@ impl ReturnValue for i8 {
     fn get<E: EmuInterface>(emu: &E) -> i8 {
         emu.get_a() as i8
     }
+
+    fn analyze<Insn: X80>(seq: &Sequence<Insn>) -> crate::StaticAnalysis<Insn> {
+        crate::dataflow::expect_write(seq, &Datum::A)?;
+        crate::dataflow::dont_expect_write(seq, &Datum::B)
+    }
 }
 
 impl ReturnValue for u16 {
     fn get<E: EmuInterface>(emu: &E) -> u16 {
         emu.get_hl()
     }
+
+    fn analyze<Insn: X80>(seq: &Sequence<Insn>) -> crate::StaticAnalysis<Insn> {
+        crate::dataflow::dont_expect_write(seq, &Datum::A)?;
+        crate::dataflow::dont_expect_write(seq, &Datum::B)?;
+        crate::dataflow::dont_expect_write(seq, &Datum::D)?;
+        crate::dataflow::expect_write(seq, &Datum::H)?;
+        crate::dataflow::expect_write(seq, &Datum::L)
+    }
 }
 
 impl ReturnValue for i16 {
     fn get<E: EmuInterface>(emu: &E) -> i16 {
         emu.get_hl() as i16
+    }
+
+    fn analyze<Insn: X80>(seq: &Sequence<Insn>) -> crate::StaticAnalysis<Insn> {
+        crate::dataflow::dont_expect_write(seq, &Datum::A)?;
+        crate::dataflow::dont_expect_write(seq, &Datum::B)?;
+        crate::dataflow::dont_expect_write(seq, &Datum::D)?;
+        crate::dataflow::expect_write(seq, &Datum::H)?;
+        crate::dataflow::expect_write(seq, &Datum::L)
     }
 }
 
@@ -121,9 +167,20 @@ impl<Insn: X80 + Clone, Params, RetVal> crate::Step for SdccCall1<Insn, Params, 
     }
 }
 
-impl<Insn: X80, Params, RetVal> BruteforceSearch<Insn> for SdccCall1<Insn, Params, RetVal> {
+impl<Insn: X80, Params: ParameterList, RetVal: ReturnValue> BruteforceSearch<Insn>
+    for SdccCall1<Insn, Params, RetVal>
+{
     fn analyze_this(&self) -> StaticAnalysis<Insn> {
+        Params::analyze(&self.seq)?;
+        RetVal::analyze(&self.seq)?;
         crate::subroutine::make_return(&self.seq)?;
+        crate::dataflow::uninitialized(&self.seq, &Datum::Zero)?;
+        crate::dataflow::uninitialized(&self.seq, &Datum::Negative)?;
+        crate::dataflow::uninitialized(&self.seq, &Datum::HalfCarry)?;
+        crate::dataflow::uninitialized(&self.seq, &Datum::Carry)?;
+        crate::dataflow::leave_alone(&self.seq, &Datum::R)?;
+        crate::dataflow::leave_alone(&self.seq, &Datum::I)?;
+        crate::dataflow::leave_alone(&self.seq, &Datum::Sp)?;
         Ok(())
     }
     fn inner(&mut self) -> &mut dyn BruteforceSearch<Insn> {

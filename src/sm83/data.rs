@@ -909,7 +909,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["(hl-)", "a", ""],
+        operands: ["(hl+)", "a", ""],
     }),
     Some(InstructionData {
         // INC HL
@@ -1117,7 +1117,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "(hl-)", ""],
+        operands: ["a", "(hl+)", ""],
     }),
     Some(InstructionData {
         // DEC HL
@@ -6223,7 +6223,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::R,
         i: ReadWrite::N,
-        operands: ["hl", "sp-", "e8"],
+        operands: ["hl", "sp+", "e8"],
     }),
     Some(InstructionData {
         // LD SP HL

@@ -1,7 +1,7 @@
 //! A module for the representation of SM83 machine instructions.
 use crate::static_analysis::Fixup;
-use crate::x80::data::InstructionData;
 use crate::x80::X80;
+use crate::x80::data::InstructionData;
 use crate::{IterationResult, StepError};
 
 /// Represents a SM83 machine instruction
@@ -11,12 +11,7 @@ pub struct Insn([u8; 3]);
 impl std::fmt::Display for Insn {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{} ", self.decode().mnemonic)?;
-        for i in self
-            .decode()
-            .operands
-            .iter()
-            .filter(|i| !i.is_empty())
-        {
+        for i in self.decode().operands.iter().filter(|i| !i.is_empty()) {
             write!(f, "{i} ")?;
         }
         Ok(())
@@ -36,6 +31,8 @@ impl crate::Disassemble for Insn {
                     "{:x}h",
                     u16::from_le_bytes([self.0[1], self.0[2]])
                 ));
+            } else if *op == "n8" {
+                operands.push_str(&format!("{:x}h", self.0[1]));
             } else if *op == "(a16)" {
                 operands.push_str(&format!(
                     "({:x}h)",
@@ -55,9 +52,34 @@ impl X80 for Insn {
 
     fn decode(&self) -> &'static InstructionData {
         if self.0[0] == 0xcb {
-            return &crate::sm83::data::CBPREFIXED[self.0[1] as usize].as_ref().unwrap();
+            return crate::sm83::data::CBPREFIXED[self.0[1] as usize]
+                .as_ref()
+                .unwrap();
         }
-    &crate::sm83::data::UNPREFIXED[self.0[0] as usize].as_ref().unwrap()
+        crate::sm83::data::UNPREFIXED[self.0[0] as usize]
+            .as_ref()
+            .unwrap_or_else(|| panic!("no such opcode for {:02x}", self.0[0]))
+    }
+
+    fn next_opcode(&mut self) -> IterationResult {
+        if self.0[0] == 0xff {
+            Err(crate::StepError::End)
+        } else if self.0[0] == 0xcb {
+            if self.0[1] == 0xff {
+                self.0[0] += 1;
+                self.0[1] = 0;
+            } else {
+                self.0[1] += 1;
+            }
+            self.0[2] = 0;
+            Ok(())
+        } else {
+            self.0[0] += 1;
+            while crate::sm83::data::UNPREFIXED[self.0[0] as usize].is_none() {
+                self.0[0] += 1;
+            }
+            Ok(())
+        }
     }
 }
 
@@ -97,6 +119,9 @@ impl crate::Step for Insn {
                 self.0[1] = 0;
                 self.0[2] = 0;
             }
+            for offs in self.decode().bytes..3 {
+                self.0[offs] = 0;
+            }
             Ok(())
         }
     }
@@ -119,17 +144,7 @@ impl Insn {
         if let Some(nb) = self.0[offset].checked_add(1) {
             self.0[offset] = nb;
         } else {
-            self.0[offset] = 0;
             self.incr_at_offset(offset - 1)
-        }
-    }
-
-    fn next_opcode(&mut self) -> IterationResult {
-        if self.0[0] == 0xff {
-            Err(crate::StepError::End)
-        } else {
-            self.0[0] += 1;
-            Ok(())
         }
     }
 }
@@ -140,10 +155,11 @@ mod test {
     use crate::Step;
 
     fn instruction_asserts(i: &Insn) {
-        let arr = i.0;
-        assert!(i.decode().is_some(), "check_instruction(Insn({arr:?}))");
-        format!("{i}");
-        format!("{i:?}");
+        use crate::x80::X80;
+        // these method calls can panic, let's make sure they don't
+        i.decode();
+        let _ = format!("{i}");
+        let _ = format!("{i:?}");
     }
 
     #[test]
