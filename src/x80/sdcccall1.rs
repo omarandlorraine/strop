@@ -92,7 +92,9 @@ impl ReturnValue for u16 {
     fn analyze<Insn: X80>(seq: &Sequence<Insn>) -> crate::StaticAnalysis<Insn> {
         crate::dataflow::dont_expect_write(seq, &Datum::A)?;
         crate::dataflow::dont_expect_write(seq, &Datum::B)?;
+        crate::dataflow::dont_expect_write(seq, &Datum::C)?;
         crate::dataflow::dont_expect_write(seq, &Datum::D)?;
+        crate::dataflow::dont_expect_write(seq, &Datum::E)?;
         crate::dataflow::expect_write(seq, &Datum::H)?;
         crate::dataflow::expect_write(seq, &Datum::L)
     }
@@ -106,7 +108,9 @@ impl ReturnValue for i16 {
     fn analyze<Insn: X80>(seq: &Sequence<Insn>) -> crate::StaticAnalysis<Insn> {
         crate::dataflow::dont_expect_write(seq, &Datum::A)?;
         crate::dataflow::dont_expect_write(seq, &Datum::B)?;
+        crate::dataflow::dont_expect_write(seq, &Datum::C)?;
         crate::dataflow::dont_expect_write(seq, &Datum::D)?;
+        crate::dataflow::dont_expect_write(seq, &Datum::E)?;
         crate::dataflow::expect_write(seq, &Datum::H)?;
         crate::dataflow::expect_write(seq, &Datum::L)
     }
