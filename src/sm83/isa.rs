@@ -93,7 +93,7 @@ impl std::fmt::Debug for Insn {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{self}     \t;")?;
         for i in 0..self.decode().bytes {
-            write!(f, "{:#02x}", self.0[i])?;
+            write!(f, " {:02x}", self.0[i])?;
         }
         Ok(())
     }
@@ -119,9 +119,6 @@ impl crate::Step for Insn {
                 self.0[1] = 0;
                 self.0[2] = 0;
             }
-            for offs in self.decode().bytes..3 {
-                self.0[offs] = 0;
-            }
             Ok(())
         }
     }
@@ -144,6 +141,7 @@ impl Insn {
         if let Some(nb) = self.0[offset].checked_add(1) {
             self.0[offset] = nb;
         } else {
+            self.0[offset] = 0;
             self.incr_at_offset(offset - 1)
         }
     }
@@ -156,10 +154,58 @@ mod test {
 
     fn instruction_asserts(i: &Insn) {
         use crate::x80::X80;
+        use crate::x80::data::ReadWrite;
         // these method calls can panic, let's make sure they don't
-        i.decode();
+        let data = i.decode();
         let _ = format!("{i}");
         let _ = format!("{i:?}");
+
+        if data.operands.contains(&"(hl)") {
+            if !data.operands.contains(&"l") {
+                assert_eq!(data.h, ReadWrite::R, "{i:?} doesn't read h");
+                assert_eq!(data.l, ReadWrite::R, "{i:?} doesn't read l");
+            }
+        }
+
+        if !["jr", "jp", "call", "ret"].contains(&data.mnemonic) {
+            if data.operands.contains(&"c") {
+                assert_ne!(data.c, ReadWrite::N, "{i:?} doesn't touch c");
+            }
+        }
+
+        if ["sbc", "sub", "adc", "add", "and", "xor", "or"].contains(&data.mnemonic)
+            && data.operands[0] == "a"
+        {
+            assert_eq!(data.a, ReadWrite::Rmw, "{i:?} doesn't rmw a");
+        }
+
+        if ["res", "set"].contains(&data.mnemonic) {
+            if !data.operands.contains(&"(hl)") {
+                assert_eq!(
+                    [data.a, data.b, data.c, data.d, data.e, data.h, data.l]
+                        .iter()
+                        .filter(|d| **d == ReadWrite::Rmw)
+                        .count(),
+                    1,
+                    "{i:?} doesn't rmw anything"
+                );
+            }
+        }
+
+        if ["cp"].contains(&data.mnemonic) {
+            assert_eq!(data.a, ReadWrite::R, "{i:?} doesn't read a");
+        }
+
+        if data.mnemonic == "push" {
+            assert!(
+                [data.a, data.b, data.c, data.d, data.e, data.h, data.l]
+                    .iter()
+                    .find(|d| d.writes())
+                    .is_none(),
+                "{i:?} writes to its operand"
+            );
+        }
+        // check "push" doesn't write to any regs
     }
 
     #[test]

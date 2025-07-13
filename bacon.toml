@@ -33,3 +33,8 @@ command = [
 command = [
 "cargo", "test", "--", "mips::isa", "--include-ignored", "--nocapture"
 ]
+
+[jobs.sm83_isa]
+command = [
+"cargo", "test", "--", "sm83::isa", "--include-ignored", "--nocapture"
+]

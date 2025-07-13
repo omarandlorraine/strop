@@ -1,6 +1,6 @@
 #![allow(missing_docs)]
 
-#[derive(Clone, Copy, Default, Debug)]
+#[derive(Clone, Copy, Default, Debug, PartialEq)]
 pub enum ReadWrite {
     /// Leaves the datum alone
     #[default]
@@ -14,10 +14,10 @@ pub enum ReadWrite {
 }
 
 impl ReadWrite {
-    fn reads(&self) -> bool {
+    pub fn reads(&self) -> bool {
         matches!(self, ReadWrite::R | ReadWrite::Rmw)
     }
-    fn writes(&self) -> bool {
+    pub fn writes(&self) -> bool {
         matches!(self, ReadWrite::W | ReadWrite::Rmw)
     }
 }
