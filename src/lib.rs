@@ -25,6 +25,10 @@ pub mod m6502;
 pub mod m6809;
 #[cfg(feature = "mips")]
 pub mod mips;
+#[cfg(feature = "sm83")]
+pub mod sm83;
+#[cfg(any(feature = "sm83", feature = "z80"))]
+pub mod x80;
 #[cfg(feature = "z80")]
 pub mod z80;
 
