@@ -17,6 +17,8 @@
 mod static_analysis;
 pub use static_analysis::StaticAnalysis;
 
+pub mod triplets;
+
 #[cfg(feature = "armv4t")]
 pub mod armv4t;
 #[cfg(feature = "m6502")]
