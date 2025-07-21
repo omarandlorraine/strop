@@ -29,7 +29,6 @@ fn canonical_immediate(encoding: u32) -> bool {
 
 use crate::static_analysis::Fixup;
 
-
 /// Represents an ARMv4T machine code instruction.
 #[derive(Clone, Copy, Default, PartialOrd, PartialEq)]
 pub struct Insn(pub(crate) u32);
@@ -113,7 +112,16 @@ impl Insn {
 
         // Don't bother with synchronisation primitives
         Fixup::check(
-            !matches!(self.decode().op, Opcode::Strex | Opcode::Swp | Opcode::Ldrex | Opcode::Strexd | Opcode::Ldrexd | Opcode::Ldrexb | Opcode::Ldrexh),
+            !matches!(
+                self.decode().op,
+                Opcode::Strex
+                    | Opcode::Swp
+                    | Opcode::Ldrex
+                    | Opcode::Strexd
+                    | Opcode::Ldrexd
+                    | Opcode::Ldrexb
+                    | Opcode::Ldrexh
+            ),
             "UnsupportedInstruction",
             Self::increment,
             0,
@@ -163,7 +171,17 @@ impl Insn {
 
         // coprocessors are not supported, skip these instructions
         Fixup::check(
-            !matches!(self.decode().op, Opcode::Stc | Opcode::Stc2 |Opcode::Mrrc |Opcode::Mrc | Opcode::Ldc | Opcode::Mcrr | Opcode::Cdp |Opcode::Mcr),
+            !matches!(
+                self.decode().op,
+                Opcode::Stc
+                    | Opcode::Stc2
+                    | Opcode::Mrrc
+                    | Opcode::Mrc
+                    | Opcode::Ldc
+                    | Opcode::Mcrr
+                    | Opcode::Cdp
+                    | Opcode::Mcr
+            ),
             "UnsupportedInstruction",
             Self::increment,
             0,
