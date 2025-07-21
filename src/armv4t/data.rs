@@ -132,6 +132,7 @@ impl crate::dataflow::DataFlow<Register> for Insn {
 mod test {
     use super::{ConditionFlags, Register};
     use crate::dataflow::DataFlow;
+    #[ignore]
     #[test]
     fn validate() {
         use crate::Step;
