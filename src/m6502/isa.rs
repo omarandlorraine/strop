@@ -1,7 +1,7 @@
-use crate::static_analysis::Fixup;
 use crate::IterationResult;
 use crate::StaticAnalysis;
 use crate::StepError;
+use crate::static_analysis::Fixup;
 /// Represents a 6502 machine instruction, compatible with some 6502 variant.
 #[derive(Copy, Clone, Default, PartialOrd, PartialEq)]
 pub struct Insn<V: mos6502::Variant>([u8; 3], std::marker::PhantomData<V>);
@@ -241,13 +241,13 @@ mod test {
         use mos6502::instruction::Cmos6502;
 
         let mut i = Insn::<Cmos6502>::first();
-        println!("{} ; {:?}", i, i);
+        println!("{i} ; {i:?}");
         assert!(i.next().is_ok());
-        println!("{} ; {:?}", i, i);
+        println!("{i} ; {i:?}");
         assert!(i.next().is_ok());
-        println!("{} ; {:?}", i, i);
+        println!("{i} ; {i:?}");
         assert!(i.next().is_ok());
-        println!("{} ; {:?}", i, i);
+        println!("{i} ; {i:?}");
         assert!(i.next().is_ok());
     }
 

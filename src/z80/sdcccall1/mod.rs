@@ -1,11 +1,11 @@
-use crate::test::Vals;
-use crate::z80::Emulator;
-use crate::z80::Insn;
 use crate::BruteForce;
 use crate::BruteforceSearch;
 use crate::Callable;
 use crate::Sequence;
 use crate::StaticAnalysis;
+use crate::test::Vals;
+use crate::z80::Emulator;
+use crate::z80::Insn;
 
 pub trait ParameterList: Copy + Vals {
     fn put(&self, emu: &mut Emulator);

@@ -1,5 +1,5 @@
-use crate::m6502::Insn;
 use crate::Sequence;
+use crate::m6502::Insn;
 use mos6502::cpu::CPU;
 use mos6502::memory::Memory;
 

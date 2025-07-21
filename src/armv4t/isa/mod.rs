@@ -2,8 +2,8 @@
 
 pub mod decode;
 mod mutate;
-use crate::static_analysis::Fixup;
 use crate::StaticAnalysis;
+
 use crate::{Step, StepError};
 
 /// Checks whether an immediate value is encoded in the canonical way.
@@ -26,6 +26,9 @@ fn canonical_immediate(encoding: u32) -> bool {
 
     true
 }
+
+use crate::static_analysis::Fixup;
+
 
 /// Represents an ARMv4T machine code instruction.
 #[derive(Clone, Copy, Default, PartialOrd, PartialEq)]
@@ -384,7 +387,7 @@ impl crate::Encode<u32> for Insn {
 
 impl crate::Disassemble for Insn {
     fn dasm(&self) {
-        println!("\t{:?}", self);
+        println!("\t{self:?}");
     }
 }
 
@@ -397,7 +400,7 @@ mod test {
 
     fn emulator_knows_it(i9n: super::Insn) -> bool {
         use crate::Encode;
-        use armv4t_emu::{reg, Cpu, ExampleMem, Mode};
+        use armv4t_emu::{Cpu, ExampleMem, Mode, reg};
         let mut mem = ExampleMem::new_with_data(&i9n.encode());
         let mut cpu = Cpu::new();
         cpu.reg_set(Mode::User, reg::PC, 0x00);
@@ -506,8 +509,6 @@ mod test {
                 }
             }
             let mut j = i;
-
-            println!("{i:?}");
 
             while j.next_horrid_nybble().is_ok() {
                 assert_ne!(format!("{i}"), format!("{j}"), "\n{i:?}\n{j:?}");

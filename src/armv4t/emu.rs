@@ -1,6 +1,6 @@
-use crate::armv4t::Insn;
 use crate::RunError;
 use crate::Sequence;
+use crate::armv4t::Insn;
 use armv4t_emu::{Cpu, ExampleMem};
 
 /// A basic emulator
@@ -26,8 +26,8 @@ impl Emulator {
     pub fn call_subroutine(&mut self, subroutine: &Sequence<Insn>) -> crate::RunResult<()> {
         // TODO: check the thing ends in a `bx $lr` instruction
         use crate::Encode;
-        use armv4t_emu::reg;
         use armv4t_emu::Memory;
+        use armv4t_emu::reg;
         const RETURN_ADDRESS: u32 = 0x5678;
         const BOTTOM_OF_STACK: u32 = 0x1000;
         let mode = self.cpu.mode();

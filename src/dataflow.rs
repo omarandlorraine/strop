@@ -1,9 +1,9 @@
 //! This module contains miscellaneous conveniences for performing dataflow analysis on code
 //! sequences.
 
-use crate::static_analysis::Fixup;
 use crate::Sequence;
 use crate::StaticAnalysis;
+use crate::static_analysis::Fixup;
 
 /// Implement this trait on an instruction to communicate that the instruction reads from or writes
 /// to a datum of some type. For example, if you have a type representing the register file, and

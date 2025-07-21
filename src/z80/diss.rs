@@ -14,10 +14,10 @@ impl std::fmt::Debug for crate::z80::isa::Insn {
         let bytes = self
             .encode()
             .iter()
-            .map(|b| format!("{:02x}", b))
+            .map(|b| format!("{b:02x}"))
             .collect::<Vec<String>>()
             .join(" ");
-        write!(f, "{}", bytes)
+        write!(f, "{bytes}")
     }
 }
 

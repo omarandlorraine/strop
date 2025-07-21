@@ -56,11 +56,8 @@ impl<T: Step + Clone + Disassemble> Step for Trace<T> {
     }
 }
 
-impl<
-        InputParameters,
-        ReturnType,
-        T: Callable<InputParameters, ReturnType> + Clone + Disassemble,
-    > Callable<InputParameters, ReturnType> for Trace<T>
+impl<InputParameters, ReturnType, T: Callable<InputParameters, ReturnType> + Clone + Disassemble>
+    Callable<InputParameters, ReturnType> for Trace<T>
 {
     fn call(&self, parameters: InputParameters) -> RunResult<ReturnType> {
         self.0.call(parameters)
