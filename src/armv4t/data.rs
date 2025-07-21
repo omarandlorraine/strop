@@ -48,7 +48,7 @@ impl crate::dataflow::DataFlow<Register> for Insn {
                         return true;
                     }
                 }
-                Argument::CoReg(_) => unreachable!(),
+                Argument::CoReg(_) => unreachable!("{self:?}"),
                 Argument::StatusReg(_) => continue,
                 Argument::RegList(list) => {
                     if list.contains(*reg) {
@@ -95,14 +95,14 @@ impl crate::dataflow::DataFlow<Register> for Insn {
                         return true;
                     }
                 }
-                Argument::CoReg(_) => unreachable!(),
+                Argument::CoReg(_) => unreachable!("{self:?}"),
                 Argument::StatusReg(_) => continue,
                 Argument::RegList(list) => {
                     if list.contains(*reg) {
                         return true;
                     }
                 }
-                Argument::StatusMask(s) => unreachable!("{self:?}, {s:?}"),
+                Argument::StatusMask(_) => continue,
                 Argument::Shift(_) => continue,
                 Argument::ShiftImm(_) => continue,
                 Argument::SImm(_) => continue,

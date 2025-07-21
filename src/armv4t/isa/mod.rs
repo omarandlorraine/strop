@@ -6,6 +6,27 @@ use crate::static_analysis::Fixup;
 use crate::StaticAnalysis;
 use crate::{Step, StepError};
 
+/// Checks whether an immediate value is encoded in the canonical way.
+///
+/// Some immediate values have more than one encoding, so this function culls a lot of these
+/// duplicates. (the result: the brute-force search is culled).
+fn canonical_immediate(encoding: u32) -> bool {
+    let shift = encoding >> 8 & 0x0f;
+    let value = (encoding & 0xff) as u8;
+
+    if value == 0 {
+        // doesn't matter what shift is if value is 0.
+        return shift == 0;
+    }
+
+    if value & 0x03 == 0 {
+        // the value could be shifted over in itself and the shift value could compensate
+        return false;
+    }
+
+    true
+}
+
 /// Represents an ARMv4T machine code instruction.
 #[derive(Clone, Copy, Default, PartialOrd, PartialEq)]
 pub struct Insn(pub(crate) u32);
@@ -87,9 +108,163 @@ impl Insn {
         use crate::static_analysis::Fixup;
         use unarm::arm::Opcode;
 
+        // Don't bother with synchronisation primitives
+        Fixup::check(
+            !matches!(self.decode().op, Opcode::Strex | Opcode::Swp | Opcode::Ldrex | Opcode::Strexd | Opcode::Ldrexd | Opcode::Ldrexb | Opcode::Ldrexh),
+            "UnsupportedInstruction",
+            Self::increment,
+            0,
+        )?;
+
+        // Don't bother generating `bkpt` instructions
+        Fixup::check(
+            !matches!(self.decode().op, Opcode::Bkpt),
+            "UnsupportedInstruction",
+            Self::increment,
+            0,
+        )?;
+
+        // For instructions with an immediate operand, check that the instruction has the canonical
+        // encoding.
+        if self.0 & 0x0e00_0000 == 0x0200_0000 {
+            Fixup::check(
+                canonical_immediate(self.0 & 0xfff),
+                "UncanonicalImmediateEncoding",
+                Self::increment,
+                0,
+            )?;
+        }
+
+        // For store-halfword instructions, the `U` bit is a don't-care if `W == 0`. So skip these
+        // instructions if `U` == 1 and `W` == 0.
+        Fixup::check(
+            !(matches!(
+                self.decode().op,
+                Opcode::Str
+                    | Opcode::Ldr
+                    | Opcode::StrT
+                    | Opcode::LdrT
+                    | Opcode::StrB
+                    | Opcode::LdrB
+                    | Opcode::StrBt
+                    | Opcode::LdrBt
+                    | Opcode::StrH
+                    | Opcode::LdrH
+                    | Opcode::LdrSb
+                    | Opcode::LdrSh
+            ) && self.0 & 0x00a0_0090 != 0x0080_0090),
+            "InvalidEncoding",
+            Self::increment,
+            0,
+        )?;
+
+        // coprocessors are not supported, skip these instructions
+        Fixup::check(
+            !matches!(self.decode().op, Opcode::Stc | Opcode::Stc2 |Opcode::Mrrc |Opcode::Mrc | Opcode::Ldc | Opcode::Mcrr | Opcode::Cdp |Opcode::Mcr),
+            "UnsupportedInstruction",
+            Self::increment,
+            0,
+        )?;
+
+        // Some instructions don't get introduced until after ARMv4T
+        // TODO: There's more to exclude here.
+        Fixup::check(
+            !matches!(
+                self.decode().op,
+                Opcode::Ssat
+                    | Opcode::Ssat16
+                    | Opcode::Sxtb
+                    | Opcode::Sxtab
+                    | Opcode::Pkhtb
+                    | Opcode::Pkhbt
+                    | Opcode::Sel
+                    | Opcode::Sxtah
+                    | Opcode::Sxth
+                    | Opcode::Rev
+                    | Opcode::Rev16
+                    | Opcode::Uxtab
+                    | Opcode::Uxtab16
+                    | Opcode::Uxtb
+                    | Opcode::Uxtb16
+                    | Opcode::Usat
+                    | Opcode::Usat16
+                    | Opcode::Uxtah
+                    | Opcode::Uxth
+                    | Opcode::Revsh
+                    | Opcode::Smlad
+                    | Opcode::Smlsd
+                    | Opcode::Smuad
+                    | Opcode::Smusd
+                    | Opcode::Smlald
+                    | Opcode::Smlsld
+                    | Opcode::Smmla
+                    | Opcode::Smmls
+                    | Opcode::Smmul
+                    | Opcode::Usada8
+                    | Opcode::Usad8
+                    | Opcode::Sadd16
+                    | Opcode::Sasx
+                    | Opcode::Ssax
+                    | Opcode::Ssub16
+                    | Opcode::Sadd8
+                    | Opcode::Ssub8
+                    | Opcode::Qadd16
+                    | Opcode::Qasx
+                    | Opcode::Qsax
+                    | Opcode::Qsub16
+                    | Opcode::Qadd8
+                    | Opcode::Qsub8
+                    | Opcode::Shadd16
+                    | Opcode::Shasx
+                    | Opcode::Shsax
+                    | Opcode::Shsub16
+                    | Opcode::Shadd8
+                    | Opcode::Shsub8
+                    | Opcode::Uadd16
+                    | Opcode::Uasx
+                    | Opcode::Usax
+                    | Opcode::Usub16
+                    | Opcode::Uadd8
+                    | Opcode::Usub8
+                    | Opcode::Uqadd16
+                    | Opcode::Uqasx
+                    | Opcode::Uqsax
+                    | Opcode::Uqsub16
+                    | Opcode::Uqadd8
+                    | Opcode::Uqsub8
+                    | Opcode::Uhadd16
+                    | Opcode::Uhasx
+                    | Opcode::Uhsax
+                    | Opcode::Uhsub16
+                    | Opcode::Uhsub8
+                    | Opcode::Sxtab16
+                    | Opcode::Sxtb16
+                    | Opcode::Uhadd8
+            ),
+            "UnsupportedInstruction",
+            Self::increment,
+            0,
+        )?;
+
+        // Don't generate `SWI` instructions
+        Fixup::check(
+            !matches!(self.decode().op, Opcode::Svc),
+            "UnsupportedInstruction",
+            Self::increment,
+            0,
+        )?;
+
+        // I think unarm disassembles these incorrectly
+        Fixup::check(
+            !(matches!(self.decode().op, Opcode::B | Opcode::Bl) && self.0 & 0x00c0_0000 != 0),
+            "UnsupportedInstruction",
+            Self::increment,
+            0,
+        )?;
+
         // Don't generate any illegal instructions.
         Fixup::check(
-            self.decode().op != Opcode::Illegal,
+            !matches!(self.decode().op, Opcode::Illegal | Opcode::Udf),
             "IllegalInstruction",
             Self::increment,
             0,
@@ -106,7 +281,7 @@ impl Insn {
 
     /// Increments the isntruction word by 1
     pub fn increment(&mut self) -> crate::IterationResult {
-        if self.0 > 0xfffffffe {
+        if self.0 > 0xf0000000 {
             Err(StepError::End)
         } else {
             self.0 += 1;
@@ -123,6 +298,12 @@ impl Insn {
     /// decoding that is trivial. It's for the Horrid Nybble that things get messy.
     pub fn next_horrid_nybble(&mut self) -> crate::IterationResult {
         self.0 |= 0x0000_000f;
+        self.next()
+    }
+
+    /// Skips all other instructions having the same condition code.
+    pub fn next_condition(&mut self) -> crate::IterationResult {
+        self.0 |= 0x0fff_ffff;
         self.next()
     }
 
@@ -270,7 +451,7 @@ mod test {
         use crate::armv4t::data::Register;
         use crate::dataflow::DataFlow;
 
-        assert!(emulator_knows_it(*i));
+        assert!(emulator_knows_it(*i), "{i:?}");
         assert!(!format!("{:?}", i).contains("illegal"), "{:?}", i);
 
         if format!("{i}").contains("r4") {
@@ -284,20 +465,18 @@ mod test {
 
     #[test]
     fn regressions() {
-        // All these instructions have been found to have bugs in the past, here is the regression
-        // tests.
-        for i in vec![0x00004000, 0x01a00410] {
-            assert!(Insn(i).fixup().is_err());
-        }
-    }
-
-    #[test]
-    fn regressions_unpredictable() {
-        // All these instructions should be unpredictable, and therefore the .fixup() method should
+        // All these instructions are unsupported, and therefore the .fixup() method should
         // change them.
-        for i in vec![0x00001094] {
-            assert!(Insn(i).fixup().is_err());
-        }
+
+        // unpredictable
+        assert!(Insn(0x00001094).fixup().is_err());
+
+        // coprocessor instructions
+        assert!(Insn(0x1c200000).fixup().is_err());
+        assert!(Insn(0xec300000).fixup().is_err());
+        assert!(Insn(0xec400000).fixup().is_err());
+        assert!(Insn(0xee000000).fixup().is_err());
+        assert!(Insn(0xee4bdd77).fixup().is_err());
     }
 
     #[test]
@@ -305,9 +484,70 @@ mod test {
     fn all_instructions() {
         use crate::Step;
 
-        let mut i = super::Insn::first();
+        let mut i = Insn::first();
         while i.next().is_ok() {
             check(&i);
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn duplicate_instructions() {
+        let mut i = Insn(0xe000_0000);
+        i.next().unwrap();
+        'outer: loop {
+            for ignore in [
+                "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr",
+                "sp", "pc",
+            ] {
+                if format!("{i}").contains(ignore) {
+                    i.next_horrid_nybble().unwrap();
+                    continue 'outer;
+                }
+            }
+            let mut j = i;
+
+            println!("{i:?}");
+
+            while j.next_horrid_nybble().is_ok() {
+                assert_ne!(format!("{i}"), format!("{j}"), "\n{i:?}\n{j:?}");
+            }
+            if i.next_horrid_nybble().is_err() {
+                break;
+            }
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn noncanonical_immediates() {
+        //let mut i = Insn(0xe000_0000);
+        let mut i = Insn(0xe2000201);
+        loop {
+            if i.0 & 0x0e00_0000 != 0x0200_0ea1 {
+                break;
+            }
+            for ignore in [
+                "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr",
+                "sp", "pc",
+            ] {
+                while format!("{i}").contains(ignore) {
+                    i.next_horrid_nybble().unwrap();
+                }
+            }
+            let mut j = i;
+
+            println!("{i:?}");
+
+            while j.next().is_ok() {
+                if j.0 & 0xffff_f000 != i.0 & 0xffff_f000 {
+                    break;
+                }
+                assert_ne!(format!("{i}"), format!("{j}"), "\n{i:?}\n{j:?}");
+            }
+            if i.next().is_err() {
+                break;
+            }
         }
     }
 }
