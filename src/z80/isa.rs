@@ -4,7 +4,7 @@ use crate::StaticAnalysis;
 use crate::static_analysis::Fixup;
 
 /// Represents a Z80 machine instruction
-#[derive(Clone, Copy, PartialOrd, PartialEq, Default)]
+#[derive(Clone, Debug, Copy, PartialOrd, PartialEq, Default)]
 pub struct Insn([u8; 5]);
 
 impl crate::Step for Insn {

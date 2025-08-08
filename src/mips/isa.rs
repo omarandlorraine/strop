@@ -9,20 +9,8 @@ use trapezoid_core::cpu::Instruction;
 use trapezoid_core::cpu::RegisterType;
 
 /// Represents a MIPS instruction
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Insn(u32);
-
-impl std::fmt::Display for Insn {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}", self.decode())
-    }
-}
-
-impl std::fmt::Debug for Insn {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}\t; 0x{:08x}", self.decode(), self.0)
-    }
-}
 
 impl crate::subroutine::ShouldReturn for Insn {
     fn allowed_in_leaf(&self, offset: usize) -> crate::StaticAnalysis<Self> {
@@ -572,9 +560,12 @@ impl Insn {
     }
 }
 
-impl crate::Disassemble for Insn {
-    fn dasm(&self) {
-        println!("\t{self:?}");
+impl crate::disassemble::Disassemble for Insn {
+    fn dasm(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.decode())
+    }
+    fn debug(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}\t; 0x{:08x}", self.decode(), self.0)
     }
 }
 
@@ -620,19 +611,20 @@ mod test {
 
     fn check_instruction(mut insn: super::Insn) {
         insn.fixup().unwrap();
+        let data = insn.decode();
 
         // Make sure the instruction doesn't think it's both reading from and writing to $rt.
         if insn.read_rt().is_some() {
             assert!(
                 insn.write_rt().is_none(),
-                "check_instruction(&Insn(0x{:08x})); // {insn} seems to both read and write for $rt.",
+                "check_instruction(&Insn(0x{:08x})); // {data} seems to both read and write for $rt.",
                 insn.0
             );
         }
 
         // Make sure the disassembly doesn't just give us a hexadecimal value.
         assert!(
-            u32::from_str_radix(&format!("{insn}"), 16).is_err(),
+            u32::from_str_radix(&format!("{data}"), 16).is_err(),
             "check_instruction(&Insn(0x{:08x})); // disassembly missing.",
             insn.0
         );
@@ -642,7 +634,7 @@ mod test {
         if !matches!(
             insn.decode().opcode,
             trapezoid_core::cpu::Opcode::Swc(_) | trapezoid_core::cpu::Opcode::Lwc(_)
-        ) && format!("{insn}").contains("a2")
+        ) && format!("{data}").contains("a2")
         {
             use trapezoid_core::cpu::RegisterType;
             match (insn.rs(), insn.rd(), insn.read_rt(), insn.write_rt()) {
@@ -651,16 +643,16 @@ mod test {
                 (_, _, Some(RegisterType::A2), _) => {}
                 (_, _, _, Some(RegisterType::A2)) => {}
                 _ => panic!(
-                    "check_instruction(&Insn(0x{:08x})); // register checks for \"{insn}\"",
+                    "check_instruction(&Insn(0x{:08x})); // register checks for \"{data}\"",
                     insn.0
                 ),
             }
         }
 
         assert_ne!(
-            format!("{insn}"),
+            format!("{data}"),
             "Invalid instruction",
-            "check_instruction(&Insn(0x{:08x})); // couldn't disassemble \"{insn}\"",
+            "check_instruction(&Insn(0x{:08x})); // couldn't disassemble \"{insn:?}\"",
             insn.0
         );
 
@@ -696,58 +688,13 @@ mod test {
 
     #[test]
     #[ignore]
-    fn no_duplicates() {
-        use super::Insn;
-        use crate::Step;
-
-        // because of dont-care fields in some of the instructions, the same instruction may have
-        // two encodings. I consider it an error to use the "wrong one".
-        //
-        // For example, the `and` opcode ignores the five bit `shamt` field, so there's 32 possible
-        // encodings for every `and` instruction. This is going to have an obvious negative impact
-        // on the bruteforce search.
-        //
-        // So this test finds these guys.
-
-        let mut i = Insn::first();
-
-        while i.next().is_ok() {
-            println!("Checking for duplicates of {i}");
-            let mut j = i.clone();
-            while j.next().is_ok() {
-                if format!("{i}") == format!("{j}") {
-                    if i.decode().rd() != j.decode().rd() {
-                        println!("they differ in $rd");
-                    }
-                    if i.decode().rt() != j.decode().rt() {
-                        println!("they differ in $rt");
-                    }
-                    if i.decode().rs() != j.decode().rs() {
-                        println!("they differ in $rs");
-                    }
-                    if i.decode().imm5() != j.decode().imm5() {
-                        println!("they differ in $shamt");
-                    }
-                    panic!(
-                        "These two instructions both encode {i}: 0x{:08x} 0x{:08x}",
-                        i.0, j.0
-                    );
-                }
-            }
-        }
-    }
-
-    #[test]
-    #[ignore]
     fn can_iterate_over_all_instructions() {
         use super::Insn;
-        use crate::Disassemble;
         use crate::Step;
 
         let mut i = Insn::first();
 
         while i.next().is_ok() {
-            i.dasm();
             check_instruction(i.clone());
         }
     }

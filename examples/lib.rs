@@ -1,10 +1,8 @@
 //! An example of a program that uses strop to generate machine code computing a given function
 
-use strop::Disassemble;
 use strop::RunError;
 use strop::RunResult;
 use strop::ToBruteForce;
-use strop::ToTrace;
 use strop::triplets::Triplet;
 
 fn zero(i: u8) -> RunResult<u8> {
@@ -35,12 +33,11 @@ fn main() {
 
     // do a bruteforce search for Z80 machine code programs implementing the same function
     let mut bruteforce = strop::mips::O32::default()
-        .trace()
         .to_bruteforce(target_function);
 
     let bf = bruteforce.search().unwrap();
 
     println!("An equivalent subroutine we found by bruteforce search,");
     println!("after {} iterations.", bruteforce.count);
-    bf.dasm();
+    strop::Disassembly::print(&bf, "return_zero");
 }

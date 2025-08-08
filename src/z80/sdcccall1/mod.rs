@@ -76,12 +76,6 @@ impl<Params, RetVal> SdccCall1<Params, RetVal> {
     }
 }
 
-impl<Params, RetVal> crate::Disassemble for SdccCall1<Params, RetVal> {
-    fn dasm(&self) {
-        self.seq.dasm()
-    }
-}
-
 impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal>
     for SdccCall1<Params, RetVal>
 {

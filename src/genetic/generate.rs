@@ -29,7 +29,7 @@ impl<
     InputParameters: Vals,
     ReturnValue: Vals,
     T: Callable<InputParameters, ReturnValue>,
-    U: Callable<InputParameters, ReturnValue> + Mutate + Crossover + Clone + crate::Disassemble,
+    U: Callable<InputParameters, ReturnValue> + Mutate + Crossover + Clone,
 > Generate<InputParameters, ReturnValue, T, U>
 {
     /// Constructs a new `GeneticSearch`
@@ -130,9 +130,6 @@ impl<
             self.population.len(),
             total_fitness
         );
-        if self.population.len() == 1 {
-            self.population[0].candidate.dasm();
-        }
 
         for _ in 0..((self.popsize as f64 * self.crossover_rate) as usize) {
             let parent_a = rng.random_range(0..self.population.len());

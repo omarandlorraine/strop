@@ -36,3 +36,4 @@ dez80 = { version = "4.0.1", optional = true }
 bitmatch = "0.1.1"
 trapezoid-core = { version = "0.3.0", default-features = false, optional = true }
 mizu-core = { git = "https://github.com/omarandlorraine/mizu.git", branch = "strop-support", optional = true }
+deref-derive = "0.1.0"

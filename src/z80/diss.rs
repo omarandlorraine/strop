@@ -1,14 +1,11 @@
-use crate::Disassemble;
-use std::fmt::Display;
+use crate::disassemble::Disassemble;
 
-impl Display for crate::z80::isa::Insn {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+impl Disassemble for crate::z80::isa::Insn {
+    fn dasm(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         write!(f, "{}", self.decode())
     }
-}
 
-impl std::fmt::Debug for crate::z80::isa::Insn {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+    fn debug(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         use crate::Encode;
 
         let bytes = self
@@ -18,11 +15,5 @@ impl std::fmt::Debug for crate::z80::isa::Insn {
             .collect::<Vec<String>>()
             .join(" ");
         write!(f, "{bytes}")
-    }
-}
-
-impl Disassemble for crate::z80::isa::Insn {
-    fn dasm(&self) {
-        println!("\t{:<15}; {:?}", format!("{}", self), self);
     }
 }

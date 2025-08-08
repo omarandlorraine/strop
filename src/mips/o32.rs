@@ -1,7 +1,6 @@
 //! Mimics the O32 calling convention
 
 use crate::Callable;
-use crate::Disassemble;
 use crate::Sequence;
 use crate::Step;
 use crate::mips::Insn;
@@ -10,8 +9,9 @@ use crate::mips::emu::ReturnValue;
 use crate::test::Vals;
 
 /// Searches for functions complying to the O32 calling convention
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, deref_derive::Deref)]
 pub struct O32<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> {
+    #[deref]
     seq: Sequence<Insn>,
     params: std::marker::PhantomData<Params>,
     return_value: std::marker::PhantomData<RetVal>,
@@ -46,14 +46,6 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> Callab
 {
     fn call(&self, p: Params) -> Result<RetVal, crate::RunError> {
         crate::mips::emu::call(&self.seq, p)
-    }
-}
-
-impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> Disassemble
-    for O32<Params, RetVal>
-{
-    fn dasm(&self) {
-        self.seq.dasm()
     }
 }
 

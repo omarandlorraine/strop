@@ -118,8 +118,9 @@ impl ReturnValue for i16 {
 
 /// Mimics the calling convention used by modern-day SDCC. SDCC's internal documentation calls this
 /// `__sdcccall(1)`.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, deref_derive::Deref)]
 pub struct SdccCall1<Insn: X80, Params, RetVal> {
+    #[deref]
     seq: Sequence<Insn>,
     params: std::marker::PhantomData<Params>,
     retval: std::marker::PhantomData<RetVal>,
@@ -135,14 +136,6 @@ impl<Insn: X80, Params, RetVal> SdccCall1<Insn, Params, RetVal> {
     /// Instantiates a new, empty SdccCall1.
     pub fn new() -> Self {
         Self::first()
-    }
-}
-
-impl<Insn: X80 + crate::Disassemble, Params, RetVal> crate::Disassemble
-    for SdccCall1<Insn, Params, RetVal>
-{
-    fn dasm(&self) {
-        self.seq.dasm()
     }
 }
 

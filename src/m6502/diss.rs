@@ -119,9 +119,3 @@ impl<V: mos6502::Variant> std::fmt::Debug for crate::m6502::isa::Insn<V> {
         write!(f, "{bytes}")
     }
 }
-
-impl<V: mos6502::Variant> crate::Disassemble for crate::m6502::isa::Insn<V> {
-    fn dasm(&self) {
-        println!("\t{self}");
-    }
-}
