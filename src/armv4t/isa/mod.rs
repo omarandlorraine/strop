@@ -144,12 +144,6 @@ impl crate::Encode<u32> for Insn {
     }
 }
 
-impl crate::Disassemble for Insn {
-    fn dasm(&self) {
-        println!("\t{self:?}");
-    }
-}
-
 impl crate::Branch for Insn {}
 
 #[cfg(test)]

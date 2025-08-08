@@ -9,20 +9,8 @@ use trapezoid_core::cpu::Instruction;
 use trapezoid_core::cpu::RegisterType;
 
 /// Represents a MIPS instruction
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Insn(u32);
-
-impl std::fmt::Display for Insn {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}", self.decode())
-    }
-}
-
-impl std::fmt::Debug for Insn {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}\t; 0x{:08x}", self.decode(), self.0)
-    }
-}
 
 impl crate::subroutine::ShouldReturn for Insn {
     fn allowed_in_leaf(&self, offset: usize) -> crate::StaticAnalysis<Self> {
@@ -572,9 +560,12 @@ impl Insn {
     }
 }
 
-impl crate::Disassemble for Insn {
-    fn dasm(&self) {
-        println!("\t{self:?}");
+impl crate::disassemble::Disassemble for Insn {
+    fn dasm(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.decode())
+    }
+    fn debug(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}\t; 0x{:08x}", self.decode(), self.0)
     }
 }
 

@@ -114,12 +114,6 @@ impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal>
     }
 }
 
-impl<Params, RetVal> crate::Disassemble for Function<Params, RetVal> {
-    fn dasm(&self) {
-        self.seq.dasm()
-    }
-}
-
 impl<Params, RetVal> crate::Goto<Insn> for Function<Params, RetVal> {
     fn goto(&mut self, t: &[Insn]) {
         self.seq.goto(t);
