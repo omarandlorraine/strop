@@ -18,32 +18,35 @@ impl std::fmt::Display for Insn {
     }
 }
 
-impl crate::Disassemble for Insn {
-    fn dasm(&self) {
-        let mut operands = String::new();
+impl crate::disassemble::Disassemble for Insn {
+    fn dasm(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        let operands = String::new();
         let data = self.decode();
+        write!(f, "{}", data.mnemonic)?;
         for op in data.operands.iter().filter(|op| !op.is_empty()) {
             if !operands.is_empty() {
-                operands.push_str(", ");
+                write!(f, ", ")?;
             }
             if *op == "n16" {
-                operands.push_str(&format!(
-                    "{:x}h",
-                    u16::from_le_bytes([self.0[1], self.0[2]])
-                ));
+                write!(f, "{:x}h", u16::from_le_bytes([self.0[1], self.0[2]]))?;
             } else if *op == "n8" {
-                operands.push_str(&format!("{:x}h", self.0[1]));
+                write!(f, "{:x}h", self.0[1])?;
             } else if *op == "(a16)" {
-                operands.push_str(&format!(
-                    "({:x}h)",
-                    u16::from_le_bytes([self.0[1], self.0[2]])
-                ));
+                write!(f, "({:x}h)", u16::from_le_bytes([self.0[1], self.0[2]]))?;
             } else {
-                operands.push_str(op);
+                write!(f, "{op}")?;
             }
         }
-
-        println!("\t{} {}", data.mnemonic, operands);
+        Ok(())
+    }
+    fn debug(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        self.dasm(f)?;
+        let data = self.decode();
+        write!(f, " ;")?;
+        for byte in &self.0[0..data.bytes] {
+            write!(f, " {byte:x}")?;
+        }
+        Ok(())
     }
 }
 

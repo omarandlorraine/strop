@@ -14,8 +14,13 @@
 #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 #![forbid(unsafe_code)]
 
+pub mod disassemble;
+pub use disassemble::Disassembly;
+
 mod static_analysis;
 pub use static_analysis::StaticAnalysis;
+
+pub mod triplets;
 
 #[cfg(feature = "armv4t")]
 pub mod armv4t;
@@ -46,9 +51,6 @@ pub use bruteforce::{BruteForce, ToBruteForce};
 
 mod subroutine;
 pub use subroutine::ShouldReturn;
-
-mod trace;
-pub use trace::{ToTrace, Trace};
 
 pub mod branches;
 pub mod dataflow;
@@ -141,13 +143,6 @@ pub trait AsBruteforce<
         self,
         function: Function,
     ) -> BruteForce<Insn, InputParameters, ReturnType, Function, Self>;
-}
-
-pub trait Disassemble {
-    //! A trait for printing out the disassembly of an instruction, a subroutine, or anything else
-
-    /// Disassemble to stdout
-    fn dasm(&self);
 }
 
 pub trait Mutate {

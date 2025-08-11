@@ -5,21 +5,17 @@ fn run_test() {
 
 #[cfg(feature = "mips")]
 fn run_test() {
-    use strop::Disassemble;
     use strop::ToBruteForce;
-    use strop::ToTrace;
 
     fn identity(f: u16) -> strop::RunResult<u16> {
         Ok(f)
     }
 
     let mut search = strop::sm83::SdccCall1::<u16, u16>::default()
-        .trace()
         .to_bruteforce(identity as fn(u16) -> strop::RunResult<u16>);
 
     while let Some(id) = search.search() {
-        println!("identity:");
-        id.dasm();
+        strop::Disassembly::print(&id, "identity");
     }
 }
 

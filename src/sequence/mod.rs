@@ -1,6 +1,5 @@
 //! A module defining `Sequence<T>`.
 
-use crate::Disassemble;
 use crate::Encode;
 use crate::Goto;
 use crate::IterationResult;
@@ -16,7 +15,7 @@ mod mutate;
 /// This datatype is intended to represent a point in a search space, and so `impl`s
 /// strop's `Random` and `Step` traits.  This means that strop can search across the search
 /// space of things represented by the `Sequence<T>`.
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq, deref_derive::Deref)]
 pub struct Sequence<T>(Vec<T>);
 
 impl<Insn> AsRef<Sequence<Insn>> for Sequence<Insn> {
@@ -98,37 +97,12 @@ impl<T> IndexMut<usize> for Sequence<T> {
     }
 }
 
-impl<T> std::ops::Deref for Sequence<T> {
-    type Target = Vec<T>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<T> std::ops::DerefMut for Sequence<T> {
-    fn deref_mut(&mut self) -> &mut Vec<T> {
-        &mut self.0
-    }
-}
-
 impl<T> IntoIterator for Sequence<T> {
     type Item = T;
     type IntoIter = <Vec<T> as IntoIterator>::IntoIter;
 
     fn into_iter(self) -> <Self as IntoIterator>::IntoIter {
         self.0.into_iter()
-    }
-}
-
-impl<T> Disassemble for Sequence<T>
-where
-    T: Disassemble,
-{
-    fn dasm(&self) {
-        for i in &self.0 {
-            i.dasm();
-        }
     }
 }
 
