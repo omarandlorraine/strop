@@ -32,8 +32,8 @@ pub mod x80;
 #[cfg(feature = "z80")]
 pub mod z80;
 
-pub mod triplets; 
 mod sequence;
+pub mod triplets;
 pub use sequence::Sequence;
 
 pub mod test;
