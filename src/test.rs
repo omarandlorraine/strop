@@ -223,11 +223,10 @@ impl<InputParameters: Vals, ReturnValue: Vals> TestSuite<InputParameters, Return
         for _ in 0..iterations {
             let i = InputParameters::rand();
             if let Ok(r) = target_function.call(i) {
-                if let Ok(s) = candidate.call(i) {
-                    if r != s {
-                        self.0.push((i, r));
-                        return false;
-                    }
+                if candidate.call(i) != Ok(r) {
+                    // found a candidate which doesn't return the expected result
+                    self.0.push((i, r));
+                    return false;
                 }
             }
         }
