@@ -68,7 +68,7 @@ impl<
     }
 
     /// Advances the candidate to the next position in the search space
-    pub fn next(&mut self) -> crate::IterationResult {
+    pub fn step(&mut self) -> crate::IterationResult {
         self.count += 1;
         self.candidate.next()?;
         Ok(())
@@ -83,7 +83,7 @@ impl<
     /// Returns the next function that matches the target function
     pub fn search(&mut self) -> Option<Searchable> {
         loop {
-            self.next().ok()?;
+            self.step().ok()?;
             if self.test() {
                 return Some(self.candidate.clone());
             }
