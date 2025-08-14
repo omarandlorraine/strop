@@ -12,13 +12,22 @@ pub type StaticAnalysis<Instruction> = Result<(), Fixup<Instruction>>;
 
 /// An erroneous result of static analysis. Explains why a code sequence has been found to be illogical
 /// or unsuitable, and provides a way to prune such a sequence from the search.
-#[derive(Debug)]
 pub struct Fixup<Instruction> {
     /// Specifies at what offset into this sequence the problem was found
     pub offset: usize,
     pub advance: fn(&mut Instruction) -> IterationResult,
     /// Human-readable description of the problem
     pub reason: &'static str,
+}
+
+impl<Instruction> std::fmt::Debug for Fixup<Instruction> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(
+            f,
+            "Fixup {{ reason: {:?}, offset: {} }}",
+            self.reason, self.offset
+        )
+    }
 }
 
 impl<Instruction> Fixup<Instruction> {
