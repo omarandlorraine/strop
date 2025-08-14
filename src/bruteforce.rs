@@ -30,6 +30,23 @@ pub struct BruteForce<
 }
 
 impl<
+    InputParameters,
+    ReturnValue: Clone,
+    TargetFunction: Callable<InputParameters, ReturnValue>,
+    Searchable: Callable<InputParameters, ReturnValue> + BruteForceSearch + Disassemble,
+> crate::Disassemble for BruteForce<
+    InputParameters,
+    ReturnValue,
+    TargetFunction,
+    Searchable,
+> {
+    fn dasm(&self) {
+        self.candidate.dasm()
+    }
+}
+
+
+impl<
     InputParameters: Copy + Vals,
     ReturnValue: Vals + std::cmp::PartialEq + Clone,
     TargetFunction: Callable<InputParameters, ReturnValue>,
