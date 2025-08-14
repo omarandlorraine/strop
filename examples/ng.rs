@@ -9,9 +9,8 @@ fn add5(i: u8) -> RunResult<u8> {
 }
 
 fn zero(_s: u8) -> crate::RunResult<u8> {
-            Ok(b'0')
-        }
-
+    Ok(b'0')
+}
 
 fn main() {
     // do a bruteforce search for Z80 machine code programs implementing the same function
@@ -20,7 +19,7 @@ fn main() {
         strop::sm83::SdccCall1::<u8, u8>::default(),
     );
 
-     search.search().unwrap();
+    search.search().unwrap();
 
     println!("An equivalent subroutine we found by bruteforce search,");
     println!("after {} iterations.", search.count);
