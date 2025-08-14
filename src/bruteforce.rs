@@ -1,72 +1,40 @@
-use crate::BruteforceSearch;
+//! Implements a bruteforce search
+
 use crate::Callable;
+use crate::Disassemble;
 use crate::TestSuite;
 use crate::test::Vals;
+
+/// Trait for things that can be bruteforce searched
+pub trait BruteForceSearch {
+    /// Steps to the next value in the search space, and then applies static analysis fixups.
+    fn next(&mut self) -> crate::IterationResult;
+}
 
 /// Performs a brute force search over a given search space `Searchable`
 #[derive(Debug, Clone)]
 pub struct BruteForce<
-    Insn,
     InputParameters,
     ReturnValue: Clone,
     TargetFunction: Callable<InputParameters, ReturnValue>,
-    Searchable: Callable<InputParameters, ReturnValue> + BruteforceSearch<Insn>,
+    Searchable: Callable<InputParameters, ReturnValue> + BruteForceSearch + Disassemble,
 > {
     target_function: TargetFunction,
     candidate: Searchable,
     tests: TestSuite<InputParameters, ReturnValue>,
     input: std::marker::PhantomData<InputParameters>,
     ret: std::marker::PhantomData<ReturnValue>,
-    insn: std::marker::PhantomData<Insn>,
 
     /// Keeps track of how many iterations the bruteforce search has been through.
     pub count: usize,
 }
 
-/// Converts something to a BruteForce, which performs brute force searches over some search space
-/// for a given function.
-pub trait ToBruteForce<
-    Insn,
-    InputParameters,
-    ReturnValue: Clone,
-    TargetFunction: Callable<InputParameters, ReturnValue>,
->
-{
-    /// Return a BruteForce
-    fn to_bruteforce(
-        self,
-        target_function: TargetFunction,
-    ) -> BruteForce<Insn, InputParameters, ReturnValue, TargetFunction, Self>
-    where
-        Self: Callable<InputParameters, ReturnValue> + BruteforceSearch<Insn> + Sized;
-}
-
 impl<
-    Insn,
-    T: Callable<InputParameters, ReturnValue> + BruteforceSearch<Insn> + Clone,
-    InputParameters,
-    ReturnValue: Clone + Vals,
-    TargetFunction: Callable<InputParameters, ReturnValue>,
-> ToBruteForce<Insn, InputParameters, ReturnValue, TargetFunction> for T
-where
-    Self: Callable<InputParameters, ReturnValue>,
-    InputParameters: Vals,
-{
-    fn to_bruteforce(
-        self,
-        target_function: TargetFunction,
-    ) -> BruteForce<Insn, InputParameters, ReturnValue, TargetFunction, Self> {
-        BruteForce::new(target_function, self)
-    }
-}
-
-impl<
-    Insn,
     InputParameters: Copy + Vals,
     ReturnValue: Vals + std::cmp::PartialEq + Clone,
     TargetFunction: Callable<InputParameters, ReturnValue>,
-    Searchable: Callable<InputParameters, ReturnValue> + crate::BruteforceSearch<Insn> + Clone,
-> BruteForce<Insn, InputParameters, ReturnValue, TargetFunction, Searchable>
+    Searchable: Callable<InputParameters, ReturnValue> + BruteForceSearch + Clone + Disassemble,
+> BruteForce<InputParameters, ReturnValue, TargetFunction, Searchable>
 {
     /// Constructs a new `BruteForce`
     pub fn new(target_function: TargetFunction, initial_candidate: Searchable) -> Self {
@@ -77,7 +45,6 @@ impl<
             candidate,
             tests,
             input: std::marker::PhantomData,
-            insn: std::marker::PhantomData,
             ret: std::marker::PhantomData,
             count: 0,
         }
@@ -89,9 +56,9 @@ impl<
     }
 
     /// Advances the candidate to the next position in the search space
-    pub fn step(&mut self) -> crate::IterationResult {
+    pub fn next(&mut self) -> crate::IterationResult {
         self.count += 1;
-        self.candidate.step();
+        self.candidate.next()?;
         Ok(())
     }
 
@@ -104,7 +71,7 @@ impl<
     /// Returns the next function that matches the target function
     pub fn search(&mut self) -> Option<Searchable> {
         loop {
-            self.step().ok()?;
+            self.next().ok()?;
             if self.test() {
                 return Some(self.candidate.clone());
             }

@@ -6,16 +6,14 @@ fn run_test() {
 #[cfg(feature = "mips")]
 fn run_test() {
     use strop::Disassemble;
-    use strop::ToBruteForce;
-    use strop::ToTrace;
 
     fn identity(f: f32) -> strop::RunResult<f32> {
         Ok(f)
     }
-
-    let mut search = strop::mips::O32::default()
-        .trace()
-        .to_bruteforce(identity as fn(f32) -> strop::RunResult<f32>);
+    let mut search = strop::bruteforce::BruteForce::new(
+        identity as fn(f32) -> strop::RunResult<f32>,
+        strop::mips::O32::<f32, f32>::default(),
+    );
 
     while let Some(id) = search.search() {
         println!("identity:");

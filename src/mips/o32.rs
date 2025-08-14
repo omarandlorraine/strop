@@ -63,12 +63,7 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> O32<Pa
         use crate::Step;
         Self::first()
     }
-}
-
-impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue>
-    crate::BruteforceSearch<Insn> for O32<Params, RetVal>
-{
-    fn analyze_this(&self) -> crate::StaticAnalysis<Insn> {
+    fn analyze(&self) -> crate::StaticAnalysis<Insn> {
         use trapezoid_core::cpu::RegisterType;
         crate::mips::optimizer::skip_pointless_instructions(self.seq.as_ref())?;
         crate::subroutine::leaf_subroutine(&self.seq)?;
@@ -134,24 +129,17 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue>
         crate::dataflow::leave_alone_except_last(self.seq.as_ref(), &RegisterType::Ra)?;
         Ok(())
     }
-
-    fn inner(&mut self) -> &mut dyn crate::BruteforceSearch<Insn> {
-        &mut self.seq
-    }
 }
 
-impl<
-    Params: Vals + Parameters,
-    RetVal: ReturnValue + Vals + Clone,
-    TargetFunction: Callable<Params, RetVal>,
-> crate::AsBruteforce<Insn, Params, RetVal, TargetFunction> for O32<Params, RetVal>
+impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue>
+    crate::bruteforce::BruteForceSearch for O32<Params, RetVal>
 {
-    fn bruteforce(
-        self,
-        function: TargetFunction,
-    ) -> crate::BruteForce<Insn, Params, RetVal, TargetFunction, O32<Params, RetVal>> {
-        crate::BruteForce::<Insn, Params, RetVal, TargetFunction, O32<Params, RetVal>>::new(
-            function, self,
-        )
+    fn next(&mut self) -> crate::IterationResult {
+        self.seq.next()?;
+        while let Err(sa) = self.analyze() {
+            self.seq.apply_fixup(&sa);
+        }
+
+        Ok(())
     }
 }

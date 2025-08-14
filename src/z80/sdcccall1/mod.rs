@@ -1,5 +1,3 @@
-use crate::BruteForce;
-use crate::BruteforceSearch;
 use crate::Callable;
 use crate::Sequence;
 use crate::StaticAnalysis;
@@ -74,6 +72,12 @@ impl<Params, RetVal> SdccCall1<Params, RetVal> {
         use crate::Step;
         Self::first()
     }
+
+    // Performs static analysis on the code sequence
+    fn analyze_this(&self) -> StaticAnalysis<Insn> {
+        crate::subroutine::make_return(&self.seq)?;
+        Ok(())
+    }
 }
 
 impl<Params, RetVal> crate::Disassemble for SdccCall1<Params, RetVal> {
@@ -106,25 +110,17 @@ impl<Params, RetVal> crate::Step for SdccCall1<Params, RetVal> {
     }
 }
 
-impl<Params, RetVal> BruteforceSearch<Insn> for SdccCall1<Params, RetVal> {
-    fn analyze_this(&self) -> StaticAnalysis<Insn> {
-        crate::subroutine::make_return(&self.seq)?;
-        Ok(())
-    }
-    fn inner(&mut self) -> &mut dyn BruteforceSearch<Insn> {
-        &mut self.seq
-    }
-}
-
-impl<Params: ParameterList, RetVal: ReturnValue, TargetFunction: Callable<Params, RetVal>>
-    crate::AsBruteforce<Insn, Params, RetVal, TargetFunction> for SdccCall1<Params, RetVal>
+impl<Params: ParameterList, RetVal: ReturnValue> crate::bruteforce::BruteForceSearch
+    for SdccCall1<Params, RetVal>
 {
-    fn bruteforce(
-        self,
-        function: TargetFunction,
-    ) -> BruteForce<Insn, Params, RetVal, TargetFunction, SdccCall1<Params, RetVal>> {
-        BruteForce::<Insn, Params, RetVal, TargetFunction, SdccCall1<Params, RetVal>>::new(
-            function, self,
-        )
+    fn next(&mut self) -> crate::IterationResult {
+        use crate::Step;
+
+        self.seq.next()?;
+        while let Err(sa) = self.analyze_this() {
+            self.seq.apply_fixup(&sa);
+        }
+
+        Ok(())
     }
 }
