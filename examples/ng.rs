@@ -3,24 +3,25 @@
 use strop::Disassemble;
 use strop::RunError;
 use strop::RunResult;
-use strop::ToBruteForce;
-use strop::ToTrace;
 
-fn zero(i: u8) -> RunResult<u8> {
+fn add5(i: u8) -> RunResult<u8> {
     i.checked_add(5).ok_or(RunError::NotDefined)
 }
 
+fn zero(_s: u8) -> crate::RunResult<u8> {
+    Ok(b'0')
+}
+
 fn main() {
-    let target_function = zero as fn(u8) -> RunResult<u8>;
-
     // do a bruteforce search for Z80 machine code programs implementing the same function
-    let mut bruteforce = strop::mips::O32::default()
-        .trace()
-        .to_bruteforce(target_function);
+    let mut search = strop::bruteforce::BruteForce::new(
+        zero as fn(u8) -> strop::RunResult<u8>,
+        strop::sm83::SdccCall1::<u8, u8>::default(),
+    );
 
-    let bf = bruteforce.search().unwrap();
+    search.search().unwrap();
 
     println!("An equivalent subroutine we found by bruteforce search,");
-    println!("after {} iterations.", bruteforce.count);
-    bf.dasm();
+    println!("after {} iterations.", search.count);
+    search.dasm();
 }

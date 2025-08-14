@@ -1,7 +1,5 @@
 //! This module implements a callable, which may be bruteforce-searched, and which adheres to the
 //! SDCC_CALL(1) calling convention
-use crate::BruteForce;
-use crate::BruteforceSearch;
 use crate::Callable;
 use crate::Encode;
 use crate::Sequence;
@@ -116,8 +114,8 @@ impl ReturnValue for i16 {
     }
 }
 
-/// Mimics the calling convention used by modern-day SDCC. SDCC's internal documentation calls this
-/// `__sdcccall(1)`.
+/// A type representing a subroutine mimicking the calling convention used by modern-day SDCC.
+/// SDCC's internal documentation calls this `__sdcccall(1)`.
 #[derive(Clone, Debug)]
 pub struct SdccCall1<Insn: X80, Params, RetVal> {
     seq: Sequence<Insn>,
@@ -125,16 +123,33 @@ pub struct SdccCall1<Insn: X80, Params, RetVal> {
     retval: std::marker::PhantomData<RetVal>,
 }
 
-impl<Insn: X80, Params, RetVal> Default for SdccCall1<Insn, Params, RetVal> {
+impl<Insn: X80, Params: ParameterList, RetVal: ReturnValue> Default
+    for SdccCall1<Insn, Params, RetVal>
+{
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Insn: X80, Params, RetVal> SdccCall1<Insn, Params, RetVal> {
+impl<Insn: X80, Params: ParameterList, RetVal: ReturnValue> SdccCall1<Insn, Params, RetVal> {
     /// Instantiates a new, empty SdccCall1.
     pub fn new() -> Self {
         Self::first()
+    }
+
+    /// Performs static analysis on the code sequence
+    fn analyze(&self) -> StaticAnalysis<Insn> {
+        Params::analyze(&self.seq)?;
+        RetVal::analyze(&self.seq)?;
+        crate::subroutine::make_return(&self.seq)?;
+        crate::dataflow::uninitialized(&self.seq, &Datum::Zero)?;
+        crate::dataflow::uninitialized(&self.seq, &Datum::Negative)?;
+        crate::dataflow::uninitialized(&self.seq, &Datum::HalfCarry)?;
+        crate::dataflow::uninitialized(&self.seq, &Datum::Carry)?;
+        crate::dataflow::leave_alone(&self.seq, &Datum::R)?;
+        crate::dataflow::leave_alone(&self.seq, &Datum::I)?;
+        crate::dataflow::leave_alone(&self.seq, &Datum::Sp)?;
+        Ok(())
     }
 }
 
@@ -171,40 +186,15 @@ impl<Insn: X80 + Clone, Params, RetVal> crate::Step for SdccCall1<Insn, Params, 
     }
 }
 
-impl<Insn: X80, Params: ParameterList, RetVal: ReturnValue> BruteforceSearch<Insn>
-    for SdccCall1<Insn, Params, RetVal>
+impl<Insn: X80 + Clone, Params: ParameterList, RetVal: ReturnValue>
+    crate::bruteforce::BruteForceSearch for SdccCall1<Insn, Params, RetVal>
 {
-    fn analyze_this(&self) -> StaticAnalysis<Insn> {
-        Params::analyze(&self.seq)?;
-        RetVal::analyze(&self.seq)?;
-        crate::subroutine::make_return(&self.seq)?;
-        crate::dataflow::uninitialized(&self.seq, &Datum::Zero)?;
-        crate::dataflow::uninitialized(&self.seq, &Datum::Negative)?;
-        crate::dataflow::uninitialized(&self.seq, &Datum::HalfCarry)?;
-        crate::dataflow::uninitialized(&self.seq, &Datum::Carry)?;
-        crate::dataflow::leave_alone(&self.seq, &Datum::R)?;
-        crate::dataflow::leave_alone(&self.seq, &Datum::I)?;
-        crate::dataflow::leave_alone(&self.seq, &Datum::Sp)?;
-        Ok(())
-    }
-    fn inner(&mut self) -> &mut dyn BruteforceSearch<Insn> {
-        &mut self.seq
-    }
-}
+    fn next(&mut self) -> crate::IterationResult {
+        self.seq.next()?;
+        while let Err(sa) = self.analyze() {
+            self.seq.apply_fixup(&sa);
+        }
 
-impl<
-    Insn: X80 + Encode<u8>,
-    Params: ParameterList,
-    RetVal: ReturnValue,
-    TargetFunction: Callable<Params, RetVal>,
-> crate::AsBruteforce<Insn, Params, RetVal, TargetFunction> for SdccCall1<Insn, Params, RetVal>
-{
-    fn bruteforce(
-        self,
-        function: TargetFunction,
-    ) -> BruteForce<Insn, Params, RetVal, TargetFunction, SdccCall1<Insn, Params, RetVal>> {
-        BruteForce::<Insn, Params, RetVal, TargetFunction, SdccCall1<Insn, Params, RetVal>>::new(
-            function, self,
-        )
+        Ok(())
     }
 }

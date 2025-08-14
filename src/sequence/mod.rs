@@ -51,30 +51,11 @@ impl<T: Step> Sequence<T> {
             self.step_at(offset + 1);
         }
     }
-}
 
-impl<Insn: Step> crate::BruteforceSearch<Insn> for Sequence<Insn> {
-    fn inner(&mut self) -> &mut dyn crate::BruteforceSearch<Insn> {
-        unreachable!();
-    }
-
-    fn analyze_this(&self) -> crate::StaticAnalysis<Insn> {
-        Ok(())
-    }
-
-    fn analyze(&mut self) -> crate::StaticAnalysis<Insn> {
-        Ok(())
-    }
-
-    fn step(&mut self) {
-        self.step_at(0);
-    }
-
-    fn apply(&mut self, fixup: &Fixup<Insn>) {
+    /// Applies the fixup to the code sequence
+    pub fn apply_fixup(&mut self, fixup: &Fixup<T>) {
         self.mut_at(fixup.advance, fixup.offset);
     }
-
-    fn fixup(&mut self) {}
 }
 
 impl<T> Sequence<T> {

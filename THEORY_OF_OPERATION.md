@@ -56,9 +56,13 @@ Strop includes two main search strategies:
   likelihood of accepting worse solutions decreasing over time. This mimics the
   physical process of annealing, helping avoid local optima.
 
-* **Exhaustive search**: This method tries all possible sequences, in some
-  predetermined order. First, is tries all sequences of length 1, then all
-  sequences of length 2, and so forth.
+* **Bruteforce search**: This method tries all possible sequences, in some
+predetermined order. First, it tries all sequences of length 1, then all
+sequences of length 2, and so forth. To somewhat mitigate the time-consuming
+nature of bruteforce searches, after each step through the search space, strop
+will perform static analysis on the instruction sequence, and in so doing,
+eliminate candidates which, for example, read from a register known to be
+uninitialized, can be effectively eliminated from the search space.
 
 ### Challenges and considerations
 
@@ -68,7 +72,8 @@ Efficient search algorithms, and good heuristics are essential to the proper
 operation of strop.
 
 Validation costs: Ensuring the correctness of candidate programs can be
-computationally expensive, so strop includes a basic fuzz-tester only.
+computationally expensive, so strop includes some basic tests only, which are a
+fuzz-tester and is static analysis.
 
 Convergence: Stochastic methods do not guarantee finding the global optimum
 (that is, the most optimal program), nor do they guarantee finding a solution

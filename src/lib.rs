@@ -41,14 +41,10 @@ pub use test::TestSuite;
 mod genetic;
 pub use genetic::Generate;
 
-mod bruteforce;
-pub use bruteforce::{BruteForce, ToBruteForce};
+pub mod bruteforce;
 
 mod subroutine;
 pub use subroutine::ShouldReturn;
-
-mod trace;
-pub use trace::{ToTrace, Trace};
 
 pub mod branches;
 pub mod dataflow;
@@ -64,43 +60,6 @@ pub trait Step {
 
     /// Returns the first value
     fn first() -> Self;
-}
-
-/// Impl this trait on any code sequence (a subroutine, a function, other passes) so that the brute
-/// force search can mutate and query it.
-pub trait BruteforceSearch<Insn> {
-    /// Optionally return a `StaticAnalysis` if a code sequence is found to be problematic or in some
-    /// way suboptimal.
-    fn analyze_this(&self) -> StaticAnalysis<Insn>;
-
-    /// Returns either this pass's `StaticAnalysis<Insn>` or the inner's
-    fn analyze(&mut self) -> StaticAnalysis<Insn> {
-        self.inner().analyze()?;
-        self.analyze_this()
-    }
-
-    /// Since client code can arbitrarily chain these passes together, return the next node in the
-    /// "linked list".
-    fn inner(&mut self) -> &mut dyn BruteforceSearch<Insn>;
-
-    /// Step through the search space. Apply any static analysis results.
-    fn step(&mut self) {
-        self.inner().step();
-        self.fixup();
-    }
-
-    /// Applies a `StaticAnalysis`, which means fixing whatever problem the `StaticAnalysis`
-    /// represents.
-    fn apply(&mut self, fixup: &crate::static_analysis::Fixup<Insn>) {
-        self.inner().apply(fixup);
-    }
-
-    /// Applies all `StaticAnalysis` instances.
-    fn fixup(&mut self) {
-        while let Err(sa) = self.analyze() {
-            self.apply(&sa);
-        }
-    }
 }
 
 /// Enum representing possible errors when stepping
@@ -127,21 +86,6 @@ pub enum RunError {
 
 /// Return type for in-place iteration
 pub type RunResult<T> = Result<T, RunError>;
-
-/// Trait for returning a BruteForce object
-pub trait AsBruteforce<
-    Insn,
-    InputParameters,
-    ReturnType: Clone,
-    Function: Callable<InputParameters, ReturnType>,
->: Callable<InputParameters, ReturnType> + Clone + BruteforceSearch<Insn>
-{
-    /// Returns a `BruteForce`
-    fn bruteforce(
-        self,
-        function: Function,
-    ) -> BruteForce<Insn, InputParameters, ReturnType, Function, Self>;
-}
 
 pub trait Disassemble {
     //! A trait for printing out the disassembly of an instruction, a subroutine, or anything else

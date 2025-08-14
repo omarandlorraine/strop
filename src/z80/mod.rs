@@ -13,20 +13,3 @@ pub fn sdcccall1<Params, RetVal>() -> SdccCall1<Params, RetVal> {
     use crate::Step;
     SdccCall1::first()
 }
-
-#[cfg(test)]
-mod test {
-    #[test]
-    #[ignore]
-    fn bruteforce_find_zero() {
-        fn z(_s: u8) -> crate::RunResult<u8> {
-            Ok(b'0')
-        }
-
-        use crate::AsBruteforce;
-        crate::z80::SdccCall1::default()
-            .bruteforce(z as fn(u8) -> crate::RunResult<u8>)
-            .search()
-            .unwrap();
-    }
-}

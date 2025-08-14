@@ -1,9 +1,7 @@
 //! Implements searches for functions complying with the AAPCS32 calling convention, as used by
 //! modern (EABI) linux systems and others.
 
-use crate::BruteforceSearch;
 use crate::Callable;
-use crate::StaticAnalysis;
 use crate::armv4t::Emulator;
 use crate::armv4t::Insn;
 
@@ -123,16 +121,5 @@ impl<Params, RetVal> crate::Disassemble for Function<Params, RetVal> {
 impl<Params, RetVal> crate::Goto<Insn> for Function<Params, RetVal> {
     fn goto(&mut self, t: &[Insn]) {
         self.seq.goto(t);
-    }
-}
-
-impl<Params, RetVal> BruteforceSearch<Insn> for Function<Params, RetVal> {
-    fn analyze_this(&self) -> StaticAnalysis<Insn> {
-        // TODO: dataflow analysis could go here.
-        crate::subroutine::make_return(&self.seq)?;
-        Ok(())
-    }
-    fn inner(&mut self) -> &mut dyn BruteforceSearch<Insn> {
-        &mut self.seq
     }
 }
