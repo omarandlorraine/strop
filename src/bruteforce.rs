@@ -11,6 +11,19 @@ pub trait BruteForceSearch {
     fn next(&mut self) -> crate::IterationResult;
 }
 
+pub trait Bruteforce: Disassemble {
+    /// Advances the candidate to the next position in the search space
+    fn step(&mut self) -> crate::IterationResult;
+
+    /// Tests that the candidate matches the target function
+    fn test(&mut self) -> bool;
+
+    /// Returns the next function that matches the target function
+    fn search(&mut self) -> Option<()>;
+}
+
+pub trait Bruteforceable: Bruteforce + Disassemble {}
+
 /// Performs a brute force search over a given search space `Searchable`
 #[derive(Debug, Clone)]
 pub struct BruteForce<
@@ -79,26 +92,34 @@ impl<
     pub fn candidate(&self) -> &Searchable {
         &self.candidate
     }
+}
 
+impl<
+    InputParameters: Vals,
+    ReturnValue: Clone + Vals,
+    TargetFunction: Callable<InputParameters, ReturnValue>,
+    Searchable: Callable<InputParameters, ReturnValue> + BruteForceSearch + Disassemble,
+> Bruteforce for BruteForce<InputParameters, ReturnValue, TargetFunction, Searchable>
+{
     /// Advances the candidate to the next position in the search space
-    pub fn step(&mut self) -> crate::IterationResult {
+    fn step(&mut self) -> crate::IterationResult {
         self.count += 1;
         self.candidate.next()?;
         Ok(())
     }
 
     /// Tests that the candidate matches the target function
-    pub fn test(&mut self) -> bool {
+    fn test(&mut self) -> bool {
         self.tests
             .checked_fuzz(&self.target_function, &self.candidate, 5000)
     }
 
     /// Returns the next function that matches the target function
-    pub fn search(&mut self) -> Option<Searchable> {
+    fn search(&mut self) -> Option<()> {
         loop {
             self.step().ok()?;
             if self.test() {
-                return Some(self.candidate.clone());
+                return Some(());
             }
         }
     }

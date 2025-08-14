@@ -12,6 +12,9 @@ pub mod mips;
 pub mod z80;
 */
 
+use crate::Callable;
+use crate::test::Vals;
+
 /// Enumerates all target triplets known by strop. Since backends are gated behind Cargo features,
 /// the enum's variants may vary from build to build.
 #[allow(missing_docs)]
@@ -48,6 +51,16 @@ impl Triplet {
             .iter()
             .find(|triplet| triplet.to_string() == name)
             .copied()
+    }
+
+    pub fn bruteforce_search<
+        InputParameters: Copy + Vals,
+        ReturnValue: Vals + std::cmp::PartialEq + Clone,
+        TargetFunction: Callable<InputParameters, ReturnValue>,
+    >(
+        target_function: TargetFunction,
+    ) -> Box<dyn crate::bruteforce::Bruteforceable> {
+        todo!();
     }
 }
 
