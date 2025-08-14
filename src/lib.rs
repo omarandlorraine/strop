@@ -33,6 +33,7 @@ pub mod x80;
 pub mod z80;
 
 mod sequence;
+pub mod triplets;
 pub use sequence::Sequence;
 
 pub mod test;

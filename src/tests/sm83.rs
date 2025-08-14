@@ -1,3 +1,4 @@
+use strop::bruteforce::Bruteforce;
 #[cfg(not(feature = "mips"))]
 fn run_test() {
     unreachable!("the mips module has been configured out!");
@@ -18,7 +19,7 @@ fn run_test() {
 
     while let Some(id) = search.search() {
         println!("identity:");
-        id.dasm();
+        search.dasm();
     }
 }
 
