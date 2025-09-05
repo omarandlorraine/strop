@@ -46,6 +46,18 @@ impl<
     ReturnValue: Vals + std::cmp::PartialEq + Clone,
     TargetFunction: Callable<InputParameters, ReturnValue>,
     Searchable: Callable<InputParameters, ReturnValue> + BruteForceSearch + Clone + Disassemble,
+> Callable<InputParameters, ReturnValue> for BruteForce<InputParameters, ReturnValue, TargetFunction, Searchable>
+{
+    fn call(&self, p: InputParameters) -> crate::RunResult<ReturnValue> {
+        self.candidate.call(p)
+    }
+}
+
+impl<
+    InputParameters: Copy + Vals,
+    ReturnValue: Vals + std::cmp::PartialEq + Clone,
+    TargetFunction: Callable<InputParameters, ReturnValue>,
+    Searchable: Callable<InputParameters, ReturnValue> + BruteForceSearch + Clone + Disassemble,
 > BruteForce<InputParameters, ReturnValue, TargetFunction, Searchable>
 {
     /// Constructs a new `BruteForce`
