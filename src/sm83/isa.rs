@@ -209,6 +209,17 @@ mod test {
     }
 
     #[test]
+    fn incr_or_a_ff() {
+        use crate::Disassemble;
+        let insn = Insn([0xf6, 0xff, 0xff]);
+        insn.dasm();
+        let mut j = insn;
+        j.next().unwrap();
+        j.dasm();
+        assert_ne!(j, insn);
+    }
+
+    #[test]
     fn all() {
         let mut i = Insn::first();
         while i.next().is_ok() {
