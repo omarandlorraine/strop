@@ -2,14 +2,14 @@
 
 use crate::Encode;
 use crate::StaticAnalysis;
-use crate::Step;
 use crate::dataflow::DataFlow;
 use crate::static_analysis::Fixup;
 use trapezoid_core::cpu::Instruction;
 use trapezoid_core::cpu::RegisterType;
+use crate::IterationResult;
 
 /// Represents a MIPS instruction
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Default)]
 pub struct Insn(u32);
 
 impl std::fmt::Display for Insn {
@@ -22,6 +22,49 @@ impl std::fmt::Debug for Insn {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{}\t; 0x{:08x}", self.decode(), self.0)
     }
+}
+
+impl crate::search::Instruction for Insn {
+    fn first() -> Self {
+        let mut i = Self(0);
+        i.fixup().unwrap();
+        i
+    }
+
+    fn increment(&mut self) -> IterationResult {
+        if self.0 >= 0xefff_ffff {
+            // There are no valid instructions in this range.
+            Err(crate::StepError::End)
+        } else {
+            self.0 += 1;
+            self.fixup()?;
+            Ok(())
+        }
+    }
+
+fn random() -> Self {
+        let mut s = Self(rand::random());
+        s.fixup();
+        s
+    }
+
+    fn mutate(&mut self) {
+        use rand::Rng;
+
+        if rand::random() {
+            // could flip a bit in the instruction word
+            let mask: u32 = 1 << rand::rng().random_range(0..32);
+            self.0 ^= mask;
+        } else {
+            // could completely change the instruction word to something completely different
+            self.0 = rand::random()
+        }
+
+        while self.fixup().is_err() {
+            self.0 = rand::random()
+        }
+    }
+
 }
 
 impl crate::subroutine::ShouldReturn for Insn {
@@ -87,7 +130,7 @@ impl crate::Branch for Insn {
             return Ok(());
         };
         if !permissibles.contains(&offset) {
-            Fixup::err("InvalidBranchTarget", Self::next, 0)
+            Fixup::err("InvalidBranchTarget", crate::search::Instruction::increment, 0)
         } else {
             // backward branch in range
             Ok(())
@@ -325,15 +368,15 @@ impl Insn {
 
     /// Changes the registers which an instruction refers to.
     fn next_registers(&mut self) -> crate::IterationResult {
-        use crate::Step;
+        use crate::search::Instruction;
         if self.r() {
             // R format instruction: mask off the shamt and func fields, and then increment.
             self.0 |= 0x7ff;
-            self.next()
+            self.increment()
         } else if self.i() {
             // I format instruction: mask off the imm field, and then increment.
             self.0 |= 0xffff;
-            self.next()?;
+            self.increment()?;
             Ok(())
         } else {
             // J format instruction: this shouldn't really even be reachable.
@@ -575,23 +618,6 @@ impl Insn {
 impl crate::Disassemble for Insn {
     fn dasm(&self) {
         println!("\t{self:?}");
-    }
-}
-
-impl Step for Insn {
-    fn first() -> Self {
-        Self(0)
-    }
-
-    fn next(&mut self) -> crate::IterationResult {
-        if self.0 >= 0xefff_ffff {
-            // There are no valid instructions in this range.
-            Err(crate::StepError::End)
-        } else {
-            self.0 += 1;
-            self.fixup()?;
-            Ok(())
-        }
     }
 }
 

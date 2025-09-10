@@ -9,7 +9,7 @@ use crate::static_analysis::Fixup;
 /// to a datum of some type. For example, if you have a type representing the register file, and
 /// some type represents the machine's instruction, these methods can communicate what use the
 /// instruction makes of each register.
-pub trait DataFlow<Datum> {
+pub trait DataFlow<Datum> : crate::search::Instruction {
     /// Returns `true` iff the instruction reads from `datum`.
     fn reads(&self, datum: &Datum) -> bool;
 

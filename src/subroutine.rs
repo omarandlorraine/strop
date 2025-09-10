@@ -4,7 +4,7 @@ use crate::Sequence;
 use crate::StaticAnalysis;
 
 /// Trait for selecting instructions at various points of a subroutine.
-pub trait ShouldReturn {
+pub trait ShouldReturn: crate::search::Instruction {
     /// Returns an Err(static_analysis) if the instruction does not return from a subroutine, and
     /// Ok(()) otherwise.
     fn should_return(&self, offset: usize) -> crate::StaticAnalysis<Self>
@@ -59,7 +59,7 @@ pub fn not_allowed_in_leaf<Insn: ShouldReturn>(sequence: &Sequence<Insn>) -> Sta
     Ok(())
 }
 
-pub fn branches_in_range<Insn: crate::Branch + crate::Encode<u8>>(
+pub fn branches_in_range<Insn: crate::search::Instruction + crate::Branch + crate::Encode<u8>>(
     sequence: &Sequence<Insn>,
 ) -> crate::StaticAnalysis<Insn> {
     // Make a note of the start addresses of all instructions in the subroutine

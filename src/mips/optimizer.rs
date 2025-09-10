@@ -8,10 +8,8 @@ use crate::mips::Insn;
 use crate::static_analysis::Fixup;
 
 pub fn skip_pointless_instructions(sequence: &Sequence<Insn>) -> StaticAnalysis<Insn> {
-    use crate::Step;
-
     for (offs, insn) in sequence.iter().enumerate() {
-        Fixup::check(!insn.pointless(), "PointlessInstruction", Insn::next, offs)?;
+        Fixup::check(!insn.pointless(), "PointlessInstruction", crate::search::Instruction::increment, offs)?;
     }
     Ok(())
 }

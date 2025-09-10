@@ -2,30 +2,20 @@
 
 use crate::Disassemble;
 use crate::Encode;
-use crate::Goto;
 use crate::IterationResult;
-use crate::Step;
 use crate::static_analysis::Fixup;
 use std::ops::{Index, IndexMut};
+use crate::search::Instruction;
 
-mod mutate;
-
-/// `Sequence<T>` is a straight-line sequence of things, such as machine instructions or other
-/// sequences.
+/// `Sequence<Insn>` is a straight-line sequence of machine instructions.
 ///
-/// This datatype is intended to represent a point in a search space, and so `impl`s
-/// strop's `Random` and `Step` traits.  This means that strop can search across the search
-/// space of things represented by the `Sequence<T>`.
+/// This datatype is intended to represent a point in a search space, and so its methods
+/// convenience walking around a search space, facilitating exhaustive and stochastic search
+/// algorithms.
 #[derive(Clone, Default, Debug, PartialEq)]
-pub struct Sequence<T>(Vec<T>);
+pub struct Sequence<Insn: Instruction>(Vec<Insn>);
 
-impl<Insn> AsRef<Sequence<Insn>> for Sequence<Insn> {
-    fn as_ref(&self) -> &Sequence<Insn> {
-        self
-    }
-}
-
-impl<T> From<Vec<&Vec<T>>> for Sequence<T>
+impl<T: Instruction> From<Vec<&Vec<T>>> for Sequence<T>
 where
     T: Clone,
 {
@@ -42,7 +32,7 @@ where
     }
 }
 
-impl<T: Step> Sequence<T> {
+impl<T: Instruction> Sequence<T> {
     /// In a deterministic way compatible with the BruteForce search algorithm, mutates the
     /// Sequence at the offset in the given way.
     pub fn mut_at(&mut self, change: fn(&mut T) -> IterationResult, offset: usize) {
@@ -56,16 +46,37 @@ impl<T: Step> Sequence<T> {
     pub fn apply_fixup(&mut self, fixup: &Fixup<T>) {
         self.mut_at(fixup.advance, fixup.offset);
     }
+
+    /// steps the sequence at the given offset
+    fn step_at(&mut self, offs: usize) {
+        let mut offset = offs;
+        loop {
+            if offset == self.0.len() {
+                self.0.push(T::first());
+                break;
+            } else if self.0[offset].increment().is_err() {
+                self.0[offset] = T::first();
+                offset += 1;
+            } else {
+                break;
+            }
+        }
+    }
+
+    pub fn next(&mut self) -> IterationResult {
+        self.step_at(0);
+        Ok(())
+    }
 }
 
-impl<T> Sequence<T> {
+impl<T: Instruction> Sequence<T> {
     /// Returns the index to the last element in the sequence
     pub fn last_instruction_offset(&self) -> usize {
         self.0.len() - 1
     }
 }
 
-impl<T> Index<usize> for Sequence<T> {
+impl<T: Instruction> Index<usize> for Sequence<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -73,13 +84,13 @@ impl<T> Index<usize> for Sequence<T> {
     }
 }
 
-impl<T> IndexMut<usize> for Sequence<T> {
+impl<T: Instruction> IndexMut<usize> for Sequence<T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.0[index]
     }
 }
 
-impl<T> std::ops::Deref for Sequence<T> {
+impl<T: Instruction> std::ops::Deref for Sequence<T> {
     type Target = Vec<T>;
 
     fn deref(&self) -> &Self::Target {
@@ -87,13 +98,13 @@ impl<T> std::ops::Deref for Sequence<T> {
     }
 }
 
-impl<T> std::ops::DerefMut for Sequence<T> {
+impl<T: Instruction> std::ops::DerefMut for Sequence<T> {
     fn deref_mut(&mut self) -> &mut Vec<T> {
         &mut self.0
     }
 }
 
-impl<T> IntoIterator for Sequence<T> {
+impl<T: Instruction> IntoIterator for Sequence<T> {
     type Item = T;
     type IntoIter = <Vec<T> as IntoIterator>::IntoIter;
 
@@ -102,7 +113,7 @@ impl<T> IntoIterator for Sequence<T> {
     }
 }
 
-impl<T> Disassemble for Sequence<T>
+impl<T: Instruction> Disassemble for Sequence<T>
 where
     T: Disassemble,
 {
@@ -113,46 +124,11 @@ where
     }
 }
 
-impl<T, U> Encode<U> for Sequence<T>
+impl<T: Instruction, U> Encode<U> for Sequence<T>
 where
     T: Encode<U>,
 {
     fn encode(&self) -> Vec<U> {
         self.0.iter().flat_map(|i| i.encode()).collect()
-    }
-}
-
-impl<T: Step> Sequence<T> {
-    /// steps the sequence at the given offset
-    pub fn step_at(&mut self, offs: usize) {
-        let mut offset = offs;
-        loop {
-            if offset == self.0.len() {
-                self.0.push(T::first());
-                break;
-            } else if self.0[offset].next().is_err() {
-                self.0[offset] = T::first();
-                offset += 1;
-            } else {
-                break;
-            }
-        }
-    }
-}
-
-impl<T: Clone + Step> Step for Sequence<T> {
-    fn first() -> Self {
-        Self(vec![])
-    }
-
-    fn next(&mut self) -> IterationResult {
-        self.step_at(0);
-        Ok(())
-    }
-}
-
-impl<SamplePoint: std::clone::Clone> Goto<SamplePoint> for Sequence<SamplePoint> {
-    fn goto(&mut self, other: &[SamplePoint]) {
-        self.0 = other.to_vec();
     }
 }

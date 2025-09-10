@@ -8,10 +8,6 @@ license = "MIT"
 repository = "https://github.com/omarandlorraine/strop"
 homepage = "https://github.com/omarandlorraine/strop"
 
-[[bin]]
-name = "mips"
-path = "src/tests/mips.rs"
-
 [features]
 default = ["armv4t", "m6502", "m6809", "z80", "mips", "sm83"]
 armv4t = ["armv4t_emu", "unarm"]

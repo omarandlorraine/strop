@@ -35,11 +35,11 @@ pub mod mips;
 mod sequence;
 pub use sequence::Sequence;
 
+mod search;
+pub use search::Searchable;
+
 pub mod test;
 pub use test::TestSuite;
-
-mod genetic;
-pub use genetic::Generate;
 
 pub mod bruteforce;
 
@@ -50,17 +50,8 @@ pub mod branches;
 pub mod dataflow;
 pub use branches::Branch;
 
-/// Impl this on a datatype that may be iterated by mutating the datum in place. This is then used
-/// by the library to perform bruteforce searches and such
-pub trait Step {
-    /// Advances the value to the next state.
-    /// Returns `Ok(())` if the step was successful.
-    /// Returns `Err(StepError::End)` if the end has been reached.
-    fn next(&mut self) -> IterationResult;
-
-    /// Returns the first value
-    fn first() -> Self;
-}
+pub mod triplets;
+pub use triplets::Triplet;
 
 /// Enum representing possible errors when stepping
 #[derive(Debug, PartialEq, Eq)]
@@ -94,16 +85,6 @@ pub trait Disassemble {
     fn dasm(&self);
 }
 
-pub trait Mutate {
-    //! A trait for anything that can be randomly mutated
-
-    /// Returns a random value
-    fn random() -> Self;
-
-    /// Mutates the object in some random way
-    fn mutate(&mut self);
-}
-
 pub trait Crossover {
     //! A trait for taking two items having the same type, and producing a thrid item of the same
     //! type, having a value being a mashup of the two parents. Such a thing is used in the genetic
@@ -111,20 +92,6 @@ pub trait Crossover {
 
     /// spawns a child from two parents
     fn crossover(a: &Self, b: &Self) -> Self;
-}
-
-pub trait Goto<Insn> {
-    //! Trait for starting a search from a particular point in the search space.
-
-    /// Replace self with some other value
-    fn goto(&mut self, destination: &[Insn]);
-}
-
-impl<Insn: Clone, S: Clone + AsMut<Sequence<Insn>>> Goto<Insn> for S {
-    fn goto(&mut self, destination: &[Insn]) {
-        let s = self.as_mut();
-        s.goto(destination);
-    }
 }
 
 pub trait Encode<T> {

@@ -3,42 +3,17 @@
 use crate::Callable;
 use crate::Disassemble;
 use crate::Sequence;
-use crate::Step;
 use crate::mips::Insn;
 use crate::mips::emu::Parameters;
 use crate::mips::emu::ReturnValue;
 use crate::test::Vals;
 
 /// Searches for functions complying to the O32 calling convention
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct O32<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> {
     seq: Sequence<Insn>,
     params: std::marker::PhantomData<Params>,
     return_value: std::marker::PhantomData<RetVal>,
-}
-
-impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> Default
-    for O32<Params, RetVal>
-{
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> Step
-    for O32<Params, RetVal>
-{
-    fn first() -> Self {
-        Self {
-            seq: Step::first(),
-            params: Default::default(),
-            return_value: Default::default(),
-        }
-    }
-
-    fn next(&mut self) -> crate::IterationResult {
-        self.seq.next()
-    }
 }
 
 impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> Callable<Params, RetVal>
@@ -58,21 +33,16 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> Disass
 }
 
 impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> O32<Params, RetVal> {
-    /// Instantiates a new, empty O32.
-    pub fn new() -> Self {
-        use crate::Step;
-        Self::first()
-    }
     fn analyze(&self) -> crate::StaticAnalysis<Insn> {
         use trapezoid_core::cpu::RegisterType;
-        crate::mips::optimizer::skip_pointless_instructions(self.seq.as_ref())?;
+        crate::mips::optimizer::skip_pointless_instructions(&self.seq)?;
         crate::subroutine::leaf_subroutine(&self.seq)?;
 
-        Params::analyze_this(self.seq.as_ref())?;
-        RetVal::analyze_this(self.seq.as_ref())?;
+        Params::analyze_this(&self.seq)?;
+        RetVal::analyze_this(&self.seq)?;
 
         for reg in [RegisterType::Zero, RegisterType::At, RegisterType::Sp] {
-            crate::dataflow::dont_expect_write(self.seq.as_ref(), &reg)?;
+            crate::dataflow::dont_expect_write(&self.seq, &reg)?;
         }
 
         for reg in [
@@ -89,11 +59,11 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> O32<Pa
             RegisterType::T8,
             RegisterType::T9,
         ] {
-            crate::dataflow::uninitialized(self.seq.as_ref(), &reg)?;
+            crate::dataflow::uninitialized(&self.seq, &reg)?;
         }
 
         crate::dataflow::allocate_registers(
-            self.seq.as_ref(),
+            &self.seq,
             &[
                 RegisterType::T0,
                 RegisterType::T1,
@@ -124,22 +94,9 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> O32<Pa
             RegisterType::Sp,
             RegisterType::Fp,
         ] {
-            crate::dataflow::leave_alone(self.seq.as_ref(), &reg)?;
+            crate::dataflow::leave_alone(&self.seq, &reg)?;
         }
-        crate::dataflow::leave_alone_except_last(self.seq.as_ref(), &RegisterType::Ra)?;
-        Ok(())
-    }
-}
-
-impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue>
-    crate::bruteforce::BruteForceSearch for O32<Params, RetVal>
-{
-    fn next(&mut self) -> crate::IterationResult {
-        self.seq.next()?;
-        while let Err(sa) = self.analyze() {
-            self.seq.apply_fixup(&sa);
-        }
-
+        crate::dataflow::leave_alone_except_last(&self.seq, &RegisterType::Ra)?;
         Ok(())
     }
 }
