@@ -9,10 +9,6 @@ repository = "https://github.com/omarandlorraine/strop"
 homepage = "https://github.com/omarandlorraine/strop"
 
 [[bin]]
-name = "sm83"
-path = "src/tests/sm83.rs"
-
-[[bin]]
 name = "mips"
 path = "src/tests/mips.rs"
 
