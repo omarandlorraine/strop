@@ -274,4 +274,18 @@ impl<InputParameters: Vals, ReturnValue: Vals> TestSuite<InputParameters, Return
         }
         result
     }
+
+    /// Returns a `Searchable` using this test suite.
+    pub fn searchable(self, triplet: crate::Triplet) -> Box<dyn crate::Searchable<InputParameters, ReturnValue>> {
+        use crate::Triplet;
+        match triplet {
+            Triplet::MipsUnknownLinuxGnu |
+            Triplet::MipsUnknownLinuxMusl|
+            Triplet::MipsUnknownLinuxUclibc =>
+            Box::new(crate::mips::O32::<f32, f32>::new(self)),
+
+            Triplet::Armv4tUnknownLinuxGnueabi =>
+            Box::new(crate::armv4t::Aapcs32::<f32, f32>::new(self)),
+        }
+    }
 }

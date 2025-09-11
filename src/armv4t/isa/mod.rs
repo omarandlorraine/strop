@@ -1,7 +1,7 @@
 //! Module for representing ARMv4T machine code instructions.
 
 pub mod decode;
-mod mutate;
+use crate::search::Instruction ;
 use crate::StaticAnalysis;
 use crate::static_analysis::Fixup;
 
@@ -87,16 +87,6 @@ impl Insn {
         true
     }
 
-    /// Increments the isntruction word by 1
-    pub fn increment(&mut self) -> crate::IterationResult {
-        if self.0 > 0xfffffffe {
-            Err(crate::StepError::End)
-        } else {
-            self.0 += 1;
-            Ok(())
-        }
-    }
-
     fn make_return(&mut self) -> crate::IterationResult {
         // TODO: There are other possible return instructions here.
         use std::cmp::Ordering;
@@ -112,13 +102,41 @@ impl Insn {
     }
 }
 
-impl crate::Step for Insn {
+impl Instruction for Insn {
     fn first() -> Self {
         Insn(0)
     }
 
-    fn next(&mut self) -> crate::IterationResult {
-        self.increment()
+    fn increment(&mut self) -> crate::IterationResult {
+        if self.0 > 0xfffffffe {
+            Err(crate::StepError::End)
+        } else {
+            self.0 += 1;
+            Ok(())
+        }
+    }
+
+    fn random() -> Self {
+        let mut s = Self(rand::random());
+        s.fixup();
+        s
+    }
+
+    fn mutate(&mut self) {
+        use rand::Rng;
+
+        if rand::random() {
+            // could flip a bit in the instruction word
+            let mask: u32 = 1 << rand::rng().random_range(0..32);
+            self.0 ^= mask;
+        } else {
+            // could completely change the instruction word to something completely different
+            self.0 = rand::random()
+        }
+
+        while !self.fixup() {
+            self.0 = rand::random()
+        }
     }
 }
 

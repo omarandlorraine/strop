@@ -96,14 +96,14 @@ where
 
 /// The AAPCS32-compliant function
 #[derive(Clone, Debug, Default)]
-pub struct Function<Params, RetVal> {
+pub struct Aapcs32<Params, RetVal> {
     seq: crate::Sequence<Insn>,
     params: std::marker::PhantomData<Params>,
     retval: std::marker::PhantomData<RetVal>,
 }
 
 impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal>
-    for Function<Params, RetVal>
+    for Aapcs32<Params, RetVal>
 {
     fn call(&self, input: Params) -> crate::RunResult<RetVal> {
         let mut emu = Emulator::init(&input);
@@ -112,14 +112,8 @@ impl<Params: ParameterList, RetVal: ReturnValue> Callable<Params, RetVal>
     }
 }
 
-impl<Params, RetVal> crate::Disassemble for Function<Params, RetVal> {
+impl<Params, RetVal> crate::Disassemble for Aapcs32<Params, RetVal> {
     fn dasm(&self) {
         self.seq.dasm()
-    }
-}
-
-impl<Params, RetVal> crate::Goto<Insn> for Function<Params, RetVal> {
-    fn goto(&mut self, t: &[Insn]) {
-        self.seq.goto(t);
     }
 }

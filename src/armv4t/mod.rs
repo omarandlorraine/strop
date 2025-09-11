@@ -6,3 +6,4 @@ pub mod isa;
 
 pub use emu::Emulator;
 pub use isa::Insn;
+pub use aapcs32::Aapcs32;

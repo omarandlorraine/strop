@@ -17,8 +17,8 @@
 mod static_analysis;
 pub use static_analysis::StaticAnalysis;
 
-//#[cfg(feature = "armv4t")]
-//pub mod armv4t;
+#[cfg(feature = "armv4t")]
+pub mod armv4t;
 //#[cfg(feature = "m6502")]
 //pub mod m6502;
 //#[cfg(feature = "m6809")]
