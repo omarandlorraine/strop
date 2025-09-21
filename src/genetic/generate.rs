@@ -2,7 +2,7 @@ use crate::Callable;
 use crate::Crossover;
 use crate::Mutate;
 use crate::TestSuite;
-use crate::test::Vals;
+use crate::test::{Input, Output};
 
 use crate::genetic::ScoredCandidate;
 
@@ -26,8 +26,8 @@ pub struct Generate<
 }
 
 impl<
-    InputParameters: Vals,
-    ReturnValue: Vals,
+    InputParameters: Input,
+    ReturnValue: Output,
     T: Callable<InputParameters, ReturnValue>,
     U: Callable<InputParameters, ReturnValue> + Mutate + Crossover + Clone + crate::Disassemble,
 > Generate<InputParameters, ReturnValue, T, U>

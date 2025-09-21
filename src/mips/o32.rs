@@ -7,17 +7,18 @@ use crate::Step;
 use crate::mips::Insn;
 use crate::mips::emu::Parameters;
 use crate::mips::emu::ReturnValue;
-use crate::test::Vals;
+use crate::test::Input;
+use crate::test::Output;
 
 /// Searches for functions complying to the O32 calling convention
 #[derive(Clone, Debug)]
-pub struct O32<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> {
+pub struct O32<Params: Copy + Input + Parameters, RetVal: Copy + Output + ReturnValue> {
     seq: Sequence<Insn>,
     params: std::marker::PhantomData<Params>,
     return_value: std::marker::PhantomData<RetVal>,
 }
 
-impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> Default
+impl<Params: Copy + Input + Parameters, RetVal: Copy + Output + ReturnValue> Default
     for O32<Params, RetVal>
 {
     fn default() -> Self {
@@ -25,7 +26,7 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> Defaul
     }
 }
 
-impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> Step
+impl<Params: Copy + Input + Parameters, RetVal: Copy + Output + ReturnValue> Step
     for O32<Params, RetVal>
 {
     fn first() -> Self {
@@ -41,15 +42,15 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> Step
     }
 }
 
-impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> Callable<Params, RetVal>
-    for O32<Params, RetVal>
+impl<Params: Copy + Input + Parameters, RetVal: Copy + Output + ReturnValue>
+    Callable<Params, RetVal> for O32<Params, RetVal>
 {
     fn call(&self, p: Params) -> Result<RetVal, crate::RunError> {
         crate::mips::emu::call(&self.seq, p)
     }
 }
 
-impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> Disassemble
+impl<Params: Copy + Input + Parameters, RetVal: Copy + Output + ReturnValue> Disassemble
     for O32<Params, RetVal>
 {
     fn dasm(&self) {
@@ -57,7 +58,7 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> Disass
     }
 }
 
-impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> O32<Params, RetVal> {
+impl<Params: Copy + Input + Parameters, RetVal: Copy + Output + ReturnValue> O32<Params, RetVal> {
     /// Instantiates a new, empty O32.
     pub fn new() -> Self {
         use crate::Step;
@@ -131,7 +132,7 @@ impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue> O32<Pa
     }
 }
 
-impl<Params: Copy + Vals + Parameters, RetVal: Copy + Vals + ReturnValue>
+impl<Params: Copy + Input + Parameters, RetVal: Copy + Output + ReturnValue>
     crate::bruteforce::BruteForceSearch for O32<Params, RetVal>
 {
     fn next(&mut self) -> crate::IterationResult {

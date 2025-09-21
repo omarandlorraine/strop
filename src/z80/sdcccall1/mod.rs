@@ -1,11 +1,12 @@
 use crate::Callable;
 use crate::Sequence;
 use crate::StaticAnalysis;
-use crate::test::Vals;
+use crate::test::Input;
+use crate::test::Output;
 use crate::z80::Emulator;
 use crate::z80::Insn;
 
-pub trait ParameterList: Copy + Vals {
+pub trait ParameterList: Copy + Input {
     fn put(&self, emu: &mut Emulator);
 }
 
@@ -23,7 +24,7 @@ impl ParameterList for u16 {
 
 // TODO: Implement this for more types. The calling convention supports return signed types, 32-bit
 // types, and perhaps others which are not supported (yet)
-pub trait ReturnValue: Copy + Vals + PartialEq {
+pub trait ReturnValue: Copy + Output + PartialEq {
     fn get(emu: &Emulator) -> Self;
 }
 

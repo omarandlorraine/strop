@@ -1,9 +1,9 @@
 mod generate;
+use crate::test::{Input, Output};
 pub use generate::Generate;
 
 use crate::Callable;
 use crate::TestSuite;
-use crate::test::Vals;
 
 #[derive(Clone, Debug)]
 struct ScoredCandidate<InputParameters, ReturnValue, T: Callable<InputParameters, ReturnValue>> {
@@ -13,15 +13,15 @@ struct ScoredCandidate<InputParameters, ReturnValue, T: Callable<InputParameters
     ret: std::marker::PhantomData<ReturnValue>,
 }
 
-impl<InputParameters: Vals, ReturnValue: Vals, U: Callable<InputParameters, ReturnValue>> AsRef<U>
-    for ScoredCandidate<InputParameters, ReturnValue, U>
+impl<InputParameters: Input, ReturnValue: Output, U: Callable<InputParameters, ReturnValue>>
+    AsRef<U> for ScoredCandidate<InputParameters, ReturnValue, U>
 {
     fn as_ref(&self) -> &U {
         &self.candidate
     }
 }
 
-impl<InputParameters: Vals, ReturnValue: Vals, U: Callable<InputParameters, ReturnValue>>
+impl<InputParameters: Input, ReturnValue: Output, U: Callable<InputParameters, ReturnValue>>
     ScoredCandidate<InputParameters, ReturnValue, U>
 {
     pub fn new(candidate: U, tests: &TestSuite<InputParameters, ReturnValue>) -> Self {

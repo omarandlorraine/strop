@@ -5,7 +5,8 @@ use crate::Encode;
 use crate::Sequence;
 use crate::StaticAnalysis;
 use crate::Step;
-use crate::test::Vals;
+use crate::test::Input;
+use crate::test::Output;
 
 use crate::x80::EmuInterface;
 use crate::x80::X80;
@@ -16,7 +17,7 @@ use crate::x80::data::Datum;
 
 /// A type implementing this represents a parameter list, (i.e. a function's arguments), and knows
 /// how to copy itself into an emulator as part of a function call.
-pub trait ParameterList: Copy + Vals {
+pub trait ParameterList: Copy + Input {
     /// Put the value(s) into the expected location(s) in the emulator.
     fn put<E: EmuInterface>(&self, emu: &mut E);
 
@@ -52,7 +53,7 @@ impl ParameterList for u16 {
 /// A type implementing this represents a return value, (i.e. anything a function can return under
 /// the calling convention), and knows how to copy itself from an emulator at the end of a function
 /// call.
-pub trait ReturnValue: Copy + Vals + PartialEq {
+pub trait ReturnValue: Copy + Output + PartialEq {
     /// Get the value from the emulator
     fn get<E: EmuInterface>(emu: &E) -> Self;
 

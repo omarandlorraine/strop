@@ -3,7 +3,7 @@
 use crate::Callable;
 use crate::Disassemble;
 use crate::TestSuite;
-use crate::test::Vals;
+use crate::test::{Input, Output};
 
 /// Trait for things that can be bruteforce searched
 pub trait BruteForceSearch {
@@ -42,11 +42,12 @@ impl<
 }
 
 impl<
-    InputParameters: Copy + Vals,
-    ReturnValue: Vals + std::cmp::PartialEq + Clone,
+    InputParameters: Copy + Input,
+    ReturnValue: Output + std::cmp::PartialEq + Clone,
     TargetFunction: Callable<InputParameters, ReturnValue>,
     Searchable: Callable<InputParameters, ReturnValue> + BruteForceSearch + Clone + Disassemble,
-> Callable<InputParameters, ReturnValue> for BruteForce<InputParameters, ReturnValue, TargetFunction, Searchable>
+> Callable<InputParameters, ReturnValue>
+    for BruteForce<InputParameters, ReturnValue, TargetFunction, Searchable>
 {
     fn call(&self, p: InputParameters) -> crate::RunResult<ReturnValue> {
         self.candidate.call(p)
@@ -54,8 +55,8 @@ impl<
 }
 
 impl<
-    InputParameters: Copy + Vals,
-    ReturnValue: Vals + std::cmp::PartialEq + Clone,
+    InputParameters: Copy + Input,
+    ReturnValue: Output + std::cmp::PartialEq + Clone,
     TargetFunction: Callable<InputParameters, ReturnValue>,
     Searchable: Callable<InputParameters, ReturnValue> + BruteForceSearch + Clone + Disassemble,
 > BruteForce<InputParameters, ReturnValue, TargetFunction, Searchable>
