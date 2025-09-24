@@ -14,6 +14,7 @@
 #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 #![forbid(unsafe_code)]
 
+pub mod porcelain;
 mod static_analysis;
 pub use static_analysis::StaticAnalysis;
 
