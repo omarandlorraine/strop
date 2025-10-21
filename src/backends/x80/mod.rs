@@ -120,6 +120,9 @@ pub trait X80: crate::Instruction + Sized {
             0,
         )
     }
+
+    // returns the length of the instruction, i.e.  the number of prefix bytes plus the opcode.
+    fn instruction_length(&self) -> usize;
 }
 
 /// Associates an Instruction type with a type that can run the subroutines, passing arguments in
