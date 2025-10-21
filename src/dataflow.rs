@@ -1,6 +1,7 @@
 //! This module contains miscellaneous conveniences for performing dataflow analysis on code
 //! sequences.
 
+use crate::Instruction;
 use crate::Sequence;
 use crate::StaticAnalysis;
 use crate::static_analysis::Fixup;
@@ -23,7 +24,7 @@ pub trait DataFlow<Datum> {
 }
 
 /// Returns a static analysis modifying any instructions that read from or writes to `datum`.
-pub fn leave_alone<Datum, Insn: DataFlow<Datum>>(
+pub fn leave_alone<Datum, Insn: DataFlow<Datum> + Instruction>(
     sequence: &Sequence<Insn>,
     datum: &Datum,
 ) -> StaticAnalysis<Insn> {
@@ -38,7 +39,7 @@ pub fn leave_alone<Datum, Insn: DataFlow<Datum>>(
 /// Returns a static analysis modifying any instructions that read from or writes to `datum`, but
 /// ignores the last instruction in the sequence. Handy for cases like leaf subroutines on MIPS or ARM,
 /// where only the last instruction should use the link register.
-pub fn leave_alone_except_last<Datum, Insn: DataFlow<Datum>>(
+pub fn leave_alone_except_last<Datum, Insn: DataFlow<Datum> + Instruction>(
     sequence: &Sequence<Insn>,
     datum: &Datum,
 ) -> StaticAnalysis<Insn> {
@@ -55,7 +56,7 @@ pub fn leave_alone_except_last<Datum, Insn: DataFlow<Datum>>(
 /// If the sequence reads from `datum` before writing to it, then this function returns a
 /// StaticAnalysis modifying the first instruction in the sequence. Successively applying these
 /// ensures that the sequence will not read from the `datum` before it has been initialized.
-pub fn uninitialized<Datum, Insn: DataFlow<Datum>>(
+pub fn uninitialized<Datum, Insn: DataFlow<Datum> + Instruction>(
     sequence: &Sequence<Insn>,
     datum: &Datum,
 ) -> StaticAnalysis<Insn> {
@@ -89,7 +90,7 @@ pub fn uninitialized<Datum, Insn: DataFlow<Datum>>(
 /// If the sequence writes to `datum` without reading from it afterward, then this function returns a
 /// StaticAnalysis modifying the first instruction in the sequence that writes to `datum`. This
 /// means that The sequence will not write to `datum` unless it is later used.
-pub fn dont_expect_write<Datum, Insn: DataFlow<Datum>>(
+pub fn dont_expect_write<Datum, Insn: DataFlow<Datum> + Instruction>(
     sequence: &Sequence<Insn>,
     datum: &Datum,
 ) -> StaticAnalysis<Insn> {
@@ -120,7 +121,7 @@ pub fn dont_expect_write<Datum, Insn: DataFlow<Datum>>(
 /// If the sequence does not contains any instruction that writes to `datum`, then this returns a
 /// StaticAnalysis modifying the first instruction in the sequence. Successively applying these
 /// will make sure that the sequence writes to `datum`.
-pub fn expect_write<Datum, Insn: DataFlow<Datum>>(
+pub fn expect_write<Datum, Insn: DataFlow<Datum> + Instruction>(
     sequence: &Sequence<Insn>,
     datum: &Datum,
 ) -> StaticAnalysis<Insn> {
@@ -134,7 +135,7 @@ pub fn expect_write<Datum, Insn: DataFlow<Datum>>(
 /// If the sequence does not contains any instruction that reads from `datum`, then this returns a
 /// StaticAnalysis modifying the first instruction in the sequence. Successively applying these
 /// will make sure that the sequence reads from `datum`.
-pub fn expect_read<Datum, Insn: DataFlow<Datum>>(
+pub fn expect_read<Datum, Insn: DataFlow<Datum> + Instruction>(
     sequence: &Sequence<Insn>,
     datum: &Datum,
 ) -> StaticAnalysis<Insn> {
@@ -146,7 +147,10 @@ pub fn expect_read<Datum, Insn: DataFlow<Datum>>(
 }
 
 /// Returns true if the datum is in use by the sequence, that is, either read from or written to.
-pub fn in_use<Datum, Insn: DataFlow<Datum>>(sequence: &Sequence<Insn>, datum: &Datum) -> bool {
+pub fn in_use<Datum, Insn: DataFlow<Datum> + Instruction>(
+    sequence: &Sequence<Insn>,
+    datum: &Datum,
+) -> bool {
     sequence
         .iter()
         .any(|insn| insn.reads(datum) || insn.writes(datum))
@@ -156,7 +160,7 @@ pub fn in_use<Datum, Insn: DataFlow<Datum>>(sequence: &Sequence<Insn>, datum: &D
 /// example, to make sure that a program does not use register 2 if if could be equivalently
 /// rewritten to use register 1, and so this can reduce the search space by the number of
 /// registers.
-pub fn allocate_registers<Datum, Insn: DataFlow<Datum>>(
+pub fn allocate_registers<Datum, Insn: DataFlow<Datum> + Instruction>(
     sequence: &Sequence<Insn>,
     registers: &[Datum],
 ) -> StaticAnalysis<Insn> {

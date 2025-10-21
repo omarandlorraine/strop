@@ -16,12 +16,14 @@ pub type StaticAnalysis<Instruction> = Result<(), Fixup<Instruction>>;
 pub struct Fixup<Instruction> {
     /// Specifies at what offset into this sequence the problem was found
     pub offset: usize,
+    /// How to fix the problem
     pub advance: fn(&mut Instruction) -> IterationResult,
     /// Human-readable description of the problem
     pub reason: &'static str,
 }
 
 impl<Instruction> Fixup<Instruction> {
+    /// Construct a new Fixup
     pub fn new(
         reason: &'static str,
         advance: fn(&mut Instruction) -> IterationResult,

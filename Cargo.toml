@@ -8,14 +8,6 @@ license = "MIT"
 repository = "https://github.com/omarandlorraine/strop"
 homepage = "https://github.com/omarandlorraine/strop"
 
-[[bin]]
-name = "sm83"
-path = "src/tests/sm83.rs"
-
-[[bin]]
-name = "mips"
-path = "src/tests/mips.rs"
-
 [features]
 default = ["armv4t", "m6502", "m6809", "z80", "mips", "sm83"]
 armv4t = ["armv4t_emu", "unarm"]
@@ -28,11 +20,11 @@ sm83 = ["mizu-core"]
 [dependencies]
 armv4t_emu = { version = "0.1.0", optional = true }
 rand = "0.9.1"
-unarm = { version = "=1.9.0", optional = true }
+unarm = { git="https://github.com/AetiasHax/unarm", branch="defs_uses", optional = true }
 emu6809 = { version = "0.1.2", optional = true }
 iz80 = { version = "0.4.1", optional = true }
 mos6502 = {version = "0.6.0", optional = true }
 dez80 = { version = "4.0.1", optional = true }
 bitmatch = "0.1.1"
 trapezoid-core = { version = "0.3.0", default-features = false, optional = true }
-mizu-core = { git = "https://github.com/omarandlorraine/mizu.git", branch = "strop-support", optional = true }
+mizu-core = { version="1.2.0", optional = true }
