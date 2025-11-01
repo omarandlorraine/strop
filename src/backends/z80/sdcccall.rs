@@ -112,24 +112,24 @@ impl crate::test::GetReturnValues for SdccRunner {
     }
     fn get_u16(&mut self) -> RunResult<u16> {
         self.already_got()?;
-        self.vals.push(Datum::B);
-        self.vals.push(Datum::C);
-        Ok(self.get_bc())
+        self.vals.push(Datum::D);
+        self.vals.push(Datum::E);
+        Ok(u16::from_le_bytes([self.get_d(), self.get_e()]))
     }
     fn get_i32(&mut self) -> RunResult<i32> {
         Ok(self.get_u32()? as i32)
     }
     fn get_u32(&mut self) -> RunResult<u32> {
         self.already_got()?;
-        self.vals.push(Datum::B);
-        self.vals.push(Datum::C);
+        self.vals.push(Datum::H);
+        self.vals.push(Datum::L);
         self.vals.push(Datum::D);
         self.vals.push(Datum::E);
         Ok(u32::from_be_bytes([
+            self.get_h(),
+            self.get_l(),
             self.get_d(),
             self.get_e(),
-            self.get_b(),
-            self.get_c(),
         ]))
     }
     fn get_f32(&mut self) -> RunResult<f32> {
@@ -148,8 +148,8 @@ impl crate::test::TakeParameters for SdccRunner {
         if !self.params.contains(&Datum::A) {
             self.set_a(v);
             Ok(())
-        } else if !self.params.contains(&Datum::E) {
-            self.set_e(v);
+        } else if !self.params.contains(&Datum::L) {
+            self.set_l(v);
             Ok(())
         } else {
             // TODO: it doesn't fit in CPU registers, put it on the stack!
@@ -160,8 +160,8 @@ impl crate::test::TakeParameters for SdccRunner {
         self.put_u16(v as u16)
     }
     fn put_u16(&mut self, v: u16) -> RunResult<()> {
-        if !self.params.contains(&Datum::B) {
-            self.set_bc(v);
+        if !self.params.contains(&Datum::A) && !self.params.contains(&Datum::H) {
+            self.set_hl(v);
             Ok(())
         } else if !self.params.contains(&Datum::D) {
             self.set_de(v);
@@ -177,10 +177,10 @@ impl crate::test::TakeParameters for SdccRunner {
     fn put_u32(&mut self, v: u32) -> RunResult<()> {
         if self.params.is_empty() {
             let v = v.to_be_bytes();
-            self.set_d(v[0]);
-            self.set_e(v[1]);
-            self.set_b(v[2]);
-            self.set_c(v[3]);
+            self.set_h(v[0]);
+            self.set_l(v[1]);
+            self.set_d(v[2]);
+            self.set_e(v[3]);
             Ok(())
         } else {
             // TODO: it doesn't fit in CPU registers, put it on the stack!
