@@ -91,6 +91,9 @@ impl crate::Instruction for Instruction {
         } else {
             let len = self.decode().bytes;
             self.incr_at_offset(len - 1);
+            while self.decode_inner().is_none() {
+                self.incr_at_offset(self.instruction_length() - 1);
+            }
             Ok(())
         }
     }
