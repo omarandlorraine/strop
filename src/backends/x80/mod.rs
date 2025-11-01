@@ -91,6 +91,7 @@ pub trait EmuInterface {
     fn push(&mut self, val: u16);
 
     /// Pops a word off the stack and returns it
+    #[allow(dead_code)]
     fn pop(&mut self) -> u16;
 
     /// Writes a subroutine to memory and then calls it
