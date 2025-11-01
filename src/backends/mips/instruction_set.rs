@@ -6,7 +6,7 @@ pub struct Instruction(u32);
 
 impl std::fmt::Display for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        writeln!(f, "{}", self.decode())
+        write!(f, "{}", self.decode())
     }
 }
 
@@ -32,7 +32,7 @@ impl std::fmt::Debug for Instruction {
         if let Some(imm) = self.imm() {
             write!(f, " $imm={imm:?}")?;
         }
-        writeln!(f)
+        Ok(())
     }
 }
 
