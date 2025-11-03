@@ -17,8 +17,7 @@ search or a brute-force search.
 
 To see what strop could be used for:
 
- * [opt](examples/opt.rs) optimizes an existing machine code function
- * [gen](examples/gen.rs) generates a Z80 function matching the Rust function, after a fashion compiling Rust to Z80.
+ * [gen](examples/gen.rs) generates a function matching the Rust function, after a fashion compiling Rust to whichever target the user specifies.
  * [peephole](examples/peephole.rs) discovers lacunae in the peephole optimizers and other constraints
 
 ### Supported instruction sets:
@@ -34,4 +33,5 @@ Strop currently has the following back-ends:
  * **mips**, which targets the MIPS I architecture
     * Supports the GTE coprocessor found in a Playstation 1, thanks to the
       [trapezoid-core](https://github.com/Amjad50/Trapezoid) dependency.
+    * Does not support hardware floating point since emulation for that is lacking, but softfloat is supposed to work
  * **sm83**, which targets the SM83, also known as the Gameboy CPU
