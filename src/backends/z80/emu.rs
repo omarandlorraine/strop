@@ -15,7 +15,7 @@ impl std::fmt::Debug for Emulator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Emulator {{ a: {}, hl: {} }}",
+            "Z80Emulator {{ a: {}, hl: {} }}",
             self.get_a(),
             self.get_hl()
         )

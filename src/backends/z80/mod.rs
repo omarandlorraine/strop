@@ -1,6 +1,4 @@
-//! A strop backend targetting the SM83, also known as the LR35902 or the Gameboy CPU.
-//!
-//! It's a bit like a Z80 but not quite.
+//! A strop backend targetting the Zilog Z80.
 
 mod instruction_set;
 pub use instruction_set::Instruction;

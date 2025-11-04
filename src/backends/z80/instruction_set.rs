@@ -2,7 +2,7 @@
 use crate::backends::x80::X80;
 use crate::backends::x80::data::InstructionData;
 
-/// Represents a SM83 machine instruction
+/// Represents a Z80 machine instruction
 #[derive(Clone, Copy, PartialOrd, PartialEq, Default)]
 pub struct Instruction([u8; 3]);
 
