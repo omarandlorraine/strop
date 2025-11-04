@@ -22,3 +22,5 @@ jobs:
       run: cargo clippy -- -Dwarnings
     - name: test
       run: cargo test --release
+    - name: x86
+      run: cargo build --no-default-features --features x86

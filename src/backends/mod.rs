@@ -17,3 +17,6 @@ pub(crate) mod x80;
 
 #[cfg(feature = "z80")]
 pub mod z80;
+
+#[cfg(feature = "x86")]
+pub mod x86_64;
