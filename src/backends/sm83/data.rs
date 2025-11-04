@@ -4,6 +4,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // NOP
         mnemonic: "nop",
+        flow_control: false,
         opcode: 0x00,
         bytes: 1,
         cycles: 4,
@@ -30,6 +31,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD BC n16
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x01,
         bytes: 3,
         cycles: 12,
@@ -56,6 +58,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD (BC) A
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x02,
         bytes: 1,
         cycles: 8,
@@ -88,6 +91,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::N,
         negative: ReadWrite::N,
         half_carry: ReadWrite::N,
+        flow_control: false,
         carry: ReadWrite::N,
         a: ReadWrite::N,
         b: ReadWrite::Rmw,
@@ -114,6 +118,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::W,
         negative: ReadWrite::W,
         half_carry: ReadWrite::W,
+        flow_control: false,
         carry: ReadWrite::N,
         a: ReadWrite::N,
         b: ReadWrite::Rmw,
@@ -140,6 +145,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::W,
         negative: ReadWrite::W,
         half_carry: ReadWrite::W,
+        flow_control: false,
         carry: ReadWrite::N,
         a: ReadWrite::N,
         b: ReadWrite::Rmw,
@@ -160,6 +166,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD B n8
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x06,
         bytes: 2,
         cycles: 8,
@@ -186,6 +193,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RLCA
         mnemonic: "rlca",
+        flow_control: false,
         opcode: 0x07,
         bytes: 1,
         cycles: 4,
@@ -212,6 +220,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD (a16) SP
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x08,
         bytes: 3,
         cycles: 20,
@@ -244,6 +253,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::N,
         negative: ReadWrite::W,
         half_carry: ReadWrite::W,
+        flow_control: false,
         carry: ReadWrite::W,
         a: ReadWrite::N,
         b: ReadWrite::R,
@@ -264,6 +274,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD A (BC)
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x0a,
         bytes: 1,
         cycles: 8,
@@ -296,6 +307,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::N,
         negative: ReadWrite::N,
         half_carry: ReadWrite::N,
+        flow_control: false,
         carry: ReadWrite::N,
         a: ReadWrite::N,
         b: ReadWrite::Rmw,
@@ -322,6 +334,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::W,
         negative: ReadWrite::W,
         half_carry: ReadWrite::W,
+        flow_control: false,
         carry: ReadWrite::R,
         a: ReadWrite::N,
         b: ReadWrite::N,
@@ -348,6 +361,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::W,
         negative: ReadWrite::W,
         half_carry: ReadWrite::W,
+        flow_control: false,
         carry: ReadWrite::R,
         a: ReadWrite::N,
         b: ReadWrite::N,
@@ -368,6 +382,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD C n8
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x0e,
         bytes: 2,
         cycles: 8,
@@ -400,6 +415,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::W,
         negative: ReadWrite::W,
         half_carry: ReadWrite::W,
+        flow_control: false,
         carry: ReadWrite::W,
         a: ReadWrite::Rmw,
         b: ReadWrite::N,
@@ -426,6 +442,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::N,
         negative: ReadWrite::N,
         half_carry: ReadWrite::N,
+        flow_control: false,
         carry: ReadWrite::N,
         a: ReadWrite::N,
         b: ReadWrite::N,
@@ -446,6 +463,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD DE n16
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x11,
         bytes: 3,
         cycles: 12,
@@ -472,6 +490,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD (DE) A
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x12,
         bytes: 1,
         cycles: 8,
@@ -504,6 +523,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::N,
         negative: ReadWrite::N,
         half_carry: ReadWrite::N,
+        flow_control: false,
         carry: ReadWrite::N,
         a: ReadWrite::N,
         b: ReadWrite::N,
@@ -530,6 +550,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::W,
         negative: ReadWrite::W,
         half_carry: ReadWrite::W,
+        flow_control: false,
         carry: ReadWrite::N,
         a: ReadWrite::N,
         b: ReadWrite::N,
@@ -556,6 +577,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::W,
         negative: ReadWrite::W,
         half_carry: ReadWrite::W,
+        flow_control: false,
         carry: ReadWrite::N,
         a: ReadWrite::N,
         b: ReadWrite::N,
@@ -576,6 +598,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD D n8
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x16,
         bytes: 2,
         cycles: 8,
@@ -602,6 +625,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RLA
         mnemonic: "rla",
+        flow_control: false,
         opcode: 0x17,
         bytes: 1,
         cycles: 4,
@@ -634,6 +658,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::N,
         negative: ReadWrite::N,
         half_carry: ReadWrite::N,
+        flow_control: true,
         carry: ReadWrite::N,
         a: ReadWrite::N,
         b: ReadWrite::N,
@@ -660,6 +685,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::N,
         negative: ReadWrite::W,
         half_carry: ReadWrite::W,
+        flow_control: false,
         carry: ReadWrite::W,
         a: ReadWrite::N,
         b: ReadWrite::N,
@@ -680,6 +706,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD A (DE)
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x1a,
         bytes: 1,
         cycles: 8,
@@ -712,6 +739,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::N,
         negative: ReadWrite::N,
         half_carry: ReadWrite::N,
+        flow_control: false,
         carry: ReadWrite::N,
         a: ReadWrite::N,
         b: ReadWrite::N,
@@ -738,6 +766,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::W,
         negative: ReadWrite::W,
         half_carry: ReadWrite::W,
+        flow_control: false,
         carry: ReadWrite::N,
         a: ReadWrite::N,
         b: ReadWrite::N,
@@ -764,6 +793,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::W,
         negative: ReadWrite::W,
         half_carry: ReadWrite::W,
+        flow_control: false,
         carry: ReadWrite::N,
         a: ReadWrite::N,
         b: ReadWrite::N,
@@ -784,6 +814,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD E n8
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x1e,
         bytes: 2,
         cycles: 8,
@@ -816,6 +847,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::W,
         negative: ReadWrite::W,
         half_carry: ReadWrite::W,
+        flow_control: false,
         carry: ReadWrite::W,
         a: ReadWrite::Rmw,
         b: ReadWrite::N,
@@ -842,6 +874,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::R,
         negative: ReadWrite::N,
         half_carry: ReadWrite::N,
+        flow_control: true,
         carry: ReadWrite::N,
         a: ReadWrite::N,
         b: ReadWrite::N,
@@ -862,6 +895,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD HL n16
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x21,
         bytes: 3,
         cycles: 12,
@@ -888,6 +922,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD (HL+) A
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x22,
         bytes: 1,
         cycles: 8,
@@ -920,6 +955,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::N,
         negative: ReadWrite::N,
         half_carry: ReadWrite::N,
+        flow_control: false,
         carry: ReadWrite::N,
         a: ReadWrite::N,
         b: ReadWrite::N,
@@ -946,6 +982,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::W,
         negative: ReadWrite::W,
         half_carry: ReadWrite::W,
+        flow_control: false,
         carry: ReadWrite::N,
         a: ReadWrite::N,
         b: ReadWrite::N,
@@ -972,6 +1009,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         zero: ReadWrite::W,
         negative: ReadWrite::W,
         half_carry: ReadWrite::W,
+        flow_control: false,
         carry: ReadWrite::N,
         a: ReadWrite::N,
         b: ReadWrite::N,
@@ -992,6 +1030,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD H n8
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x26,
         bytes: 2,
         cycles: 8,
@@ -1018,6 +1057,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // DAA
         mnemonic: "daa",
+        flow_control: false,
         opcode: 0x27,
         bytes: 1,
         cycles: 4,
@@ -1044,6 +1084,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // JR Z e8
         mnemonic: "jr",
+        flow_control: true,
         opcode: 0x28,
         bytes: 2,
         cycles: 12,
@@ -1070,6 +1111,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADD HL HL
         mnemonic: "add",
+        flow_control: false,
         opcode: 0x29,
         bytes: 1,
         cycles: 8,
@@ -1096,6 +1138,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD A (HL+)
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x2a,
         bytes: 1,
         cycles: 8,
@@ -1122,6 +1165,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // DEC HL
         mnemonic: "dec",
+        flow_control: false,
         opcode: 0x2b,
         bytes: 1,
         cycles: 8,
@@ -1148,6 +1192,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // INC L
         mnemonic: "inc",
+        flow_control: false,
         opcode: 0x2c,
         bytes: 1,
         cycles: 4,
@@ -1174,6 +1219,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // DEC L
         mnemonic: "dec",
+        flow_control: false,
         opcode: 0x2d,
         bytes: 1,
         cycles: 4,
@@ -1200,6 +1246,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD L n8
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x2e,
         bytes: 2,
         cycles: 8,
@@ -1226,6 +1273,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CPL
         mnemonic: "cpl",
+        flow_control: false,
         opcode: 0x2f,
         bytes: 1,
         cycles: 4,
@@ -1252,6 +1300,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // JR NC e8
         mnemonic: "jr",
+        flow_control: true,
         opcode: 0x30,
         bytes: 2,
         cycles: 12,
@@ -1278,6 +1327,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD SP n16
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x31,
         bytes: 3,
         cycles: 12,
@@ -1304,6 +1354,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD (-HL) A
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x32,
         bytes: 1,
         cycles: 8,
@@ -1330,6 +1381,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // INC SP
         mnemonic: "inc",
+        flow_control: false,
         opcode: 0x33,
         bytes: 1,
         cycles: 8,
@@ -1356,6 +1408,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // INC (HL)
         mnemonic: "inc",
+        flow_control: false,
         opcode: 0x34,
         bytes: 1,
         cycles: 12,
@@ -1382,6 +1435,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // DEC (HL)
         mnemonic: "dec",
+        flow_control: false,
         opcode: 0x35,
         bytes: 1,
         cycles: 12,
@@ -1408,6 +1462,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD (HL) n8
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x36,
         bytes: 2,
         cycles: 12,
@@ -1434,6 +1489,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SCF
         mnemonic: "scf",
+        flow_control: false,
         opcode: 0x37,
         bytes: 1,
         cycles: 4,
@@ -1460,6 +1516,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // JR C e8
         mnemonic: "jr",
+        flow_control: true,
         opcode: 0x38,
         bytes: 2,
         cycles: 12,
@@ -1486,6 +1543,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADD HL SP
         mnemonic: "add",
+        flow_control: false,
         opcode: 0x39,
         bytes: 1,
         cycles: 8,
@@ -1512,6 +1570,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD A (-HL)
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x3a,
         bytes: 1,
         cycles: 8,
@@ -1538,6 +1597,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // DEC SP
         mnemonic: "dec",
+        flow_control: false,
         opcode: 0x3b,
         bytes: 1,
         cycles: 8,
@@ -1564,6 +1624,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // INC A
         mnemonic: "inc",
+        flow_control: false,
         opcode: 0x3c,
         bytes: 1,
         cycles: 4,
@@ -1590,6 +1651,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // DEC A
         mnemonic: "dec",
+        flow_control: false,
         opcode: 0x3d,
         bytes: 1,
         cycles: 4,
@@ -1616,6 +1678,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD A n8
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x3e,
         bytes: 2,
         cycles: 8,
@@ -1642,6 +1705,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CCF
         mnemonic: "ccf",
+        flow_control: false,
         opcode: 0x3f,
         bytes: 1,
         cycles: 4,
@@ -1669,6 +1733,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD B C
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x41,
         bytes: 1,
         cycles: 4,
@@ -1695,6 +1760,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD B D
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x42,
         bytes: 1,
         cycles: 4,
@@ -1721,6 +1787,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD B E
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x43,
         bytes: 1,
         cycles: 4,
@@ -1747,6 +1814,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD B H
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x44,
         bytes: 1,
         cycles: 4,
@@ -1773,6 +1841,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD B L
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x45,
         bytes: 1,
         cycles: 4,
@@ -1799,6 +1868,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD B (HL)
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x46,
         bytes: 1,
         cycles: 8,
@@ -1825,6 +1895,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD B A
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x47,
         bytes: 1,
         cycles: 4,
@@ -1851,6 +1922,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD C B
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x48,
         bytes: 1,
         cycles: 4,
@@ -1878,6 +1950,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD C D
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x4a,
         bytes: 1,
         cycles: 4,
@@ -1904,6 +1977,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD C E
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x4b,
         bytes: 1,
         cycles: 4,
@@ -1930,6 +2004,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD C H
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x4c,
         bytes: 1,
         cycles: 4,
@@ -1956,6 +2031,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD C L
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x4d,
         bytes: 1,
         cycles: 4,
@@ -1982,6 +2058,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD C (HL)
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x4e,
         bytes: 1,
         cycles: 8,
@@ -2008,6 +2085,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD C A
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x4f,
         bytes: 1,
         cycles: 4,
@@ -2034,6 +2112,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD D B
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x50,
         bytes: 1,
         cycles: 4,
@@ -2060,6 +2139,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD D C
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x51,
         bytes: 1,
         cycles: 4,
@@ -2087,6 +2167,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD D E
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x53,
         bytes: 1,
         cycles: 4,
@@ -2113,6 +2194,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD D H
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x54,
         bytes: 1,
         cycles: 4,
@@ -2139,6 +2221,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD D L
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x55,
         bytes: 1,
         cycles: 4,
@@ -2165,6 +2248,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD D (HL)
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x56,
         bytes: 1,
         cycles: 8,
@@ -2191,6 +2275,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD D A
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x57,
         bytes: 1,
         cycles: 4,
@@ -2217,6 +2302,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD E B
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x58,
         bytes: 1,
         cycles: 4,
@@ -2243,6 +2329,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD E C
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x59,
         bytes: 1,
         cycles: 4,
@@ -2269,6 +2356,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD E D
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x5a,
         bytes: 1,
         cycles: 4,
@@ -2296,6 +2384,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD E H
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x5c,
         bytes: 1,
         cycles: 4,
@@ -2322,6 +2411,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD E L
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x5d,
         bytes: 1,
         cycles: 4,
@@ -2348,6 +2438,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD E (HL)
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x5e,
         bytes: 1,
         cycles: 8,
@@ -2374,6 +2465,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD E A
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x5f,
         bytes: 1,
         cycles: 4,
@@ -2400,6 +2492,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD H B
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x60,
         bytes: 1,
         cycles: 4,
@@ -2426,6 +2519,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD H C
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x61,
         bytes: 1,
         cycles: 4,
@@ -2452,6 +2546,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD H D
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x62,
         bytes: 1,
         cycles: 4,
@@ -2478,6 +2573,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD H E
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x63,
         bytes: 1,
         cycles: 4,
@@ -2505,6 +2601,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD H L
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x65,
         bytes: 1,
         cycles: 4,
@@ -2531,6 +2628,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD H (HL)
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x66,
         bytes: 1,
         cycles: 8,
@@ -2557,6 +2655,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD H A
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x67,
         bytes: 1,
         cycles: 4,
@@ -2583,6 +2682,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD L B
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x68,
         bytes: 1,
         cycles: 4,
@@ -2609,6 +2709,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD L C
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x69,
         bytes: 1,
         cycles: 4,
@@ -2635,6 +2736,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD L D
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x6a,
         bytes: 1,
         cycles: 4,
@@ -2661,6 +2763,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD L E
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x6b,
         bytes: 1,
         cycles: 4,
@@ -2687,6 +2790,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD L H
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x6c,
         bytes: 1,
         cycles: 4,
@@ -2714,6 +2818,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD L (HL)
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x6e,
         bytes: 1,
         cycles: 8,
@@ -2740,6 +2845,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD L A
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x6f,
         bytes: 1,
         cycles: 4,
@@ -2766,6 +2872,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD (HL) B
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x70,
         bytes: 1,
         cycles: 8,
@@ -2792,6 +2899,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD (HL) C
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x71,
         bytes: 1,
         cycles: 8,
@@ -2818,6 +2926,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD (HL) D
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x72,
         bytes: 1,
         cycles: 8,
@@ -2844,6 +2953,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD (HL) E
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x73,
         bytes: 1,
         cycles: 8,
@@ -2870,6 +2980,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD (HL) H
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x74,
         bytes: 1,
         cycles: 8,
@@ -2896,6 +3007,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD (HL) L
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x75,
         bytes: 1,
         cycles: 8,
@@ -2922,6 +3034,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // HALT
         mnemonic: "halt",
+        flow_control: false,
         opcode: 0x76,
         bytes: 1,
         cycles: 4,
@@ -2948,6 +3061,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD (HL) A
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x77,
         bytes: 1,
         cycles: 8,
@@ -2974,6 +3088,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD A B
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x78,
         bytes: 1,
         cycles: 4,
@@ -3000,6 +3115,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD A C
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x79,
         bytes: 1,
         cycles: 4,
@@ -3026,6 +3142,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD A D
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x7a,
         bytes: 1,
         cycles: 4,
@@ -3052,6 +3169,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD A E
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x7b,
         bytes: 1,
         cycles: 4,
@@ -3078,6 +3196,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD A H
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x7c,
         bytes: 1,
         cycles: 4,
@@ -3104,6 +3223,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD A L
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x7d,
         bytes: 1,
         cycles: 4,
@@ -3130,6 +3250,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD A (HL)
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0x7e,
         bytes: 1,
         cycles: 8,
@@ -3157,6 +3278,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADD A B
         mnemonic: "add",
+        flow_control: false,
         opcode: 0x80,
         bytes: 1,
         cycles: 4,
@@ -3183,6 +3305,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADD A C
         mnemonic: "add",
+        flow_control: false,
         opcode: 0x81,
         bytes: 1,
         cycles: 4,
@@ -3209,6 +3332,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADD A D
         mnemonic: "add",
+        flow_control: false,
         opcode: 0x82,
         bytes: 1,
         cycles: 4,
@@ -3235,6 +3359,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADD A E
         mnemonic: "add",
+        flow_control: false,
         opcode: 0x83,
         bytes: 1,
         cycles: 4,
@@ -3261,6 +3386,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADD A H
         mnemonic: "add",
+        flow_control: false,
         opcode: 0x84,
         bytes: 1,
         cycles: 4,
@@ -3287,6 +3413,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADD A L
         mnemonic: "add",
+        flow_control: false,
         opcode: 0x85,
         bytes: 1,
         cycles: 4,
@@ -3313,6 +3440,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADD A (HL)
         mnemonic: "add",
+        flow_control: false,
         opcode: 0x86,
         bytes: 1,
         cycles: 8,
@@ -3339,6 +3467,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADD A A
         mnemonic: "add",
+        flow_control: false,
         opcode: 0x87,
         bytes: 1,
         cycles: 4,
@@ -3365,6 +3494,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADC A B
         mnemonic: "adc",
+        flow_control: false,
         opcode: 0x88,
         bytes: 1,
         cycles: 4,
@@ -3391,6 +3521,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADC A C
         mnemonic: "adc",
+        flow_control: false,
         opcode: 0x89,
         bytes: 1,
         cycles: 4,
@@ -3417,6 +3548,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADC A D
         mnemonic: "adc",
+        flow_control: false,
         opcode: 0x8a,
         bytes: 1,
         cycles: 4,
@@ -3443,6 +3575,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADC A E
         mnemonic: "adc",
+        flow_control: false,
         opcode: 0x8b,
         bytes: 1,
         cycles: 4,
@@ -3469,6 +3602,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADC A H
         mnemonic: "adc",
+        flow_control: false,
         opcode: 0x8c,
         bytes: 1,
         cycles: 4,
@@ -3495,6 +3629,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADC A L
         mnemonic: "adc",
+        flow_control: false,
         opcode: 0x8d,
         bytes: 1,
         cycles: 4,
@@ -3521,6 +3656,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADC A (HL)
         mnemonic: "adc",
+        flow_control: false,
         opcode: 0x8e,
         bytes: 1,
         cycles: 8,
@@ -3547,6 +3683,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADC A A
         mnemonic: "adc",
+        flow_control: false,
         opcode: 0x8f,
         bytes: 1,
         cycles: 4,
@@ -3573,6 +3710,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SUB A B
         mnemonic: "sub",
+        flow_control: false,
         opcode: 0x90,
         bytes: 1,
         cycles: 4,
@@ -3599,6 +3737,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SUB A C
         mnemonic: "sub",
+        flow_control: false,
         opcode: 0x91,
         bytes: 1,
         cycles: 4,
@@ -3625,6 +3764,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SUB A D
         mnemonic: "sub",
+        flow_control: false,
         opcode: 0x92,
         bytes: 1,
         cycles: 4,
@@ -3651,6 +3791,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SUB A E
         mnemonic: "sub",
+        flow_control: false,
         opcode: 0x93,
         bytes: 1,
         cycles: 4,
@@ -3677,6 +3818,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SUB A H
         mnemonic: "sub",
+        flow_control: false,
         opcode: 0x94,
         bytes: 1,
         cycles: 4,
@@ -3703,6 +3845,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SUB A L
         mnemonic: "sub",
+        flow_control: false,
         opcode: 0x95,
         bytes: 1,
         cycles: 4,
@@ -3729,6 +3872,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SUB A (HL)
         mnemonic: "sub",
+        flow_control: false,
         opcode: 0x96,
         bytes: 1,
         cycles: 8,
@@ -3755,6 +3899,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SUB A A
         mnemonic: "sub",
+        flow_control: false,
         opcode: 0x97,
         bytes: 1,
         cycles: 4,
@@ -3781,6 +3926,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SBC A B
         mnemonic: "sbc",
+        flow_control: false,
         opcode: 0x98,
         bytes: 1,
         cycles: 4,
@@ -3807,6 +3953,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SBC A C
         mnemonic: "sbc",
+        flow_control: false,
         opcode: 0x99,
         bytes: 1,
         cycles: 4,
@@ -3833,6 +3980,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SBC A D
         mnemonic: "sbc",
+        flow_control: false,
         opcode: 0x9a,
         bytes: 1,
         cycles: 4,
@@ -3859,6 +4007,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SBC A E
         mnemonic: "sbc",
+        flow_control: false,
         opcode: 0x9b,
         bytes: 1,
         cycles: 4,
@@ -3885,6 +4034,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SBC A H
         mnemonic: "sbc",
+        flow_control: false,
         opcode: 0x9c,
         bytes: 1,
         cycles: 4,
@@ -3911,6 +4061,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SBC A L
         mnemonic: "sbc",
+        flow_control: false,
         opcode: 0x9d,
         bytes: 1,
         cycles: 4,
@@ -3937,6 +4088,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SBC A (HL)
         mnemonic: "sbc",
+        flow_control: false,
         opcode: 0x9e,
         bytes: 1,
         cycles: 8,
@@ -3963,6 +4115,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SBC A A
         mnemonic: "sbc",
+        flow_control: false,
         opcode: 0x9f,
         bytes: 1,
         cycles: 4,
@@ -3989,6 +4142,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // AND A B
         mnemonic: "and",
+        flow_control: false,
         opcode: 0xa0,
         bytes: 1,
         cycles: 4,
@@ -4015,6 +4169,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // AND A C
         mnemonic: "and",
+        flow_control: false,
         opcode: 0xa1,
         bytes: 1,
         cycles: 4,
@@ -4041,6 +4196,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // AND A D
         mnemonic: "and",
+        flow_control: false,
         opcode: 0xa2,
         bytes: 1,
         cycles: 4,
@@ -4067,6 +4223,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // AND A E
         mnemonic: "and",
+        flow_control: false,
         opcode: 0xa3,
         bytes: 1,
         cycles: 4,
@@ -4093,6 +4250,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // AND A H
         mnemonic: "and",
+        flow_control: false,
         opcode: 0xa4,
         bytes: 1,
         cycles: 4,
@@ -4119,6 +4277,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // AND A L
         mnemonic: "and",
+        flow_control: false,
         opcode: 0xa5,
         bytes: 1,
         cycles: 4,
@@ -4145,6 +4304,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // AND A (HL)
         mnemonic: "and",
+        flow_control: false,
         opcode: 0xa6,
         bytes: 1,
         cycles: 8,
@@ -4171,6 +4331,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // AND A A
         mnemonic: "and",
+        flow_control: false,
         opcode: 0xa7,
         bytes: 1,
         cycles: 4,
@@ -4197,6 +4358,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // XOR A B
         mnemonic: "xor",
+        flow_control: false,
         opcode: 0xa8,
         bytes: 1,
         cycles: 4,
@@ -4223,6 +4385,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // XOR A C
         mnemonic: "xor",
+        flow_control: false,
         opcode: 0xa9,
         bytes: 1,
         cycles: 4,
@@ -4249,6 +4412,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // XOR A D
         mnemonic: "xor",
+        flow_control: false,
         opcode: 0xaa,
         bytes: 1,
         cycles: 4,
@@ -4275,6 +4439,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // XOR A E
         mnemonic: "xor",
+        flow_control: false,
         opcode: 0xab,
         bytes: 1,
         cycles: 4,
@@ -4301,6 +4466,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // XOR A H
         mnemonic: "xor",
+        flow_control: false,
         opcode: 0xac,
         bytes: 1,
         cycles: 4,
@@ -4327,6 +4493,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // XOR A L
         mnemonic: "xor",
+        flow_control: false,
         opcode: 0xad,
         bytes: 1,
         cycles: 4,
@@ -4353,6 +4520,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // XOR A (HL)
         mnemonic: "xor",
+        flow_control: false,
         opcode: 0xae,
         bytes: 1,
         cycles: 8,
@@ -4379,6 +4547,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // XOR A A
         mnemonic: "xor",
+        flow_control: false,
         opcode: 0xaf,
         bytes: 1,
         cycles: 4,
@@ -4405,6 +4574,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // OR A B
         mnemonic: "or",
+        flow_control: false,
         opcode: 0xb0,
         bytes: 1,
         cycles: 4,
@@ -4431,6 +4601,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // OR A C
         mnemonic: "or",
+        flow_control: false,
         opcode: 0xb1,
         bytes: 1,
         cycles: 4,
@@ -4457,6 +4628,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // OR A D
         mnemonic: "or",
+        flow_control: false,
         opcode: 0xb2,
         bytes: 1,
         cycles: 4,
@@ -4483,6 +4655,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // OR A E
         mnemonic: "or",
+        flow_control: false,
         opcode: 0xb3,
         bytes: 1,
         cycles: 4,
@@ -4509,6 +4682,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // OR A H
         mnemonic: "or",
+        flow_control: false,
         opcode: 0xb4,
         bytes: 1,
         cycles: 4,
@@ -4535,6 +4709,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // OR A L
         mnemonic: "or",
+        flow_control: false,
         opcode: 0xb5,
         bytes: 1,
         cycles: 4,
@@ -4561,6 +4736,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // OR A (HL)
         mnemonic: "or",
+        flow_control: false,
         opcode: 0xb6,
         bytes: 1,
         cycles: 8,
@@ -4587,6 +4763,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // OR A A
         mnemonic: "or",
+        flow_control: false,
         opcode: 0xb7,
         bytes: 1,
         cycles: 4,
@@ -4613,6 +4790,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CP A B
         mnemonic: "cp",
+        flow_control: false,
         opcode: 0xb8,
         bytes: 1,
         cycles: 4,
@@ -4639,6 +4817,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CP A C
         mnemonic: "cp",
+        flow_control: false,
         opcode: 0xb9,
         bytes: 1,
         cycles: 4,
@@ -4665,6 +4844,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CP A D
         mnemonic: "cp",
+        flow_control: false,
         opcode: 0xba,
         bytes: 1,
         cycles: 4,
@@ -4691,6 +4871,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CP A E
         mnemonic: "cp",
+        flow_control: false,
         opcode: 0xbb,
         bytes: 1,
         cycles: 4,
@@ -4717,6 +4898,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CP A H
         mnemonic: "cp",
+        flow_control: false,
         opcode: 0xbc,
         bytes: 1,
         cycles: 4,
@@ -4743,6 +4925,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CP A L
         mnemonic: "cp",
+        flow_control: false,
         opcode: 0xbd,
         bytes: 1,
         cycles: 4,
@@ -4769,6 +4952,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CP A (HL)
         mnemonic: "cp",
+        flow_control: false,
         opcode: 0xbe,
         bytes: 1,
         cycles: 8,
@@ -4795,6 +4979,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CP A A
         mnemonic: "cp",
+        flow_control: false,
         opcode: 0xbf,
         bytes: 1,
         cycles: 4,
@@ -4821,6 +5006,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RET NZ
         mnemonic: "ret",
+        flow_control: true,
         opcode: 0xc0,
         bytes: 1,
         cycles: 20,
@@ -4847,6 +5033,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // POP BC
         mnemonic: "pop",
+        flow_control: false,
         opcode: 0xc1,
         bytes: 1,
         cycles: 12,
@@ -4873,6 +5060,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // JP NZ a16
         mnemonic: "jp",
+        flow_control: true,
         opcode: 0xc2,
         bytes: 3,
         cycles: 16,
@@ -4899,6 +5087,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // JP a16
         mnemonic: "jp",
+        flow_control: true,
         opcode: 0xc3,
         bytes: 3,
         cycles: 16,
@@ -4925,6 +5114,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CALL NZ a16
         mnemonic: "call",
+        flow_control: true,
         opcode: 0xc4,
         bytes: 3,
         cycles: 24,
@@ -4951,6 +5141,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // PUSH BC
         mnemonic: "push",
+        flow_control: false,
         opcode: 0xc5,
         bytes: 1,
         cycles: 16,
@@ -4977,6 +5168,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADD A n8
         mnemonic: "add",
+        flow_control: false,
         opcode: 0xc6,
         bytes: 2,
         cycles: 8,
@@ -5003,6 +5195,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RST $00
         mnemonic: "rst",
+        flow_control: true,
         opcode: 0xc7,
         bytes: 1,
         cycles: 16,
@@ -5029,6 +5222,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RET Z
         mnemonic: "ret",
+        flow_control: true,
         opcode: 0xc8,
         bytes: 1,
         cycles: 20,
@@ -5055,6 +5249,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RET
         mnemonic: "ret",
+        flow_control: true,
         opcode: 0xc9,
         bytes: 1,
         cycles: 16,
@@ -5081,6 +5276,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // JP Z a16
         mnemonic: "jp",
+        flow_control: true,
         opcode: 0xca,
         bytes: 3,
         cycles: 16,
@@ -5108,6 +5304,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CALL Z a16
         mnemonic: "call",
+        flow_control: true,
         opcode: 0xcc,
         bytes: 3,
         cycles: 24,
@@ -5134,6 +5331,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CALL a16
         mnemonic: "call",
+        flow_control: true,
         opcode: 0xcd,
         bytes: 3,
         cycles: 24,
@@ -5160,6 +5358,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADC A n8
         mnemonic: "adc",
+        flow_control: false,
         opcode: 0xce,
         bytes: 2,
         cycles: 8,
@@ -5186,6 +5385,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RST $08
         mnemonic: "rst",
+        flow_control: true,
         opcode: 0xcf,
         bytes: 1,
         cycles: 16,
@@ -5212,6 +5412,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RET NC
         mnemonic: "ret",
+        flow_control: true,
         opcode: 0xd0,
         bytes: 1,
         cycles: 20,
@@ -5238,6 +5439,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // POP DE
         mnemonic: "pop",
+        flow_control: false,
         opcode: 0xd1,
         bytes: 1,
         cycles: 12,
@@ -5264,6 +5466,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // JP NC a16
         mnemonic: "jp",
+        flow_control: true,
         opcode: 0xd2,
         bytes: 3,
         cycles: 16,
@@ -5291,6 +5494,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CALL NC a16
         mnemonic: "call",
+        flow_control: true,
         opcode: 0xd4,
         bytes: 3,
         cycles: 24,
@@ -5317,6 +5521,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // PUSH DE
         mnemonic: "push",
+        flow_control: false,
         opcode: 0xd5,
         bytes: 1,
         cycles: 16,
@@ -5343,6 +5548,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SUB A n8
         mnemonic: "sub",
+        flow_control: false,
         opcode: 0xd6,
         bytes: 2,
         cycles: 8,
@@ -5369,6 +5575,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RST $10
         mnemonic: "rst",
+        flow_control: true,
         opcode: 0xd7,
         bytes: 1,
         cycles: 16,
@@ -5395,6 +5602,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RET C
         mnemonic: "ret",
+        flow_control: true,
         opcode: 0xd8,
         bytes: 1,
         cycles: 20,
@@ -5421,6 +5629,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RETI
         mnemonic: "reti",
+        flow_control: true,
         opcode: 0xd9,
         bytes: 1,
         cycles: 16,
@@ -5447,6 +5656,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // JP C a16
         mnemonic: "jp",
+        flow_control: true,
         opcode: 0xda,
         bytes: 3,
         cycles: 16,
@@ -5474,6 +5684,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CALL C a16
         mnemonic: "call",
+        flow_control: true,
         opcode: 0xdc,
         bytes: 3,
         cycles: 24,
@@ -5501,6 +5712,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SBC A n8
         mnemonic: "sbc",
+        flow_control: false,
         opcode: 0xde,
         bytes: 2,
         cycles: 8,
@@ -5527,6 +5739,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RST $18
         mnemonic: "rst",
+        flow_control: true,
         opcode: 0xdf,
         bytes: 1,
         cycles: 16,
@@ -5553,6 +5766,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LDH (a8) A
         mnemonic: "ldh",
+        flow_control: false,
         opcode: 0xe0,
         bytes: 2,
         cycles: 12,
@@ -5579,6 +5793,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // POP HL
         mnemonic: "pop",
+        flow_control: false,
         opcode: 0xe1,
         bytes: 1,
         cycles: 12,
@@ -5605,6 +5820,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LDH (C) A
         mnemonic: "ldh",
+        flow_control: false,
         opcode: 0xe2,
         bytes: 1,
         cycles: 8,
@@ -5633,6 +5849,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // PUSH HL
         mnemonic: "push",
+        flow_control: false,
         opcode: 0xe5,
         bytes: 1,
         cycles: 16,
@@ -5659,6 +5876,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // AND A n8
         mnemonic: "and",
+        flow_control: false,
         opcode: 0xe6,
         bytes: 2,
         cycles: 8,
@@ -5685,6 +5903,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RST $20
         mnemonic: "rst",
+        flow_control: true,
         opcode: 0xe7,
         bytes: 1,
         cycles: 16,
@@ -5711,6 +5930,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADD SP e8
         mnemonic: "add",
+        flow_control: false,
         opcode: 0xe8,
         bytes: 2,
         cycles: 16,
@@ -5737,6 +5957,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // JP HL
         mnemonic: "jp",
+        flow_control: true,
         opcode: 0xe9,
         bytes: 1,
         cycles: 4,
@@ -5763,6 +5984,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD (a16) A
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0xea,
         bytes: 3,
         cycles: 16,
@@ -5792,6 +6014,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // XOR A n8
         mnemonic: "xor",
+        flow_control: false,
         opcode: 0xee,
         bytes: 2,
         cycles: 8,
@@ -5818,6 +6041,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RST $28
         mnemonic: "rst",
+        flow_control: true,
         opcode: 0xef,
         bytes: 1,
         cycles: 16,
@@ -5844,6 +6068,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LDH A (a8)
         mnemonic: "ldh",
+        flow_control: false,
         opcode: 0xf0,
         bytes: 2,
         cycles: 12,
@@ -5870,6 +6095,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // POP AF
         mnemonic: "pop",
+        flow_control: false,
         opcode: 0xf1,
         bytes: 1,
         cycles: 12,
@@ -5896,6 +6122,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LDH A (C)
         mnemonic: "ldh",
+        flow_control: false,
         opcode: 0xf2,
         bytes: 1,
         cycles: 8,
@@ -5922,6 +6149,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // DI
         mnemonic: "di",
+        flow_control: false,
         opcode: 0xf3,
         bytes: 1,
         cycles: 4,
@@ -5949,6 +6177,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // PUSH AF
         mnemonic: "push",
+        flow_control: false,
         opcode: 0xf5,
         bytes: 1,
         cycles: 16,
@@ -5975,6 +6204,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // OR A n8
         mnemonic: "or",
+        flow_control: false,
         opcode: 0xf6,
         bytes: 2,
         cycles: 8,
@@ -6001,6 +6231,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RST $30
         mnemonic: "rst",
+        flow_control: true,
         opcode: 0xf7,
         bytes: 1,
         cycles: 16,
@@ -6027,6 +6258,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD HL SP e8
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0xf8,
         bytes: 2,
         cycles: 12,
@@ -6053,6 +6285,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD SP HL
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0xf9,
         bytes: 1,
         cycles: 8,
@@ -6079,6 +6312,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD A (a16)
         mnemonic: "ld",
+        flow_control: false,
         opcode: 0xfa,
         bytes: 3,
         cycles: 16,
@@ -6105,6 +6339,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // EI
         mnemonic: "ei",
+        flow_control: false,
         opcode: 0xfb,
         bytes: 1,
         cycles: 4,
@@ -6133,6 +6368,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CP A n8
         mnemonic: "cp",
+        flow_control: false,
         opcode: 0xfe,
         bytes: 2,
         cycles: 8,
@@ -6159,6 +6395,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RST $38
         mnemonic: "rst",
+        flow_control: true,
         opcode: 0xff,
         bytes: 1,
         cycles: 16,
@@ -6187,6 +6424,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RLC B
         mnemonic: "rlc",
+        flow_control: false,
         opcode: 0x00,
         bytes: 2,
         cycles: 8,
@@ -6213,6 +6451,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RLC C
         mnemonic: "rlc",
+        flow_control: false,
         opcode: 0x01,
         bytes: 2,
         cycles: 8,
@@ -6239,6 +6478,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RLC D
         mnemonic: "rlc",
+        flow_control: false,
         opcode: 0x02,
         bytes: 2,
         cycles: 8,
@@ -6265,6 +6505,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RLC E
         mnemonic: "rlc",
+        flow_control: false,
         opcode: 0x03,
         bytes: 2,
         cycles: 8,
@@ -6291,6 +6532,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RLC H
         mnemonic: "rlc",
+        flow_control: false,
         opcode: 0x04,
         bytes: 2,
         cycles: 8,
@@ -6317,6 +6559,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RLC L
         mnemonic: "rlc",
+        flow_control: false,
         opcode: 0x05,
         bytes: 2,
         cycles: 8,
@@ -6343,6 +6586,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RLC (HL)
         mnemonic: "rlc",
+        flow_control: false,
         opcode: 0x06,
         bytes: 2,
         cycles: 16,
@@ -6369,6 +6613,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RLC A
         mnemonic: "rlc",
+        flow_control: false,
         opcode: 0x07,
         bytes: 2,
         cycles: 8,
@@ -6395,6 +6640,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RRC B
         mnemonic: "rrc",
+        flow_control: false,
         opcode: 0x08,
         bytes: 2,
         cycles: 8,
@@ -6421,6 +6667,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RRC C
         mnemonic: "rrc",
+        flow_control: false,
         opcode: 0x09,
         bytes: 2,
         cycles: 8,
@@ -6447,6 +6694,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RRC D
         mnemonic: "rrc",
+        flow_control: false,
         opcode: 0x0a,
         bytes: 2,
         cycles: 8,
@@ -6473,6 +6721,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RRC E
         mnemonic: "rrc",
+        flow_control: false,
         opcode: 0x0b,
         bytes: 2,
         cycles: 8,
@@ -6499,6 +6748,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RRC H
         mnemonic: "rrc",
+        flow_control: false,
         opcode: 0x0c,
         bytes: 2,
         cycles: 8,
@@ -6525,6 +6775,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RRC L
         mnemonic: "rrc",
+        flow_control: false,
         opcode: 0x0d,
         bytes: 2,
         cycles: 8,
@@ -6551,6 +6802,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RRC (HL)
         mnemonic: "rrc",
+        flow_control: false,
         opcode: 0x0e,
         bytes: 2,
         cycles: 16,
@@ -6577,6 +6829,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RRC A
         mnemonic: "rrc",
+        flow_control: false,
         opcode: 0x0f,
         bytes: 2,
         cycles: 8,
@@ -6603,6 +6856,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RL B
         mnemonic: "rl",
+        flow_control: false,
         opcode: 0x10,
         bytes: 2,
         cycles: 8,
@@ -6629,6 +6883,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RL C
         mnemonic: "rl",
+        flow_control: false,
         opcode: 0x11,
         bytes: 2,
         cycles: 8,
@@ -6655,6 +6910,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RL D
         mnemonic: "rl",
+        flow_control: false,
         opcode: 0x12,
         bytes: 2,
         cycles: 8,
@@ -6681,6 +6937,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RL E
         mnemonic: "rl",
+        flow_control: false,
         opcode: 0x13,
         bytes: 2,
         cycles: 8,
@@ -6707,6 +6964,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RL H
         mnemonic: "rl",
+        flow_control: false,
         opcode: 0x14,
         bytes: 2,
         cycles: 8,
@@ -6733,6 +6991,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RL L
         mnemonic: "rl",
+        flow_control: false,
         opcode: 0x15,
         bytes: 2,
         cycles: 8,
@@ -6759,6 +7018,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RL (HL)
         mnemonic: "rl",
+        flow_control: false,
         opcode: 0x16,
         bytes: 2,
         cycles: 16,
@@ -6785,6 +7045,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RL A
         mnemonic: "rl",
+        flow_control: false,
         opcode: 0x17,
         bytes: 2,
         cycles: 8,
@@ -6811,6 +7072,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RR B
         mnemonic: "rr",
+        flow_control: false,
         opcode: 0x18,
         bytes: 2,
         cycles: 8,
@@ -6837,6 +7099,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RR C
         mnemonic: "rr",
+        flow_control: false,
         opcode: 0x19,
         bytes: 2,
         cycles: 8,
@@ -6863,6 +7126,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RR D
         mnemonic: "rr",
+        flow_control: false,
         opcode: 0x1a,
         bytes: 2,
         cycles: 8,
@@ -6889,6 +7153,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RR E
         mnemonic: "rr",
+        flow_control: false,
         opcode: 0x1b,
         bytes: 2,
         cycles: 8,
@@ -6915,6 +7180,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RR H
         mnemonic: "rr",
+        flow_control: false,
         opcode: 0x1c,
         bytes: 2,
         cycles: 8,
@@ -6941,6 +7207,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RR L
         mnemonic: "rr",
+        flow_control: false,
         opcode: 0x1d,
         bytes: 2,
         cycles: 8,
@@ -6967,6 +7234,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RR (HL)
         mnemonic: "rr",
+        flow_control: false,
         opcode: 0x1e,
         bytes: 2,
         cycles: 16,
@@ -6993,6 +7261,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RR A
         mnemonic: "rr",
+        flow_control: false,
         opcode: 0x1f,
         bytes: 2,
         cycles: 8,
@@ -7019,6 +7288,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SLA B
         mnemonic: "sla",
+        flow_control: false,
         opcode: 0x20,
         bytes: 2,
         cycles: 8,
@@ -7045,6 +7315,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SLA C
         mnemonic: "sla",
+        flow_control: false,
         opcode: 0x21,
         bytes: 2,
         cycles: 8,
@@ -7071,6 +7342,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SLA D
         mnemonic: "sla",
+        flow_control: false,
         opcode: 0x22,
         bytes: 2,
         cycles: 8,
@@ -7097,6 +7369,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SLA E
         mnemonic: "sla",
+        flow_control: false,
         opcode: 0x23,
         bytes: 2,
         cycles: 8,
@@ -7123,6 +7396,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SLA H
         mnemonic: "sla",
+        flow_control: false,
         opcode: 0x24,
         bytes: 2,
         cycles: 8,
@@ -7149,6 +7423,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SLA L
         mnemonic: "sla",
+        flow_control: false,
         opcode: 0x25,
         bytes: 2,
         cycles: 8,
@@ -7175,6 +7450,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SLA (HL)
         mnemonic: "sla",
+        flow_control: false,
         opcode: 0x26,
         bytes: 2,
         cycles: 16,
@@ -7201,6 +7477,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SLA A
         mnemonic: "sla",
+        flow_control: false,
         opcode: 0x27,
         bytes: 2,
         cycles: 8,
@@ -7227,6 +7504,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SRA B
         mnemonic: "sra",
+        flow_control: false,
         opcode: 0x28,
         bytes: 2,
         cycles: 8,
@@ -7253,6 +7531,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SRA C
         mnemonic: "sra",
+        flow_control: false,
         opcode: 0x29,
         bytes: 2,
         cycles: 8,
@@ -7279,6 +7558,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SRA D
         mnemonic: "sra",
+        flow_control: false,
         opcode: 0x2a,
         bytes: 2,
         cycles: 8,
@@ -7305,6 +7585,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SRA E
         mnemonic: "sra",
+        flow_control: false,
         opcode: 0x2b,
         bytes: 2,
         cycles: 8,
@@ -7331,6 +7612,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SRA H
         mnemonic: "sra",
+        flow_control: false,
         opcode: 0x2c,
         bytes: 2,
         cycles: 8,
@@ -7357,6 +7639,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SRA L
         mnemonic: "sra",
+        flow_control: false,
         opcode: 0x2d,
         bytes: 2,
         cycles: 8,
@@ -7383,6 +7666,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SRA (HL)
         mnemonic: "sra",
+        flow_control: false,
         opcode: 0x2e,
         bytes: 2,
         cycles: 16,
@@ -7409,6 +7693,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SRA A
         mnemonic: "sra",
+        flow_control: false,
         opcode: 0x2f,
         bytes: 2,
         cycles: 8,
@@ -7435,6 +7720,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SWAP B
         mnemonic: "swap",
+        flow_control: false,
         opcode: 0x30,
         bytes: 2,
         cycles: 8,
@@ -7461,6 +7747,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SWAP C
         mnemonic: "swap",
+        flow_control: false,
         opcode: 0x31,
         bytes: 2,
         cycles: 8,
@@ -7487,6 +7774,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SWAP D
         mnemonic: "swap",
+        flow_control: false,
         opcode: 0x32,
         bytes: 2,
         cycles: 8,
@@ -7513,6 +7801,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SWAP E
         mnemonic: "swap",
+        flow_control: false,
         opcode: 0x33,
         bytes: 2,
         cycles: 8,
@@ -7539,6 +7828,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SWAP H
         mnemonic: "swap",
+        flow_control: false,
         opcode: 0x34,
         bytes: 2,
         cycles: 8,
@@ -7565,6 +7855,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SWAP L
         mnemonic: "swap",
+        flow_control: false,
         opcode: 0x35,
         bytes: 2,
         cycles: 8,
@@ -7591,6 +7882,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SWAP (HL)
         mnemonic: "swap",
+        flow_control: false,
         opcode: 0x36,
         bytes: 2,
         cycles: 16,
@@ -7617,6 +7909,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SWAP A
         mnemonic: "swap",
+        flow_control: false,
         opcode: 0x37,
         bytes: 2,
         cycles: 8,
@@ -7643,6 +7936,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SRL B
         mnemonic: "srl",
+        flow_control: false,
         opcode: 0x38,
         bytes: 2,
         cycles: 8,
@@ -7669,6 +7963,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SRL C
         mnemonic: "srl",
+        flow_control: false,
         opcode: 0x39,
         bytes: 2,
         cycles: 8,
@@ -7695,6 +7990,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SRL D
         mnemonic: "srl",
+        flow_control: false,
         opcode: 0x3a,
         bytes: 2,
         cycles: 8,
@@ -7721,6 +8017,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SRL E
         mnemonic: "srl",
+        flow_control: false,
         opcode: 0x3b,
         bytes: 2,
         cycles: 8,
@@ -7747,6 +8044,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SRL H
         mnemonic: "srl",
+        flow_control: false,
         opcode: 0x3c,
         bytes: 2,
         cycles: 8,
@@ -7773,6 +8071,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SRL L
         mnemonic: "srl",
+        flow_control: false,
         opcode: 0x3d,
         bytes: 2,
         cycles: 8,
@@ -7799,6 +8098,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SRL (HL)
         mnemonic: "srl",
+        flow_control: false,
         opcode: 0x3e,
         bytes: 2,
         cycles: 16,
@@ -7825,6 +8125,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SRL A
         mnemonic: "srl",
+        flow_control: false,
         opcode: 0x3f,
         bytes: 2,
         cycles: 8,
@@ -7851,6 +8152,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 0 B
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x40,
         bytes: 2,
         cycles: 8,
@@ -7877,6 +8179,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 0 C
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x41,
         bytes: 2,
         cycles: 8,
@@ -7903,6 +8206,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 0 D
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x42,
         bytes: 2,
         cycles: 8,
@@ -7929,6 +8233,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 0 E
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x43,
         bytes: 2,
         cycles: 8,
@@ -7955,6 +8260,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 0 H
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x44,
         bytes: 2,
         cycles: 8,
@@ -7981,6 +8287,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 0 L
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x45,
         bytes: 2,
         cycles: 8,
@@ -8007,6 +8314,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 0 (HL)
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x46,
         bytes: 2,
         cycles: 12,
@@ -8033,6 +8341,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 0 A
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x47,
         bytes: 2,
         cycles: 8,
@@ -8059,6 +8368,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 1 B
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x48,
         bytes: 2,
         cycles: 8,
@@ -8085,6 +8395,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 1 C
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x49,
         bytes: 2,
         cycles: 8,
@@ -8111,6 +8422,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 1 D
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x4a,
         bytes: 2,
         cycles: 8,
@@ -8137,6 +8449,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 1 E
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x4b,
         bytes: 2,
         cycles: 8,
@@ -8163,6 +8476,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 1 H
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x4c,
         bytes: 2,
         cycles: 8,
@@ -8189,6 +8503,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 1 L
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x4d,
         bytes: 2,
         cycles: 8,
@@ -8215,6 +8530,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 1 (HL)
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x4e,
         bytes: 2,
         cycles: 12,
@@ -8241,6 +8557,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 1 A
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x4f,
         bytes: 2,
         cycles: 8,
@@ -8267,6 +8584,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 2 B
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x50,
         bytes: 2,
         cycles: 8,
@@ -8293,6 +8611,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 2 C
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x51,
         bytes: 2,
         cycles: 8,
@@ -8319,6 +8638,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 2 D
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x52,
         bytes: 2,
         cycles: 8,
@@ -8345,6 +8665,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 2 E
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x53,
         bytes: 2,
         cycles: 8,
@@ -8371,6 +8692,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 2 H
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x54,
         bytes: 2,
         cycles: 8,
@@ -8397,6 +8719,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 2 L
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x55,
         bytes: 2,
         cycles: 8,
@@ -8423,6 +8746,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 2 (HL)
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x56,
         bytes: 2,
         cycles: 12,
@@ -8449,6 +8773,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 2 A
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x57,
         bytes: 2,
         cycles: 8,
@@ -8475,6 +8800,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 3 B
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x58,
         bytes: 2,
         cycles: 8,
@@ -8501,6 +8827,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 3 C
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x59,
         bytes: 2,
         cycles: 8,
@@ -8527,6 +8854,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 3 D
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x5a,
         bytes: 2,
         cycles: 8,
@@ -8553,6 +8881,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 3 E
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x5b,
         bytes: 2,
         cycles: 8,
@@ -8579,6 +8908,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 3 H
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x5c,
         bytes: 2,
         cycles: 8,
@@ -8605,6 +8935,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 3 L
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x5d,
         bytes: 2,
         cycles: 8,
@@ -8631,6 +8962,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 3 (HL)
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x5e,
         bytes: 2,
         cycles: 12,
@@ -8657,6 +8989,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 3 A
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x5f,
         bytes: 2,
         cycles: 8,
@@ -8683,6 +9016,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 4 B
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x60,
         bytes: 2,
         cycles: 8,
@@ -8709,6 +9043,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 4 C
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x61,
         bytes: 2,
         cycles: 8,
@@ -8735,6 +9070,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 4 D
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x62,
         bytes: 2,
         cycles: 8,
@@ -8761,6 +9097,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 4 E
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x63,
         bytes: 2,
         cycles: 8,
@@ -8787,6 +9124,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 4 H
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x64,
         bytes: 2,
         cycles: 8,
@@ -8813,6 +9151,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 4 L
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x65,
         bytes: 2,
         cycles: 8,
@@ -8839,6 +9178,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 4 (HL)
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x66,
         bytes: 2,
         cycles: 12,
@@ -8865,6 +9205,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 4 A
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x67,
         bytes: 2,
         cycles: 8,
@@ -8891,6 +9232,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 5 B
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x68,
         bytes: 2,
         cycles: 8,
@@ -8917,6 +9259,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 5 C
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x69,
         bytes: 2,
         cycles: 8,
@@ -8943,6 +9286,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 5 D
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x6a,
         bytes: 2,
         cycles: 8,
@@ -8969,6 +9313,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 5 E
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x6b,
         bytes: 2,
         cycles: 8,
@@ -8995,6 +9340,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 5 H
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x6c,
         bytes: 2,
         cycles: 8,
@@ -9021,6 +9367,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 5 L
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x6d,
         bytes: 2,
         cycles: 8,
@@ -9047,6 +9394,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 5 (HL)
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x6e,
         bytes: 2,
         cycles: 12,
@@ -9073,6 +9421,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 5 A
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x6f,
         bytes: 2,
         cycles: 8,
@@ -9099,6 +9448,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 6 B
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x70,
         bytes: 2,
         cycles: 8,
@@ -9125,6 +9475,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 6 C
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x71,
         bytes: 2,
         cycles: 8,
@@ -9151,6 +9502,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 6 D
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x72,
         bytes: 2,
         cycles: 8,
@@ -9177,6 +9529,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 6 E
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x73,
         bytes: 2,
         cycles: 8,
@@ -9203,6 +9556,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 6 H
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x74,
         bytes: 2,
         cycles: 8,
@@ -9229,6 +9583,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 6 L
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x75,
         bytes: 2,
         cycles: 8,
@@ -9255,6 +9610,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 6 (HL)
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x76,
         bytes: 2,
         cycles: 12,
@@ -9281,6 +9637,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 6 A
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x77,
         bytes: 2,
         cycles: 8,
@@ -9307,6 +9664,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 7 B
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x78,
         bytes: 2,
         cycles: 8,
@@ -9333,6 +9691,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 7 C
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x79,
         bytes: 2,
         cycles: 8,
@@ -9359,6 +9718,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 7 D
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x7a,
         bytes: 2,
         cycles: 8,
@@ -9385,6 +9745,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 7 E
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x7b,
         bytes: 2,
         cycles: 8,
@@ -9411,6 +9772,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 7 H
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x7c,
         bytes: 2,
         cycles: 8,
@@ -9437,6 +9799,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 7 L
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x7d,
         bytes: 2,
         cycles: 8,
@@ -9463,6 +9826,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 7 (HL)
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x7e,
         bytes: 2,
         cycles: 12,
@@ -9489,6 +9853,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // BIT 7 A
         mnemonic: "bit",
+        flow_control: false,
         opcode: 0x7f,
         bytes: 2,
         cycles: 8,
@@ -9515,6 +9880,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 0 B
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x80,
         bytes: 2,
         cycles: 8,
@@ -9541,6 +9907,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 0 C
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x81,
         bytes: 2,
         cycles: 8,
@@ -9567,6 +9934,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 0 D
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x82,
         bytes: 2,
         cycles: 8,
@@ -9593,6 +9961,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 0 E
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x83,
         bytes: 2,
         cycles: 8,
@@ -9619,6 +9988,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 0 H
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x84,
         bytes: 2,
         cycles: 8,
@@ -9645,6 +10015,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 0 L
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x85,
         bytes: 2,
         cycles: 8,
@@ -9671,6 +10042,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 0 (HL)
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x86,
         bytes: 2,
         cycles: 16,
@@ -9697,6 +10069,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 0 A
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x87,
         bytes: 2,
         cycles: 8,
@@ -9723,6 +10096,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 1 B
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x88,
         bytes: 2,
         cycles: 8,
@@ -9749,6 +10123,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 1 C
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x89,
         bytes: 2,
         cycles: 8,
@@ -9775,6 +10150,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 1 D
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x8a,
         bytes: 2,
         cycles: 8,
@@ -9801,6 +10177,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 1 E
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x8b,
         bytes: 2,
         cycles: 8,
@@ -9827,6 +10204,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 1 H
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x8c,
         bytes: 2,
         cycles: 8,
@@ -9853,6 +10231,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 1 L
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x8d,
         bytes: 2,
         cycles: 8,
@@ -9879,6 +10258,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 1 (HL)
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x8e,
         bytes: 2,
         cycles: 16,
@@ -9905,6 +10285,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 1 A
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x8f,
         bytes: 2,
         cycles: 8,
@@ -9931,6 +10312,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 2 B
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x90,
         bytes: 2,
         cycles: 8,
@@ -9957,6 +10339,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 2 C
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x91,
         bytes: 2,
         cycles: 8,
@@ -9983,6 +10366,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 2 D
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x92,
         bytes: 2,
         cycles: 8,
@@ -10009,6 +10393,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 2 E
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x93,
         bytes: 2,
         cycles: 8,
@@ -10035,6 +10420,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 2 H
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x94,
         bytes: 2,
         cycles: 8,
@@ -10061,6 +10447,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 2 L
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x95,
         bytes: 2,
         cycles: 8,
@@ -10087,6 +10474,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 2 (HL)
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x96,
         bytes: 2,
         cycles: 16,
@@ -10113,6 +10501,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 2 A
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x97,
         bytes: 2,
         cycles: 8,
@@ -10139,6 +10528,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 3 B
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x98,
         bytes: 2,
         cycles: 8,
@@ -10165,6 +10555,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 3 C
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x99,
         bytes: 2,
         cycles: 8,
@@ -10191,6 +10582,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 3 D
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x9a,
         bytes: 2,
         cycles: 8,
@@ -10217,6 +10609,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 3 E
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x9b,
         bytes: 2,
         cycles: 8,
@@ -10243,6 +10636,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 3 H
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x9c,
         bytes: 2,
         cycles: 8,
@@ -10269,6 +10663,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 3 L
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x9d,
         bytes: 2,
         cycles: 8,
@@ -10295,6 +10690,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 3 (HL)
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x9e,
         bytes: 2,
         cycles: 16,
@@ -10321,6 +10717,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 3 A
         mnemonic: "res",
+        flow_control: false,
         opcode: 0x9f,
         bytes: 2,
         cycles: 8,
@@ -10347,6 +10744,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 4 B
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xa0,
         bytes: 2,
         cycles: 8,
@@ -10373,6 +10771,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 4 C
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xa1,
         bytes: 2,
         cycles: 8,
@@ -10399,6 +10798,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 4 D
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xa2,
         bytes: 2,
         cycles: 8,
@@ -10425,6 +10825,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 4 E
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xa3,
         bytes: 2,
         cycles: 8,
@@ -10451,6 +10852,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 4 H
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xa4,
         bytes: 2,
         cycles: 8,
@@ -10477,6 +10879,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 4 L
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xa5,
         bytes: 2,
         cycles: 8,
@@ -10503,6 +10906,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 4 (HL)
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xa6,
         bytes: 2,
         cycles: 16,
@@ -10529,6 +10933,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 4 A
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xa7,
         bytes: 2,
         cycles: 8,
@@ -10555,6 +10960,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 5 B
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xa8,
         bytes: 2,
         cycles: 8,
@@ -10581,6 +10987,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 5 C
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xa9,
         bytes: 2,
         cycles: 8,
@@ -10607,6 +11014,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 5 D
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xaa,
         bytes: 2,
         cycles: 8,
@@ -10633,6 +11041,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 5 E
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xab,
         bytes: 2,
         cycles: 8,
@@ -10659,6 +11068,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 5 H
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xac,
         bytes: 2,
         cycles: 8,
@@ -10685,6 +11095,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 5 L
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xad,
         bytes: 2,
         cycles: 8,
@@ -10711,6 +11122,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 5 (HL)
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xae,
         bytes: 2,
         cycles: 16,
@@ -10737,6 +11149,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 5 A
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xaf,
         bytes: 2,
         cycles: 8,
@@ -10763,6 +11176,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 6 B
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xb0,
         bytes: 2,
         cycles: 8,
@@ -10789,6 +11203,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 6 C
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xb1,
         bytes: 2,
         cycles: 8,
@@ -10815,6 +11230,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 6 D
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xb2,
         bytes: 2,
         cycles: 8,
@@ -10841,6 +11257,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 6 E
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xb3,
         bytes: 2,
         cycles: 8,
@@ -10867,6 +11284,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 6 H
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xb4,
         bytes: 2,
         cycles: 8,
@@ -10893,6 +11311,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 6 L
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xb5,
         bytes: 2,
         cycles: 8,
@@ -10919,6 +11338,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 6 (HL)
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xb6,
         bytes: 2,
         cycles: 16,
@@ -10945,6 +11365,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 6 A
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xb7,
         bytes: 2,
         cycles: 8,
@@ -10971,6 +11392,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 7 B
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xb8,
         bytes: 2,
         cycles: 8,
@@ -10997,6 +11419,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 7 C
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xb9,
         bytes: 2,
         cycles: 8,
@@ -11023,6 +11446,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 7 D
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xba,
         bytes: 2,
         cycles: 8,
@@ -11049,6 +11473,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 7 E
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xbb,
         bytes: 2,
         cycles: 8,
@@ -11075,6 +11500,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 7 H
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xbc,
         bytes: 2,
         cycles: 8,
@@ -11101,6 +11527,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 7 L
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xbd,
         bytes: 2,
         cycles: 8,
@@ -11127,6 +11554,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 7 (HL)
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xbe,
         bytes: 2,
         cycles: 16,
@@ -11153,6 +11581,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RES 7 A
         mnemonic: "res",
+        flow_control: false,
         opcode: 0xbf,
         bytes: 2,
         cycles: 8,
@@ -11179,6 +11608,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 0 B
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xc0,
         bytes: 2,
         cycles: 8,
@@ -11205,6 +11635,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 0 C
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xc1,
         bytes: 2,
         cycles: 8,
@@ -11231,6 +11662,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 0 D
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xc2,
         bytes: 2,
         cycles: 8,
@@ -11257,6 +11689,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 0 E
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xc3,
         bytes: 2,
         cycles: 8,
@@ -11283,6 +11716,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 0 H
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xc4,
         bytes: 2,
         cycles: 8,
@@ -11309,6 +11743,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 0 L
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xc5,
         bytes: 2,
         cycles: 8,
@@ -11335,6 +11770,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 0 (HL)
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xc6,
         bytes: 2,
         cycles: 16,
@@ -11361,6 +11797,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 0 A
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xc7,
         bytes: 2,
         cycles: 8,
@@ -11387,6 +11824,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 1 B
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xc8,
         bytes: 2,
         cycles: 8,
@@ -11413,6 +11851,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 1 C
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xc9,
         bytes: 2,
         cycles: 8,
@@ -11439,6 +11878,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 1 D
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xca,
         bytes: 2,
         cycles: 8,
@@ -11465,6 +11905,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 1 E
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xcb,
         bytes: 2,
         cycles: 8,
@@ -11491,6 +11932,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 1 H
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xcc,
         bytes: 2,
         cycles: 8,
@@ -11517,6 +11959,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 1 L
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xcd,
         bytes: 2,
         cycles: 8,
@@ -11543,6 +11986,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 1 (HL)
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xce,
         bytes: 2,
         cycles: 16,
@@ -11569,6 +12013,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 1 A
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xcf,
         bytes: 2,
         cycles: 8,
@@ -11595,6 +12040,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 2 B
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xd0,
         bytes: 2,
         cycles: 8,
@@ -11621,6 +12067,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 2 C
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xd1,
         bytes: 2,
         cycles: 8,
@@ -11647,6 +12094,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 2 D
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xd2,
         bytes: 2,
         cycles: 8,
@@ -11673,6 +12121,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 2 E
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xd3,
         bytes: 2,
         cycles: 8,
@@ -11699,6 +12148,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 2 H
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xd4,
         bytes: 2,
         cycles: 8,
@@ -11725,6 +12175,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 2 L
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xd5,
         bytes: 2,
         cycles: 8,
@@ -11751,6 +12202,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 2 (HL)
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xd6,
         bytes: 2,
         cycles: 16,
@@ -11777,6 +12229,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 2 A
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xd7,
         bytes: 2,
         cycles: 8,
@@ -11803,6 +12256,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 3 B
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xd8,
         bytes: 2,
         cycles: 8,
@@ -11829,6 +12283,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 3 C
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xd9,
         bytes: 2,
         cycles: 8,
@@ -11855,6 +12310,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 3 D
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xda,
         bytes: 2,
         cycles: 8,
@@ -11881,6 +12337,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 3 E
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xdb,
         bytes: 2,
         cycles: 8,
@@ -11907,6 +12364,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 3 H
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xdc,
         bytes: 2,
         cycles: 8,
@@ -11933,6 +12391,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 3 L
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xdd,
         bytes: 2,
         cycles: 8,
@@ -11959,6 +12418,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 3 (HL)
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xde,
         bytes: 2,
         cycles: 16,
@@ -11985,6 +12445,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 3 A
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xdf,
         bytes: 2,
         cycles: 8,
@@ -12011,6 +12472,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 4 B
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xe0,
         bytes: 2,
         cycles: 8,
@@ -12037,6 +12499,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 4 C
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xe1,
         bytes: 2,
         cycles: 8,
@@ -12063,6 +12526,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 4 D
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xe2,
         bytes: 2,
         cycles: 8,
@@ -12089,6 +12553,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 4 E
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xe3,
         bytes: 2,
         cycles: 8,
@@ -12115,6 +12580,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 4 H
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xe4,
         bytes: 2,
         cycles: 8,
@@ -12141,6 +12607,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 4 L
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xe5,
         bytes: 2,
         cycles: 8,
@@ -12167,6 +12634,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 4 (HL)
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xe6,
         bytes: 2,
         cycles: 16,
@@ -12193,6 +12661,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 4 A
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xe7,
         bytes: 2,
         cycles: 8,
@@ -12219,6 +12688,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 5 B
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xe8,
         bytes: 2,
         cycles: 8,
@@ -12245,6 +12715,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 5 C
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xe9,
         bytes: 2,
         cycles: 8,
@@ -12271,6 +12742,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 5 D
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xea,
         bytes: 2,
         cycles: 8,
@@ -12297,6 +12769,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 5 E
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xeb,
         bytes: 2,
         cycles: 8,
@@ -12323,6 +12796,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 5 H
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xec,
         bytes: 2,
         cycles: 8,
@@ -12349,6 +12823,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 5 L
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xed,
         bytes: 2,
         cycles: 8,
@@ -12375,6 +12850,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 5 (HL)
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xee,
         bytes: 2,
         cycles: 16,
@@ -12401,6 +12877,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 5 A
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xef,
         bytes: 2,
         cycles: 8,
@@ -12427,6 +12904,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 6 B
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xf0,
         bytes: 2,
         cycles: 8,
@@ -12453,6 +12931,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 6 C
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xf1,
         bytes: 2,
         cycles: 8,
@@ -12479,6 +12958,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 6 D
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xf2,
         bytes: 2,
         cycles: 8,
@@ -12505,6 +12985,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 6 E
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xf3,
         bytes: 2,
         cycles: 8,
@@ -12531,6 +13012,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 6 H
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xf4,
         bytes: 2,
         cycles: 8,
@@ -12557,6 +13039,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 6 L
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xf5,
         bytes: 2,
         cycles: 8,
@@ -12583,6 +13066,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 6 (HL)
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xf6,
         bytes: 2,
         cycles: 16,
@@ -12609,6 +13093,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 6 A
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xf7,
         bytes: 2,
         cycles: 8,
@@ -12635,6 +13120,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 7 B
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xf8,
         bytes: 2,
         cycles: 8,
@@ -12661,6 +13147,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 7 C
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xf9,
         bytes: 2,
         cycles: 8,
@@ -12687,6 +13174,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 7 D
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xfa,
         bytes: 2,
         cycles: 8,
@@ -12713,6 +13201,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 7 E
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xfb,
         bytes: 2,
         cycles: 8,
@@ -12739,6 +13228,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 7 H
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xfc,
         bytes: 2,
         cycles: 8,
@@ -12765,6 +13255,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 7 L
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xfd,
         bytes: 2,
         cycles: 8,
@@ -12791,6 +13282,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 7 (HL)
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xfe,
         bytes: 2,
         cycles: 16,
@@ -12817,6 +13309,7 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SET 7 A
         mnemonic: "set",
+        flow_control: false,
         opcode: 0xff,
         bytes: 2,
         cycles: 8,

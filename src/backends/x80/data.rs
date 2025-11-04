@@ -29,6 +29,7 @@ pub struct InstructionData {
     pub opcode: u8,
     pub bytes: usize,
     pub cycles: usize,
+    pub flow_control: bool,
     pub zero: ReadWrite,
     pub negative: ReadWrite,
     pub half_carry: ReadWrite,

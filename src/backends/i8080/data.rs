@@ -5006,7 +5006,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RET NZ
         mnemonic: "ret",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xc0,
         bytes: 1,
         cycles: 20,
@@ -5114,7 +5114,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CALL NZ a16
         mnemonic: "call",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xc4,
         bytes: 3,
         cycles: 24,
@@ -5195,7 +5195,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RST $00
         mnemonic: "rst",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xc7,
         bytes: 1,
         cycles: 16,
@@ -5222,7 +5222,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RET Z
         mnemonic: "ret",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xc8,
         bytes: 1,
         cycles: 20,
@@ -5249,7 +5249,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RET
         mnemonic: "ret",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xc9,
         bytes: 1,
         cycles: 16,
@@ -5304,7 +5304,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CALL Z a16
         mnemonic: "call",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xcc,
         bytes: 3,
         cycles: 24,
@@ -5331,7 +5331,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CALL a16
         mnemonic: "call",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xcd,
         bytes: 3,
         cycles: 24,
@@ -5385,7 +5385,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RST $08
         mnemonic: "rst",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xcf,
         bytes: 1,
         cycles: 16,
@@ -5412,7 +5412,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RET NC
         mnemonic: "ret",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xd0,
         bytes: 1,
         cycles: 20,
@@ -5494,7 +5494,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CALL NC a16
         mnemonic: "call",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xd4,
         bytes: 3,
         cycles: 24,
@@ -5575,7 +5575,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RST $10
         mnemonic: "rst",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xd7,
         bytes: 1,
         cycles: 16,
@@ -5602,7 +5602,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RET C
         mnemonic: "ret",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xd8,
         bytes: 1,
         cycles: 20,
@@ -5629,7 +5629,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RETI
         mnemonic: "reti",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xd9,
         bytes: 1,
         cycles: 16,
@@ -5684,7 +5684,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CALL C a16
         mnemonic: "call",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xdc,
         bytes: 3,
         cycles: 24,
@@ -5739,7 +5739,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RST $18
         mnemonic: "rst",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xdf,
         bytes: 1,
         cycles: 16,
@@ -5903,7 +5903,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RST $20
         mnemonic: "rst",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xe7,
         bytes: 1,
         cycles: 16,
@@ -6041,7 +6041,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RST $28
         mnemonic: "rst",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xef,
         bytes: 1,
         cycles: 16,
@@ -6231,7 +6231,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RST $30
         mnemonic: "rst",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xf7,
         bytes: 1,
         cycles: 16,
@@ -6395,7 +6395,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RST $38
         mnemonic: "rst",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xff,
         bytes: 1,
         cycles: 16,
