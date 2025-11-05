@@ -14,18 +14,10 @@ impl Instruction {
             self.0[offset] = 0;
             self.incr_at_offset(offset - 1)
         }
-        while crate::backends::z80::data::UNPREFIXED[self.0[0] as usize].is_none()
-            && self.0[0] != 0xcb
-            && self.0[0] != 0xed
-            && self.0[0] != 0xdd
-            && self.0[0] != 0xfd
-        {
-            // If there's no instruction data for this instruction (or more precisely, the
-            // first byte of the instruction) is invalid. this is because there are no invalid
-            // but prefixed instructions
-            self.0[0] += 1;
-            self.0[1] = 0;
-            self.0[2] = 0;
+        while self.decode_inner().is_none() {
+            // If there's no instruction data for this instruction it's not a valid prefix/opcode
+            // combo, so increment it.
+            self.next_opcode().unwrap();
         }
     }
 }
@@ -142,7 +134,13 @@ impl Instruction {
                     crate::backends::z80::data::FDPREFIXED[self.0[1] as usize].as_ref()
                 }
             }
-            _ => crate::backends::z80::data::UNPREFIXED[self.0[0] as usize].as_ref(),
+            _ => {
+                let z80 = crate::backends::z80::data::UNPREFIXED[self.0[0] as usize].as_ref();
+                if z80.is_some() {
+                    return z80;
+                }
+                crate::backends::i8080::data::UNPREFIXED[self.0[0] as usize].as_ref()
+            }
         }
     }
 }

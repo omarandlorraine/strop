@@ -7,6 +7,18 @@ use crate::backends::x80::data::InstructionData;
 pub struct Instruction([u8; 3]);
 
 impl Instruction {
+    fn decode_inner(&self) -> Option<&'static InstructionData> {
+        if self.0[0] == 0xcb {
+            return crate::backends::sm83::data::CBPREFIXED[self.0[1] as usize].as_ref();
+        }
+        let sm83 = crate::backends::sm83::data::UNPREFIXED[self.0[0] as usize].as_ref();
+
+        if sm83.is_some() {
+            return sm83;
+        }
+        crate::backends::i8080::data::UNPREFIXED[self.0[0] as usize].as_ref()
+    }
+
     fn incr_at_offset(&mut self, offset: usize) {
         if let Some(nb) = self.0[offset].checked_add(1) {
             self.0[offset] = nb;
@@ -14,9 +26,7 @@ impl Instruction {
             self.0[offset] = 0;
             self.incr_at_offset(offset - 1)
         }
-        while crate::backends::sm83::data::UNPREFIXED[self.0[0] as usize].is_none()
-            && self.0[0] != 0xcb
-        {
+        while self.decode_inner().is_none() && self.0[0] != 0xcb {
             // If there's no instruction data for this instruction (or more precisely, the
             // first byte of the instruction) is invalid. this is because there are no invalid
             // but prefixed instructions
@@ -121,14 +131,7 @@ impl X80 for Instruction {
     type Emulator = crate::backends::sm83::emu::Emu;
 
     fn decode(&self) -> &'static InstructionData {
-        if self.0[0] == 0xcb {
-            return crate::backends::sm83::data::CBPREFIXED[self.0[1] as usize]
-                .as_ref()
-                .unwrap();
-        }
-        crate::backends::sm83::data::UNPREFIXED[self.0[0] as usize]
-            .as_ref()
-            .unwrap_or_else(|| panic!("no such opcode for {:02x}", self.0[0]))
+        self.decode_inner().unwrap()
     }
 
     fn next_opcode(&mut self) -> crate::IterationResult {

@@ -2,7 +2,7 @@
 
 mod instruction_set;
 pub use instruction_set::Instruction;
-mod data;
+pub(crate) mod data;
 mod emu;
 pub use emu::Emulator;
 mod sdcccall;
