@@ -156,4 +156,17 @@ impl crate::backends::x80::EmuInterface for Emu {
         // Never even returned!
         Err(RunError::RanAmok)
     }
+
+    fn poke(&mut self, addr: u16, val: u8) {
+        self.bus.write(addr, val);
+    }
+
+    fn peek(&mut self, addr: u16) -> u8 {
+        self.bus.read(addr)
+    }
+
+    fn single_step(&mut self) -> crate::RunResult<()> {
+        self.cpu.next_instruction(&mut self.bus);
+        Ok(())
+    }
 }

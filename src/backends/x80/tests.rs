@@ -24,6 +24,41 @@ fn flow_control(data: &InstructionData) {
     )
 }
 
+fn length<I: X80>(insn: &I) {
+    use crate::backends::x80::EmuInterface;
+
+    let decoded = insn.decode();
+
+    // compare the length in the struct with the length of the encoding
+    let bytes = insn.to_bytes();
+    assert_eq!(bytes.len(), decoded.bytes, "{decoded:?}");
+
+    // Also check the emulator agrees with the instruction length. But we can't do that with
+    // flow control instructions, they can do anything with the program counter.
+    if decoded.flow_control {
+        return;
+    }
+
+    // Also the `stop` instruction is a weirdo: although it is a single byte, the CPU can skip the
+    // next byte in the instruction sequence. This is a hardware bug that's faithfully emulated by
+    // `mizu_core`.
+    if decoded.mnemonic == "stop" {
+        return;
+    }
+
+    // Check the emulator agrees with the instruction length
+    let mut emu = I::Emulator::default();
+    for (addr, byte) in bytes.iter().enumerate() {
+        emu.poke(addr.try_into().unwrap(), *byte);
+    }
+    emu.single_step().unwrap();
+    assert_eq!(
+        emu.get_pc(),
+        decoded.bytes.try_into().unwrap(),
+        "{decoded:?}"
+    );
+}
+
 pub(crate) fn std_x80_tests<I: X80>() {
     let mut i = I::first();
 
@@ -31,5 +66,6 @@ pub(crate) fn std_x80_tests<I: X80>() {
         let data = i.decode();
         not_a_useless_move(data);
         flow_control(data);
+        length(&i);
     }
 }

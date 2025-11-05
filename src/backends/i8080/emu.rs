@@ -108,7 +108,7 @@ impl EmuInterface for Emulator {
         // Write the subroutine to the beginning of the emulated CPU's address space
         for (addr, val) in sequence.iter().enumerate() {
             // TODO: This will panic if the program grows too long to fit in a Z80's address space
-            self.machine.poke(addr.try_into().unwrap(), *val);
+            self.poke(addr.try_into().unwrap(), *val);
         }
         self.cpu.registers().set_pc(0);
 
@@ -136,9 +136,21 @@ impl EmuInterface for Emulator {
                 // the program counter is out of bounds; the subroutine seems to have run amok
                 return Err(RunError::RanAmok);
             }
-            self.cpu.execute_instruction(&mut self.machine);
+            self.single_step()?;
         }
         // Never even returned!
         Err(RunError::RanAmok)
+    }
+    fn poke(&mut self, addr: u16, val: u8) {
+        use iz80::Machine;
+        self.machine.poke(addr, val)
+    }
+    fn peek(&mut self, addr: u16) -> u8 {
+        use iz80::Machine;
+        self.machine.peek(addr)
+    }
+    fn single_step(&mut self) -> crate::RunResult<()> {
+        self.cpu.execute_instruction(&mut self.machine);
+        Ok(())
     }
 }
