@@ -4,7 +4,7 @@ use crate::backends::x80::data::InstructionData;
 
 /// Represents a Z80 machine instruction
 #[derive(Clone, Copy, PartialOrd, PartialEq, Default)]
-pub struct Instruction([u8; 3]);
+pub struct Instruction([u8; 5]);
 
 impl Instruction {
     fn incr_at_offset(&mut self, offset: usize) {
@@ -71,10 +71,10 @@ impl std::fmt::Debug for Instruction {
 impl crate::Instruction for Instruction {
     fn random() -> Self {
         use rand::random;
-        Self([random(), random(), random()])
+        Self([random(), random(), random(), random(), random()])
     }
     fn first() -> Self {
-        Self([0, 0, 0])
+        Self([00, 0, 0, 0, 0])
     }
     fn mutate(&mut self) {
         todo!()
