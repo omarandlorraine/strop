@@ -86,11 +86,11 @@ impl<Instruction: SdccCallable> crate::Traverse for SdccCall1<Instruction> {
         self.seq.mutate();
         self.make_correct();
     }
-    fn from_bytes(bytes: &[u8]) -> Self {
-        Self {
-            seq: crate::Sequence::<Instruction>::from_bytes(bytes),
+    fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        Some(Self {
+            seq: crate::Sequence::<Instruction>::from_bytes(bytes)?,
             args: Default::default(),
             vals: Default::default(),
-        }
+        })
     }
 }

@@ -81,7 +81,9 @@ pub trait Instruction: std::fmt::Display + std::fmt::Debug {
     fn to_bytes(&self) -> Vec<u8>;
 
     /// disassembles a sequence of bytes into one machine instruction
-    fn from_bytes(bytes: &[u8]) -> Self;
+    fn from_bytes(bytes: &[u8]) -> Option<Self>
+    where
+        Self: Sized;
 }
 
 pub trait Callable<Input, Output> {
@@ -113,7 +115,9 @@ pub trait Traverse {
     fn mutate(&mut self);
 
     /// Constructs such an object from a sequence of bytes
-    fn from_bytes(bytes: &[u8]) -> Self;
+    fn from_bytes(bytes: &[u8]) -> Option<Self>
+    where
+        Self: Sized;
 }
 
 pub trait Testable: std::fmt::Display + std::fmt::Debug {

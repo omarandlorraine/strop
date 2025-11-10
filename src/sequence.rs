@@ -182,19 +182,19 @@ impl<Instruction: crate::Instruction> Sequence<Instruction> {
     }
 
     /// Disassembles the code, returning an instruction sequence.
-    pub fn from_bytes(bytes: &[u8]) -> Self {
+    pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
         let mut insns: Vec<Instruction> = vec![];
 
         let mut bytes: Vec<u8> = bytes.to_vec();
 
         while !bytes.is_empty() {
-            let i = Instruction::from_bytes(&bytes);
+            let i = Instruction::from_bytes(&bytes)?;
             for _ in i.to_bytes() {
                 bytes.remove(0);
             }
             insns.push(i);
         }
-        Self(insns)
+        Some(Self(insns))
     }
 
     /// Assembles the code, returning a raw byte sequence.

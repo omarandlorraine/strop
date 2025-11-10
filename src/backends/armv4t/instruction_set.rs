@@ -61,8 +61,13 @@ impl crate::Instruction for Instruction {
         self.0.to_le_bytes().into()
     }
 
-    fn from_bytes(bytes: &[u8]) -> Self {
-        Self(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
+    fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        Some(Self(u32::from_le_bytes([
+            *bytes.get(0)?,
+            *bytes.get(1)?,
+            *bytes.get(2)?,
+            *bytes.get(3)?,
+        ])))
     }
 }
 

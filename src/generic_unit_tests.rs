@@ -66,7 +66,7 @@ pub fn disassemblies_unique_slow<I: Instruction>(from: I, to: I) {
     let mut a = from;
 
     while a.increment().is_ok() {
-        let mut b = I::from_bytes(&a.to_bytes());
+        let mut b = I::from_bytes(&a.to_bytes()).unwrap();
 
         while b.increment().is_ok() {
             assert_ne!(format!("{a}"), format!("{b}"));
@@ -87,7 +87,7 @@ pub fn sanity_checks<I: Instruction>() {
     loop {
         let dasm = format!("{a}"); // can disassemble
 
-        let copy = I::from_bytes(&a.to_bytes());
+        let copy = I::from_bytes(&a.to_bytes()).unwrap();
         assert_eq!(a.to_bytes(), copy.to_bytes(), "{dasm}");
         assert_eq!(dasm, format!("{copy}"), "{dasm}");
 
