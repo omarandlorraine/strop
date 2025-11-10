@@ -3982,7 +3982,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "b", ""],
+        operands: ["b", "", ""],
     }),
     Some(InstructionData {
         // AND A C
@@ -4009,7 +4009,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "c", ""],
+        operands: ["c", "", ""],
     }),
     Some(InstructionData {
         // AND A D
@@ -4036,7 +4036,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "d", ""],
+        operands: ["d", "", ""],
     }),
     Some(InstructionData {
         // AND A E
@@ -4063,7 +4063,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "e", ""],
+        operands: ["e", "", ""],
     }),
     Some(InstructionData {
         // AND A H
@@ -4090,7 +4090,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "h", ""],
+        operands: ["h", "", ""],
     }),
     Some(InstructionData {
         // AND A L
@@ -4117,7 +4117,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "l", ""],
+        operands: ["l", "", ""],
     }),
     Some(InstructionData {
         // AND A (HL)
@@ -4144,7 +4144,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "(hl)", ""],
+        operands: ["(hl)", "", ""],
     }),
     Some(InstructionData {
         // AND A A
@@ -4171,7 +4171,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "a", ""],
+        operands: ["a", "", ""],
     }),
     Some(InstructionData {
         // XOR A B
@@ -4198,7 +4198,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "b", ""],
+        operands: ["b", "", ""],
     }),
     Some(InstructionData {
         // XOR A C
@@ -4225,7 +4225,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "c", ""],
+        operands: ["c", "", ""],
     }),
     Some(InstructionData {
         // XOR A D
@@ -4252,7 +4252,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "d", ""],
+        operands: ["d", "", ""],
     }),
     Some(InstructionData {
         // XOR A E
@@ -4279,7 +4279,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "e", ""],
+        operands: ["e", "", ""],
     }),
     Some(InstructionData {
         // XOR A H
@@ -4306,7 +4306,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "h", ""],
+        operands: ["h", "", ""],
     }),
     Some(InstructionData {
         // XOR A L
@@ -4333,7 +4333,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "l", ""],
+        operands: ["l", "", ""],
     }),
     Some(InstructionData {
         // XOR A (HL)
@@ -4360,7 +4360,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "(hl)", ""],
+        operands: ["(hl)", "", ""],
     }),
     Some(InstructionData {
         // XOR A A
@@ -4387,7 +4387,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "a", ""],
+        operands: ["a", "", ""],
     }),
     Some(InstructionData {
         // OR A B
@@ -4414,7 +4414,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "b", ""],
+        operands: ["b", "", ""],
     }),
     Some(InstructionData {
         // OR A C
@@ -4441,7 +4441,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "c", ""],
+        operands: ["c", "", ""],
     }),
     Some(InstructionData {
         // OR A D
@@ -4468,7 +4468,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "d", ""],
+        operands: ["d", "", ""],
     }),
     Some(InstructionData {
         // OR A E
@@ -4495,7 +4495,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "e", ""],
+        operands: ["e", "", ""],
     }),
     Some(InstructionData {
         // OR A H
@@ -4522,7 +4522,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "h", ""],
+        operands: ["h", "", ""],
     }),
     Some(InstructionData {
         // OR A L
@@ -4549,7 +4549,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "l", ""],
+        operands: ["l", "", ""],
     }),
     Some(InstructionData {
         // OR A (HL)
@@ -4576,7 +4576,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "(hl)", ""],
+        operands: ["(hl)", "", ""],
     }),
     Some(InstructionData {
         // OR A A
@@ -4603,7 +4603,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "a", ""],
+        operands: ["a", "", ""],
     }),
     Some(InstructionData {
         // CP A B
@@ -4630,7 +4630,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "b", ""],
+        operands: ["b", "", ""],
     }),
     Some(InstructionData {
         // CP A C
@@ -4657,7 +4657,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "c", ""],
+        operands: ["c", "", ""],
     }),
     Some(InstructionData {
         // CP A D
@@ -4684,7 +4684,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "d", ""],
+        operands: ["d", "", ""],
     }),
     Some(InstructionData {
         // CP A E
@@ -4711,7 +4711,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "e", ""],
+        operands: ["e", "", ""],
     }),
     Some(InstructionData {
         // CP A H
@@ -4738,7 +4738,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "h", ""],
+        operands: ["h", "", ""],
     }),
     Some(InstructionData {
         // CP A L
@@ -4765,7 +4765,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "l", ""],
+        operands: ["l", "", ""],
     }),
     Some(InstructionData {
         // CP A (HL)
@@ -4792,7 +4792,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "(hl)", ""],
+        operands: ["(hl)", "", ""],
     }),
     Some(InstructionData {
         // CP A A
@@ -4819,7 +4819,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["a", "a", ""],
+        operands: ["a", "", ""],
     }),
     Some(InstructionData {
         // RET NZ

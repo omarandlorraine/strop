@@ -25,9 +25,16 @@ impl Instruction {
 impl std::fmt::Display for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         let data = self.decode();
-        write!(f, "{} ", data.mnemonic)?;
-        let mut first = false;
+        write!(f, "{}", data.mnemonic)?;
+        let mut first = true;
         for op in data.operands.iter().filter(|op| !op.is_empty()) {
+            if first {
+                write!(f, " ")?;
+                first = false;
+            } else {
+                write!(f, ", ")?;
+            }
+
             if *op == "n16" {
                 write!(f, "{:x}h", u16::from_le_bytes([self.0[1], self.0[2]]))?;
             } else if *op == "e8" {
@@ -44,11 +51,6 @@ impl std::fmt::Display for Instruction {
                 write!(f, "({:x}h)", u16::from_le_bytes([self.0[1], self.0[2]]))?;
             } else {
                 write!(f, "{op}")?
-            }
-
-            if !first {
-                write!(f, ", ")?;
-                first = true;
             }
         }
         Ok(())
@@ -97,28 +99,49 @@ impl crate::Instruction for Instruction {
             _ => unreachable!(),
         }
     }
-    fn from_bytes(bytes: &[u8]) -> Self {
+    fn from_bytes(bytes: &[u8]) -> Option<Self> {
         let mut insn = Self::first();
-        insn.0[0] = bytes[0];
+
+        // first copy in the prefixes if any and opcode
+        insn.0[0] = *bytes.get(0)?;
+        if matches!(insn.0[0], 0xcb | 0xed | 0xdd | 0xfd) {
+            insn.0[1] = *bytes.get(1)?;
+        }
+        if matches!(insn.0[0], 0xdd | 0xfd) && insn.0[1] == 0xcb {
+            insn.0[2] = *bytes.get(2)?;
+        }
+
+        // now we know the length of the instruction we can copy the operand in
         match insn.to_bytes().len() {
             1 => {}
             2 => {
-                insn.0[1] = bytes[1];
+                insn.0[1] = *bytes.get(1)?;
             }
             3 => {
-                insn.0[1] = bytes[1];
-                insn.0[2] = bytes[2];
+                insn.0[1] = *bytes.get(1)?;
+                insn.0[2] = *bytes.get(2)?;
+            }
+            4 => {
+                insn.0[1] = *bytes.get(1)?;
+                insn.0[2] = *bytes.get(2)?;
+                insn.0[3] = *bytes.get(3)?;
+            }
+            5 => {
+                insn.0[1] = *bytes.get(1)?;
+                insn.0[2] = *bytes.get(2)?;
+                insn.0[3] = *bytes.get(3)?;
+                insn.0[4] = *bytes.get(4)?;
             }
             _ => unreachable!(),
         }
-        insn
+        Some(insn)
     }
 }
 
 impl Instruction {
     fn decode_inner(&self) -> Option<&'static InstructionData> {
         match self.0[0] {
-            0xcb => crate::backends::z80::data::CBPREFIXED[self.0[1] as usize].as_ref(),
+            0xcb => crate::backends::sm83::data::CBPREFIXED[self.0[1] as usize].as_ref(),
             0xed => crate::backends::z80::data::EDPREFIXED[self.0[1] as usize].as_ref(),
             0xdd => {
                 if self.0[1] == 0xcb {
