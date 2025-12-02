@@ -52,11 +52,7 @@ fn length<I: X80>(insn: &I) {
         emu.poke(addr.try_into().unwrap(), *byte);
     }
     emu.single_step().unwrap();
-    assert_eq!(
-        emu.get_pc(),
-        decoded.bytes.try_into().unwrap(),
-        "{decoded:?}"
-    );
+    assert_eq!(emu.get_pc(), decoded.bytes as u16, "{decoded:?}");
 }
 
 pub(crate) fn std_x80_tests<I: X80>() {

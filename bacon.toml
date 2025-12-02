@@ -44,6 +44,14 @@ command = [
     "cargo",
     "test",
     "--",
-    "backends::z80::data::test::dasm",
+    "backends::z80::dasm",
+    "--nocapture",
+]
+[jobs.z80_uniq]
+command = [
+    "cargo",
+    "test",
+    "--",
+    "backends::z80::tests::dd",
     "--nocapture",
 ]

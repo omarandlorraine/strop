@@ -45,6 +45,7 @@ pub fn disassemblies_unique<I: Instruction>(from: I, to: Option<I>) {
     map.insert(format!("{a}"));
 
     while a.increment().is_ok() {
+        println!("{a:?}");
         let dasm = format!("{a}");
 
         if map.contains(&dasm) {
@@ -69,7 +70,7 @@ pub fn disassemblies_unique_slow<I: Instruction>(from: I, to: I) {
         let mut b = I::from_bytes(&a.to_bytes()).unwrap();
 
         while b.increment().is_ok() {
-            assert_ne!(format!("{a}"), format!("{b}"));
+            assert_ne!(format!("{a}"), format!("{b}"), "{a:?}");
             if b.to_bytes() == to.to_bytes() {
                 break;
             }

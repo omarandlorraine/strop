@@ -8,6 +8,9 @@ pub struct Instruction([u8; 5]);
 
 impl Instruction {
     fn incr_at_offset(&mut self, offset: usize) {
+        for o in (offset + 1)..5 {
+            self.0[o] = 0;
+        }
         if let Some(nb) = self.0[offset].checked_add(1) {
             self.0[offset] = nb;
         } else {
@@ -35,8 +38,11 @@ impl std::fmt::Display for Instruction {
                 write!(f, ", ")?;
             }
 
+            let operand = self.0[self.instruction_length()];
+            let operand2 = self.0[self.instruction_length() + 1];
+
             if *op == "n16" {
-                write!(f, "{:x}h", u16::from_le_bytes([self.0[1], self.0[2]]))?;
+                write!(f, "{:x}h", u16::from_le_bytes([operand, operand2]))?;
             } else if *op == "e8" {
                 write!(f, "{:x}h", self.0[1])?;
             } else if *op == "sp+e8" {
@@ -44,11 +50,15 @@ impl std::fmt::Display for Instruction {
             } else if *op == "(a8)" {
                 write!(f, "({:x}h)", self.0[1])?;
             } else if *op == "n8" {
-                write!(f, "{:x}h", self.0[1])?;
+                write!(f, "{:x}h", operand)?;
             } else if *op == "a16" {
-                write!(f, "{:x}h", u16::from_le_bytes([self.0[1], self.0[2]]))?;
+                write!(f, "{:x}h", u16::from_le_bytes([operand, operand2]))?;
             } else if *op == "(a16)" {
-                write!(f, "({:x}h)", u16::from_le_bytes([self.0[1], self.0[2]]))?;
+                write!(f, "({:x}h)", u16::from_le_bytes([operand, operand2]))?;
+            } else if *op == "(ix+nn)" {
+                write!(f, "(ix+{:x}h)", operand)?;
+            } else if *op == "(iy+nn)" {
+                write!(f, "(iy+{:x}h)", operand)?;
             } else {
                 write!(f, "{op}")?
             }
@@ -96,6 +106,8 @@ impl crate::Instruction for Instruction {
             1 => vec![self.0[0]],
             2 => vec![self.0[0], self.0[1]],
             3 => vec![self.0[0], self.0[1], self.0[2]],
+            4 => vec![self.0[0], self.0[1], self.0[2], self.0[3]],
+            5 => vec![self.0[0], self.0[1], self.0[2], self.0[3], self.0[4]],
             _ => unreachable!(),
         }
     }
@@ -110,6 +122,9 @@ impl crate::Instruction for Instruction {
         if matches!(insn.0[0], 0xdd | 0xfd) && insn.0[1] == 0xcb {
             insn.0[2] = *bytes.get(2)?;
         }
+
+        // is it a valid prefix/opcode mashup?
+        insn.decode_inner()?;
 
         // now we know the length of the instruction we can copy the operand in
         match insn.to_bytes().len() {
@@ -178,11 +193,8 @@ impl X80 for Instruction {
     fn next_opcode(&mut self) -> crate::IterationResult {
         if self.0[0] == 0xff {
             Err(crate::StepError::End)
-        } else if self.0[0] == 0xcb {
-            self.incr_at_offset(1);
-            Ok(())
         } else {
-            self.incr_at_offset(0);
+            self.incr_at_offset(self.instruction_length() - 1);
             Ok(())
         }
     }
@@ -207,23 +219,12 @@ impl X80 for Instruction {
     }
 
     fn instruction_length(&self) -> usize {
+        let cb = if self.0[1] == 0xcb { 1 } else { 0 };
         match self.0[0] {
             0xcb => 2,
             0xed => 2,
-            0xdd => {
-                if self.0[1] == 0xcb {
-                    3
-                } else {
-                    2
-                }
-            }
-            0xfd => {
-                if self.0[1] == 0xcb {
-                    3
-                } else {
-                    2
-                }
-            }
+            0xdd => 2 + cb,
+            0xfd => 2 + cb,
             _ => 1,
         }
     }
