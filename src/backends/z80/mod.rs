@@ -42,10 +42,9 @@ mod tests {
 
     #[test]
     fn prefixation() {
-        Instruction::from_bytes(&[0xED]).unwrap();
+        assert!(Instruction::from_bytes(&[0xED]).is_none());
         // no such instruction
         assert!(Instruction::from_bytes(&[0xdd, 0x00, 0xff, 0xff, 0xff]).is_none());
-        Instruction::from_bytes(&[0xdd, 0x01, 0xff, 0xff]).unwrap();
 
         let mut insn = Instruction::from_bytes(&[0xdc, 0xff, 0xff]).unwrap();
         println!("{:?}", insn.to_bytes());

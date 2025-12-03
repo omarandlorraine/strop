@@ -5620,7 +5620,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         negative: ReadWrite::N,
         half_carry: ReadWrite::N,
         carry: ReadWrite::R,
-        a: ReadWrite::R,
+        a: ReadWrite::N,
         b: ReadWrite::N,
         c: ReadWrite::N,
         d: ReadWrite::N,
@@ -5638,7 +5638,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     }),
     Some(InstructionData {
         mnemonic: "ex",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xe3,
         bytes: 1,
         cycles: 12,
@@ -5665,7 +5665,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // CALL PO, a16
         mnemonic: "call",
-        flow_control: false,
+        flow_control: true,
         opcode: 0xe4,
         bytes: 3,
         cycles: 16,
@@ -5854,7 +5854,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // EX DE HL
         mnemonic: "ex",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xeb,
         bytes: 1,
         cycles: 16,

@@ -8,6 +8,10 @@ pub struct Instruction([u8; 3]);
 
 impl Instruction {
     fn decode_inner(&self) -> Option<&'static InstructionData> {
+        if matches!(self.0[0], 0xe3 | 0xeb) {
+            // opcodes in i8080 which are removed in sm83
+            return None;
+        }
         if self.0[0] == 0xcb {
             return crate::backends::sm83::data::CBPREFIXED[self.0[1] as usize].as_ref();
         }

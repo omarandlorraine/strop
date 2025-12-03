@@ -564,7 +564,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // IN B, (C)
         mnemonic: "in",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x40,
         bytes: 2,
         cycles: 12,
@@ -591,7 +591,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // OUT (C), B
         mnemonic: "out",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x41,
         bytes: 2,
         cycles: 12,
@@ -618,7 +618,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SBC BC, HL
         mnemonic: "sbc",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x42,
         bytes: 2,
         cycles: 12,
@@ -645,7 +645,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD (a16), bc
         mnemonic: "ld",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x43,
         bytes: 4,
         cycles: 12,
@@ -672,7 +672,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // NEG
         mnemonic: "neg",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x44,
         bytes: 2,
         cycles: 12,
@@ -726,7 +726,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // IM0
         mnemonic: "im",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x46,
         bytes: 2,
         cycles: 12,
@@ -753,7 +753,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD i, a
         mnemonic: "ld",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x47,
         bytes: 2,
         cycles: 12,
@@ -780,7 +780,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // IN C, (C)
         mnemonic: "in",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x48,
         bytes: 2,
         cycles: 12,
@@ -807,7 +807,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // OUT (C), C
         mnemonic: "out",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x49,
         bytes: 2,
         cycles: 12,
@@ -834,7 +834,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADC BC, HL
         mnemonic: "adc",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x4a,
         bytes: 2,
         cycles: 12,
@@ -861,7 +861,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD (a16), bc
         mnemonic: "ld",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x4b,
         bytes: 4,
         cycles: 12,
@@ -943,7 +943,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD r, a
         mnemonic: "ld",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x4f,
         bytes: 2,
         cycles: 12,
@@ -970,7 +970,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // IN D, (C)
         mnemonic: "in",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x50,
         bytes: 2,
         cycles: 12,
@@ -997,7 +997,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // OUT (C), D
         mnemonic: "out",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x51,
         bytes: 2,
         cycles: 12,
@@ -1024,7 +1024,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SBC HL, DE
         mnemonic: "sbc",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x52,
         bytes: 2,
         cycles: 12,
@@ -1051,7 +1051,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD (a16), DE
         mnemonic: "ld",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x53,
         bytes: 4,
         cycles: 12,
@@ -1132,7 +1132,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // reti
         mnemonic: "im",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x56,
         bytes: 2,
         cycles: 12,
@@ -1159,7 +1159,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD a, i
         mnemonic: "ld",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x57,
         bytes: 2,
         cycles: 12,
@@ -1186,7 +1186,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // IN E, (C)
         mnemonic: "in",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x58,
         bytes: 2,
         cycles: 12,
@@ -1213,7 +1213,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // OUT (C), E
         mnemonic: "out",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x59,
         bytes: 2,
         cycles: 12,
@@ -1240,7 +1240,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADC HL, DE
         mnemonic: "adc",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x5a,
         bytes: 2,
         cycles: 12,
@@ -1267,7 +1267,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD de, (a16)
         mnemonic: "ld",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x5b,
         bytes: 4,
         cycles: 12,
@@ -1296,7 +1296,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // im 2
         mnemonic: "im",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x5e,
         bytes: 2,
         cycles: 12,
@@ -1323,7 +1323,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD a, r
         mnemonic: "ld",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x5f,
         bytes: 2,
         cycles: 12,
@@ -1350,7 +1350,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // IN H, (C)
         mnemonic: "in",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x60,
         bytes: 2,
         cycles: 12,
@@ -1377,7 +1377,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // OUT (C), H
         mnemonic: "out",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x61,
         bytes: 2,
         cycles: 12,
@@ -1404,7 +1404,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SBC HL, HL
         mnemonic: "sbc",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x62,
         bytes: 2,
         cycles: 12,
@@ -1431,7 +1431,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD (a16), HL
         mnemonic: "ld",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x63,
         bytes: 4,
         cycles: 12,
@@ -1512,7 +1512,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // reti
         mnemonic: "im",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x66,
         bytes: 2,
         cycles: 12,
@@ -1539,7 +1539,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // rrd
         mnemonic: "rrd",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x67,
         bytes: 2,
         cycles: 12,
@@ -1566,7 +1566,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // IN L, (C)
         mnemonic: "in",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x68,
         bytes: 2,
         cycles: 12,
@@ -1593,7 +1593,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // OUT (C), L
         mnemonic: "out",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x69,
         bytes: 2,
         cycles: 12,
@@ -1620,7 +1620,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADC HL, HL
         mnemonic: "adc",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x6a,
         bytes: 2,
         cycles: 12,
@@ -1647,7 +1647,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD hl, (a16)
         mnemonic: "ld",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x6b,
         bytes: 4,
         cycles: 12,
@@ -1676,7 +1676,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // im 2
         mnemonic: "im",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x6e,
         bytes: 2,
         cycles: 12,
@@ -1703,7 +1703,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RLD
         mnemonic: "rld",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x6f,
         bytes: 2,
         cycles: 12,
@@ -1730,7 +1730,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // IN F, (C)
         mnemonic: "in",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x70,
         bytes: 2,
         cycles: 12,
@@ -1757,7 +1757,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // OUT (C), F
         mnemonic: "out",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x71,
         bytes: 2,
         cycles: 12,
@@ -1784,7 +1784,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // SBC HL, SP
         mnemonic: "sbc",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x72,
         bytes: 2,
         cycles: 12,
@@ -1811,7 +1811,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD (a16), SP
         mnemonic: "ld",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x73,
         bytes: 4,
         cycles: 12,
@@ -1892,7 +1892,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // reti
         mnemonic: "im",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x76,
         bytes: 2,
         cycles: 12,
@@ -1919,7 +1919,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // rrd
         mnemonic: "rrd",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x77,
         bytes: 2,
         cycles: 12,
@@ -1946,7 +1946,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // IN A, (C)
         mnemonic: "in",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x78,
         bytes: 2,
         cycles: 12,
@@ -1973,7 +1973,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // OUT (C), A
         mnemonic: "out",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x79,
         bytes: 2,
         cycles: 12,
@@ -2000,7 +2000,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // ADC HL, SP
         mnemonic: "adc",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x7a,
         bytes: 2,
         cycles: 12,
@@ -2027,7 +2027,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // LD sp, (a16)
         mnemonic: "ld",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x7b,
         bytes: 4,
         cycles: 12,
@@ -2056,7 +2056,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // im 2
         mnemonic: "im",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x7e,
         bytes: 2,
         cycles: 12,
@@ -2083,7 +2083,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // RLD
         mnemonic: "rld",
-        flow_control: true,
+        flow_control: false,
         opcode: 0x7f,
         bytes: 2,
         cycles: 12,
@@ -2141,7 +2141,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     None,
     Some(InstructionData {
         mnemonic: "ldi",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xa0,
         bytes: 2,
         cycles: 12,
@@ -2167,7 +2167,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     }),
     Some(InstructionData {
         mnemonic: "cpi",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xa1,
         bytes: 2,
         cycles: 12,
@@ -2193,7 +2193,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     }),
     Some(InstructionData {
         mnemonic: "ini",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xa2,
         bytes: 2,
         cycles: 12,
@@ -2219,7 +2219,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     }),
     Some(InstructionData {
         mnemonic: "oti",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xa3,
         bytes: 2,
         cycles: 12,
@@ -2245,7 +2245,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     }),
     Some(InstructionData {
         mnemonic: "ldd",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xa4,
         bytes: 2,
         cycles: 12,
@@ -2271,7 +2271,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     }),
     Some(InstructionData {
         mnemonic: "ldd",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xa5,
         bytes: 2,
         cycles: 12,
@@ -2298,7 +2298,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // rrd
         mnemonic: "rrd",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xa6,
         bytes: 2,
         cycles: 12,
@@ -2325,7 +2325,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // rrd
         mnemonic: "rrd",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xa7,
         bytes: 2,
         cycles: 12,
@@ -2351,7 +2351,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     }),
     Some(InstructionData {
         mnemonic: "ldd",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xa8,
         bytes: 2,
         cycles: 12,
@@ -2377,7 +2377,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     }),
     Some(InstructionData {
         mnemonic: "cpd",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xa9,
         bytes: 2,
         cycles: 12,
@@ -2403,7 +2403,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     }),
     Some(InstructionData {
         mnemonic: "ind",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xaa,
         bytes: 2,
         cycles: 12,
@@ -2430,7 +2430,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // rrd
         mnemonic: "otd",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xab,
         bytes: 2,
         cycles: 12,
@@ -2460,7 +2460,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     None,
     Some(InstructionData {
         mnemonic: "ldir",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xb0,
         bytes: 2,
         cycles: 12,
@@ -2486,7 +2486,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     }),
     Some(InstructionData {
         mnemonic: "cpir",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xb1,
         bytes: 2,
         cycles: 12,
@@ -2512,7 +2512,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     }),
     Some(InstructionData {
         mnemonic: "inir",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xb2,
         bytes: 2,
         cycles: 12,
@@ -2538,7 +2538,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     }),
     Some(InstructionData {
         mnemonic: "otir",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xb3,
         bytes: 2,
         cycles: 12,
@@ -2564,7 +2564,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     }),
     Some(InstructionData {
         mnemonic: "lddr",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xb4,
         bytes: 2,
         cycles: 12,
@@ -2590,7 +2590,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     }),
     Some(InstructionData {
         mnemonic: "lddr",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xb5,
         bytes: 2,
         cycles: 12,
@@ -2617,7 +2617,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // rrd
         mnemonic: "rrd",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xb6,
         bytes: 2,
         cycles: 12,
@@ -2644,7 +2644,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // rrd
         mnemonic: "rrd",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xb7,
         bytes: 2,
         cycles: 12,
@@ -2670,7 +2670,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     }),
     Some(InstructionData {
         mnemonic: "lddr",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xb8,
         bytes: 2,
         cycles: 12,
@@ -2696,7 +2696,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     }),
     Some(InstructionData {
         mnemonic: "cpdr",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xb9,
         bytes: 2,
         cycles: 12,
@@ -2722,7 +2722,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     }),
     Some(InstructionData {
         mnemonic: "indr",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xba,
         bytes: 2,
         cycles: 12,
@@ -2749,7 +2749,7 @@ pub static EDPREFIXED: [Option<InstructionData>; 256] = [
     Some(InstructionData {
         // rrd
         mnemonic: "otdr",
-        flow_control: true,
+        flow_control: false,
         opcode: 0xbb,
         bytes: 2,
         cycles: 12,
@@ -3356,7 +3356,7 @@ pub static DDPREFIXED: [Option<InstructionData>; 256] = [
         mnemonic: "ld",
         flow_control: false,
         opcode: 0x36,
-        bytes: 2,
+        bytes: 4,
         cycles: 12,
         zero: ReadWrite::N,
         negative: ReadWrite::N,
@@ -3648,7 +3648,7 @@ pub static DDPREFIXED: [Option<InstructionData>; 256] = [
         mnemonic: "ld",
         flow_control: false,
         opcode: 0x56,
-        bytes: 2,
+        bytes: 3,
         cycles: 8,
         zero: ReadWrite::N,
         negative: ReadWrite::N,
@@ -5721,7 +5721,7 @@ pub static FDPREFIXED: [Option<InstructionData>; 256] = [
         mnemonic: "ld",
         flow_control: false,
         opcode: 0x36,
-        bytes: 2,
+        bytes: 4,
         cycles: 12,
         zero: ReadWrite::N,
         negative: ReadWrite::N,
@@ -6013,7 +6013,7 @@ pub static FDPREFIXED: [Option<InstructionData>; 256] = [
         mnemonic: "ld",
         flow_control: false,
         opcode: 0x56,
-        bytes: 2,
+        bytes: 3,
         cycles: 8,
         zero: ReadWrite::N,
         negative: ReadWrite::N,

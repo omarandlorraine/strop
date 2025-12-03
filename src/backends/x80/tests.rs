@@ -12,15 +12,15 @@ fn not_a_useless_move(data: &InstructionData) {
 
 // checks if the flow control bit is set correctly in the instruction data thing. basically it has
 // to agree with what the opcode says it is.
-fn flow_control(data: &InstructionData) {
+fn flow_control<I: X80>(insn: &I) {
+    let data = insn.decode();
     assert_eq!(
         data.flow_control,
         matches!(
             data.mnemonic,
             "jp" | "jr" | "ret" | "reti" | "retn" | "call" | "rst" | "djnz"
         ),
-        "{:?}",
-        data
+        "{insn:?}",
     )
 }
 
@@ -46,22 +46,31 @@ fn length<I: X80>(insn: &I) {
         return;
     }
 
+    // Also the "repeat" instructions can't be used this way
+    if matches!(
+        decoded.mnemonic,
+        "ldir" | "cpir" | "inir" | "otir" | "lddr" | "cpdr" | "indr" | "otdr"
+    ) {
+        return;
+    }
+
     // Check the emulator agrees with the instruction length
     let mut emu = I::Emulator::default();
     for (addr, byte) in bytes.iter().enumerate() {
         emu.poke(addr.try_into().unwrap(), *byte);
     }
     emu.single_step().unwrap();
-    assert_eq!(emu.get_pc(), decoded.bytes as u16, "{decoded:?}");
+    assert_eq!(emu.get_pc(), decoded.bytes as u16, "{insn:?}");
 }
 
 pub(crate) fn std_x80_tests<I: X80>() {
     let mut i = I::first();
 
     while i.increment().is_ok() {
+        println!("{i:?}");
         let data = i.decode();
         not_a_useless_move(data);
-        flow_control(data);
+        flow_control(&i);
         length(&i);
     }
 }
