@@ -30,6 +30,7 @@ impl std::fmt::Display for Instruction {
         let data = self.decode();
         write!(f, "{}", data.mnemonic)?;
         let mut first = true;
+        let has_displacement  = data.operands.iter().any(|operand| *operand == "(ix+nn)" || *operand == "(iy+nn)");
         for op in data.operands.iter().filter(|op| !op.is_empty()) {
             if first {
                 write!(f, " ")?;
@@ -38,8 +39,11 @@ impl std::fmt::Display for Instruction {
                 write!(f, ", ")?;
             }
 
-            let operand = self.0[self.instruction_length()];
-            let operand2 = self.0[self.instruction_length() + 1];
+            let (displacement, operand, operand2) = if has_displacement {
+                (self.0[self.instruction_length() + 0], self.0[self.instruction_length() + 1], self.0[self.instruction_length() + 2])
+            } else {
+                (self.0[self.instruction_length() + 0], self.0[self.instruction_length() + 0], self.0[self.instruction_length() + 1])
+            };
 
             if *op == "n16" {
                 write!(f, "{:x}h", u16::from_le_bytes([operand, operand2]))?;
@@ -56,9 +60,9 @@ impl std::fmt::Display for Instruction {
             } else if *op == "(a16)" {
                 write!(f, "({:x}h)", u16::from_le_bytes([operand, operand2]))?;
             } else if *op == "(ix+nn)" {
-                write!(f, "(ix+{:x}h)", operand)?;
+                write!(f, "(ix+{:x}h)", displacement)?;
             } else if *op == "(iy+nn)" {
-                write!(f, "(iy+{:x}h)", operand)?;
+                write!(f, "(iy+{:x}h)", displacement)?;
             } else {
                 write!(f, "{op}")?
             }
