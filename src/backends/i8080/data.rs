@@ -5903,7 +5903,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         iyl: ReadWrite::N,
         sp: ReadWrite::N,
         i: ReadWrite::N,
-        operands: ["p", "a16", ""],
+        operands: ["pe", "a16", ""],
     }),
     None,
     Some(InstructionData {
