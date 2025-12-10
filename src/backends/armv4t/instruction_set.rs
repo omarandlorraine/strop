@@ -63,7 +63,7 @@ impl crate::Instruction for Instruction {
 
     fn from_bytes(bytes: &[u8]) -> Option<Self> {
         Some(Self(u32::from_le_bytes([
-            *bytes.get(0)?,
+            *bytes.first()?,
             *bytes.get(1)?,
             *bytes.get(2)?,
             *bytes.get(3)?,

@@ -30,7 +30,10 @@ impl std::fmt::Display for Instruction {
         let data = self.decode();
         write!(f, "{}", data.mnemonic)?;
         let mut first = true;
-        let has_displacement  = data.operands.iter().any(|operand| *operand == "(ix+nn)" || *operand == "(iy+nn)");
+        let has_displacement = data
+            .operands
+            .iter()
+            .any(|operand| *operand == "(ix+nn)" || *operand == "(iy+nn)");
         for op in data.operands.iter().filter(|op| !op.is_empty()) {
             if first {
                 write!(f, " ")?;
@@ -40,9 +43,17 @@ impl std::fmt::Display for Instruction {
             }
 
             let (displacement, operand, operand2) = if has_displacement {
-                (self.0[self.instruction_length() + 0], self.0[self.instruction_length() + 1], self.0[self.instruction_length() + 2])
+                (
+                    self.0[self.instruction_length()],
+                    self.0[self.instruction_length() + 1],
+                    self.0[self.instruction_length() + 2],
+                )
             } else {
-                (self.0[self.instruction_length() + 0], self.0[self.instruction_length() + 0], self.0[self.instruction_length() + 1])
+                (
+                    self.0[self.instruction_length()],
+                    self.0[self.instruction_length()],
+                    self.0[self.instruction_length() + 1],
+                )
             };
 
             if *op == "n16" {
@@ -119,7 +130,7 @@ impl crate::Instruction for Instruction {
         let mut insn = Self::first();
 
         // first copy in the prefixes if any and opcode
-        insn.0[0] = *bytes.get(0)?;
+        insn.0[0] = *bytes.first()?;
         if matches!(insn.0[0], 0xcb | 0xed | 0xdd | 0xfd) {
             insn.0[1] = *bytes.get(1)?;
         }

@@ -101,7 +101,7 @@ impl<V: mos6502::Variant> crate::Instruction for Instruction<V> {
     }
     fn from_bytes(bytes: &[u8]) -> Option<Self> {
         let mut insn = Self::first();
-        insn.0[0] = *bytes.get(0)?;
+        insn.0[0] = *bytes.first()?;
         match insn.len() {
             1 => {}
             2 => {

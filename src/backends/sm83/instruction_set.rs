@@ -115,7 +115,7 @@ impl crate::Instruction for Instruction {
     }
     fn from_bytes(bytes: &[u8]) -> Option<Self> {
         let mut insn = Self::first();
-        insn.0[0] = *bytes.get(0)?;
+        insn.0[0] = *bytes.first()?;
         match insn.to_bytes().len() {
             1 => {}
             2 => {
