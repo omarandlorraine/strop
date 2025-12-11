@@ -3781,7 +3781,7 @@ pub static UNPREFIXED: [Option<InstructionData>; 256] = [
         carry: ReadWrite::R,
         a: ReadWrite::Rmw,
         b: ReadWrite::N,
-        c: ReadWrite::W,
+        c: ReadWrite::R,
         d: ReadWrite::N,
         e: ReadWrite::N,
         h: ReadWrite::N,
