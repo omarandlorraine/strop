@@ -8,7 +8,7 @@ use crate::backends::x80::EmuInterface;
 use crate::backends::x80::SdccCallable;
 use crate::backends::x80::data::Datum;
 
-const ALL_REGISTERS: [Datum;13] = [
+const ALL_REGISTERS: [Datum;14] = [
     Datum::A,
     Datum::B,
     Datum::C,
@@ -22,6 +22,7 @@ const ALL_REGISTERS: [Datum;13] = [
     Datum::Ixl,
     Datum::Iyh,
     Datum::Iyl,
+    Datum::Sp,
 ];
 
 /// A trait defining how arguments get pushed to an emulator for SDCC_CALL(1).
