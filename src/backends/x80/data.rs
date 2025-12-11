@@ -108,6 +108,31 @@ pub enum Datum {
     Sp,
 }
 
+impl Datum {
+    pub fn all_registers() -> [Self; 14] {
+        [
+            Self::A,
+            Self::B,
+            Self::C,
+            Self::D,
+            Self::E,
+            Self::H,
+            Self::L,
+            Self::R,
+            Self::I,
+            Self::Ixh,
+            Self::Ixl,
+            Self::Iyh,
+            Self::Iyl,
+            Self::Sp,
+        ]
+    }
+
+    pub fn all_flags() -> [Self; 4] {
+        [Self::Zero, Self::Negative, Self::HalfCarry, Self::Carry]
+    }
+}
+
 impl<Insn: super::X80> crate::dataflow::DataFlow<Datum> for Insn {
     fn reads(&self, datum: &Datum) -> bool {
         self.decode().datum(datum).reads()
