@@ -8,6 +8,22 @@ use crate::backends::x80::EmuInterface;
 use crate::backends::x80::SdccCallable;
 use crate::backends::x80::data::Datum;
 
+const ALL_REGISTERS: [Datum;13] = [
+    Datum::A,
+    Datum::B,
+    Datum::C,
+    Datum::D,
+    Datum::E,
+    Datum::H,
+    Datum::L,
+    Datum::R,
+    Datum::I,
+    Datum::Ixh,
+    Datum::Ixl,
+    Datum::Iyh,
+    Datum::Iyl,
+];
+
 /// A trait defining how arguments get pushed to an emulator for SDCC_CALL(1).
 ///
 /// This varies between SM83 and Z80 because testing by the SDCC project showed that register
@@ -52,6 +68,14 @@ impl<Instruction: SdccCallable> SdccCall1<Instruction> {
         }
         for reg in self.vals.borrow().iter() {
             crate::dataflow::expect_write(&self.seq, reg)?;
+        }
+        for reg in ALL_REGISTERS.iter()
+            .filter(|datum| self.vals.borrow().iter().any(|d| d != *datum)) {
+            crate::dataflow::dont_expect_write(&self.seq, reg)?;
+        }
+        for reg in ALL_REGISTERS.iter()
+            .filter(|datum| self.args.borrow().iter().any(|d| d != *datum)) {
+            crate::dataflow::uninitialized(&self.seq, reg)?;
         }
         self.seq.check_all(Instruction::make_pure)?;
         Ok(())
