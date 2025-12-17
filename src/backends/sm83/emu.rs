@@ -144,7 +144,7 @@ impl crate::backends::x80::EmuInterface for Emu {
             let pc = self.get_pc();
             let sp = self.get_sp();
 
-            if pc == 0xaaaa && sp == 0x0000 {
+            if pc == 0xaaaa && sp == 0x8000 {
                 // Expected values for PC and SP mean that the subroutine has returned
                 return Ok(());
             }
@@ -152,7 +152,7 @@ impl crate::backends::x80::EmuInterface for Emu {
                 // the program counter is out of bounds; the subroutine seems to have run amok
                 return Err(RunError::RanAmok);
             }
-            self.cpu.next_instruction(&mut self.bus);
+            self.single_step()?;
         }
         // Never even returned!
         Err(RunError::RanAmok)
@@ -167,7 +167,10 @@ impl crate::backends::x80::EmuInterface for Emu {
     }
 
     fn single_step(&mut self) -> crate::RunResult<()> {
-        self.cpu.next_instruction(&mut self.bus);
-        Ok(())
+        if self.cpu.next_instruction(&mut self.bus).is_err() {
+            Err(crate::RunError::RanAmok)
+        } else {
+            Ok(())
+        }
     }
 }
