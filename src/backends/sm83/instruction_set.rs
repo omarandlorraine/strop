@@ -44,9 +44,16 @@ impl Instruction {
 impl std::fmt::Display for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         let data = self.decode();
-        write!(f, "{} ", data.mnemonic)?;
-        let mut first = false;
+        write!(f, "{}", data.mnemonic)?;
+        let mut first = true;
         for op in data.operands.iter().filter(|op| !op.is_empty()) {
+            if first {
+                write!(f, " ")?;
+                first = false;
+            } else {
+                write!(f, ", ")?;
+            }
+
             if *op == "n16" {
                 write!(f, "{:x}h", u16::from_le_bytes([self.0[1], self.0[2]]))?;
             } else if *op == "e8" {
@@ -63,11 +70,6 @@ impl std::fmt::Display for Instruction {
                 write!(f, "({:x}h)", u16::from_le_bytes([self.0[1], self.0[2]]))?;
             } else {
                 write!(f, "{op}")?
-            }
-
-            if !first {
-                write!(f, ", ")?;
-                first = true;
             }
         }
         Ok(())
