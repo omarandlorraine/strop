@@ -8,7 +8,7 @@ pub struct Instruction([u8; 3]);
 
 impl Instruction {
     fn decode_inner(&self) -> Option<&'static InstructionData> {
-        if matches!(self.0[0], 0xe3 | 0xeb | 0xec ) {
+        if matches!(self.0[0], 0xe3 | 0xeb | 0xec) {
             // opcodes in i8080 which are removed in sm83
             return None;
         }
