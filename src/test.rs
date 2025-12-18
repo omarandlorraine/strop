@@ -180,7 +180,6 @@ impl Parameters for u16 {
             v.push(1 << i);
             v.push(i);
             v.push(u16::MAX - i);
-            v.push(u16::MIN + i);
         }
         v
     }
@@ -222,7 +221,6 @@ impl Parameters for u32 {
             v.push(1 << i);
             v.push(i);
             v.push(u32::MAX - i);
-            v.push(u32::MIN + i);
         }
         v
     }
