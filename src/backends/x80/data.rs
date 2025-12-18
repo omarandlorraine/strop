@@ -23,12 +23,13 @@ impl ReadWrite {
 }
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct InstructionData {
     pub mnemonic: &'static str,
     pub opcode: u8,
     pub bytes: usize,
     pub cycles: usize,
+    pub flow_control: bool,
     pub zero: ReadWrite,
     pub negative: ReadWrite,
     pub half_carry: ReadWrite,
@@ -105,6 +106,31 @@ pub enum Datum {
     R,
     I,
     Sp,
+}
+
+impl Datum {
+    pub fn all_registers() -> [Self; 14] {
+        [
+            Self::A,
+            Self::B,
+            Self::C,
+            Self::D,
+            Self::E,
+            Self::H,
+            Self::L,
+            Self::R,
+            Self::I,
+            Self::Ixh,
+            Self::Ixl,
+            Self::Iyh,
+            Self::Iyl,
+            Self::Sp,
+        ]
+    }
+
+    pub fn all_flags() -> [Self; 4] {
+        [Self::Zero, Self::Negative, Self::HalfCarry, Self::Carry]
+    }
 }
 
 impl<Insn: super::X80> crate::dataflow::DataFlow<Datum> for Insn {

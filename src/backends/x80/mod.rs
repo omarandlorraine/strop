@@ -5,7 +5,7 @@ pub use sdcccall1::SdccCall1;
 
 /// Trait describing the workings of an emulator. This trait is enough to be able to call a
 /// function in a few different ways.
-pub trait EmuInterface {
+pub trait EmuInterface: Default {
     /// Sets the emulator's accumulator to some value
     fn set_a(&mut self, val: u8);
 
@@ -96,6 +96,16 @@ pub trait EmuInterface {
 
     /// Writes a subroutine to memory and then calls it
     fn call(&mut self, seq: Vec<u8>) -> crate::RunResult<()>;
+
+    /// Writes a byte to the memory
+    fn poke(&mut self, addr: u16, val: u8);
+
+    /// Reads a byte from the memory
+    #[allow(dead_code)]
+    fn peek(&mut self, addr: u16) -> u8;
+
+    /// Executes one intruction
+    fn single_step(&mut self) -> crate::RunResult<()>;
 }
 
 /// Associates an Instruction type with an Emulator type

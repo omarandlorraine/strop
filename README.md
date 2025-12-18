@@ -30,8 +30,9 @@ Strop currently has the following back-ends:
       [mos6502](https://github.com/mre/mos6502) dependency.
  * **m6809**, which targets the Motorola 6809
  * **z80**, which targets the Zilog Z80
+ * **sm83**, which targets the SM83, also known as the Gameboy CPU
+ * **i8080**, which targets the Intel 8080.
  * **mips**, which targets the MIPS I architecture
     * Supports the GTE coprocessor found in a Playstation 1, thanks to the
       [trapezoid-core](https://github.com/Amjad50/Trapezoid) dependency.
     * Does not support hardware floating point since emulation for that is lacking, but softfloat is supposed to work
- * **sm83**, which targets the SM83, also known as the Gameboy CPU

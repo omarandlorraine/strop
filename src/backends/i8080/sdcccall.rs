@@ -1,9 +1,9 @@
 use crate::RunResult;
+use crate::backends::i8080;
 use crate::backends::x80::EmuInterface;
 use crate::backends::x80::data::Datum;
-use crate::backends::z80;
-use z80::Emulator;
-use z80::Instruction;
+use i8080::Emulator;
+use i8080::Instruction;
 
 #[derive(Debug, Default)]
 pub struct SdccRunner {
@@ -210,8 +210,8 @@ mod test {
     #[test]
     fn cfg() {
         use crate::Traverse;
+        use crate::backends::i8080::Instruction;
         use crate::backends::x80::SdccCall1;
-        use crate::backends::z80::Instruction;
         let mut c = SdccCall1::<Instruction>::default();
 
         for _ in 0..5 {

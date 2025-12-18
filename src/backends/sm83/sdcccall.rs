@@ -93,6 +93,15 @@ impl EmuInterface for SdccRunner {
     fn call(&mut self, seq: Vec<u8>) -> crate::RunResult<()> {
         self.emu.call(seq)
     }
+    fn poke(&mut self, addr: u16, val: u8) {
+        self.emu.poke(addr, val);
+    }
+    fn peek(&mut self, addr: u16) -> u8 {
+        self.emu.peek(addr)
+    }
+    fn single_step(&mut self) -> crate::RunResult<()> {
+        self.emu.single_step()
+    }
 }
 
 impl crate::test::GetReturnValues for SdccRunner {

@@ -37,8 +37,8 @@ impl CpuBusProvider for Bus {
     }
     fn trigger_write_oam_bug(&mut self, _: u16) {}
     fn trigger_read_write_oam_bug(&mut self, _: u16) {}
-    fn read_no_oam_bug(&mut self, _: u16) -> u8 {
-        0
+    fn read_no_oam_bug(&mut self, addr: u16) -> u8 {
+        self.read(addr)
     }
 }
 
@@ -134,6 +134,7 @@ impl crate::backends::x80::EmuInterface for Emu {
         }
 
         // Put a value of 0xAAAA at the top of stack (this will be the return address)
+        self.cpu.reg_sp = 0x8000;
         self.push(0xaaaa);
 
         let end_of_subroutine = subroutine.len() as u16;
@@ -143,7 +144,7 @@ impl crate::backends::x80::EmuInterface for Emu {
             let pc = self.get_pc();
             let sp = self.get_sp();
 
-            if pc == 0xaaaa && sp == 0x0000 {
+            if pc == 0xaaaa && sp == 0x8000 {
                 // Expected values for PC and SP mean that the subroutine has returned
                 return Ok(());
             }
@@ -151,9 +152,25 @@ impl crate::backends::x80::EmuInterface for Emu {
                 // the program counter is out of bounds; the subroutine seems to have run amok
                 return Err(RunError::RanAmok);
             }
-            self.cpu.next_instruction(&mut self.bus);
+            self.single_step()?;
         }
         // Never even returned!
         Err(RunError::RanAmok)
+    }
+
+    fn poke(&mut self, addr: u16, val: u8) {
+        self.bus.write(addr, val);
+    }
+
+    fn peek(&mut self, addr: u16) -> u8 {
+        self.bus.read(addr)
+    }
+
+    fn single_step(&mut self) -> crate::RunResult<()> {
+        if self.cpu.next_instruction(&mut self.bus).is_err() {
+            Err(crate::RunError::RanAmok)
+        } else {
+            Ok(())
+        }
     }
 }

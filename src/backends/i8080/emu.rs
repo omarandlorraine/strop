@@ -2,8 +2,7 @@ use crate::backends::x80::EmuInterface;
 use crate::{RunError, RunResult};
 use iz80::{Cpu, PlainMachine, Reg8, Reg16};
 
-/// The Z80 emulator.
-#[derive(Default)]
+/// The 8080 emulator.
 pub struct Emulator {
     /// The machine
     pub machine: PlainMachine,
@@ -11,11 +10,20 @@ pub struct Emulator {
     pub cpu: Cpu,
 }
 
+impl Default for Emulator {
+    fn default() -> Self {
+        Self {
+            machine: Default::default(),
+            cpu: Cpu::new_8080(),
+        }
+    }
+}
+
 impl std::fmt::Debug for Emulator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Z80Emulator {{ a: {}, hl: {} }}",
+            "I8080Emulator {{ a: {}, hl: {} }}",
             self.get_a(),
             self.get_hl()
         )
@@ -100,7 +108,7 @@ impl EmuInterface for Emulator {
         // Write the subroutine to the beginning of the emulated CPU's address space
         for (addr, val) in sequence.iter().enumerate() {
             // TODO: This will panic if the program grows too long to fit in a Z80's address space
-            self.machine.poke(addr.try_into().unwrap(), *val);
+            self.poke(addr.try_into().unwrap(), *val);
         }
         self.cpu.registers().set_pc(0);
 
@@ -133,17 +141,14 @@ impl EmuInterface for Emulator {
         // Never even returned!
         Err(RunError::RanAmok)
     }
-
     fn poke(&mut self, addr: u16, val: u8) {
         use iz80::Machine;
-        self.machine.poke(addr, val);
+        self.machine.poke(addr, val)
     }
-
     fn peek(&mut self, addr: u16) -> u8 {
         use iz80::Machine;
         self.machine.peek(addr)
     }
-
     fn single_step(&mut self) -> crate::RunResult<()> {
         self.cpu.execute_instruction(&mut self.machine);
         Ok(())

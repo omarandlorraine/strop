@@ -38,3 +38,20 @@ command = [
 command = [
 "cargo", "test", "--", "sm83::isa", "--include-ignored", "--nocapture"
 ]
+
+[jobs.z80_dasm]
+command = [
+    "cargo",
+    "test",
+    "--",
+    "backends::z80::dasm",
+    "--nocapture",
+]
+[jobs.z80_uniq]
+command = [
+    "cargo",
+    "test",
+    "--",
+    "backends::z80::tests::dd",
+    "--nocapture",
+]

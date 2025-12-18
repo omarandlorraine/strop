@@ -184,13 +184,13 @@ impl<Input: Parameters, Output: ReturnValue> crate::Traverse for O32<Input, Outp
         self.seq.mutate();
         self.make_correct();
     }
-    fn from_bytes(bytes: &[u8]) -> Self {
-        Self {
-            seq: crate::Sequence::<Instruction>::from_bytes(bytes),
+    fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        Some(Self {
+            seq: crate::Sequence::<Instruction>::from_bytes(bytes)?,
             _phantom_data: Default::default(),
             args: Default::default(),
             vals: Default::default(),
-        }
+        })
     }
 }
 

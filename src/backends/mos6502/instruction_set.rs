@@ -99,21 +99,21 @@ impl<V: mos6502::Variant> crate::Instruction for Instruction<V> {
             _ => unreachable!("there are no {} length 6502 instructions", self.len()),
         }
     }
-    fn from_bytes(bytes: &[u8]) -> Self {
+    fn from_bytes(bytes: &[u8]) -> Option<Self> {
         let mut insn = Self::first();
-        insn.0[0] = bytes[0];
+        insn.0[0] = *bytes.first()?;
         match insn.len() {
             1 => {}
             2 => {
-                insn.0[1] = bytes[1];
+                insn.0[1] = *bytes.get(1)?;
             }
             3 => {
-                insn.0[1] = bytes[1];
-                insn.0[2] = bytes[2];
+                insn.0[1] = *bytes.get(1)?;
+                insn.0[2] = *bytes.get(2)?;
             }
             _ => unreachable!(),
         }
-        insn
+        Some(insn)
     }
 }
 

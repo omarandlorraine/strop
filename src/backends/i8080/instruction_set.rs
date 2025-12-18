@@ -2,27 +2,11 @@
 use crate::backends::x80::X80;
 use crate::backends::x80::data::InstructionData;
 
-/// Represents a SM83 machine instruction
+/// Represents a 8080 machine instruction
 #[derive(Clone, Copy, PartialOrd, PartialEq, Default)]
 pub struct Instruction([u8; 3]);
 
 impl Instruction {
-    fn decode_inner(&self) -> Option<&'static InstructionData> {
-        if matches!(self.0[0], 0xe3 | 0xeb | 0xec) {
-            // opcodes in i8080 which are removed in sm83
-            return None;
-        }
-        if self.0[0] == 0xcb {
-            return crate::backends::sm83::data::CBPREFIXED[self.0[1] as usize].as_ref();
-        }
-        let sm83 = crate::backends::sm83::data::UNPREFIXED[self.0[0] as usize].as_ref();
-
-        if sm83.is_some() {
-            return sm83;
-        }
-        crate::backends::i8080::data::UNPREFIXED[self.0[0] as usize].as_ref()
-    }
-
     fn incr_at_offset(&mut self, offset: usize) {
         if let Some(nb) = self.0[offset].checked_add(1) {
             self.0[offset] = nb;
@@ -30,10 +14,8 @@ impl Instruction {
             self.0[offset] = 0;
             self.incr_at_offset(offset - 1)
         }
-        while self.decode_inner().is_none() && self.0[0] != 0xcb {
-            // If there's no instruction data for this instruction (or more precisely, the
-            // first byte of the instruction) is invalid. this is because there are no invalid
-            // but prefixed instructions
+        while crate::backends::i8080::data::UNPREFIXED[self.0[0] as usize].is_none() {
+            // If there's no instruction data for this instruction then it's invalid
             self.0[0] += 1;
             self.0[1] = 0;
             self.0[2] = 0;
@@ -44,16 +26,9 @@ impl Instruction {
 impl std::fmt::Display for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         let data = self.decode();
-        write!(f, "{}", data.mnemonic)?;
-        let mut first = true;
+        write!(f, "{} ", data.mnemonic)?;
+        let mut first = false;
         for op in data.operands.iter().filter(|op| !op.is_empty()) {
-            if first {
-                write!(f, " ")?;
-                first = false;
-            } else {
-                write!(f, ", ")?;
-            }
-
             if *op == "n16" {
                 write!(f, "{:x}h", u16::from_le_bytes([self.0[1], self.0[2]]))?;
             } else if *op == "e8" {
@@ -70,6 +45,11 @@ impl std::fmt::Display for Instruction {
                 write!(f, "({:x}h)", u16::from_le_bytes([self.0[1], self.0[2]]))?;
             } else {
                 write!(f, "{op}")?
+            }
+
+            if !first {
+                write!(f, ", ")?;
+                first = true;
             }
         }
         Ok(())
@@ -104,6 +84,9 @@ impl crate::Instruction for Instruction {
         } else {
             let len = self.decode().bytes;
             self.incr_at_offset(len - 1);
+            while self.decode_inner().is_none() {
+                self.incr_at_offset(self.instruction_length() - 1);
+            }
             Ok(())
         }
     }
@@ -133,8 +116,14 @@ impl crate::Instruction for Instruction {
     }
 }
 
+impl Instruction {
+    fn decode_inner(&self) -> Option<&'static InstructionData> {
+        crate::backends::i8080::data::UNPREFIXED[self.0[0] as usize].as_ref()
+    }
+}
+
 impl X80 for Instruction {
-    type Emulator = crate::backends::sm83::emu::Emu;
+    type Emulator = crate::backends::i8080::emu::Emulator;
 
     fn decode(&self) -> &'static InstructionData {
         self.decode_inner().unwrap()
@@ -154,23 +143,24 @@ impl X80 for Instruction {
 
     fn make_return(&self) -> crate::StaticAnalysis<Self> {
         const INSN: u8 = 0xc9;
-
-        crate::Fixup::<Self>::check(
-            self.0[0] == INSN,
-            "DoesNotReturn",
-            |i| {
-                if i.0[0] <= INSN {
-                    i.0[0] = INSN;
-                    Ok(())
-                } else {
-                    Err(crate::StepError::End)
-                }
-            },
-            0,
-        )
+        if self.0[0] != INSN {
+            return Err(crate::Fixup::<Self> {
+                advance: |i| {
+                    if i.0[0] <= INSN {
+                        i.0[0] = INSN;
+                        Ok(())
+                    } else {
+                        Err(crate::StepError::End)
+                    }
+                },
+                offset: 0,
+                reason: "DoesNotReturn",
+            });
+        }
+        Ok(())
     }
 
     fn instruction_length(&self) -> usize {
-        if self.0[0] == 0xcb { 2 } else { 1 }
+        1
     }
 }

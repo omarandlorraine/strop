@@ -1,12 +1,10 @@
-//! A strop backend targetting the SM83, also known as the LR35902 or the Gameboy CPU.
-//!
-//! It's a bit like a Z80 but not quite.
+//! A strop backend targetting the Intel 8080.
 
 mod instruction_set;
 pub use instruction_set::Instruction;
 pub(crate) mod data;
 mod emu;
-pub use emu::Emu as Emulator;
+pub use emu::Emulator;
 mod sdcccall;
 
 #[cfg(test)]

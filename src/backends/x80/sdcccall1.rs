@@ -53,6 +53,21 @@ impl<Instruction: SdccCallable> SdccCall1<Instruction> {
         for reg in self.vals.borrow().iter() {
             crate::dataflow::expect_write(&self.seq, reg)?;
         }
+        for reg in Datum::all_registers()
+            .iter()
+            .filter(|datum| self.vals.borrow().iter().any(|d| d != *datum))
+        {
+            crate::dataflow::dont_expect_write(&self.seq, reg)?;
+        }
+        for reg in Datum::all_registers()
+            .iter()
+            .filter(|datum| self.args.borrow().iter().any(|d| d != *datum))
+        {
+            crate::dataflow::uninitialized(&self.seq, reg)?;
+        }
+        for flag in Datum::all_flags().iter() {
+            crate::dataflow::uninitialized(&self.seq, flag)?;
+        }
         self.seq.check_all(Instruction::make_pure)?;
         Ok(())
     }
@@ -86,11 +101,11 @@ impl<Instruction: SdccCallable> crate::Traverse for SdccCall1<Instruction> {
         self.seq.mutate();
         self.make_correct();
     }
-    fn from_bytes(bytes: &[u8]) -> Self {
-        Self {
-            seq: crate::Sequence::<Instruction>::from_bytes(bytes),
+    fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        Some(Self {
+            seq: crate::Sequence::<Instruction>::from_bytes(bytes)?,
             args: Default::default(),
             vals: Default::default(),
-        }
+        })
     }
 }
