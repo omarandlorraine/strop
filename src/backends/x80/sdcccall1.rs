@@ -95,6 +95,7 @@ impl<Instruction: SdccCallable, Params: crate::test::Parameters, RetVal: crate::
 impl<Instruction: SdccCallable> crate::Traverse for SdccCall1<Instruction> {
     fn increment(&mut self) {
         self.seq.increment();
+        self.seq.apply_all(crate::Instruction::pointless);
         self.make_correct();
     }
     fn mutate(&mut self) {

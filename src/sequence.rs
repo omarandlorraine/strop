@@ -106,6 +106,20 @@ impl<Instruction: crate::Instruction> Sequence<Instruction> {
         Ok(())
     }
 
+    /// Checks all instructions and applies all fixups
+    pub fn apply_all(
+        &mut self,
+        sa: fn(&Instruction) -> StaticAnalysis<Instruction>,
+    ) -> bool {
+        let mut t = false;
+        while let Err(e) = self.check_all(sa) {
+            t = true;
+            self.apply(&e);
+        }
+        t
+    }
+
+
     /// Checks all instructions except the last one for static analysis
     pub fn check_all_but_last(
         &self,
@@ -132,6 +146,7 @@ impl<Instruction: crate::Instruction> Sequence<Instruction> {
     pub fn increment(&mut self) {
         self.step_at(0);
     }
+     
     fn random_offset(&self) -> usize {
         use rand::Rng;
         let mut rng = rand::rng();

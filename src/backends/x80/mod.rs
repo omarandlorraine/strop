@@ -132,6 +132,31 @@ pub trait X80: crate::Instruction + Sized {
         )
     }
 
+    // checks for pointless instructions
+    fn pointless(&self) -> crate::StaticAnalysis<Self> {
+        // No need to generate NOP instructions
+        crate::static_analysis::Fixup::<Self>::check(
+            self.decode().mnemonic != "nop",
+            "PointlessInstruction",
+            Self::next_opcode,
+            0,
+        )?;
+        // A sub instruction is the same as a add instruction if the argument is negated
+        crate::static_analysis::Fixup::<Self>::check(
+            !(self.decode().mnemonic == "sub" && self.decode().operands[1] == "n8"),
+            "PointlessInstruction",
+            Self::next_opcode,
+            0,
+        )?;
+        // A relative jump needs a non-zero offset to be effectual
+        crate::static_analysis::Fixup::<Self>::check(
+            !(self.decode().mnemonic == "jr" && self.to_bytes()[1] == 0),
+            "PointlessInstruction",
+            Self::next_opcode,
+            0,
+        )
+    }
+
     // returns the length of the instruction, i.e.  the number of prefix bytes plus the opcode.
     fn instruction_length(&self) -> usize;
 }

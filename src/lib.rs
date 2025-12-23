@@ -84,6 +84,13 @@ pub trait Instruction: std::fmt::Display + std::fmt::Debug {
     fn from_bytes(bytes: &[u8]) -> Option<Self>
     where
         Self: Sized;
+
+    /// Static analysis to reject instructions that are pointless.
+    /// (for example, subtracting an immediate value is the same as adding the negative of that
+    /// value. So by skipping these we can reduce the search space)
+    fn pointless(&self) -> StaticAnalysis<Self> {
+        Ok(())
+    }
 }
 
 pub trait Callable<Input, Output> {

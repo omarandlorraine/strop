@@ -166,6 +166,9 @@ impl crate::Instruction for Instruction {
         }
         Some(insn)
     }
+    fn pointless(&self) -> crate::StaticAnalysis<Self> {
+        X80::pointless(&self)
+    }
 }
 
 impl Instruction {
