@@ -57,7 +57,7 @@ impl InstructionData {
         self.operands.iter().any(|operand| {
             matches!(
                 *operand,
-                "(a16)" | "(bc)" | "(de)" | "(hl)" | "(-hl)" | "(hl+)"
+                "a16" | "(a16)" | "(bc)" | "(de)" | "(hl)" | "(-hl)" | "(hl+)"
             )
         })
     }
