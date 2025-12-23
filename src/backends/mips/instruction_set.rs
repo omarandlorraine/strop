@@ -113,6 +113,103 @@ impl crate::Instruction for Instruction {
             *bytes.get(3)?,
         ])))
     }
+
+    /// Returns the fixup that skips redundant encoding
+    fn pointless(&self) -> crate::StaticAnalysis<Self> {
+        use trapezoid_core::cpu::Opcode;
+
+        // Writing to $zero is pointless
+        if self.rd() == Some(RegisterType::Zero) {
+            return self.redundant_encoding();
+        }
+        if self.write_rt() == Some(RegisterType::Zero) {
+            return self.redundant_encoding();
+        }
+
+        if matches!(self.decode().opcode, Opcode::And | Opcode::Or) {
+            // if the two read operands are the same then this is another move instruction
+            if self.rs() == self.rs() {
+                return self.redundant_encoding();
+            }
+        }
+
+        if matches!(
+            self.decode().opcode,
+            Opcode::Addi | Opcode::Ori | Opcode::Xori | Opcode::Andi
+        ) {
+            // adding/subtracting zero is pointless
+            // addiu is not included here because `addiu something something 0x0` is an alias for
+            // move
+            if self.imm() == Some(0) {
+                return self.redundant_encoding();
+            }
+        }
+
+        if matches!(
+            self.decode().opcode,
+            Opcode::And
+                | Opcode::Nor
+                | Opcode::Or
+                | Opcode::Xor
+                | Opcode::Add
+                | Opcode::Addu
+                | Opcode::Sub
+                | Opcode::Subu
+        ) {
+            // if one of the operands is zero then this is pointless
+            if self.rs() == Some(RegisterType::Zero) {
+                return self.redundant_encoding();
+            }
+            if self.read_rt() == Some(RegisterType::Zero) {
+                return self.redundant_encoding();
+            }
+        }
+
+        if matches!(
+            self.decode().opcode,
+            Opcode::Srl | Opcode::Sra | Opcode::Slt | Opcode::Sltu | Opcode::Sll
+        ) {
+            // Shift instructions.
+
+            // Zero shifted over is just zero, so this may as well be a straight move
+            if self.read_rt() == Some(RegisterType::Zero) {
+                return self.redundant_encoding();
+            }
+
+            // Shifting by zero is equivalent to a straight move
+            if self.shamt() == Some(0) {
+                return self.redundant_encoding();
+            }
+        }
+
+        if matches!(
+            self.decode().opcode,
+            Opcode::Sllv | Opcode::Srav | Opcode::Srlv
+        ) {
+            // Shift instructions.
+
+            // Shifting by zero is equivalent to a straight move
+            if self.rs() == Some(RegisterType::Zero) {
+                return self.redundant_encoding();
+            }
+        }
+
+        if matches!(
+            self.decode().opcode,
+            Opcode::Mult | Opcode::Multu | Opcode::Div | Opcode::Divu
+        ) {
+            // when multiplying or dividing, it's stupid for either operand to be $zero
+            if self.read_rt() == Some(RegisterType::Zero) {
+                return self.redundant_encoding();
+            }
+
+            if self.rs() == Some(RegisterType::Zero) {
+                return self.redundant_encoding();
+            }
+        }
+        Ok(())
+    }
+
 }
 
 impl Instruction {
@@ -212,102 +309,6 @@ impl Instruction {
             Self::next_opcode,
             0,
         )
-    }
-
-    /// Returns the fixup that skips redundant encoding
-    pub fn make_not_redundantly_encoded(&self) -> crate::StaticAnalysis<Self> {
-        use trapezoid_core::cpu::Opcode;
-
-        // Writing to $zero is pointless
-        if self.rd() == Some(RegisterType::Zero) {
-            return self.redundant_encoding();
-        }
-        if self.write_rt() == Some(RegisterType::Zero) {
-            return self.redundant_encoding();
-        }
-
-        if matches!(self.decode().opcode, Opcode::And | Opcode::Or) {
-            // if the two read operands are the same then this is another move instruction
-            if self.rs() == self.rs() {
-                return self.redundant_encoding();
-            }
-        }
-
-        if matches!(
-            self.decode().opcode,
-            Opcode::Addi | Opcode::Ori | Opcode::Xori | Opcode::Andi
-        ) {
-            // adding/subtracting zero is pointless
-            // addiu is not included here because 1addiu something something 0x0` is an alias for
-            // move
-            if self.imm() == Some(0) {
-                return self.redundant_encoding();
-            }
-        }
-
-        if matches!(
-            self.decode().opcode,
-            Opcode::And
-                | Opcode::Nor
-                | Opcode::Or
-                | Opcode::Xor
-                | Opcode::Add
-                | Opcode::Addu
-                | Opcode::Sub
-                | Opcode::Subu
-        ) {
-            // if one of the operands is zero then this is pointless
-            if self.rs() == Some(RegisterType::Zero) {
-                return self.redundant_encoding();
-            }
-            if self.read_rt() == Some(RegisterType::Zero) {
-                return self.redundant_encoding();
-            }
-        }
-
-        if matches!(
-            self.decode().opcode,
-            Opcode::Srl | Opcode::Sra | Opcode::Slt | Opcode::Sltu | Opcode::Sll
-        ) {
-            // Shift instructions.
-
-            // Zero shifted over is just zero, so this may as well be a straight move
-            if self.read_rt() == Some(RegisterType::Zero) {
-                return self.redundant_encoding();
-            }
-
-            // Shifting by zero is equivalent to a straight move
-            if self.shamt() == Some(0) {
-                return self.redundant_encoding();
-            }
-        }
-
-        if matches!(
-            self.decode().opcode,
-            Opcode::Sllv | Opcode::Srav | Opcode::Srlv
-        ) {
-            // Shift instructions.
-
-            // Shifting by zero is equivalent to a straight move
-            if self.rs() == Some(RegisterType::Zero) {
-                return self.redundant_encoding();
-            }
-        }
-
-        if matches!(
-            self.decode().opcode,
-            Opcode::Mult | Opcode::Multu | Opcode::Div | Opcode::Divu
-        ) {
-            // when multiplying or dividing, it's stupid for either operand to be $zero
-            if self.read_rt() == Some(RegisterType::Zero) {
-                return self.redundant_encoding();
-            }
-
-            if self.rs() == Some(RegisterType::Zero) {
-                return self.redundant_encoding();
-            }
-        }
-        Ok(())
     }
 
     /// Returns true if the instruction is an `R` format instruction

@@ -22,8 +22,7 @@ impl<Input: Parameters, Output: ReturnValue> O32<Input, Output> {
     /// performing dataflow analysis
     fn reduce_search_space(&self) -> crate::StaticAnalysis<Instruction> {
         use trapezoid_core::cpu::RegisterType;
-        self.seq
-            .check_all(Instruction::make_not_redundantly_encoded)?;
+        self.seq.check_all(crate::Instruction::pointless)?;
         crate::dataflow::allocate_registers(
             &self.seq,
             &[
