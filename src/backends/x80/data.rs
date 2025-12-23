@@ -77,7 +77,7 @@ impl InstructionData {
             Datum::L => self.l,
             Datum::Iyl => self.iyl,
             Datum::Iyh => self.iyh,
-            Datum::Ixl => self.ixh,
+            Datum::Ixl => self.ixl,
             Datum::Ixh => self.ixh,
             Datum::R => self.r,
             Datum::I => self.i,
