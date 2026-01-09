@@ -1,5 +1,6 @@
 //! Common code for Intel 8080-like backends, including z80 and sm83
 pub mod data;
+pub mod parse;
 pub mod sdcccall1;
 pub use sdcccall1::SdccCall1;
 

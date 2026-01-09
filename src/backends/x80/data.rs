@@ -14,6 +14,30 @@ pub enum ReadWrite {
 }
 
 impl ReadWrite {
+    pub const fn write(&self, r: bool) -> Self {
+        match (self, r) {
+            (Self::N, false) => Self::N,
+            (Self::N, true) => Self::W,
+            (Self::R, false) => Self::R,
+            (Self::R, true) => Self::Rmw,
+            (Self::W, false) => Self::N,
+            (Self::W, true) => Self::W,
+            (Self::Rmw, false) => Self::W,
+            (Self::Rmw, true) => Self::Rmw,
+        }
+    }
+    pub const fn read(&self, r: bool) -> Self {
+        match (self, r) {
+            (Self::N, false) => Self::N,
+            (Self::N, true) => Self::R,
+            (Self::R, false) => Self::N,
+            (Self::R, true) => Self::R,
+            (Self::W, false) => Self::W,
+            (Self::W, true) => Self::Rmw,
+            (Self::Rmw, false) => Self::Rmw,
+            (Self::Rmw, true) => Self::Rmw,
+        }
+    }
     pub fn reads(&self) -> bool {
         matches!(self, ReadWrite::R | ReadWrite::Rmw)
     }
