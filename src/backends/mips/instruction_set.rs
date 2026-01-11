@@ -137,7 +137,7 @@ impl Instruction {
     }
 
     /// Changes the registers which an instruction refers to.
-    fn next_registers(&mut self) -> crate::IterationResult {
+    pub fn next_registers(&mut self) -> crate::IterationResult {
         use crate::Instruction;
         if self.r() {
             // R format instruction: mask off the shamt and func fields, and then increment.

@@ -23,7 +23,7 @@ mod tests {
 
     #[test]
     fn unique_disassembly() {
-        crate::generic_unit_tests::disassemblies_unique(Instruction::first(), None);
+        crate::generic_unit_tests::disassemblies_unique(Instruction::increment);
     }
 
     #[test]

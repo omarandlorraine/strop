@@ -1,6 +1,7 @@
 //! This module contains handy things that can be called from unit tests.
 
 use crate::Instruction;
+use crate::IterationResult;
 
 /// Lists all the instructions that disassemble to the given string.
 ///
@@ -36,25 +37,22 @@ pub fn list_all_encodings<I: Instruction + Clone>(dasm: &str, from: I, to: Optio
 ///
 /// This works by putting the disassembly in a hashset, and making sure not to put the same value
 /// twice.
-pub fn disassemblies_unique<I: Instruction>(from: I, to: Option<I>) {
+pub fn disassemblies_unique<I: Instruction + std::fmt::Display>(
+    iterator: fn(&mut I) -> IterationResult,
+) {
     use std::collections::HashSet;
 
     let mut map: HashSet<String> = HashSet::new();
 
-    let mut a = from;
+    let mut a = Instruction::first();
     map.insert(format!("{a}"));
 
-    while a.increment().is_ok() {
+    while iterator(&mut a).is_ok() {
         println!("{a:?}");
         let dasm = format!("{a}");
 
         if map.contains(&dasm) {
             panic!("{a} has been visited once before!");
-        }
-        if let Some(ref to) = to {
-            if a.to_bytes() == to.to_bytes() {
-                break;
-            }
         }
     }
 }
@@ -88,6 +86,7 @@ pub fn sanity_checks<I: Instruction>() {
     loop {
         let dasm = format!("{a}"); // can disassemble
 
+        // can convert to bytes and back again
         let copy = I::from_bytes(&a.to_bytes()).unwrap();
         assert_eq!(a.to_bytes(), copy.to_bytes(), "{dasm}");
         assert_eq!(dasm, format!("{copy}"), "{dasm}");

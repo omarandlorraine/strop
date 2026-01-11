@@ -4,6 +4,16 @@ use crate::backends::armv4t;
 use armv4t::Aapcs32;
 use armv4t::Instruction;
 
+fn all_unconditionals(insn: &mut Instruction) -> crate::IterationResult {
+    while insn.0 < 0xe000_0000 {
+        insn.0 += 0x1000_0000;
+    }
+    if insn.0 < 0xe000_0000 {
+        return Err(crate::StepError::End);
+    }
+    Ok(())
+}
+
 #[test]
 fn call_identity_function() {
     let function = Aapcs32::<u32, u32>::from(Sequence::<Instruction>::from(vec![
@@ -19,7 +29,7 @@ fn call_identity_function() {
 #[ignore]
 #[test]
 fn disassemblies_unique() {
-    crate::generic_unit_tests::disassemblies_unique::<Instruction>(Instruction(0xe000_0000), None);
+    crate::generic_unit_tests::disassemblies_unique::<Instruction>(all_unconditionals);
 }
 
 #[ignore]
