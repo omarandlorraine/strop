@@ -55,3 +55,11 @@ command = [
     "backends::z80::tests::dd",
     "--nocapture",
 ]
+[jobs.i80parse]
+command = [
+	"cargo",
+	"test",
+	"--",
+	"backends::x80::parse::test::n",
+	"--nocapture",
+]

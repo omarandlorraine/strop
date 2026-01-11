@@ -5,6 +5,68 @@ use crate::backends::x80::data::ReadWrite;
 
 pub struct Opcode(u8);
 
+enum Register8 {
+    B,
+    C,
+    D,
+    E,
+    H,
+    L,
+    M,
+    A,
+}
+impl Register8 {
+    pub const fn r(sel: u8) -> Self {
+        match sel {
+            0 => Self::B,
+            1 => Self::C,
+            2 => Self::D,
+            3 => Self::E,
+            4 => Self::H,
+            5 => Self::L,
+            6 => Self::M,
+            _ => Self::A,
+        }
+    }
+    pub const fn b(&self) -> bool {
+        matches!(self, Self::B)
+    }
+    pub const fn c(&self) -> bool {
+        matches!(self, Self::C)
+    }
+    pub const fn d(&self) -> bool {
+        matches!(self, Self::D)
+    }
+    pub const fn e(&self) -> bool {
+        matches!(self, Self::E)
+    }
+    pub const fn h(&self) -> bool {
+        matches!(self, Self::H)
+    }
+    pub const fn l(&self) -> bool {
+        matches!(self, Self::L)
+    }
+    pub const fn m(&self) -> bool {
+        matches!(self, Self::M)
+    }
+    pub const fn a(&self) -> bool {
+        matches!(self, Self::A)
+    }
+
+    pub const fn label(&self) -> &'static str {
+        match self {
+            Self::B => "b",
+            Self::C => "c",
+            Self::D => "d",
+            Self::E => "e",
+            Self::H => "h",
+            Self::L => "l",
+            Self::M => "(hl)",
+            Self::A => "a",
+        }
+    }
+}
+
 enum RegisterPair {
     BC,
     DE,
@@ -129,6 +191,45 @@ impl Opcode {
         })
     }
 
+    const fn gen_inc8_or_dec8(
+        opcode: u8,
+        mnemonic: &'static str,
+        p: u8,
+    ) -> Option<InstructionData> {
+        let operand = Register8::r(p);
+
+        Some(InstructionData {
+            mnemonic,
+            flow_control: false,
+            opcode,
+            bytes: 1,
+            cycles: 4,
+            zero: ReadWrite::W,
+            negative: ReadWrite::W,
+            half_carry: ReadWrite::W,
+            carry: ReadWrite::N,
+            a: ReadWrite::N,
+            b: ReadWrite::N.read(operand.b()).write(operand.b()),
+            c: ReadWrite::N.read(operand.c()).write(operand.c()),
+            d: ReadWrite::N.read(operand.d()).write(operand.d()),
+            e: ReadWrite::N.read(operand.e()).write(operand.e()),
+            h: ReadWrite::N
+                .read(operand.h() | operand.m())
+                .write(operand.h()),
+            l: ReadWrite::N
+                .read(operand.l() | operand.m())
+                .write(operand.l()),
+            r: ReadWrite::N,
+            ixh: ReadWrite::N,
+            ixl: ReadWrite::N,
+            iyh: ReadWrite::N,
+            iyl: ReadWrite::N,
+            sp: ReadWrite::N,
+            i: ReadWrite::N,
+            operands: [operand.label(), "", ""],
+        })
+    }
+
     const fn gen_inc16_or_dec16(opcode: u8, q: u8, p: u8) -> Option<InstructionData> {
         let mnemonic = if q == 0 { "inc" } else { "dec" };
         let operand = RegisterPair::rp(p);
@@ -234,6 +335,36 @@ impl Opcode {
         })
     }
 
+    const fn gen_immediate_load8(opcode: u8, reg: u8) -> Option<InstructionData> {
+        let dest = Register8::r(reg);
+        Some(InstructionData {
+            mnemonic: "ld",
+            flow_control: false,
+            opcode,
+            bytes: 2,
+            cycles: 8,
+            zero: ReadWrite::N,
+            negative: ReadWrite::N,
+            half_carry: ReadWrite::N,
+            carry: ReadWrite::N,
+            a: ReadWrite::N,
+            b: ReadWrite::N.write(dest.b()),
+            c: ReadWrite::N.write(dest.c()),
+            d: ReadWrite::N.write(dest.d()),
+            e: ReadWrite::N.write(dest.e()),
+            h: ReadWrite::N.write(dest.h()).read(dest.m()),
+            l: ReadWrite::N.write(dest.l()).read(dest.m()),
+            r: ReadWrite::N,
+            ixh: ReadWrite::N,
+            ixl: ReadWrite::N,
+            iyh: ReadWrite::N,
+            iyl: ReadWrite::N,
+            sp: ReadWrite::N,
+            i: ReadWrite::N,
+            operands: [dest.label(), "n8", ""],
+        })
+    }
+
     const fn gen_immediate_load16(opcode: u8, reg: u8) -> Option<InstructionData> {
         let dest = RegisterPair::rp(reg);
         Some(InstructionData {
@@ -323,6 +454,9 @@ impl Opcode {
             (0, _, 1) => Self::gen_add16(self.0, self.p()),
             (0, _, 2) if self.q() == 0 => Self::gen_indirect_load(self.0, self.p()),
             (0, _, 3) => Self::gen_inc16_or_dec16(self.0, self.q(), self.p()),
+            (0, y, 4) => Self::gen_inc8_or_dec8(self.0, "inc", y),
+            (0, y, 5) => Self::gen_inc8_or_dec8(self.0, "dec", y),
+            (0, y, 6) => Self::gen_immediate_load8(self.0, y),
             (1, 6, 6) => Self::gen_halt(),
             (1, src, dst) => Self::gen_register_to_register_load(self.0, src, dst),
             _ => None,
