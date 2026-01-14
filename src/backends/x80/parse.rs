@@ -237,6 +237,8 @@ impl Opcode {
     }
 
     const fn gen_alu_reg(opcode: u8, alu: Alu, reg: Register8) -> Option< InstructionData> {
+        let show_a = matches!(alu, Alu::Add | Alu::Adc | Alu::Sub | Alu::Sbc);
+
         Some(InstructionData {
             mnemonic: alu.mnemonic(),
             flow_control: false,
@@ -261,11 +263,16 @@ impl Opcode {
             iyl: ReadWrite::N,
             sp: ReadWrite::N,
             i: ReadWrite::N,
-            operands: [reg.label(), "", ""],
+            operands: if show_a {
+                ["a", reg.label(), ""]
+            } else {
+                [reg.label(), "", ""]
+            },
         })
     }
 
     const fn gen_alu_immediate(opcode: u8, alu: Alu) -> Option< InstructionData> {
+        let show_a = matches!(alu, Alu::Add | Alu::Adc | Alu::Sub | Alu::Sbc);
         Some(InstructionData {
             mnemonic: alu.mnemonic(),
             flow_control: false,
@@ -290,7 +297,11 @@ impl Opcode {
             iyl: ReadWrite::N,
             sp: ReadWrite::N,
             i: ReadWrite::N,
-            operands: ["n8", "", ""],
+            operands: if show_a {
+                ["a", "n8", ""]
+            } else {
+                ["n8", "", ""]
+            },
         })
     }
 
@@ -1107,6 +1118,7 @@ impl Opcode {
             (3, _, 1) if self.q() == 0 => Self::gen_pop(self.0, RegisterPair::rp2(self.p())),
             (3, 1, 1) => Self::gen_ret(self.0, Condition::None),
             (3, 5, 1) => Self::gen_jphl(self.0),
+            (3, 7, 1) => Self::gen_sphl(self.0),
             (3, cond, 2) => Self::gen_jp_absolute(self.0,  Condition::cond(cond)),
             (3, 0, 3) =>Self::gen_jp_absolute(self.0,  Condition::None),
             (3, 4, 3) => Self::gen_xthl(self.0),
@@ -1120,6 +1132,17 @@ impl Opcode {
             (3, rst, 7) => Self::gen_rst(self.0, rst),
 
             _ => None,
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn all256() {
+        use crate::backends::x80::parse::Opcode;
+        for opcode in 0..=255 {
+            Opcode(opcode).parse();
         }
     }
 }

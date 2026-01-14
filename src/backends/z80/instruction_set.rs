@@ -193,7 +193,7 @@ impl Instruction {
                 if z80.is_some() {
                     return z80;
                 }
-                Some(crate::backends::i8080::Instruction::from_bytes(&self.to_bytes())?.decode())
+                Some(crate::backends::i8080::Instruction::from_bytes(&self.0)?.decode())
             }
         }
     }

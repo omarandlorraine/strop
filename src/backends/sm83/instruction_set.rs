@@ -22,7 +22,7 @@ impl Instruction {
         if sm83.is_some() {
             return sm83;
         }
-        Some(crate::backends::i8080::Instruction::from_bytes(&self.to_bytes())?.decode())
+        Some(crate::backends::i8080::Instruction::from_bytes(&self.0)?.decode())
     }
 
     fn incr_at_offset(&mut self, offset: usize) {

@@ -4,6 +4,7 @@ use crate::backends::x80::data::InstructionData;
 // The instruction set includes loads of useless instructions like `ld b, b`, which loads a
 // register with itself. Having no effect on flags or anything. These instructions are NOPs, but
 // not the canonical NOP.
+#[allow(dead_code)]
 fn not_a_useless_move(data: &InstructionData) {
     if data.mnemonic == "ld" {
         assert_ne!(data.operands[0], data.operands[1], "{:?}", data);
@@ -68,8 +69,7 @@ pub(crate) fn std_x80_tests<I: X80>() {
 
     while i.increment().is_ok() {
         println!("{i:?}");
-        let data = i.decode();
-        //not_a_useless_move(&data);
+        let _ = i.decode();
         flow_control(&i);
         length(&i);
     }

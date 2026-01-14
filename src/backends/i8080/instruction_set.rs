@@ -101,9 +101,10 @@ impl crate::Instruction for Instruction {
         }
     }
     fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        use crate::backends::x80::parse::Opcode;
         let mut insn = Self::first();
         insn.0[0] = *bytes.first()?;
-        match insn.to_bytes().len() {
+        match Opcode(insn.0[0]).parse()?.bytes {
             1 => {}
             2 => {
                 insn.0[1] = *bytes.get(1)?;
@@ -165,5 +166,22 @@ impl X80 for Instruction {
 
     fn instruction_length(&self) -> usize {
         1
+    }
+}
+
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn iterall() {
+        use super::Instruction;
+        use crate::Instruction as _;
+        use crate::backends::x80::X80;
+        let mut insn = Instruction::first();
+        while insn.increment().is_ok() {
+            let _ = format!("{insn}");
+            let _ = format!("{insn:?}");
+            insn.decode();
+        }
     }
 }
