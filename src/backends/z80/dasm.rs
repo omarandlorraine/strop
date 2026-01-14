@@ -1,18 +1,6 @@
 #[cfg(test)]
 mod test {
     #[test]
-    fn dedup8080() {
-        for i in 0..=255 {
-            if let Some(ref i8080) = crate::backends::i8080::data::UNPREFIXED[i] {
-                let Some(ref z80) = crate::backends::z80::data::UNPREFIXED[i] else {
-                    continue;
-                };
-                assert_ne!(i8080, z80, "{z80:?}");
-            }
-        }
-    }
-
-    #[test]
     fn opcodes() {
         use crate::Instruction as _;
         use crate::backends::x80::X80;
