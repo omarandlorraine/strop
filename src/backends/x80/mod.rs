@@ -115,7 +115,7 @@ pub trait X80: crate::Instruction + Sized {
     type Emulator: EmuInterface;
 
     /// returns a reference to an InstructionData
-    fn decode(&self) -> &'static data::InstructionData;
+    fn decode(&self) -> data::InstructionData;
 
     /// Increments the opcode part of the instruction, the opcode and any prefixes.
     fn next_opcode(&mut self) -> crate::IterationResult;

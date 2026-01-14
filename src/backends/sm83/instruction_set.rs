@@ -7,20 +7,22 @@ use crate::backends::x80::data::InstructionData;
 pub struct Instruction([u8; 3]);
 
 impl Instruction {
-    fn decode_inner(&self) -> Option<&'static InstructionData> {
+    fn decode_inner(&self) -> Option<InstructionData> {
+        use crate::Instruction as _;
+
         if matches!(self.0[0], 0xe3 | 0xeb | 0xec) {
             // opcodes in i8080 which are removed in sm83
             return None;
         }
         if self.0[0] == 0xcb {
-            return crate::backends::sm83::data::CBPREFIXED[self.0[1] as usize].as_ref();
+            return crate::backends::sm83::data::CBPREFIXED[self.0[1] as usize].clone();
         }
-        let sm83 = crate::backends::sm83::data::UNPREFIXED[self.0[0] as usize].as_ref();
+        let sm83 = crate::backends::sm83::data::UNPREFIXED[self.0[0] as usize].clone();
 
         if sm83.is_some() {
             return sm83;
         }
-        crate::backends::i8080::data::UNPREFIXED[self.0[0] as usize].as_ref()
+        Some(crate::backends::i8080::Instruction::from_bytes(&self.to_bytes())?.decode())
     }
 
     fn incr_at_offset(&mut self, offset: usize) {
@@ -136,7 +138,7 @@ impl crate::Instruction for Instruction {
 impl X80 for Instruction {
     type Emulator = crate::backends::sm83::emu::Emu;
 
-    fn decode(&self) -> &'static InstructionData {
+    fn decode(&self) -> InstructionData {
         self.decode_inner().unwrap()
     }
 

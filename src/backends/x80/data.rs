@@ -47,7 +47,7 @@ impl ReadWrite {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct InstructionData {
     pub mnemonic: &'static str,
     pub opcode: u8,

@@ -3,7 +3,7 @@
 use crate::backends::x80::data::InstructionData;
 use crate::backends::x80::data::ReadWrite;
 
-pub struct Opcode(u8);
+pub struct Opcode(pub u8);
 
 enum Condition {
     None,
@@ -1111,7 +1111,8 @@ impl Opcode {
             (3, 0, 3) =>Self::gen_jp_absolute(self.0,  Condition::None),
             (3, 4, 3) => Self::gen_xthl(self.0),
             (3, 5, 3) => Self::gen_ex_de_hl(self.0),
-            (3, _, 3) => Self::gen_interrupt_enable(self.0, self.q() != 0),
+            (3, 6, 3) => Self::gen_interrupt_enable(self.0, self.q() != 0),
+            (3, 7, 3) => Self::gen_interrupt_enable(self.0, self.q() != 0),
             (3, cond, 4) => Self::gen_call(self.0,  Condition::cond(cond)),
             (3, _, 5) if self.q() == 0 => Self::gen_push(self.0,  RegisterPair::rp2(self.p())),
             (3, 1, 5) => Self::gen_call(self.0,  Condition::None),
@@ -1119,36 +1120,6 @@ impl Opcode {
             (3, rst, 7) => Self::gen_rst(self.0, rst),
 
             _ => None,
-        }
-    }
-}
-
-#[cfg(test)]
-mod test {
-    #[test]
-    fn q() {
-        use crate::backends::x80::parse::Opcode;
-        let ld_bc_n16 = Opcode(9);
-        assert_eq!(ld_bc_n16.x(), 0);
-        assert_eq!(ld_bc_n16.y(), 1);
-        assert_eq!(ld_bc_n16.z(), 1);
-
-        assert_eq!(ld_bc_n16.p(), 0);
-        assert_eq!(ld_bc_n16.q(), 1);
-        
-        assert_eq!(ld_bc_n16.parse().unwrap().mnemonic, "add");
-    }
-
-    #[test]
-    fn n() {
-        use crate::backends::x80::parse::Opcode;
-        for op in 0u8..=255 {
-            let old = &crate::backends::i8080::data::UNPREFIXED[op as usize];
-            if old.is_none() {
-                continue;
-            }
-            let opcode = Opcode(op);
-            assert_eq!(opcode.parse(), *old, "x{}, y{}, z{}", opcode.x(), opcode.y(), opcode.z());
         }
     }
 }

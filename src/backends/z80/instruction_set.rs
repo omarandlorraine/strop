@@ -169,30 +169,31 @@ impl crate::Instruction for Instruction {
 }
 
 impl Instruction {
-    fn decode_inner(&self) -> Option<&'static InstructionData> {
+    fn decode_inner(&self) -> Option<InstructionData> {
+        use crate::Instruction as _;
         match self.0[0] {
-            0xcb => crate::backends::sm83::data::CBPREFIXED[self.0[1] as usize].as_ref(),
-            0xed => crate::backends::z80::data::EDPREFIXED[self.0[1] as usize].as_ref(),
+            0xcb => crate::backends::sm83::data::CBPREFIXED[self.0[1] as usize].clone(),
+            0xed => crate::backends::z80::data::EDPREFIXED[self.0[1] as usize].clone(),
             0xdd => {
                 if self.0[1] == 0xcb {
-                    crate::backends::z80::data::DDCBPREFIXED[self.0[1] as usize].as_ref()
+                    crate::backends::z80::data::DDCBPREFIXED[self.0[1] as usize].clone()
                 } else {
-                    crate::backends::z80::data::DDPREFIXED[self.0[1] as usize].as_ref()
+                    crate::backends::z80::data::DDPREFIXED[self.0[1] as usize].clone()
                 }
             }
             0xfd => {
                 if self.0[1] == 0xcb {
-                    crate::backends::z80::data::FDCBPREFIXED[self.0[1] as usize].as_ref()
+                    crate::backends::z80::data::FDCBPREFIXED[self.0[1] as usize].clone()
                 } else {
-                    crate::backends::z80::data::FDPREFIXED[self.0[1] as usize].as_ref()
+                    crate::backends::z80::data::FDPREFIXED[self.0[1] as usize].clone()
                 }
             }
             _ => {
-                let z80 = crate::backends::z80::data::UNPREFIXED[self.0[0] as usize].as_ref();
+                let z80 = crate::backends::z80::data::UNPREFIXED[self.0[0] as usize].clone();
                 if z80.is_some() {
                     return z80;
                 }
-                crate::backends::i8080::data::UNPREFIXED[self.0[0] as usize].as_ref()
+                Some(crate::backends::i8080::Instruction::from_bytes(&self.to_bytes())?.decode())
             }
         }
     }
@@ -201,7 +202,7 @@ impl Instruction {
 impl X80 for Instruction {
     type Emulator = crate::backends::z80::emu::Emulator;
 
-    fn decode(&self) -> &'static InstructionData {
+    fn decode(&self) -> InstructionData {
         self.decode_inner().unwrap()
     }
 

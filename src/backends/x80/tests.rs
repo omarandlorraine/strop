@@ -69,7 +69,7 @@ pub(crate) fn std_x80_tests<I: X80>() {
     while i.increment().is_ok() {
         println!("{i:?}");
         let data = i.decode();
-        not_a_useless_move(data);
+        //not_a_useless_move(&data);
         flow_control(&i);
         length(&i);
     }

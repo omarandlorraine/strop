@@ -8,13 +8,15 @@ pub struct Instruction([u8; 3]);
 
 impl Instruction {
     fn incr_at_offset(&mut self, offset: usize) {
+        use crate::backends::x80::parse::Opcode;
+
         if let Some(nb) = self.0[offset].checked_add(1) {
             self.0[offset] = nb;
         } else {
             self.0[offset] = 0;
             self.incr_at_offset(offset - 1)
         }
-        while crate::backends::i8080::data::UNPREFIXED[self.0[0] as usize].is_none() {
+        while Opcode(self.0[0]).parse().is_none() {
             // If there's no instruction data for this instruction then it's invalid
             self.0[0] += 1;
             self.0[1] = 0;
@@ -117,15 +119,16 @@ impl crate::Instruction for Instruction {
 }
 
 impl Instruction {
-    fn decode_inner(&self) -> Option<&'static InstructionData> {
-        crate::backends::i8080::data::UNPREFIXED[self.0[0] as usize].as_ref()
+    fn decode_inner(&self) -> Option<InstructionData> {
+        use crate::backends::x80::parse::Opcode;
+        Opcode(self.0[0]).parse()
     }
 }
 
 impl X80 for Instruction {
     type Emulator = crate::backends::i8080::emu::Emulator;
 
-    fn decode(&self) -> &'static InstructionData {
+    fn decode(&self) -> InstructionData {
         self.decode_inner().unwrap()
     }
 

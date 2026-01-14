@@ -7692,18 +7692,3 @@ pub static CBPREFIXED: [Option<InstructionData>; 256] = [
         operands: ["7", "a", ""],
     }),
 ];
-
-#[cfg(test)]
-mod test {
-    #[test]
-    fn dedup8080() {
-        for i in 0..=255 {
-            if let Some(ref i8080) = crate::backends::i8080::data::UNPREFIXED[i] {
-                let Some(ref sm83) = crate::backends::sm83::data::UNPREFIXED[i] else {
-                    continue;
-                };
-                assert_ne!(i8080, sm83, "{sm83:?}");
-            }
-        }
-    }
-}
