@@ -1,4 +1,3 @@
-use crate::Instruction as _;
 use crate::backends::mips;
 use mips::Instruction;
 
