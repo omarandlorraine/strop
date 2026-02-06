@@ -20,3 +20,6 @@ pub mod z80;
 
 #[cfg(feature = "i8080")]
 pub mod i8080;
+
+#[cfg(feature = "armagnac")]
+pub mod arm;

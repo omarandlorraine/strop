@@ -9,8 +9,9 @@ repository = "https://github.com/omarandlorraine/strop"
 homepage = "https://github.com/omarandlorraine/strop"
 
 [features]
-default = ["armv4t", "m6502", "m6809", "z80", "mips", "sm83", "i8080"]
+default = ["arm", "armv4t", "m6502", "m6809", "z80", "mips", "sm83", "i8080"]
 armv4t = ["armv4t_emu", "unarm"]
+arm = ["armagnac", "unarm"]
 m6502 = ["mos6502"]
 m6809 = ["emu6809"]
 z80 = ["iz80", "dez80"]
@@ -19,6 +20,7 @@ mips = ["trapezoid-core"]
 sm83 = ["mizu-core"]
 
 [dependencies]
+armagnac = { version = "0.3.0", optional = true }
 armv4t_emu = { version = "0.1.0", optional = true }
 rand = "0.9.1"
 unarm = { version = "2.1", optional = true }
