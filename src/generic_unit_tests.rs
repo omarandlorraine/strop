@@ -17,10 +17,10 @@ pub fn list_all_encodings<I: Instruction + Clone>(dasm: &str, from: I, to: Optio
         if a.increment().is_err() {
             break;
         }
-        if let Some(ref to) = to {
-            if a.to_bytes() == to.to_bytes() {
-                break;
-            }
+        if let Some(ref to) = to
+            && a.to_bytes() == to.to_bytes()
+        {
+            break;
         }
     }
 
@@ -51,10 +51,10 @@ pub fn disassemblies_unique<I: Instruction>(from: I, to: Option<I>) {
         if map.contains(&dasm) {
             panic!("{a} has been visited once before!");
         }
-        if let Some(ref to) = to {
-            if a.to_bytes() == to.to_bytes() {
-                break;
-            }
+        if let Some(ref to) = to
+            && a.to_bytes() == to.to_bytes()
+        {
+            break;
         }
     }
 }
