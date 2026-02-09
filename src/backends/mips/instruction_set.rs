@@ -76,7 +76,7 @@ impl crate::Instruction for Instruction {
         Self(0)
     }
     fn mutate(&mut self) {
-        use rand::Rng;
+        use rand::RngExt;
 
         loop {
             if rand::random() {

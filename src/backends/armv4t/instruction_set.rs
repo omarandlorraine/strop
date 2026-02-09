@@ -30,7 +30,7 @@ impl crate::Instruction for Instruction {
     }
 
     fn mutate(&mut self) {
-        use rand::Rng;
+        use rand::RngExt;
 
         if rand::random() {
             // could flip a bit in the instruction word
