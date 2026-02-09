@@ -18,10 +18,10 @@ mod test {
         use crate::backends::x80::X80;
         use crate::backends::z80::Instruction;
         for opcode in 0..=255 {
-            if !matches!(opcode, 0xcb | 0xed) {
-                if let Some(insn) = Instruction::from_bytes(&[opcode, 0, 0, 0, 0]) {
-                    assert_eq!(insn.decode().opcode, opcode, "{:?}", insn);
-                }
+            if !matches!(opcode, 0xcb | 0xed)
+                && let Some(insn) = Instruction::from_bytes(&[opcode, 0, 0, 0, 0])
+            {
+                assert_eq!(insn.decode().opcode, opcode, "{:?}", insn);
             }
             if let Some(insn) = Instruction::from_bytes(&[0xed, opcode, 0, 0, 0]) {
                 assert_eq!(insn.decode().opcode, opcode, "{:?}", insn);
