@@ -27,6 +27,7 @@ impl<V: mos6502::Variant> Instruction<V> {
             AddressingMode::Absolute => 3,
             AddressingMode::AbsoluteX => 3,
             AddressingMode::AbsoluteY => 3,
+            AddressingMode::AbsoluteIndexedIndirect => 3,
             AddressingMode::Indirect => 3,
             AddressingMode::BuggyIndirect => 3,
         }
@@ -124,8 +125,11 @@ impl<V: mos6502::Variant> std::fmt::Display for Instruction<V> {
         match self.opcode() {
             Instruction::ADC => write!(f, "adc"),
             Instruction::ADCnd => write!(f, "adc"),
+            Instruction::ALR => write!(f, "alr"),
+            Instruction::ANC => write!(f, "anc"),
             Instruction::AND => write!(f, "and"),
             Instruction::ASL => write!(f, "asl"),
+            Instruction::ARR => write!(f, "arr"),
             Instruction::BCC => write!(f, "bcc"),
             Instruction::BCS => write!(f, "bcs"),
             Instruction::BEQ => write!(f, "beq"),
@@ -145,6 +149,7 @@ impl<V: mos6502::Variant> std::fmt::Display for Instruction<V> {
             Instruction::CMP => write!(f, "cmp"),
             Instruction::CPX => write!(f, "cpx"),
             Instruction::CPY => write!(f, "cpy"),
+            Instruction::DCP => write!(f, "dcp"),
             Instruction::DEC => write!(f, "dec"),
             Instruction::DEX => write!(f, "dex"),
             Instruction::DEY => write!(f, "dey"),
@@ -152,13 +157,22 @@ impl<V: mos6502::Variant> std::fmt::Display for Instruction<V> {
             Instruction::INC => write!(f, "inc"),
             Instruction::INX => write!(f, "inx"),
             Instruction::INY => write!(f, "iny"),
+            Instruction::ISC => write!(f, "isc"),
+            Instruction::JAM => write!(f, "jam"),
             Instruction::JMP => write!(f, "jmp"),
             Instruction::JSR => write!(f, "jsr"),
+            Instruction::LAS => write!(f, "las"),
+            Instruction::LAX => write!(f, "lax"),
             Instruction::LDA => write!(f, "lda"),
             Instruction::LDX => write!(f, "ldx"),
             Instruction::LDY => write!(f, "ldy"),
             Instruction::LSR => write!(f, "lsr"),
             Instruction::NOP => write!(f, "nop"),
+            Instruction::NOPI => write!(f, "nop"),
+            Instruction::NOPZ => write!(f, "nop"),
+            Instruction::NOPZX => write!(f, "nop"),
+            Instruction::NOPA => write!(f, "nop"),
+            Instruction::NOPAX => write!(f, "nop"),
             Instruction::ORA => write!(f, "ora"),
             Instruction::PHA => write!(f, "pha"),
             Instruction::PHP => write!(f, "php"),
@@ -168,16 +182,23 @@ impl<V: mos6502::Variant> std::fmt::Display for Instruction<V> {
             Instruction::PLP => write!(f, "plp"),
             Instruction::PLX => write!(f, "plx"),
             Instruction::PLY => write!(f, "ply"),
+            Instruction::RLA => write!(f, "rla"),
             Instruction::ROL => write!(f, "rol"),
             Instruction::ROR => write!(f, "ror"),
+            Instruction::RRA => write!(f, "rra"),
             Instruction::RTI => write!(f, "rti"),
             Instruction::RTS => write!(f, "rts"),
+            Instruction::SAX => write!(f, "sax"),
             Instruction::SBC => write!(f, "sbc"),
             Instruction::SBCnd => write!(f, "sbc"),
+            Instruction::SBX => write!(f, "sbx"),
             Instruction::SEC => write!(f, "sec"),
             Instruction::SED => write!(f, "sed"),
             Instruction::SEI => write!(f, "sei"),
+            Instruction::SLO => write!(f, "slo"),
+            Instruction::SRE => write!(f, "sre"),
             Instruction::STA => write!(f, "sta"),
+            Instruction::STP => write!(f, "stp"),
             Instruction::STX => write!(f, "stx"),
             Instruction::STY => write!(f, "sty"),
             Instruction::STZ => write!(f, "stz"),
@@ -189,6 +210,9 @@ impl<V: mos6502::Variant> std::fmt::Display for Instruction<V> {
             Instruction::TXA => write!(f, "txa"),
             Instruction::TXS => write!(f, "txs"),
             Instruction::TYA => write!(f, "tya"),
+            Instruction::USBC => write!(f, "sbc"),
+            Instruction::WAI => write!(f, "wai"),
+            Instruction::XAA => write!(f, "xaa"),
         }?;
         match self.addressing_mode() {
             AddressingMode::Accumulator => write!(f, " a"),
@@ -198,6 +222,8 @@ impl<V: mos6502::Variant> std::fmt::Display for Instruction<V> {
             AddressingMode::ZeroPageX => write!(f, " ${:02x}, x", self.0[1]),
             AddressingMode::ZeroPageY => write!(f, " ${:02x}, y", self.0[1]),
             AddressingMode::Relative => write!(f, " {}", self.0[1] as i8),
+            AddressingMode::IndexedIndirectX => write!(f, " (${:02x},x)", self.0[1]),
+            AddressingMode::IndirectIndexedY => write!(f, " (${:02x}),y", self.0[1]),
             AddressingMode::Absolute => {
                 write!(f, " ${:02x}{:02x}", self.0[1], self.0[2])
             }
@@ -213,8 +239,9 @@ impl<V: mos6502::Variant> std::fmt::Display for Instruction<V> {
             AddressingMode::ZeroPageIndirect => {
                 write!(f, " (${:02x})", self.0[1])
             }
-            AddressingMode::IndexedIndirectX => write!(f, " (${:02x},x)", self.0[1]),
-            AddressingMode::IndirectIndexedY => write!(f, " (${:02x}),y", self.0[1]),
+            AddressingMode::AbsoluteIndexedIndirect => {
+                write!(f, " (${:02x}{:02x}, x)", self.0[1], self.0[2])
+            }
         }?;
         Ok(())
     }
