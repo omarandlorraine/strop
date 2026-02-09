@@ -133,7 +133,7 @@ impl<Instruction: crate::Instruction> Sequence<Instruction> {
         self.step_at(0);
     }
     fn random_offset(&self) -> usize {
-        use rand::Rng;
+        use rand::RngExt;
         let mut rng = rand::rng();
         if self.0.is_empty() {
             0
