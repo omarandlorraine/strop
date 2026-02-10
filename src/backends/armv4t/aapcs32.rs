@@ -273,7 +273,8 @@ impl Aapcs32Runner {
     }
     fn put_argument(&mut self, arg: u32) -> RunResult<()> {
         let r = if (0..5).contains(&self.arg) {
-            self.cpu.reg_set(armv4t_emu::Mode::User, 0, arg);
+            self.cpu
+                .reg_set(armv4t_emu::Mode::User, self.arg as u8, arg);
             Ok(())
         } else {
             Err(crate::RunError::TooManyArguments)

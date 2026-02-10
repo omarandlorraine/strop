@@ -21,6 +21,14 @@ pub enum Triplet {
     Armv4tNoneEabi,
     #[cfg(feature = "armv4t")]
     Armv4tUnknownLinuxGnueabi,
+    #[cfg(feature = "arm")]
+    ThumbV6MUnknownLinuxGnueabi,
+    #[cfg(feature = "arm")]
+    ThumbV7MUnknownLinuxGnueabi,
+    #[cfg(feature = "arm")]
+    ThumbV7EMUnknownLinuxGnueabi,
+    #[cfg(feature = "arm")]
+    ThumbV8MUnknownLinuxGnueabi,
 }
 
 impl Triplet {
@@ -43,6 +51,14 @@ impl Triplet {
             Self::Armv4tUnknownLinuxGnueabi,
             #[cfg(feature = "z80")]
             Self::Z80UnknownSdcc,
+            #[cfg(feature = "arm")]
+            Self::ThumbV7MUnknownLinuxGnueabi,
+            #[cfg(feature = "arm")]
+            Self::ThumbV7MUnknownLinuxGnueabi,
+            #[cfg(feature = "arm")]
+            Self::ThumbV7EMUnknownLinuxGnueabi,
+            #[cfg(feature = "arm")]
+            Self::ThumbV8MUnknownLinuxGnueabi,
         ]
     }
 
@@ -97,6 +113,34 @@ impl Triplet {
                     crate::test::FuzzTest::new(target),
                 ))
             }
+            #[cfg(feature = "arm")]
+            Self::ThumbV6MUnknownLinuxGnueabi => {
+                Box::new(crate::search::Searcher::new(
+                    crate::backends::arm::Aapcs32::<crate::backends::arm::Armv6m, Input, Output>::default(),
+                    crate::test::FuzzTest::new(target),
+                ))
+            }
+            #[cfg(feature = "arm")]
+            Self::ThumbV7MUnknownLinuxGnueabi => {
+                Box::new(crate::search::Searcher::new(
+                    crate::backends::arm::Aapcs32::<crate::backends::arm::Armv7m, Input, Output>::default(),
+                    crate::test::FuzzTest::new(target),
+                ))
+            }
+            #[cfg(feature = "arm")]
+            Self::ThumbV7EMUnknownLinuxGnueabi => {
+                Box::new(crate::search::Searcher::new(
+                    crate::backends::arm::Aapcs32::<crate::backends::arm::Armv7em, Input, Output>::default(),
+                    crate::test::FuzzTest::new(target),
+                ))
+            }
+            #[cfg(feature = "arm")]
+            Self::ThumbV8MUnknownLinuxGnueabi => {
+                Box::new(crate::search::Searcher::new(
+                    crate::backends::arm::Aapcs32::<crate::backends::arm::Armv8m, Input, Output>::default(),
+                    crate::test::FuzzTest::new(target),
+                ))
+            }
         }
     }
 }
@@ -120,6 +164,14 @@ impl std::fmt::Display for Triplet {
             Self::Armv4tUnknownLinuxGnueabi => write!(f, "armv4t-unknown-linux-gnueabi"),
             #[cfg(feature = "z80")]
             Self::Z80UnknownSdcc => write!(f, "z80-unknown-sdcc"),
+            #[cfg(feature = "arm")]
+            Self::ThumbV6MUnknownLinuxGnueabi => write!(f, "thumbv6m-unknown-linux-gnueabi"),
+            #[cfg(feature = "arm")]
+            Self::ThumbV7MUnknownLinuxGnueabi => write!(f, "thumbv7m-unknown-linux-gnueabi"),
+            #[cfg(feature = "arm")]
+            Self::ThumbV7EMUnknownLinuxGnueabi => write!(f, "thumbv7em-unknown-linux-gnueabi"),
+            #[cfg(feature = "arm")]
+            Self::ThumbV8MUnknownLinuxGnueabi => write!(f, "thumbv8m-unknown-linux-gnueabi"),
         }
     }
 }
