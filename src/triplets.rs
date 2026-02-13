@@ -21,6 +21,14 @@ pub enum Triplet {
     Armv4tNoneEabi,
     #[cfg(feature = "armv4t")]
     Armv4tUnknownLinuxGnueabi,
+    #[cfg(feature = "mos6502")]
+    Mos6502NoneBarezp,
+    #[cfg(feature = "mos6502")]
+    Nmos6502NoneBarezp,
+    #[cfg(feature = "mos6502")]
+    Ricoh2a03NoneBarezp,
+    #[cfg(feature = "mos6502")]
+    Mos6502aNoneBarezp,
 }
 
 impl Triplet {
@@ -43,6 +51,12 @@ impl Triplet {
             Self::Armv4tUnknownLinuxGnueabi,
             #[cfg(feature = "z80")]
             Self::Z80UnknownSdcc,
+            #[cfg(feature = "mos6502")]
+            Self::Nmos6502NoneBarezp,
+            #[cfg(feature = "mos6502")]
+            Self::Ricoh2a03NoneBarezp,
+            #[cfg(feature = "mos6502")]
+            Self::Mos6502aNoneBarezp,
         ]
     }
 
@@ -97,6 +111,43 @@ impl Triplet {
                     crate::test::FuzzTest::new(target),
                 ))
             }
+            #[cfg(feature = "mos6502")]
+            Self::Mos6502NoneBarezp => Box::new(crate::search::Searcher::new(
+                crate::backends::mos6502::zpcall::ZpCall::<
+                    mos6502::instruction::Nmos6502,
+                    Input,
+                    Output,
+                >::default(),
+                crate::test::FuzzTest::new(target),
+            )),
+
+            #[cfg(feature = "mos6502")]
+            Self::Nmos6502NoneBarezp => Box::new(crate::search::Searcher::new(
+                crate::backends::mos6502::zpcall::ZpCall::<
+                    mos6502::instruction::Nmos6502,
+                    Input,
+                    Output,
+                >::default(),
+                crate::test::FuzzTest::new(target),
+            )),
+            #[cfg(feature = "mos6502")]
+            Self::Ricoh2a03NoneBarezp => Box::new(crate::search::Searcher::new(
+                crate::backends::mos6502::zpcall::ZpCall::<
+                    mos6502::instruction::Ricoh2a03,
+                    Input,
+                    Output,
+                >::default(),
+                crate::test::FuzzTest::new(target),
+            )),
+            #[cfg(feature = "mos6502")]
+            Self::Mos6502aNoneBarezp => Box::new(crate::search::Searcher::new(
+                crate::backends::mos6502::zpcall::ZpCall::<
+                    mos6502::instruction::RevisionA,
+                    Input,
+                    Output,
+                >::default(),
+                crate::test::FuzzTest::new(target),
+            )),
         }
     }
 }
@@ -120,6 +171,15 @@ impl std::fmt::Display for Triplet {
             Self::Armv4tUnknownLinuxGnueabi => write!(f, "armv4t-unknown-linux-gnueabi"),
             #[cfg(feature = "z80")]
             Self::Z80UnknownSdcc => write!(f, "z80-unknown-sdcc"),
+            #[cfg(feature = "mos6502")]
+            Self::Mos6502NoneBarezp => write!(f, "mos6502-none-barezp"),
+
+            #[cfg(feature = "mos6502")]
+            Self::Nmos6502NoneBarezp => write!(f, "nmos6502-none-barezp"),
+            #[cfg(feature = "mos6502")]
+            Self::Ricoh2a03NoneBarezp => write!(f, "ricoh2a03-none-barezp"),
+            #[cfg(feature = "mos6502")]
+            Self::Mos6502aNoneBarezp => write!(f, "mos6502a-none-barezp"),
         }
     }
 }
