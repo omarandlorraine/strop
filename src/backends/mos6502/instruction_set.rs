@@ -225,22 +225,22 @@ impl<V: mos6502::Variant> std::fmt::Display for Instruction<V> {
             AddressingMode::IndexedIndirectX => write!(f, " (${:02x},x)", self.0[1]),
             AddressingMode::IndirectIndexedY => write!(f, " (${:02x}),y", self.0[1]),
             AddressingMode::Absolute => {
-                write!(f, " ${:02x}{:02x}", self.0[1], self.0[2])
+                write!(f, " ${:02x}{:02x}", self.0[2], self.0[1])
             }
             AddressingMode::AbsoluteX => {
-                write!(f, " ${:02x}{:02x}, x", self.0[1], self.0[2])
+                write!(f, " ${:02x}{:02x}, x", self.0[2], self.0[1])
             }
             AddressingMode::AbsoluteY => {
-                write!(f, " ${:02x}{:02x}, y", self.0[1], self.0[2])
+                write!(f, " ${:02x}{:02x}, y", self.0[2], self.0[1])
             }
             AddressingMode::Indirect | mos6502::instruction::AddressingMode::BuggyIndirect => {
-                write!(f, " (${:02x}{:02x})", self.0[1], self.0[2])
+                write!(f, " (${:02x}{:02x})", self.0[2], self.0[1])
             }
             AddressingMode::ZeroPageIndirect => {
                 write!(f, " (${:02x})", self.0[1])
             }
             AddressingMode::AbsoluteIndexedIndirect => {
-                write!(f, " (${:02x}{:02x}, x)", self.0[1], self.0[2])
+                write!(f, " (${:02x}{:02x}, x)", self.0[2], self.0[1])
             }
         }?;
         Ok(())
