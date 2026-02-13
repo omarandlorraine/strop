@@ -256,6 +256,8 @@ impl<V: mos6502::Variant> std::fmt::Debug for Instruction<V> {
             .map(|b| format!("{b:02x}"))
             .collect::<Vec<String>>()
             .join(" ");
-        write!(f, "{bytes}")
+
+        let n = format!("{self}");
+        write!(f, "{n:15} ; {bytes}")
     }
 }
