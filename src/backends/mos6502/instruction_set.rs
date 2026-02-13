@@ -60,6 +60,146 @@ impl<V: mos6502::Variant> Instruction<V> {
     fn opcode(&self) -> Opcode {
         V::decode(self.0[0]).unwrap().0
     }
+
+    fn skip_opcode(&mut self) -> IterationResult {
+        self.incr_at_offset(0)
+    }
+
+    fn skip_operand(&mut self) -> IterationResult {
+        match self.len() {
+            1 => self.incr_at_offset(0),
+            2 => self.incr_at_offset(1),
+            3 => self.incr_at_offset(2),
+            _ => unreachable!(),
+        }
+    }
+
+    /// Culls NOP instructions
+    pub fn no_operation(&self) -> crate::StaticAnalysis<Self> {
+        use crate::Fixup;
+        use mos6502::instruction::Instruction;
+
+        Fixup::check(
+            !matches!(
+                self.opcode(),
+                Instruction::NOPA | Instruction::NOP | Instruction::NOPAX
+            ),
+            "PointlessInstruction",
+            Self::skip_opcode,
+            0,
+        )
+    }
+
+    /// Culls instructions that redundantly use a 16-bit address to access zero page. Such
+    /// instructions can more optimally be encoded as a zero-page instruction. For example,
+    /// `lda $0007, x` could be `lda $07, x`.
+    pub fn uses_absolute_mode_unnecessarily(&self) -> crate::StaticAnalysis<Self> {
+        use crate::Fixup;
+        use mos6502::instruction::Instruction;
+        if self.0[2] != 0 {
+            return Ok(());
+        }
+        match self.addressing_mode() {
+            AddressingMode::Absolute
+                if matches!(
+                    self.opcode(),
+                    Instruction::NOPA
+                        | Instruction::ORA
+                        | Instruction::ASL
+                        | Instruction::SLO
+                        | Instruction::AND
+                        | Instruction::ROL
+                        | Instruction::RLA
+                        | Instruction::EOR
+                        | Instruction::LSR
+                        | Instruction::SRE
+                        | Instruction::ADC
+                        | Instruction::ADCnd
+                        | Instruction::ROR
+                        | Instruction::RRA
+                        | Instruction::STY
+                        | Instruction::STA
+                        | Instruction::STX
+                        | Instruction::SAX
+                        | Instruction::LDY
+                        | Instruction::LDA
+                        | Instruction::LDX
+                        | Instruction::LAX
+                        | Instruction::CPY
+                        | Instruction::CPX
+                        | Instruction::CMP
+                        | Instruction::DEC
+                        | Instruction::DCP
+                        | Instruction::SBC
+                        | Instruction::SBCnd
+                        | Instruction::INC
+                        | Instruction::ISC
+                ) =>
+            {
+                Fixup::err("Pointless", Self::skip_operand, 0)
+            }
+
+            AddressingMode::AbsoluteX
+                if matches!(
+                    self.opcode(),
+                    Instruction::NOPAX
+                        | Instruction::ORA
+                        | Instruction::SLO
+                        | Instruction::ASL
+                        | Instruction::AND
+                        | Instruction::ROL
+                        | Instruction::RLA
+                        | Instruction::SRE
+                        | Instruction::EOR
+                        | Instruction::LSR
+                        | Instruction::RRA
+                        | Instruction::ADC
+                        | Instruction::ADCnd
+                        | Instruction::ROR
+                        | Instruction::STA
+                        | Instruction::LDY
+                        | Instruction::LDA
+                        | Instruction::DEC
+                        | Instruction::DCP
+                        | Instruction::CMP
+                        | Instruction::ISC
+                        | Instruction::SBC
+                        | Instruction::SBCnd
+                        | Instruction::INC
+                ) =>
+            {
+                Fixup::err("Pointless", Self::skip_operand, 0)
+            }
+
+            AddressingMode::AbsoluteY
+                if matches!(
+                    self.opcode(),
+                    Instruction::ADC | Instruction::ADCnd | Instruction::LDX | Instruction::LAX
+                ) =>
+            {
+                Fixup::err("Pointless", Self::skip_operand, 0)
+            }
+            _ => Ok(()),
+        }
+    }
+
+    /// Makes the instruction into `rts`
+    pub fn make_rts(&self) -> crate::StaticAnalysis<Self> {
+        const INSN: u8 = 0x60;
+        crate::Fixup::<Self>::check(
+            self.0[0] == INSN,
+            "DoesNotReturn",
+            |i| {
+                if i.0[0] <= INSN {
+                    i.0[0] = INSN;
+                    Ok(())
+                } else {
+                    Err(crate::StepError::End)
+                }
+            },
+            0,
+        )
+    }
 }
 
 impl<V: mos6502::Variant> crate::Instruction for Instruction<V> {
