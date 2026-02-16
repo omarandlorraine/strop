@@ -74,6 +74,194 @@ impl<V: mos6502::Variant> Instruction<V> {
         }
     }
 
+    fn address(&self) -> Option<u16> {
+        match self.addressing_mode() {
+            AddressingMode::Accumulator => None,
+            AddressingMode::Implied => None,
+            AddressingMode::Immediate => None,
+            AddressingMode::ZeroPage => Some(self.0[1] as u16),
+            AddressingMode::ZeroPageX => Some(self.0[1] as u16),
+            AddressingMode::ZeroPageY => Some(self.0[1] as u16),
+            AddressingMode::Relative => Some(u16::from_le_bytes([self.0[1], self.0[2]])),
+            AddressingMode::IndexedIndirectX => Some(self.0[1] as u16),
+            AddressingMode::IndirectIndexedY => Some(self.0[1] as u16),
+            AddressingMode::Absolute => Some(u16::from_le_bytes([self.0[1], self.0[2]])),
+            AddressingMode::AbsoluteX => Some(u16::from_le_bytes([self.0[1], self.0[2]])),
+            AddressingMode::AbsoluteY => Some(u16::from_le_bytes([self.0[1], self.0[2]])),
+            AddressingMode::Indirect => Some(u16::from_le_bytes([self.0[1], self.0[2]])),
+            AddressingMode::BuggyIndirect => Some(u16::from_le_bytes([self.0[1], self.0[2]])),
+            AddressingMode::ZeroPageIndirect => Some(self.0[1] as u16),
+            AddressingMode::AbsoluteIndexedIndirect => {
+                Some(u16::from_le_bytes([self.0[1], self.0[2]]))
+            }
+        }
+    }
+
+    fn zero_page_pointer(&self) -> Option<u8> {
+        match self.addressing_mode() {
+            AddressingMode::Accumulator => None,
+            AddressingMode::Implied => None,
+            AddressingMode::Immediate => None,
+            AddressingMode::ZeroPage => Some(self.0[1]),
+            AddressingMode::ZeroPageX => Some(self.0[1]),
+            AddressingMode::ZeroPageY => Some(self.0[1]),
+            AddressingMode::Relative => None,
+            AddressingMode::IndexedIndirectX => Some(self.0[1]),
+            AddressingMode::IndirectIndexedY => Some(self.0[1]),
+            AddressingMode::Absolute => None,
+            AddressingMode::AbsoluteX => None,
+            AddressingMode::AbsoluteY => None,
+            AddressingMode::Indirect => None,
+            AddressingMode::BuggyIndirect => None,
+            AddressingMode::ZeroPageIndirect => Some(self.0[1]),
+            AddressingMode::AbsoluteIndexedIndirect => None,
+        }
+    }
+
+    /// Culls isntructions that dereference pointers
+    pub fn no_pointers(&self) -> crate::StaticAnalysis<Self> {
+        return crate::Fixup::check(
+            self.zero_page_pointer().is_none(),
+            "dereferences a pointer",
+            Self::skip_operand,
+            0,
+        );
+    }
+
+    /// Returns true iff the instruction is one of the Read-Modify-Write instructions,
+    pub fn read_modify_write(&self) -> bool {
+        use mos6502::instruction::Instruction;
+        matches!(
+            self.opcode(),
+            Instruction::ASL
+                | Instruction::SLO
+                | Instruction::ROL
+                | Instruction::ROR
+                | Instruction::RRA
+                | Instruction::RLA
+                | Instruction::LSR
+                | Instruction::SRE
+                | Instruction::DEC
+                | Instruction::INC
+                | Instruction::DCP
+                | Instruction::ISC
+        )
+    }
+
+    /// Returns true iff the instruction writes to memory
+    pub fn writes_to_memory(&self) -> bool {
+        use mos6502::instruction::Instruction;
+        (self.read_modify_write() && self.address().is_some())
+            || matches!(
+                self.opcode(),
+                Instruction::STA | Instruction::STX | Instruction::SAX | Instruction::STY
+            )
+    }
+
+    /// Returns true iff the instruction reads from memory
+    pub fn reads_from_memory(&self) -> bool {
+        use mos6502::instruction::Instruction;
+        match self.addressing_mode() {
+            AddressingMode::Accumulator => false,
+            AddressingMode::Implied => false,
+            AddressingMode::Immediate => false,
+            AddressingMode::Relative => false,
+            _ => matches!(
+                self.opcode(),
+                Instruction::ORA
+                    | Instruction::ADCnd
+                    | Instruction::ADC
+                    | Instruction::BIT
+                    | Instruction::AND
+                    | Instruction::SBCnd
+                    | Instruction::SBC
+                    | Instruction::EOR
+                    | Instruction::LDY
+                    | Instruction::LDA
+                    | Instruction::LDX
+                    | Instruction::LAX
+                    | Instruction::LAS
+                    | Instruction::CMP
+                    | Instruction::CPY
+                    | Instruction::CPX
+            ),
+        }
+    }
+
+    /// Culls reads from the range of instructions
+    pub fn write_protect(
+        &self,
+        range: std::ops::RangeInclusive<u16>,
+    ) -> crate::StaticAnalysis<Self> {
+        use crate::Fixup;
+
+        if let Some(address) = self.address()
+            && self.writes_to_memory()
+        {
+            if !range.contains(&address) {
+                return Ok(());
+            }
+            return Fixup::err("read from address out of range", Self::skip_operand, 0);
+        }
+
+        Ok(())
+    }
+
+    /// Culls reads from the range of instructions
+    pub fn read_protect(
+        &self,
+        range: std::ops::RangeInclusive<u16>,
+    ) -> crate::StaticAnalysis<Self> {
+        use crate::Fixup;
+
+        if let Some(pointer) = self.zero_page_pointer() {
+            let pointer = pointer as u16;
+            if !range.contains(&pointer) {
+                return Ok(());
+            }
+            return Fixup::err("read from address out of range", Self::skip_operand, 0);
+        }
+
+        if let Some(address) = self.address()
+            && self.reads_from_memory()
+        {
+            if !range.contains(&address) {
+                return Ok(());
+            }
+            return Fixup::err("read from address out of range", Self::skip_operand, 0);
+        }
+
+        Ok(())
+    }
+
+    /// Culls flow_control instructions
+    pub fn no_flow_control(&self) -> crate::StaticAnalysis<Self> {
+        use crate::Fixup;
+        use mos6502::instruction::Instruction;
+
+        Fixup::check(
+            !matches!(
+                self.opcode(),
+                Instruction::JSR
+                    | Instruction::JMP
+                    | Instruction::BRA
+                    | Instruction::BEQ
+                    | Instruction::BMI
+                    | Instruction::BCC
+                    | Instruction::BVC
+                    | Instruction::BNE
+                    | Instruction::BPL
+                    | Instruction::BCS
+                    | Instruction::BVS
+                    | Instruction::RTS
+                    | Instruction::RTI
+            ),
+            "FlowControl",
+            Self::skip_opcode,
+            0,
+        )
+    }
+
     /// Culls NOP instructions
     pub fn no_operation(&self) -> crate::StaticAnalysis<Self> {
         use crate::Fixup;
@@ -82,7 +270,12 @@ impl<V: mos6502::Variant> Instruction<V> {
         Fixup::check(
             !matches!(
                 self.opcode(),
-                Instruction::NOPA | Instruction::NOP | Instruction::NOPAX
+                Instruction::NOPA
+                    | Instruction::NOP
+                    | Instruction::NOPAX
+                    | Instruction::NOPI
+                    | Instruction::NOPZ
+                    | Instruction::NOPZX
             ),
             "PointlessInstruction",
             Self::skip_opcode,
