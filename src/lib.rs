@@ -39,6 +39,27 @@ pub enum StepError {
 /// Return type for in-place iteration
 pub type IterationResult = Result<(), StepError>;
 
+/// macro for culling searches
+#[macro_export]
+macro_rules! cull {
+    ($subroutine:expr, $sa:expr) => {
+        for (offset, insn) in $subroutine.iter().enumerate() {
+            if let Err(crate::Fixup {
+                advance,
+                offset: _,
+                reason,
+            }) = $sa(insn)
+            {
+                return Err(crate::Fixup {
+                    advance,
+                    offset,
+                    reason,
+                });
+            }
+        }
+    };
+}
+
 /// Enum representing possible errors when running (a subroutine, a function, an interrupt handler,
 /// etc...)
 #[derive(Debug, PartialEq, Eq)]

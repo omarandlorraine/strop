@@ -8,6 +8,141 @@ use mos6502::instruction::Instruction as Opcode;
 #[derive(Copy, Clone, Default, PartialOrd, PartialEq)]
 pub struct Instruction<V: mos6502::Variant>([u8; 3], std::marker::PhantomData<V>);
 
+#[derive(Debug)]
+pub enum Datum {
+    A,
+    X,
+    Y,
+    Carry,
+    Negative,
+    Overflow,
+    Zero,
+}
+
+impl<V: mos6502::Variant> crate::dataflow::DataFlow<Datum> for Instruction<V> {
+    fn reads(&self, datum: &Datum) -> bool {
+        use mos6502::instruction::Instruction;
+        let addr_x = matches!(
+            self.addressing_mode(),
+            AddressingMode::ZeroPageX | AddressingMode::AbsoluteX
+        );
+        let addr_y = matches!(
+            self.addressing_mode(),
+            AddressingMode::ZeroPageY | AddressingMode::AbsoluteY
+        );
+        match (datum, self.opcode()) {
+            (
+                Datum::A,
+                Instruction::ASL | Instruction::ROL | Instruction::ROR | Instruction::LSR,
+            ) => matches!(self.addressing_mode(), AddressingMode::Accumulator),
+            (
+                Datum::A,
+                Instruction::STA
+                | Instruction::SAX
+                | Instruction::ADC
+                | Instruction::ADCnd
+                | Instruction::SBC
+                | Instruction::SBCnd
+                | Instruction::ANC
+                | Instruction::SLO
+                | Instruction::AND
+                | Instruction::RLA
+                | Instruction::EOR
+                | Instruction::ALR
+                | Instruction::SRE
+                | Instruction::ARR
+                | Instruction::RRA
+                | Instruction::XAA
+                | Instruction::CMP
+                | Instruction::SBX
+                | Instruction::ORA,
+            ) => true,
+            (
+                Datum::X,
+                Instruction::SBX
+                | Instruction::STX
+                | Instruction::CPX
+                | Instruction::TXS
+                | Instruction::TXA,
+            ) => true,
+            (Datum::X, _) => addr_x,
+            (
+                Datum::Y,
+                Instruction::STY
+                | Instruction::TYA
+                | Instruction::INY
+                | Instruction::DEY
+                | Instruction::CPY,
+            ) => true,
+            (Datum::Y, _) => addr_y,
+            (
+                Datum::Carry,
+                Instruction::ADC
+                | Instruction::ADCnd
+                | Instruction::SBC
+                | Instruction::SBCnd
+                | Instruction::ROR
+                | Instruction::ROL,
+            ) => true,
+            (Datum::Negative, Instruction::BMI | Instruction::BPL) => true,
+            (Datum::Overflow, Instruction::BVC | Instruction::BVS) => true,
+            (Datum::Zero, Instruction::BEQ | Instruction::BNE) => true,
+            _ => false,
+        }
+    }
+    fn writes(&self, datum: &Datum) -> bool {
+        use mos6502::instruction::Instruction;
+        match (datum, self.opcode()) {
+            (
+                Datum::A,
+                Instruction::ADC
+                | Instruction::ADCnd
+                | Instruction::SBC
+                | Instruction::SBCnd
+                | Instruction::ORA,
+            ) => matches!(self.addressing_mode(), AddressingMode::Accumulator),
+            (Datum::A, Instruction::LDA | Instruction::LAX) => true,
+            (Datum::X, Instruction::LDX | Instruction::TAX) => true,
+            (Datum::X, _) => false,
+            (
+                Datum::Y,
+                Instruction::LDY | Instruction::TAY | Instruction::INY | Instruction::DEY,
+            ) => true,
+            (Datum::Y, _) => false,
+            (
+                Datum::Carry,
+                Instruction::ADC
+                | Instruction::ADCnd
+                | Instruction::SBC
+                | Instruction::SBCnd
+                | Instruction::ROR
+                | Instruction::ROL
+                | Instruction::ASL
+                | Instruction::LSR,
+            ) => true,
+            (
+                Datum::Negative,
+                Instruction::ADC | Instruction::ADCnd | Instruction::SBC | Instruction::SBCnd,
+            ) => true,
+            (
+                Datum::Overflow,
+                Instruction::ADC | Instruction::ADCnd | Instruction::SBC | Instruction::SBCnd,
+            ) => true,
+            (
+                Datum::Zero,
+                Instruction::ADC | Instruction::ADCnd | Instruction::SBC | Instruction::SBCnd,
+            ) => true,
+            _ => false,
+        }
+    }
+    fn sa(&self, offset: usize) -> crate::Fixup<Self>
+    where
+        Self: Sized,
+    {
+        crate::Fixup::new("Dataflow", Self::skip_opcode, offset)
+    }
+}
+
 impl<V: mos6502::Variant> Instruction<V> {
     fn valid_opcode(&self) -> bool {
         V::decode(self.0[0]).is_some()
@@ -257,6 +392,19 @@ impl<V: mos6502::Variant> Instruction<V> {
                     | Instruction::RTI
             ),
             "FlowControl",
+            Self::skip_opcode,
+            0,
+        )
+    }
+
+    /// Culls JAM instructions
+    pub fn no_jams(&self) -> crate::StaticAnalysis<Self> {
+        use crate::Fixup;
+        use mos6502::instruction::Instruction;
+
+        Fixup::check(
+            !matches!(self.opcode(), Instruction::JAM),
+            "MischievousInstruction",
             Self::skip_opcode,
             0,
         )

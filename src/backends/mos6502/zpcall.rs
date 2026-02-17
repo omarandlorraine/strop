@@ -7,6 +7,7 @@
 use crate::RunResult;
 use crate::Sequence;
 use crate::backends::mos6502::Instruction;
+use crate::backends::mos6502::instruction_set::Datum;
 use crate::test::{Parameters, ReturnValue};
 use mos6502::Variant;
 
@@ -21,10 +22,28 @@ pub struct ZpCall<V: Variant, I: Parameters, O: ReturnValue> {
 }
 
 impl<V: Variant, Input: Parameters, Output: ReturnValue> ZpCall<V, Input, Output> {
+    #[rustfmt::skip]
     fn find_culls(&self) -> crate::StaticAnalysis<Instruction<V>> {
-        self.subroutine
-            .check_all(Instruction::<V>::uses_absolute_mode_unnecessarily)?;
-        self.subroutine.check_all(Instruction::<V>::no_operation)?;
+        use crate::cull;
+
+        cull!(self.subroutine, Instruction::<V>::uses_absolute_mode_unnecessarily);
+        cull!(self.subroutine, Instruction::<V>::no_operation);
+        cull!(self.subroutine, Instruction::<V>::no_jams);
+        cull!(self.subroutine, Instruction::<V>::no_pointers);
+        cull!(self.subroutine, Instruction::<V>::no_flow_control);
+        cull!(self.subroutine, |insn: &Instruction::<V>| insn.read_protect(64..=65535));
+        cull!(self.subroutine, |insn: &Instruction::<V>| insn.write_protect(1..=63));
+        cull!(self.subroutine, |insn: &Instruction::<V>| insn.write_protect(128..=65535));
+
+        if let Some(u) = self.args.get() {
+            let u = u as u16;
+            cull!(self.subroutine, |insn: &Instruction::<V>| insn.read_protect(u..=65535));
+        }
+
+        crate::dataflow::uninitialized(&self.subroutine, &Datum::A)?;
+        crate::dataflow::uninitialized(&self.subroutine, &Datum::X)?;
+        crate::dataflow::uninitialized(&self.subroutine, &Datum::Y)?;
+
         Ok(())
     }
     fn make_correct(&mut self) {
