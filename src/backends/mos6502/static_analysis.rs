@@ -33,28 +33,6 @@ fn pulls<V: Variant>(instruction: &Instruction<V>) -> bool {
     )
 }
 
-pub fn find_first_php<V: Variant>(
-    subroutine: &Sequence<Instruction<V>>,
-) -> Result<Option<usize>, Fixup<Instruction<V>>> {
-    for (offset, instruction) in subroutine.iter().enumerate() {
-        use mos6502::instruction::Instruction;
-        if matches!(
-            instruction.opcode(),
-            Instruction::PLP | Instruction::PLA | Instruction::PLX | Instruction::PLY
-        ) {
-            return Err(Fixup::new(
-                "stack underflow",
-                crate::backends::mos6502::Instruction::skip_opcode,
-                offset,
-            ));
-        }
-        if matches!(instruction.opcode(), Instruction::PHP) {
-            return Ok(Some(offset));
-        }
-    }
-    Ok(None)
-}
-
 /// Static analysis checking that the stack does not overflow. `level` is the number of bytes that
 /// the routine may leave on the stack.
 pub fn do_not_overflow<V: Variant>(
