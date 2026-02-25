@@ -1,0 +1,94 @@
+use crate::Sequence;
+use crate::backends::mos6502::Instruction;
+use crate::{Fixup, StaticAnalysis};
+use mos6502::Variant;
+
+fn branch<V: Variant>(instruction: &Instruction<V>) -> bool {
+    use mos6502::instruction::Instruction;
+    matches!(
+        instruction.opcode(),
+        Instruction::BRA
+            | Instruction::BEQ
+            | Instruction::BNE
+            | Instruction::BMI
+            | Instruction::BPL
+            | Instruction::BCC
+            | Instruction::BCS
+    )
+}
+
+fn pushes<V: Variant>(instruction: &Instruction<V>) -> bool {
+    use mos6502::instruction::Instruction;
+    matches!(
+        instruction.opcode(),
+        Instruction::PHP | Instruction::PHA | Instruction::PHX | Instruction::PHY
+    )
+}
+
+fn pulls<V: Variant>(instruction: &Instruction<V>) -> bool {
+    use mos6502::instruction::Instruction;
+    matches!(
+        instruction.opcode(),
+        Instruction::PLP | Instruction::PLA | Instruction::PLX | Instruction::PLY
+    )
+}
+
+/// Static analysis checking that the stack does not overflow. `level` is the number of bytes that
+/// the routine may leave on the stack.
+pub fn do_not_overflow<V: Variant>(
+    subroutine: &Sequence<Instruction<V>>,
+    limit: u8,
+) -> StaticAnalysis<Instruction<V>> {
+    let mut level: u8 = 0;
+
+    for (offset, instruction) in subroutine.iter().enumerate() {
+        if branch(instruction) {
+            // Bail out, I haven't thought this through.
+            return Ok(());
+        }
+        if pulls(instruction) {
+            level -= 1;
+        }
+        if pushes(instruction) {
+            level += 1;
+            if level > limit {
+                return Err(Fixup::new(
+                    "stack overflow",
+                    crate::backends::mos6502::Instruction::skip_opcode,
+                    offset,
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Static analysis checking that the stack does not underflow. `level` is the number of bytes that
+/// the routine may pull.
+pub fn do_not_underflow<V: Variant>(
+    subroutine: &Sequence<Instruction<V>>,
+    limit: u8,
+) -> StaticAnalysis<Instruction<V>> {
+    let mut level: u8 = 0;
+
+    for (offset, instruction) in subroutine.iter().enumerate() {
+        if branch(instruction) {
+            // Bail out, I haven't thought this through.
+            return Ok(());
+        }
+        if pulls(instruction) {
+            level += 1;
+            if level > limit {
+                return Err(Fixup::new(
+                    "stack underflow",
+                    crate::backends::mos6502::Instruction::skip_opcode,
+                    offset,
+                ));
+            }
+        }
+        if pushes(instruction) {
+            level -= 1;
+        }
+    }
+    Ok(())
+}

@@ -89,6 +89,7 @@ impl<Instruction: crate::Instruction> Sequence<Instruction> {
         &self,
         sa: fn(&Instruction) -> StaticAnalysis<Instruction>,
     ) -> StaticAnalysis<Instruction> {
+        crate::cull!(self.0, sa);
         for (offset, insn) in self.0.iter().enumerate() {
             if let Err(Fixup {
                 advance,
