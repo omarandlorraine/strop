@@ -261,12 +261,10 @@ impl<V: mos6502::Variant> Instruction<V> {
     pub fn no_interrupts(&self) -> crate::StaticAnalysis<Self> {
         use mos6502::instruction::Instruction;
         return crate::Fixup::check(
-        !matches!(
-            self.opcode(),
-            Instruction::BRK |
-            Instruction::CLI |
-            Instruction::SEI |
-            Instruction::RTI),
+            !matches!(
+                self.opcode(),
+                Instruction::BRK | Instruction::CLI | Instruction::SEI | Instruction::RTI
+            ),
             "interrupt",
             Self::skip_operand,
             0,
