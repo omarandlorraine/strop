@@ -98,9 +98,10 @@ impl<V: mos6502::Variant> crate::dataflow::DataFlow<Datum> for Instruction<V> {
                 Instruction::ADC
                 | Instruction::ADCnd
                 | Instruction::SBC
+                | Instruction::USBC
                 | Instruction::SBCnd
                 | Instruction::ORA,
-            ) => matches!(self.addressing_mode(), AddressingMode::Accumulator),
+            ) => true,
             (Datum::A, Instruction::LDA | Instruction::LAX) => true,
             (Datum::X, Instruction::LDX | Instruction::TAX) => true,
             (Datum::X, _) => false,
@@ -192,11 +193,14 @@ impl<V: mos6502::Variant> Instruction<V> {
         V::decode(self.0[0]).unwrap().1
     }
 
-    fn opcode(&self) -> Opcode {
+    /// Decodes the instruction, returning the opcode
+    pub fn opcode(&self) -> Opcode {
         V::decode(self.0[0]).unwrap().0
     }
 
-    fn skip_opcode(&mut self) -> IterationResult {
+    /// Advances the instruction such that the opcode byte is incremented (taking care to skip
+    /// invalid opcodes). The operand, if any, is set to zero.
+    pub fn skip_opcode(&mut self) -> IterationResult {
         self.incr_at_offset(0)
     }
 
@@ -251,6 +255,22 @@ impl<V: mos6502::Variant> Instruction<V> {
             AddressingMode::ZeroPageIndirect => Some(self.0[1]),
             AddressingMode::AbsoluteIndexedIndirect => None,
         }
+    }
+
+    /// Culls instructions that handle interrupts: `sei`, `cli`, `rti`, `brk`
+    pub fn no_interrupts(&self) -> crate::StaticAnalysis<Self> {
+        use mos6502::instruction::Instruction;
+        return crate::Fixup::check(
+        !matches!(
+            self.opcode(),
+            Instruction::BRK |
+            Instruction::CLI |
+            Instruction::SEI |
+            Instruction::RTI),
+            "interrupt",
+            Self::skip_operand,
+            0,
+        );
     }
 
     /// Culls isntructions that dereference pointers

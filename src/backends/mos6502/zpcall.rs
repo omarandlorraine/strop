@@ -31,6 +31,7 @@ impl<V: Variant, Input: Parameters, Output: ReturnValue> ZpCall<V, Input, Output
         cull!(self.subroutine, Instruction::<V>::no_jams);
         cull!(self.subroutine, Instruction::<V>::no_pointers);
         cull!(self.subroutine, Instruction::<V>::no_flow_control);
+        cull!(self.subroutine, Instruction::<V>::no_interrupts);
         cull!(self.subroutine, |insn: &Instruction::<V>| insn.read_protect(64..=65535));
         cull!(self.subroutine, |insn: &Instruction::<V>| insn.write_protect(1..=63));
         cull!(self.subroutine, |insn: &Instruction::<V>| insn.write_protect(128..=65535));
@@ -40,9 +41,14 @@ impl<V: Variant, Input: Parameters, Output: ReturnValue> ZpCall<V, Input, Output
             cull!(self.subroutine, |insn: &Instruction::<V>| insn.read_protect(u..=65535));
         }
 
+        crate::backends::mos6502::do_not_underflow(&self.subroutine, 0)?;
+        crate::backends::mos6502::do_not_overflow(&self.subroutine, 0)?;
         crate::dataflow::uninitialized(&self.subroutine, &Datum::A)?;
+        crate::dataflow::dont_expect_write(&self.subroutine, &Datum::A)?;
         crate::dataflow::uninitialized(&self.subroutine, &Datum::X)?;
+        crate::dataflow::dont_expect_write(&self.subroutine, &Datum::X)?;
         crate::dataflow::uninitialized(&self.subroutine, &Datum::Y)?;
+        crate::dataflow::dont_expect_write(&self.subroutine, &Datum::Y)?;
 
         Ok(())
     }
