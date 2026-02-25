@@ -50,7 +50,7 @@ macro_rules! cull {
                 reason,
             }) = $sa(insn)
             {
-                return Err(crate::Fixup {
+                return Err($crate::Fixup {
                     advance,
                     offset,
                     reason,
