@@ -44,7 +44,7 @@ pub type IterationResult = Result<(), StepError>;
 macro_rules! cull {
     ($subroutine:expr, $sa:expr) => {
         for (offset, insn) in $subroutine.iter().enumerate() {
-            if let Err(crate::Fixup {
+            if let Err($crate::Fixup {
                 advance,
                 offset: _,
                 reason,

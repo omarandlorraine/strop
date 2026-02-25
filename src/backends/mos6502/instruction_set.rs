@@ -260,7 +260,7 @@ impl<V: mos6502::Variant> Instruction<V> {
     /// Culls instructions that handle interrupts: `sei`, `cli`, `rti`, `brk`
     pub fn no_interrupts(&self) -> crate::StaticAnalysis<Self> {
         use mos6502::instruction::Instruction;
-        return crate::Fixup::check(
+        crate::Fixup::check(
             !matches!(
                 self.opcode(),
                 Instruction::BRK | Instruction::CLI | Instruction::SEI | Instruction::RTI
@@ -268,17 +268,17 @@ impl<V: mos6502::Variant> Instruction<V> {
             "interrupt",
             Self::skip_operand,
             0,
-        );
+        )
     }
 
     /// Culls isntructions that dereference pointers
     pub fn no_pointers(&self) -> crate::StaticAnalysis<Self> {
-        return crate::Fixup::check(
+        crate::Fixup::check(
             self.zero_page_pointer().is_none(),
             "dereferences a pointer",
             Self::skip_operand,
             0,
-        );
+        )
     }
 
     /// Returns true iff the instruction is one of the Read-Modify-Write instructions,

@@ -64,14 +64,14 @@ pub fn do_not_overflow<V: Variant>(
     let mut level: u8 = 0;
 
     for (offset, instruction) in subroutine.iter().enumerate() {
-        if branch(&instruction) {
+        if branch(instruction) {
             // Bail out, I haven't thought this through.
             return Ok(());
         }
-        if pulls(&instruction) {
+        if pulls(instruction) {
             level -= 1;
         }
-        if pushes(&instruction) {
+        if pushes(instruction) {
             level += 1;
             if level > limit {
                 return Err(Fixup::new(
@@ -94,11 +94,11 @@ pub fn do_not_underflow<V: Variant>(
     let mut level: u8 = 0;
 
     for (offset, instruction) in subroutine.iter().enumerate() {
-        if branch(&instruction) {
+        if branch(instruction) {
             // Bail out, I haven't thought this through.
             return Ok(());
         }
-        if pulls(&instruction) {
+        if pulls(instruction) {
             level += 1;
             if level > limit {
                 return Err(Fixup::new(
@@ -108,7 +108,7 @@ pub fn do_not_underflow<V: Variant>(
                 ));
             }
         }
-        if pushes(&instruction) {
+        if pushes(instruction) {
             level -= 1;
         }
     }
