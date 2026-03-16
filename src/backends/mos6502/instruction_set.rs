@@ -29,6 +29,8 @@ impl<V: mos6502::Variant> Instruction<V> {
             AddressingMode::AbsoluteY => 3,
             AddressingMode::Indirect => 3,
             AddressingMode::BuggyIndirect => 3,
+            AddressingMode::AbsoluteIndexedIndirect => 3,
+            AddressingMode::ZeroPageRelative => 3,
         }
     }
 
@@ -189,6 +191,35 @@ impl<V: mos6502::Variant> std::fmt::Display for Instruction<V> {
             Instruction::TXA => write!(f, "txa"),
             Instruction::TXS => write!(f, "txs"),
             Instruction::TYA => write!(f, "tya"),
+            Instruction::SAX => write!(f, "sax"),
+            Instruction::WAI => write!(f, "wai"),
+            Instruction::STP => write!(f, "stp"),
+            Instruction::XAA => write!(f, "xaa"),
+            Instruction::ALR => write!(f, "alr"),
+            Instruction::ANC => write!(f, "anc"),
+            Instruction::ARR => write!(f, "arr"),
+            Instruction::DCP => write!(f, "dcp"),
+            Instruction::ISC => write!(f, "isc"),
+            Instruction::JAM => write!(f, "jam"),
+            Instruction::LAS => write!(f, "las"),
+            Instruction::LAX => write!(f, "lax"),
+            Instruction::RLA => write!(f, "rla"),
+            Instruction::RRA => write!(f, "rra"),
+            Instruction::SBX => write!(f, "sbx"),
+            Instruction::SLO => write!(f, "slo"),
+            Instruction::SRE => write!(f, "sre"),
+            Instruction::USBC => write!(f, "usbc"),
+            Instruction::NOPI
+            | Instruction::NOPZX
+            | Instruction::NOPZ
+            | Instruction::NOPA
+            | Instruction::NOPAX
+            | Instruction::NOPAX8
+            | Instruction::NOP1 => write!(f, "nop"),
+            Instruction::BBR(d) => write!(f, "bbr{d}"),
+            Instruction::BBS(d) => write!(f, "bbs{d}"),
+            Instruction::RMB(d) => write!(f, "rmb{d}"),
+            Instruction::SMB(d) => write!(f, "smb{d}"),
         }?;
         match self.addressing_mode() {
             AddressingMode::Accumulator => write!(f, " a"),
@@ -215,6 +246,12 @@ impl<V: mos6502::Variant> std::fmt::Display for Instruction<V> {
             }
             AddressingMode::IndexedIndirectX => write!(f, " (${:02x},x)", self.0[1]),
             AddressingMode::IndirectIndexedY => write!(f, " (${:02x}),y", self.0[1]),
+            AddressingMode::ZeroPageRelative => {
+                write!(f, " ${:02x}, {}", self.0[1], self.0[2] as i8)
+            }
+            AddressingMode::AbsoluteIndexedIndirect => {
+                write!(f, " (${:02x}{:02x}, x)", self.0[2], self.0[1])
+            }
         }?;
         Ok(())
     }
