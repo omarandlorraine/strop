@@ -10,15 +10,25 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  checks:
-
+  test:
+    name: test
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v3
-    - name: format
-      run: cargo fmt --check
-    - name: lint
-      run: cargo clippy -- -Dwarnings
-    - name: test
-      run: cargo test --release
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Run tests
+        run: cargo test --release
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Run cargo fmt (check if all code is rustfmt-ed)
+        run: cargo fmt --all -- --check
+      - name: Run cargo clippy (deny warnings)
+        run: cargo clippy --all-targets --all-features -- -D warnings
