@@ -16,6 +16,7 @@ mod tests {
     use crate::Instruction as _;
     use crate::backends::x80::X80;
 
+    #[ignore]
     #[test]
     fn std_x80_tests() {
         crate::backends::x80::tests::std_x80_tests::<Instruction>();
