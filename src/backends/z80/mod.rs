@@ -6,6 +6,7 @@ pub(crate) mod data;
 mod emu;
 pub use emu::Emulator;
 mod sdcccall;
+pub use sdcccall::SdccCall1;
 
 #[cfg(test)]
 mod dasm;

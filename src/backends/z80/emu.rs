@@ -1,6 +1,18 @@
 use crate::backends::x80::EmuInterface;
+use crate::dataflow::DataflowState;
 use crate::{RunError, RunResult};
 use iz80::{Cpu, PlainMachine, Reg8, Reg16};
+
+#[derive(Debug, Default)]
+pub struct RegisterFileDataflow {
+    pub a: DataflowState,
+    pub b: DataflowState,
+    pub c: DataflowState,
+    pub d: DataflowState,
+    pub e: DataflowState,
+    pub h: DataflowState,
+    pub l: DataflowState,
+}
 
 /// The Z80 emulator.
 #[derive(Default)]
@@ -9,6 +21,7 @@ pub struct Emulator {
     pub machine: PlainMachine,
     /// The CPU
     pub cpu: Cpu,
+    pub reg_init: RegisterFileDataflow,
 }
 
 impl std::fmt::Debug for Emulator {
