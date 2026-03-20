@@ -1,5 +1,4 @@
 //! A module for the representation of SM83 machine instructions.
-use crate::backends::x80::X80;
 use crate::backends::x80::data::InstructionData;
 
 /// Represents a 8080 machine instruction
@@ -20,6 +19,45 @@ impl Instruction {
             self.0[1] = 0;
             self.0[2] = 0;
         }
+    }
+
+    fn decode(&self) -> &'static InstructionData {
+        self.decode_inner().unwrap()
+    }
+
+    fn next_opcode(&mut self) -> crate::IterationResult {
+        if self.0[0] == 0xff {
+            Err(crate::StepError::End)
+        } else if self.0[0] == 0xcb {
+            self.incr_at_offset(1);
+            Ok(())
+        } else {
+            self.incr_at_offset(0);
+            Ok(())
+        }
+    }
+
+    fn make_return(&self) -> crate::StaticAnalysis<Self> {
+        const INSN: u8 = 0xc9;
+        if self.0[0] != INSN {
+            return Err(crate::Fixup::<Self> {
+                advance: |i| {
+                    if i.0[0] <= INSN {
+                        i.0[0] = INSN;
+                        Ok(())
+                    } else {
+                        Err(crate::StepError::End)
+                    }
+                },
+                offset: 0,
+                reason: "DoesNotReturn",
+            });
+        }
+        Ok(())
+    }
+
+    fn instruction_length(&self) -> usize {
+        1
     }
 }
 
@@ -119,48 +157,5 @@ impl crate::Instruction for Instruction {
 impl Instruction {
     fn decode_inner(&self) -> Option<&'static InstructionData> {
         crate::backends::i8080::data::UNPREFIXED[self.0[0] as usize].as_ref()
-    }
-}
-
-impl X80 for Instruction {
-    type Emulator = crate::backends::i8080::emu::Emulator;
-
-    fn decode(&self) -> &'static InstructionData {
-        self.decode_inner().unwrap()
-    }
-
-    fn next_opcode(&mut self) -> crate::IterationResult {
-        if self.0[0] == 0xff {
-            Err(crate::StepError::End)
-        } else if self.0[0] == 0xcb {
-            self.incr_at_offset(1);
-            Ok(())
-        } else {
-            self.incr_at_offset(0);
-            Ok(())
-        }
-    }
-
-    fn make_return(&self) -> crate::StaticAnalysis<Self> {
-        const INSN: u8 = 0xc9;
-        if self.0[0] != INSN {
-            return Err(crate::Fixup::<Self> {
-                advance: |i| {
-                    if i.0[0] <= INSN {
-                        i.0[0] = INSN;
-                        Ok(())
-                    } else {
-                        Err(crate::StepError::End)
-                    }
-                },
-                offset: 0,
-                reason: "DoesNotReturn",
-            });
-        }
-        Ok(())
-    }
-
-    fn instruction_length(&self) -> usize {
-        1
     }
 }

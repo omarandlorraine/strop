@@ -5,7 +5,6 @@ pub use instruction_set::Instruction;
 pub(crate) mod data;
 mod emu;
 pub use emu::Emulator;
-mod sdcccall;
 
 #[cfg(test)]
 mod tests {
