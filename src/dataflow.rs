@@ -6,6 +6,25 @@ use crate::Sequence;
 use crate::StaticAnalysis;
 use crate::static_analysis::Fixup;
 
+#[derive(Debug, Default)]
+pub enum DataflowState {
+    #[default]
+    Uninitialized,
+    Initialized,
+}
+
+impl DataflowState {
+    pub fn init(&mut self) {
+        *self = DataflowState::Initialized
+    }
+    pub fn deinit(&mut self) {
+        *self = DataflowState::Uninitialized
+    }
+    pub fn is_initialized(&self) -> bool {
+        matches!(self, DataflowState::Initialized)
+    }
+}
+
 /// Implement this trait on an instruction to communicate that the instruction reads from or writes
 /// to a datum of some type. For example, if you have a type representing the register file, and
 /// some type represents the machine's instruction, these methods can communicate what use the
