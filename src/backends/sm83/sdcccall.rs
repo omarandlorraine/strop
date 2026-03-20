@@ -1,4 +1,5 @@
 use crate::RunResult;
+use crate::StaticAnalysis;
 use crate::backends::sm83;
 use crate::backends::x80::EmuInterface;
 use crate::backends::x80::data::Datum;
@@ -8,7 +9,6 @@ use sm83::Instruction;
 #[derive(Debug, Default)]
 pub struct SdccRunner {
     emu: Emulator,
-    params: Vec<Datum>,
     vals: Vec<Datum>,
 }
 
@@ -22,88 +22,6 @@ impl SdccRunner {
     }
 }
 
-impl crate::backends::x80::sdcccall1::SdccCall1PushPop for SdccRunner {
-    fn input_registers(&self) -> Vec<Datum> {
-        self.params.clone()
-    }
-    fn output_registers(&self) -> Vec<Datum> {
-        self.vals.clone()
-    }
-}
-
-impl EmuInterface for SdccRunner {
-    fn set_a(&mut self, val: u8) {
-        self.params.push(Datum::A);
-        self.emu.set_a(val);
-    }
-    fn set_b(&mut self, val: u8) {
-        self.params.push(Datum::B);
-        self.emu.set_b(val);
-    }
-    fn set_c(&mut self, val: u8) {
-        self.params.push(Datum::C);
-        self.emu.set_c(val);
-    }
-    fn set_d(&mut self, val: u8) {
-        self.params.push(Datum::D);
-        self.emu.set_d(val);
-    }
-    fn set_e(&mut self, val: u8) {
-        self.params.push(Datum::E);
-        self.emu.set_e(val);
-    }
-    fn set_h(&mut self, val: u8) {
-        self.params.push(Datum::H);
-        self.emu.set_h(val);
-    }
-    fn set_l(&mut self, val: u8) {
-        self.params.push(Datum::L);
-        self.emu.set_l(val);
-    }
-    fn get_a(&self) -> u8 {
-        self.emu.get_a()
-    }
-    fn get_b(&self) -> u8 {
-        self.emu.get_b()
-    }
-    fn get_c(&self) -> u8 {
-        self.emu.get_c()
-    }
-    fn get_d(&self) -> u8 {
-        self.emu.get_d()
-    }
-    fn get_e(&self) -> u8 {
-        self.emu.get_e()
-    }
-    fn get_hl(&self) -> u16 {
-        self.emu.get_hl()
-    }
-    fn get_pc(&self) -> u16 {
-        self.emu.get_pc()
-    }
-    fn get_sp(&self) -> u16 {
-        self.emu.get_sp()
-    }
-    fn push(&mut self, val: u16) {
-        self.emu.push(val);
-    }
-    fn pop(&mut self) -> u16 {
-        self.emu.pop()
-    }
-    fn call(&mut self, seq: Vec<u8>) -> crate::RunResult<()> {
-        self.emu.call(seq)
-    }
-    fn poke(&mut self, addr: u16, val: u8) {
-        self.emu.poke(addr, val);
-    }
-    fn peek(&mut self, addr: u16) -> u8 {
-        self.emu.peek(addr)
-    }
-    fn single_step(&mut self) -> crate::RunResult<()> {
-        self.emu.single_step()
-    }
-}
-
 impl crate::test::GetReturnValues for SdccRunner {
     fn get_bool(&mut self) -> RunResult<bool> {
         Err(crate::RunError::UnsupportedType)
@@ -114,7 +32,7 @@ impl crate::test::GetReturnValues for SdccRunner {
     fn get_u8(&mut self) -> RunResult<u8> {
         self.already_got()?;
         self.vals.push(Datum::A);
-        Ok(self.get_a())
+        Ok(self.emu.get_a())
     }
     fn get_i16(&mut self) -> RunResult<i16> {
         Ok(self.get_u16()? as i16)
@@ -123,7 +41,7 @@ impl crate::test::GetReturnValues for SdccRunner {
         self.already_got()?;
         self.vals.push(Datum::B);
         self.vals.push(Datum::C);
-        Ok(self.get_bc())
+        Ok(self.emu.get_bc())
     }
     fn get_i32(&mut self) -> RunResult<i32> {
         Ok(self.get_u32()? as i32)
@@ -135,10 +53,10 @@ impl crate::test::GetReturnValues for SdccRunner {
         self.vals.push(Datum::D);
         self.vals.push(Datum::E);
         Ok(u32::from_be_bytes([
-            self.get_d(),
-            self.get_e(),
-            self.get_b(),
-            self.get_c(),
+            self.emu.get_d(),
+            self.emu.get_e(),
+            self.emu.get_b(),
+            self.emu.get_c(),
         ]))
     }
     fn get_f32(&mut self) -> RunResult<f32> {
@@ -154,11 +72,11 @@ impl crate::test::TakeParameters for SdccRunner {
         self.put_u8(v as u8)
     }
     fn put_u8(&mut self, v: u8) -> RunResult<()> {
-        if !self.params.contains(&Datum::A) {
-            self.set_a(v);
+        if !self.emu.reg_init.a.is_initialized() {
+            self.emu.set_a(v);
             Ok(())
-        } else if !self.params.contains(&Datum::E) {
-            self.set_e(v);
+        } else if !self.emu.reg_init.e.is_initialized() {
+            self.emu.set_e(v);
             Ok(())
         } else {
             // TODO: it doesn't fit in CPU registers, put it on the stack!
@@ -169,11 +87,11 @@ impl crate::test::TakeParameters for SdccRunner {
         self.put_u16(v as u16)
     }
     fn put_u16(&mut self, v: u16) -> RunResult<()> {
-        if !self.params.contains(&Datum::B) {
-            self.set_bc(v);
+        if !self.emu.reg_init.b.is_initialized() {
+            self.emu.set_bc(v);
             Ok(())
-        } else if !self.params.contains(&Datum::D) {
-            self.set_de(v);
+        } else if !self.emu.reg_init.d.is_initialized() {
+            self.emu.set_de(v);
             Ok(())
         } else {
             // TODO: it doesn't fit in CPU registers, put it on the stack!
@@ -184,12 +102,12 @@ impl crate::test::TakeParameters for SdccRunner {
         self.put_u32(v as u32)
     }
     fn put_u32(&mut self, v: u32) -> RunResult<()> {
-        if self.params.is_empty() {
+        if !self.emu.reg_init.d.is_initialized() {
             let v = v.to_be_bytes();
-            self.set_d(v[0]);
-            self.set_e(v[1]);
-            self.set_b(v[2]);
-            self.set_c(v[3]);
+            self.emu.set_d(v[0]);
+            self.emu.set_e(v[1]);
+            self.emu.set_b(v[2]);
+            self.emu.set_c(v[3]);
             Ok(())
         } else {
             // TODO: it doesn't fit in CPU registers, put it on the stack!
@@ -201,8 +119,63 @@ impl crate::test::TakeParameters for SdccRunner {
     }
 }
 
-impl crate::backends::x80::SdccCallable for Instruction {
-    type Runner = SdccRunner;
+/// A type representing a subroutine mimicking the calling convention used by modern-day SDCC.
+/// SDCC's internal documentation calls this `__sdcccall(1)`.
+#[derive(Default)]
+pub struct SdccCall1 {
+    seq: crate::Sequence<Instruction>,
+}
+
+impl std::fmt::Display for SdccCall1 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.seq)
+    }
+}
+
+impl std::fmt::Debug for SdccCall1 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{:?}", self.seq)
+    }
+}
+
+impl SdccCall1 {
+    fn analyze(&self) -> StaticAnalysis<Instruction> {
+        self.seq.check_last(Instruction::make_return)?;
+        Ok(())
+    }
+    fn make_correct(&mut self) {
+        while let Err(fixup) = self.analyze() {
+            self.seq.apply(&fixup);
+        }
+    }
+}
+
+impl crate::Traverse for SdccCall1 {
+    fn increment(&mut self) {
+        self.seq.increment();
+        self.make_correct();
+    }
+    fn mutate(&mut self) {
+        self.seq.mutate();
+        self.make_correct();
+    }
+    fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        Some(Self {
+            seq: crate::Sequence::<Instruction>::from_bytes(bytes)?,
+        })
+    }
+}
+
+impl<Params: crate::test::Parameters, RetVal: crate::test::ReturnValue>
+    crate::Callable<Params, RetVal> for SdccCall1
+{
+    fn call(&self, input: Params) -> crate::RunResult<RetVal> {
+        let mut emu = SdccRunner::default();
+        input.put(&mut emu)?;
+        emu.emu.call(self.seq.to_bytes())?;
+        let r = RetVal::get(&mut emu)?;
+        Ok(r)
+    }
 }
 
 #[cfg(test)]

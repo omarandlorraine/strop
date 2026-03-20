@@ -1,3 +1,4 @@
+use crate::dataflow::DataflowState;
 use mizu_core::cpu::Cpu;
 use mizu_core::cpu::CpuBusProvider;
 
@@ -42,11 +43,23 @@ impl CpuBusProvider for Bus {
     }
 }
 
+#[derive(Debug, Default)]
+pub struct RegisterFileDataflow {
+    pub a: DataflowState,
+    pub b: DataflowState,
+    pub c: DataflowState,
+    pub d: DataflowState,
+    pub e: DataflowState,
+    pub h: DataflowState,
+    pub l: DataflowState,
+}
+
 /// Emulates a SM83 and its 64K of memory
 #[derive(Default)]
 pub struct Emu {
     cpu: Cpu,
     bus: Bus,
+    pub reg_init: RegisterFileDataflow,
 }
 
 impl std::fmt::Debug for Emu {
@@ -64,24 +77,31 @@ impl std::fmt::Debug for Emu {
 
 impl crate::backends::x80::EmuInterface for Emu {
     fn set_a(&mut self, val: u8) {
+        self.reg_init.a.init();
         self.cpu.reg_a = val;
     }
     fn set_b(&mut self, val: u8) {
+        self.reg_init.b.init();
         self.cpu.reg_b = val;
     }
     fn set_c(&mut self, val: u8) {
+        self.reg_init.c.init();
         self.cpu.reg_c = val;
     }
     fn set_d(&mut self, val: u8) {
+        self.reg_init.d.init();
         self.cpu.reg_d = val;
     }
     fn set_e(&mut self, val: u8) {
+        self.reg_init.e.init();
         self.cpu.reg_e = val;
     }
     fn set_h(&mut self, val: u8) {
+        self.reg_init.h.init();
         self.cpu.reg_h = val;
     }
     fn set_l(&mut self, val: u8) {
+        self.reg_init.l.init();
         self.cpu.reg_l = val;
     }
 
