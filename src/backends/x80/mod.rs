@@ -123,6 +123,3 @@ pub trait X80: crate::Instruction + Sized {
     // returns the length of the instruction, i.e.  the number of prefix bytes plus the opcode.
     fn instruction_length(&self) -> usize;
 }
-
-#[cfg(test)]
-pub(crate) mod tests;

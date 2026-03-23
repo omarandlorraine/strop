@@ -15,7 +15,6 @@ mod dasm;
 mod tests {
     use super::Instruction;
     use crate::Instruction as _;
-    use crate::backends::x80::X80;
 
     #[test]
     fn unique_disassembly() {

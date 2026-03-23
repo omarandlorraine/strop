@@ -201,7 +201,8 @@ impl Instruction {
         self.decode_inner().unwrap()
     }
 
-    fn next_opcode(&mut self) -> crate::IterationResult {
+    /// Increments the opcode, resetting the operand(s) if any to 0.
+    pub fn next_opcode(&mut self) -> crate::IterationResult {
         if self.0[0] == 0xff {
             Err(crate::StepError::End)
         } else {
