@@ -183,9 +183,8 @@ mod test {
     #[test]
     fn cfg() {
         use crate::Traverse;
-        use crate::backends::sm83::Instruction;
-        use crate::backends::x80::SdccCall1;
-        let mut c = SdccCall1::<Instruction>::default();
+        use crate::backends::sm83::SdccCall1;
+        let mut c = SdccCall1::default();
 
         for _ in 0..5 {
             println!("{c}");

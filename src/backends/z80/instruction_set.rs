@@ -196,7 +196,8 @@ impl Instruction {
         }
     }
 
-    fn decode(&self) -> &'static InstructionData {
+    /// Return misc metadata for this instruction
+    pub fn decode(&self) -> &'static InstructionData {
         self.decode_inner().unwrap()
     }
 
