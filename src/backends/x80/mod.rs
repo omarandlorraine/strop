@@ -75,16 +75,6 @@ pub trait EmuInterface: Default {
     /// Returns the value of the emulator's stack pointer
     fn get_sp(&self) -> u16;
 
-    /// Returns the value of the emulator's H register
-    fn get_h(&self) -> u8 {
-        self.get_hl().to_be_bytes()[0]
-    }
-
-    /// Returns the value of the emulator's L register
-    fn get_l(&self) -> u8 {
-        self.get_hl().to_be_bytes()[1]
-    }
-
     /// Pushes a word onto the stack
     fn push(&mut self, val: u16);
 
