@@ -59,6 +59,8 @@ pub struct RegisterFileDataflow {
 pub struct Emu {
     cpu: Cpu,
     bus: Bus,
+    /// Structure keeping track of which values in the CPU are initialized. Used for dataflow
+    /// analysis
     pub reg_init: RegisterFileDataflow,
 }
 

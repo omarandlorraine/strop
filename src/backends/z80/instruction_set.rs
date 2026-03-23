@@ -209,6 +209,7 @@ impl Instruction {
         }
     }
 
+    /// Makes sure that the instruction is the return instruction, `ret`.
     pub fn make_return(&self) -> crate::StaticAnalysis<Self> {
         const INSN: u8 = 0xc9;
         if self.0[0] != INSN {

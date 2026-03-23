@@ -21,6 +21,8 @@ pub struct Emulator {
     pub machine: PlainMachine,
     /// The CPU
     pub cpu: Cpu,
+    /// Structure keeping track of which values in the CPU are initialized. Used for dataflow
+    /// analysis
     pub reg_init: RegisterFileDataflow,
 }
 

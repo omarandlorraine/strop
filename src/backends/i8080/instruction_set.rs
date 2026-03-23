@@ -25,7 +25,8 @@ impl Instruction {
         self.decode_inner().unwrap()
     }
 
-    fn next_opcode(&mut self) -> crate::IterationResult {
+    /// Increments the instruction's opcode, resetting the operand, if any, to zero.
+    pub fn next_opcode(&mut self) -> crate::IterationResult {
         if self.0[0] == 0xff {
             Err(crate::StepError::End)
         } else if self.0[0] == 0xcb {
@@ -37,7 +38,8 @@ impl Instruction {
         }
     }
 
-    fn make_return(&self) -> crate::StaticAnalysis<Self> {
+    /// Makes sure that the instruction is the return instruction, `ret`
+    pub fn make_return(&self) -> crate::StaticAnalysis<Self> {
         const INSN: u8 = 0xc9;
         if self.0[0] != INSN {
             return Err(crate::Fixup::<Self> {
