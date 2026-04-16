@@ -117,24 +117,25 @@ impl Instruction {
         }
     }
 
+    /// An instruction encoding which is considered invalid
+    pub fn is_bad(&self) -> bool {
+        use unarm::Ins;
+        match self.decode() {
+            Ins::Illegal => true,
+            Ins::Ldrh { .. } | Ins::Ldrsh { .. } | Ins::Ldrsb { .. }
+            if self.0 & 0x0040_0000 != 0 =>
+            true,
+            Ins::Strh { .. } | Ins::Strd { .. } | Ins::Ldrd { .. }
+            if self.0 & 0x0080_0000 != 0 =>
+            true,
+            _ => false,
+        }
+    }
+
     /// excludes bad instructions from consideration
     fn exclude_bad_instructions(&mut self) -> crate::IterationResult {
-        use unarm::Ins;
-        loop {
-            match self.decode() {
-                Ins::Illegal => self.0 += 1,
-                Ins::Ldrh { .. } | Ins::Ldrsh { .. } | Ins::Ldrsb { .. }
-                    if self.0 & 0x0040_0000 != 0 =>
-                {
-                    self.0 += 1;
-                }
-                Ins::Strh { .. } | Ins::Strd { .. } | Ins::Ldrd { .. }
-                    if self.0 & 0x0080_0000 != 0 =>
-                {
-                    self.0 += 1;
-                }
-                _ => break,
-            }
+        while self.is_bad() {
+            self.0 += 1
         }
         Ok(())
     }

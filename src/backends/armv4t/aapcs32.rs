@@ -252,7 +252,6 @@ impl Aapcs32Runner {
         for _ in 0..10000 {
             let pc = self.cpu.reg_get(mode, reg::PC);
             let sp = self.cpu.reg_get(mode, reg::SP);
-            //dbg!(pc, Instruction(self.mem.r32(pc))); // for a basic execution trace
 
             if pc == RETURN_ADDRESS && sp == BOTTOM_OF_STACK {
                 // Expected values for PC and SP mean that the subroutine has returned
@@ -264,8 +263,14 @@ impl Aapcs32Runner {
             }
             if pc >= end_of_subroutine {
                 // the program counter is out of bounds; the subroutine seems to have run amok
+                dbg!("out of bounds");
                 return Err(RunError::RanAmok);
             }
+            if Instruction(self.mem.r32(pc)).is_bad() {
+                // Maybe the program overwrote itself, so trap illegal instructions
+                return Err(RunError::RanAmok);
+            }
+            // dbg!(pc, Instruction(self.mem.r32(pc))); // for a basic execution trace
             self.cpu.step(&mut self.mem);
         }
 
