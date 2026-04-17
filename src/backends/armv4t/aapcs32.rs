@@ -84,6 +84,7 @@ impl<Input: Parameters, Output: ReturnValue> Aapcs32<Input, Output> {
 
     /// returns fixups ensuring compliance with the AAPCS32 calling convention.
     fn correctitudes(&self) -> crate::StaticAnalysis<Instruction> {
+        self.seq.check_all_but_last(Instruction::make_pure)?;
         self.seq.check_last(Instruction::make_bx_lr)?;
         crate::dataflow::leave_alone_except_last(&self.seq, &unarm::Reg::Lr)?;
         crate::dataflow::leave_alone_except_last(&self.seq, &unarm::Reg::Sp)?;

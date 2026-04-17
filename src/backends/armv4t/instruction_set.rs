@@ -90,6 +90,26 @@ impl Instruction {
         )
     }
 
+    /// Returns the fixup that makes this a pure instruction (that is, one that doesn't write to
+    /// memory).
+    pub fn make_pure(&self) -> crate::StaticAnalysis<Self> {
+        use unarm::Ins;
+        crate::Fixup::<Self>::check(
+            !matches!(self.decode(), 
+            Ins::Ldrh { .. } | Ins::Ldrsh { .. } | Ins::Ldrsb { .. } |
+            Ins::Strh { .. } | Ins::Strd { .. } | Ins::Ldrd { .. } |
+            Ins::Strex {.. } | Ins::Ldrex {..} |
+            Ins::Strexb {.. } | Ins::Ldrexb {..}|
+            Ins::Strexh {.. } | Ins::Ldrexh {..}|
+            Ins::Ldm {.. }|
+            Ins::Stm {.. }
+            ),
+            "ImpureInstruction",
+            Self::increment_horrid_nybble,
+            0,
+        )
+    }
+
     /// Decodes the instruction
     pub fn decode(&self) -> unarm::Ins {
         unarm::parse_arm(self.0, 0, &Default::default())
