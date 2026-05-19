@@ -64,7 +64,7 @@ pub enum RunError {
 pub type RunResult<T> = Result<T, RunError>;
 
 /// Trait representing an instruction
-pub trait Instruction: std::fmt::Display + std::fmt::Debug {
+pub trait Instruction: std::fmt::Display + std::fmt::Debug + Clone {
     /// Return a random instruction
     fn random() -> Self;
 
@@ -84,6 +84,22 @@ pub trait Instruction: std::fmt::Display + std::fmt::Debug {
     fn from_bytes(bytes: &[u8]) -> Option<Self>
     where
         Self: Sized;
+
+    /// Checks if the sequence contains anything which can be culled from a search space straight
+    /// off. A bruteforce search will be able to skip such sequences, effectively reducing the
+    /// search space. For example, if two instructions are independent of eachother, and their order
+    /// may therefore be switched, then a bruteforce search may skip one of the orders. Or, if there
+    /// are two ways to encode a given instruction, a bruteforce search can ignore one of the
+    /// encodings.
+    fn cull(_seq: &Sequence<Self>) -> StaticAnalysis<Self> {
+        Ok(())
+    }
+
+    /// Checks if the sequence contains inefficencies; these are longer sequences that are
+    /// equivalent to shorter sequences. A traditional peep-hole optimizer would catch these.
+    fn peephole(_seq: &Sequence<Self>) -> StaticAnalysis<Self> {
+        Ok(())
+    }
 }
 
 pub trait Callable<Input, Output> {

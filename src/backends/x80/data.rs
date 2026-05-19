@@ -133,7 +133,7 @@ impl Datum {
     }
 }
 
-impl<Insn: super::X80> crate::dataflow::DataFlow<Datum> for Insn {
+impl<Insn: Clone + super::X80> crate::dataflow::DataFlow<Datum> for Insn {
     fn reads(&self, datum: &Datum) -> bool {
         self.decode().datum(datum).reads()
     }

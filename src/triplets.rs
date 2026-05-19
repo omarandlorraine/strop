@@ -86,7 +86,7 @@ impl Triplet {
             Self::MipsUnknownLinuxGnu
             | Self::MipsUnknownLinuxMusl
             | Self::MipsUnknownLinuxUclibc => Box::new(crate::search::Searcher::new(
-                crate::backends::mips::o32::O32::<Input, Output>::default(),
+                crate::backends::mips::o32::O32::<Input, Output>::new().unwrap(),
                 crate::test::FuzzTest::new(target),
             )),
 

@@ -13,7 +13,7 @@ impl std::fmt::Display for Instruction {
 impl std::fmt::Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         let dasm = format!("{}", self.decode());
-        write!(f, "{:<20}; 0x{:08x}", dasm, self.0)?;
+        write!(f, "{:<25}; 0x{:08x}", dasm, self.0)?;
         if let Some(rd) = self.rd() {
             write!(f, " $rd={rd:?}")?;
         }
@@ -187,6 +187,15 @@ impl Instruction {
         })
     }
 
+    /// Returns true if the instruction is a relative branch
+    pub fn is_relative_branch(&self) -> bool {
+        use trapezoid_core::cpu::Opcode;
+        matches!(
+            self.decode().opcode,
+            Opcode::Bgez | Opcode::Beq | Opcode::Bltz | Opcode::Bne | Opcode::Blez | Opcode::Bgtz | Opcode::Bltzal | Opcode::Bgezal
+        )
+    }
+
     /// Returns the fixup that skips jump instructions and branches and anything else that can
     /// terminate a basic block
     pub fn make_not_control_flow(&self) -> crate::StaticAnalysis<Self> {
@@ -204,6 +213,8 @@ impl Instruction {
                     | Opcode::Bltz
                     | Opcode::Bne
                     | Opcode::Blez
+                    | Opcode::Bltzal
+                    | Opcode::Bgezal
                     | Opcode::Bgtz
                     | Opcode::Syscall
                     | Opcode::Break

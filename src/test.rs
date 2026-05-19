@@ -42,7 +42,7 @@ pub trait GetReturnValues {
 }
 
 /// Returns representative values for a given type
-pub trait Parameters: std::cmp::PartialEq + Copy + std::fmt::Debug {
+pub trait Parameters: std::cmp::PartialEq + Copy + std::fmt::Debug + Default {
     /// Returns a few representative values
     fn vals() -> Vec<Self>
     where
@@ -54,6 +54,10 @@ pub trait Parameters: std::cmp::PartialEq + Copy + std::fmt::Debug {
     /// Pushes the parameter to the stack (or register file, or whereever) in preparation for a
     /// function call
     fn put<T: TakeParameters>(&self, receiver: &mut T) -> crate::RunResult<()>;
+
+    /// Instantiates a MIPS emulator, with the parameters already put in place in accordance with
+    /// the O32 calling convention
+    fn into_mips_o32_runner(&self) -> crate::RunResult<crate::backends::mips::o32::Runner>;
 }
 
 /// Compares two values
@@ -108,6 +112,10 @@ impl Parameters for bool {
     fn put<T: TakeParameters>(&self, receiver: &mut T) -> crate::RunResult<()> {
         receiver.put_bool(*self)
     }
+
+    fn into_mips_o32_runner(&self) -> crate::RunResult<crate::backends::mips::o32::Runner> {
+        Ok(crate::backends::mips::o32::Runner::new1(*self as u32))
+    }
 }
 
 impl Parameters for u8 {
@@ -127,6 +135,10 @@ impl Parameters for u8 {
 
     fn put<T: TakeParameters>(&self, receiver: &mut T) -> crate::RunResult<()> {
         receiver.put_u8(*self)
+    }
+
+    fn into_mips_o32_runner(&self) -> crate::RunResult<crate::backends::mips::o32::Runner> {
+        Ok(crate::backends::mips::o32::Runner::new1(*self as u32))
     }
 }
 
@@ -150,6 +162,10 @@ impl Parameters for i8 {
     fn put<T: TakeParameters>(&self, receiver: &mut T) -> crate::RunResult<()> {
         receiver.put_i8(*self)
     }
+
+    fn into_mips_o32_runner(&self) -> crate::RunResult<crate::backends::mips::o32::Runner> {
+        Ok(crate::backends::mips::o32::Runner::new1(*self as u32))
+    }
 }
 
 impl Parameters for i16 {
@@ -171,6 +187,10 @@ impl Parameters for i16 {
     fn put<T: TakeParameters>(&self, receiver: &mut T) -> crate::RunResult<()> {
         receiver.put_i16(*self)
     }
+
+    fn into_mips_o32_runner(&self) -> crate::RunResult<crate::backends::mips::o32::Runner> {
+        Ok(crate::backends::mips::o32::Runner::new1(*self as u32))
+    }
 }
 
 impl Parameters for u16 {
@@ -190,6 +210,10 @@ impl Parameters for u16 {
 
     fn put<T: TakeParameters>(&self, receiver: &mut T) -> crate::RunResult<()> {
         receiver.put_u16(*self)
+    }
+
+    fn into_mips_o32_runner(&self) -> crate::RunResult<crate::backends::mips::o32::Runner> {
+        Ok(crate::backends::mips::o32::Runner::new1(*self as u32))
     }
 }
 
@@ -212,6 +236,10 @@ impl Parameters for i32 {
     fn put<T: TakeParameters>(&self, receiver: &mut T) -> crate::RunResult<()> {
         receiver.put_i32(*self)
     }
+
+    fn into_mips_o32_runner(&self) -> crate::RunResult<crate::backends::mips::o32::Runner> {
+        Ok(crate::backends::mips::o32::Runner::new1(*self as u32))
+    }
 }
 
 impl Parameters for u32 {
@@ -232,6 +260,10 @@ impl Parameters for u32 {
     fn put<T: TakeParameters>(&self, receiver: &mut T) -> crate::RunResult<()> {
         receiver.put_u32(*self)
     }
+
+    fn into_mips_o32_runner(&self) -> crate::RunResult<crate::backends::mips::o32::Runner> {
+        Ok(crate::backends::mips::o32::Runner::new1(*self as u32))
+    }
 }
 
 impl Parameters for f32 {
@@ -245,6 +277,10 @@ impl Parameters for f32 {
 
     fn put<T: TakeParameters>(&self, receiver: &mut T) -> crate::RunResult<()> {
         receiver.put_f32(*self)
+    }
+
+    fn into_mips_o32_runner(&self) -> crate::RunResult<crate::backends::mips::o32::Runner> {
+        Ok(crate::backends::mips::o32::Runner::new1(*self as u32))
     }
 }
 
