@@ -212,6 +212,27 @@ impl Instruction {
         )
     }
 
+    /// Returns the fixup that skips impure instructions
+    pub fn make_pure(&self) -> crate::StaticAnalysis<Self> {
+        use trapezoid_core::cpu::Opcode;
+
+        crate::Fixup::<Self>::check(
+            !matches!(
+                self.decode().opcode,
+                Opcode::Lh|
+                Opcode::Lw|
+                Opcode::Lb|
+                Opcode::Lhu|
+                Opcode::Lwr|
+                Opcode::Lbu|
+                Opcode::Lwl
+            ),
+            "Impure",
+            Self::next_opcode,
+            0,
+        )
+    }
+
     /// Returns the fixup that skips jump instructions and branches and anything else that can
     /// terminate a basic block
     pub fn make_not_control_flow(&self) -> crate::StaticAnalysis<Self> {
@@ -434,6 +455,21 @@ impl Instruction {
         self.valid_opcode()?;
         self.coprocessor_known()?;
         Ok(())
+    }
+
+    /// Skip add/subtract instruction that throw overflow exceptions
+    /// In some contexts, these instructions are just worse versions of the non-exception ones.
+    pub fn no_overflow_exceptions(&self) -> StaticAnalysis<Instruction> {
+        use trapezoid_core::cpu::Opcode;
+        Fixup::<Self>::check(
+            !matches!(
+                self.decode().opcode,
+                Opcode::Sub | Opcode::Addi | Opcode::Add
+            ),
+            "UnnecessaryOverflowCheck",
+            Self::inner_next_opcode,
+            0,
+        )
     }
 
     /// Called after a mutation; this ensures that the u32 member encodes an actually valid MIPS

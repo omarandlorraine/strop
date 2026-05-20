@@ -30,6 +30,17 @@ fn allocate_temporary_registers(seq: &Sequence<Instruction>) -> StaticAnalysis<I
     )
 }
 
+fn leave_reserved_registers_alone(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+    for r in [
+        RegisterType::K0,
+        RegisterType::K1,
+        RegisterType::Gp,
+    ] {
+        crate::dataflow::leave_alone(seq, &r)?;
+    }
+    Ok(())
+}
+
 fn leave_callee_saved_registers_alone(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
     for r in [
         RegisterType::S0,
@@ -44,6 +55,16 @@ fn leave_callee_saved_registers_alone(seq: &Sequence<Instruction>) -> StaticAnal
         crate::dataflow::leave_alone(seq, &r)?;
     }
     Ok(())
+}
+
+fn expect_one_return_value(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+    crate::dataflow::expect_write(seq, &RegisterType::V0)?;
+    crate::dataflow::leave_alone(seq, &RegisterType::V1)
+}
+
+fn expect_two_return_values(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+    crate::dataflow::expect_write(seq, &RegisterType::V0)?;
+    crate::dataflow::expect_write(seq, &RegisterType::V1)
 }
 
 fn expect_one_parameter(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
@@ -147,8 +168,6 @@ impl<Input: Parameters, Output: ReturnValue> O32<Input, Output> {
 
     /*
     use trapezoid_core::cpu::RegisterType;
-    // make sure the sequence ends in a `jr $ra` instruction
-    self.seq.check_last(Instruction::make_jr_ra)?;
     self.seq
         .check_all_but_last(Instruction::make_not_control_flow)?;
     for r in [
@@ -212,6 +231,9 @@ impl<Input: Parameters, Output: ReturnValue> O32<Input, Output> {
             .correctness(Input::default().into_mips_o32_runner()?.args)
             .add(allocate_temporary_registers)
             .add(leave_callee_saved_registers_alone)
+            .add(leave_reserved_registers_alone)
+            .add(expect_one_return_value) // TODO
+            .add(|seq| seq.check_all(Instruction::make_pure))
             .to_owned();
         Ok(Self {
             subroutine,
