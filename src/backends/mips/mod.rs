@@ -24,7 +24,7 @@ pub fn check_branches_are_in_range(
 ) -> crate::StaticAnalysis<Instruction> {
     if seq.is_empty() {
         // empty sequence - it can't contain a branch
-        return Ok(())
+        return Ok(());
     }
 
     // Address of the last instruction in the sequence; a branch shouldn't target anything above
@@ -36,24 +36,30 @@ pub fn check_branches_are_in_range(
         .enumerate()
         .map(|(offset, instruction)| (offset, offset.wrapping_mul(4) as u32, instruction))
         .filter(|(_offset, _pc, instruction)| instruction.is_relative_branch())
-        .map(|(offset, pc, instruction)| (offset,
-            pc,
-            pc.wrapping_add((instruction.imm().unwrap() as i16 as i32 as u32).wrapping_mul(4))
-                .wrapping_add(4)
-        ))
-        .filter(|(_offset, pc, destination)| 
+        .map(|(offset, pc, instruction)| {
+            (
+                offset,
+                pc,
+                pc.wrapping_add((instruction.imm().unwrap() as i16 as i32 as u32).wrapping_mul(4))
+                    .wrapping_add(4),
+            )
+        })
+        .filter(|(_offset, pc, destination)|
             // the branch target is outside of the instruction sequence
             *destination > last
             // or the branch targets itself
             || *destination == *pc
             // or the branch targets the following instruction
-            || *destination == *pc + 4
-        )
+            || *destination == *pc + 4)
         .map(|(offset, _pc, _destination)| offset)
         .next()
     else {
         return Ok(());
     };
 
-    Err(crate::Fixup::new("BranchOutOfRange", crate::Instruction::increment, offset))
+    Err(crate::Fixup::new(
+        "BranchOutOfRange",
+        crate::Instruction::increment,
+        offset,
+    ))
 }
