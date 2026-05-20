@@ -12,7 +12,7 @@ pub struct PlatformSpecificSequence<I: Instruction> {
     sequence: Sequence<I>,
 
     /// Static analysis functions for ensuring correctness
-    static_analysis: Vec<fn(&Sequence<I>) -> StaticAnalysis<I>>,
+    correctness: Vec<fn(&Sequence<I>) -> StaticAnalysis<I>>,
 }
 
 impl<I: Instruction> std::fmt::Debug for PlatformSpecificSequence<I> {
@@ -26,7 +26,7 @@ impl<I: Instruction> PlatformSpecificSequence<I> {
     pub fn new() -> Self {
         Self {
             sequence: Sequence::<I>::default(),
-            static_analysis: vec![],
+            correctness: vec![],
         }
     }
     /// Returns the instruction sequence as bytes.
@@ -56,15 +56,15 @@ impl<I: Instruction> PlatformSpecificSequence<I> {
         self.exhvalidate();
     }
 
-    /// Adds a list of static analysis passes to the search, culling the search space
-    pub fn extend(&mut self, sa: &[fn(&Sequence<I>) -> StaticAnalysis<I>]) -> &mut Self {
-        self.static_analysis.extend(sa);
+    /// Adds a list of static analysis passes to the search, for ensuring correctness
+    pub fn correctness(&mut self, sa: &[fn(&Sequence<I>) -> StaticAnalysis<I>]) -> &mut Self {
+        self.correctness.extend(sa);
         self
     }
 
     /// Adds one static analysis pass
     pub fn add(&mut self, sa: fn(&Sequence<I>) -> StaticAnalysis<I>) -> &mut Self {
-        self.static_analysis.push(sa);
+        self.correctness.push(sa);
         self
     }
 
@@ -75,7 +75,7 @@ impl<I: Instruction> PlatformSpecificSequence<I> {
         // There's no need to spend loads of compute time on the analysis; the sequence is likely
         // going to change soon anyway
         let fixups: Vec<_> = self
-            .static_analysis
+            .correctness
             .iter()
             .map(|s| s(&self.sequence))
             .filter(|s| s.is_err())

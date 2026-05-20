@@ -209,7 +209,7 @@ impl<Input: Parameters, Output: ReturnValue> O32<Input, Output> {
     /// Instantiates the searcher, if possible.
     pub fn new() -> crate::RunResult<Self> {
         let subroutine = crate::backends::mips::subroutine()
-            .extend(Input::default().into_mips_o32_runner()?.args)
+            .correctness(Input::default().into_mips_o32_runner()?.args)
             .add(allocate_temporary_registers)
             .add(leave_callee_saved_registers_alone)
             .to_owned();
