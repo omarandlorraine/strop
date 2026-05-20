@@ -26,6 +26,9 @@ pub fn check_branches_are_in_range(
         // empty sequence - it can't contain a branch
         return Ok(())
     }
+
+    // Address of the last instruction in the sequence; a branch shouldn't target anything above
+    // this.
     let last = (seq.to_bytes().len() - 1) as u32;
 
     let Some(offset) = seq
