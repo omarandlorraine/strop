@@ -34,6 +34,8 @@ fn leave_reserved_registers_alone(seq: &Sequence<Instruction>) -> StaticAnalysis
     for r in [
         RegisterType::K0,
         RegisterType::K1,
+        RegisterType::Sp,
+        RegisterType::Fp,
         RegisterType::Gp,
     ] {
         crate::dataflow::leave_alone(seq, &r)?;
@@ -57,132 +59,34 @@ fn leave_callee_saved_registers_alone(seq: &Sequence<Instruction>) -> StaticAnal
     Ok(())
 }
 
-fn expect_one_return_value(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
-    crate::dataflow::expect_write(seq, &RegisterType::V0)?;
-    crate::dataflow::leave_alone(seq, &RegisterType::V1)
-}
-
-fn expect_two_return_values(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
-    crate::dataflow::expect_write(seq, &RegisterType::V0)?;
-    crate::dataflow::expect_write(seq, &RegisterType::V1)
-}
-
-fn expect_one_parameter(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
-    crate::dataflow::expect_read(seq, &RegisterType::A0)?;
-    crate::dataflow::uninitialized(seq, &RegisterType::A1)?;
-    crate::dataflow::uninitialized(seq, &RegisterType::A2)?;
-    crate::dataflow::uninitialized(seq, &RegisterType::A3)
-}
-
-fn expect_two_parameters(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
-    crate::dataflow::expect_read(seq, &RegisterType::A0)?;
-    crate::dataflow::expect_read(seq, &RegisterType::A1)?;
-    crate::dataflow::uninitialized(seq, &RegisterType::A2)?;
-    crate::dataflow::uninitialized(seq, &RegisterType::A3)
-}
-
-fn expect_three_parameters(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
-    crate::dataflow::expect_read(seq, &RegisterType::A0)?;
-    crate::dataflow::expect_read(seq, &RegisterType::A1)?;
-    crate::dataflow::expect_read(seq, &RegisterType::A2)?;
-    crate::dataflow::uninitialized(seq, &RegisterType::A3)
-}
-
-fn expect_four_parameters(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
-    crate::dataflow::expect_read(seq, &RegisterType::A0)?;
-    crate::dataflow::expect_read(seq, &RegisterType::A1)?;
-    crate::dataflow::expect_read(seq, &RegisterType::A2)?;
-    crate::dataflow::expect_read(seq, &RegisterType::A3)
-}
-
 /// Searches for functions complying to the O32 calling convention
 #[derive(Clone)]
 pub struct O32<Input: Parameters, Output: ReturnValue> {
     subroutine: crate::search::platform_specific::ExplorationPoint<Instruction>,
-    vals: std::cell::Cell<Option<usize>>,
     _phantom_data: std::marker::PhantomData<(Input, Output)>,
 }
 
 impl<Input: Parameters, Output: ReturnValue> O32<Input, Output> {
-    /*
-            self.seq
-                .check_all(Instruction::make_not_redundantly_encoded)?;
-
-    */
 
     /*
-            for r in [
-                RegisterType::Hi,
-                RegisterType::Lo,
-                RegisterType::V0,
-                RegisterType::V1,
-                RegisterType::T0,
-                RegisterType::T1,
-                RegisterType::T2,
-                RegisterType::T3,
-                RegisterType::T4,
-                RegisterType::T5,
-                RegisterType::T6,
-                RegisterType::T7,
-                RegisterType::T8,
-                RegisterType::T9,
-                RegisterType::At,
-            ] {
-                crate::dataflow::uninitialized(&self.seq, &r)?;
-            }
-    */
+       for r in [
+       RegisterType::Hi,
+       RegisterType::Lo,
+       RegisterType::T0,
+       RegisterType::T1,
+       RegisterType::T2,
+       RegisterType::T3,
+       RegisterType::T4,
+       RegisterType::T5,
+       RegisterType::T6,
+       RegisterType::T7,
+       RegisterType::T8,
+       RegisterType::T9,
+       RegisterType::At,
+       ] {
+       crate::dataflow::dont_expect_write(&self.seq, &r)?;
+       }
 
-    /*
-            for r in [
-                RegisterType::Hi,
-                RegisterType::Lo,
-                RegisterType::T0,
-                RegisterType::T1,
-                RegisterType::T2,
-                RegisterType::T3,
-                RegisterType::T4,
-                RegisterType::T5,
-                RegisterType::T6,
-                RegisterType::T7,
-                RegisterType::T8,
-                RegisterType::T9,
-                RegisterType::At,
-            ] {
-                crate::dataflow::dont_expect_write(&self.seq, &r)?;
-            }
-    */
-
-    /*
-        if let Some(val) = self.vals.get() {
-            const VALS: [RegisterType; 2] = [RegisterType::V0, RegisterType::V1];
-            for a in &VALS[..val] {
-                crate::dataflow::expect_write(&self.seq, a)?;
-            }
-            for a in &VALS[val..] {
-                crate::dataflow::dont_expect_write(&self.seq, a)?;
-            }
-        }
-        crate::dataflow::expect_write(&self.seq, &RegisterType::V0)?;
-
-    */
-
-    /*
-    use trapezoid_core::cpu::RegisterType;
-    self.seq
-        .check_all_but_last(Instruction::make_not_control_flow)?;
-    for r in [
-        RegisterType::K0,
-        RegisterType::K1,
-        RegisterType::Sp,
-        RegisterType::Fp,
-        RegisterType::Gp,
-    ] {
-        crate::dataflow::leave_alone(&self.seq, &r)?;
-    }
-
-    crate::dataflow::leave_alone_except_last(&self.seq, &RegisterType::Ra)?;
-
-    self.make_correct();
     while let Err(fixup) = self.reduce_search_space() {
         self.seq.apply(&fixup);
         self.make_correct();
@@ -207,7 +111,6 @@ impl<Input: Parameters, Output: ReturnValue> crate::Callable<Input, Output> for 
         let mut runner = parameters.into_mips_o32_runner()?;
         runner.call_subroutine(&self.subroutine.to_bytes())?;
         let result = Output::get(&mut runner);
-        self.vals.set(Some(runner.val as usize));
         result
     }
 }
@@ -227,18 +130,18 @@ impl<Input: Parameters, Output: ReturnValue> crate::Traverse for O32<Input, Outp
 impl<Input: Parameters, Output: ReturnValue> O32<Input, Output> {
     /// Instantiates the searcher, if possible.
     pub fn new() -> crate::RunResult<Self> {
+        let mut runner = Input::default().into_mips_o32_runner()?;
+        Output::get(&mut runner)?;
+
         let subroutine = crate::backends::mips::subroutine()
-            .correctness(Input::default().into_mips_o32_runner()?.args)
-            .add(allocate_temporary_registers)
-            .add(leave_callee_saved_registers_alone)
-            .add(leave_reserved_registers_alone)
-            .add(expect_one_return_value) // TODO
-            .add(|seq| seq.check_all(Instruction::make_pure))
+            .correctness(&runner.dataflow_analyses())
+            .pointless(&[allocate_temporary_registers, leave_reserved_registers_alone])
+            .correctness(&[|seq| seq.check_all(Instruction::make_pure), |seq| seq.check_all(Instruction::make_not_control_flow)])
+            .correctness(&[leave_callee_saved_registers_alone, leave_reserved_registers_alone])
             .to_owned();
         Ok(Self {
             subroutine,
             _phantom_data: Default::default(),
-            vals: Default::default(),
         })
     }
 }
@@ -248,7 +151,7 @@ pub struct Runner {
     bus: crate::backends::mips::bus::Bus,
     cpu: trapezoid_core::cpu::Cpu,
     /// Static analysis passes correcting dataflow into the function
-    pub args: &'static [fn(&Sequence<Instruction>) -> StaticAnalysis<Instruction>],
+    args: fn(&Sequence<Instruction>) -> StaticAnalysis<Instruction>,
     val: u8,
 }
 
@@ -293,7 +196,7 @@ impl Runner {
         Self {
             cpu,
             bus: crate::backends::mips::bus::Bus::new(),
-            args: &[expect_one_parameter],
+            args: Self::expect_one_parameter,
             val: 0,
         }
     }
@@ -305,7 +208,7 @@ impl Runner {
         Self {
             cpu,
             bus: crate::backends::mips::bus::Bus::new(),
-            args: &[expect_two_parameters],
+            args: Self::expect_two_parameters,
             val: 0,
         }
     }
@@ -318,7 +221,7 @@ impl Runner {
         Self {
             cpu,
             bus: crate::backends::mips::bus::Bus::new(),
-            args: &[expect_three_parameters],
+            args: Self::expect_three_parameters,
             val: 0,
         }
     }
@@ -332,7 +235,7 @@ impl Runner {
         Self {
             cpu,
             bus: crate::backends::mips::bus::Bus::new(),
-            args: &[expect_four_parameters],
+            args: Self::expect_four_parameters,
             val: 0,
         }
     }
@@ -362,5 +265,89 @@ impl Runner {
         };
         self.val += 1;
         r
+    }
+
+    fn expect_one_parameter(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+        crate::dataflow::expect_read(seq, &RegisterType::A0)?;
+        crate::dataflow::uninitialized(seq, &RegisterType::A1)?;
+        crate::dataflow::uninitialized(seq, &RegisterType::A2)?;
+        crate::dataflow::uninitialized(seq, &RegisterType::A3)
+    }
+
+    fn expect_two_parameters(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+        crate::dataflow::expect_read(seq, &RegisterType::A0)?;
+        crate::dataflow::expect_read(seq, &RegisterType::A1)?;
+        crate::dataflow::uninitialized(seq, &RegisterType::A2)?;
+        crate::dataflow::uninitialized(seq, &RegisterType::A3)
+    }
+
+    fn expect_three_parameters(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+        crate::dataflow::expect_read(seq, &RegisterType::A0)?;
+        crate::dataflow::expect_read(seq, &RegisterType::A1)?;
+        crate::dataflow::expect_read(seq, &RegisterType::A2)?;
+        crate::dataflow::uninitialized(seq, &RegisterType::A3)
+    }
+
+    fn expect_four_parameters(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+        crate::dataflow::expect_read(seq, &RegisterType::A0)?;
+        crate::dataflow::expect_read(seq, &RegisterType::A1)?;
+        crate::dataflow::expect_read(seq, &RegisterType::A2)?;
+        crate::dataflow::expect_read(seq, &RegisterType::A3)
+    }
+
+    fn expect_no_return_values(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+        crate::dataflow::leave_alone(seq, &RegisterType::V0)?;
+        crate::dataflow::leave_alone(seq, &RegisterType::V1)
+    }
+
+    fn expect_one_return_value(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+        crate::dataflow::expect_write(seq, &RegisterType::V0)?;
+        crate::dataflow::leave_alone(seq, &RegisterType::V1)
+    }
+
+    fn expect_two_return_values(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+        crate::dataflow::expect_write(seq, &RegisterType::V0)?;
+        crate::dataflow::expect_write(seq, &RegisterType::V1)
+    }
+
+    fn leave_ra_alone(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+        // A subroutine should normally ignore its $ra.
+        crate::dataflow::leave_alone_except_last(seq, &RegisterType::Ra)
+    }
+
+    fn uninitialized_variables(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+        for r in [
+            RegisterType::Hi,
+            RegisterType::Lo,
+            RegisterType::V0,
+            RegisterType::V1,
+            RegisterType::T0,
+            RegisterType::T1,
+            RegisterType::T2,
+            RegisterType::T3,
+            RegisterType::T4,
+            RegisterType::T5,
+            RegisterType::T6,
+            RegisterType::T7,
+            RegisterType::T8,
+            RegisterType::T9,
+            RegisterType::At,
+        ] {
+            crate::dataflow::uninitialized(seq, &r)?;
+        }
+        Ok(())
+    }
+
+    /// Returns the dataflow-related static analysis passes, checking for number or arguments
+    /// passed, number of return values in the right places, etc.
+    pub fn dataflow_analyses(&self) -> 
+    Vec<fn(&Sequence<Instruction>) -> StaticAnalysis<Instruction>> {
+        let return_values = match self.val {
+            0 => Self::expect_no_return_values,
+            1 => Self::expect_one_return_value,
+            _ => Self::expect_two_return_values,
+        };
+
+        vec![return_values, Self::leave_ra_alone, Self::uninitialized_variables, self.args]
     }
 }

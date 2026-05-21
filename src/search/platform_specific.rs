@@ -11,6 +11,10 @@ pub struct ExplorationPoint<I: Instruction> {
     /// Sequence of instructions
     sequence: Sequence<I>,
 
+    /// Static analysis functions for avoiding pointless things, such as those a traditional
+    /// peephole optimizer would catch
+    pointless: Vec<fn(&Sequence<I>) -> StaticAnalysis<I>>,
+
     /// Static analysis functions for ensuring correctness
     correctness: Vec<fn(&Sequence<I>) -> StaticAnalysis<I>>,
 }
@@ -27,6 +31,7 @@ impl<I: Instruction> ExplorationPoint<I> {
         Self {
             sequence: Sequence::<I>::default(),
             correctness: vec![],
+            pointless: vec![],
         }
     }
     /// Returns the instruction sequence as bytes.
@@ -54,6 +59,13 @@ impl<I: Instruction> ExplorationPoint<I> {
         }
         self.sequence.increment();
         self.exhvalidate();
+    }
+
+    /// Adds a list of static analysis passes to the search, for avoiding pointless encodings and
+    /// the likes
+    pub fn pointless(&mut self, sa: &[fn(&Sequence<I>) -> StaticAnalysis<I>]) -> &mut Self {
+        self.pointless.extend(sa);
+        self
     }
 
     /// Adds a list of static analysis passes to the search, for ensuring correctness
@@ -85,9 +97,23 @@ impl<I: Instruction> ExplorationPoint<I> {
         fixups.choose(&mut rng).unwrap_or(&Ok(())).clone()
     }
 
+    /// return the first static analysis pass that fires
+    fn pick_pointless(&self) -> StaticAnalysis<I> {
+         if let Some(e) = self
+            .pointless
+            .iter()
+            .map(|s| s(&self.sequence))
+            .filter(|s| s.is_err())
+            .next() {e
+         } else {
+             Ok(())
+         }
+    }
+
     /// Returns a `StaticAnalysis<I>` for either correctness or search culling
     fn exhsa(&self) -> StaticAnalysis<I> {
         self.pick_static_analysis()?;
+        self.pick_pointless()?;
         I::cull(&self.sequence)?;
         I::peephole(&self.sequence)
     }

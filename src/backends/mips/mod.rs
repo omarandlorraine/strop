@@ -2,6 +2,8 @@
 
 mod bus;
 mod instruction_set;
+mod peephole;
+
 pub use instruction_set::Instruction;
 pub mod o32;
 
@@ -13,6 +15,7 @@ pub fn subroutine() -> crate::search::platform_specific::ExplorationPoint<Instru
         .add(|seq| seq.check_last(Instruction::make_jr_ra))
         .add(|seq| seq.check_all(Instruction::no_overflow_exceptions))
         .add(check_branches_are_in_range)
+        .pointless(&[peephole::peephole_optimizer])
         .to_owned()
 }
 

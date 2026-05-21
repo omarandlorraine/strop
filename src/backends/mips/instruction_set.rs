@@ -111,7 +111,8 @@ impl crate::Instruction for Instruction {
 }
 
 impl Instruction {
-    fn decode(&self) -> trapezoid_core::cpu::Instruction {
+    /// Decodes the instruction
+    pub fn decode(&self) -> trapezoid_core::cpu::Instruction {
         trapezoid_core::cpu::Instruction::from_u32(self.0, 0)
     }
 
@@ -219,13 +220,13 @@ impl Instruction {
         crate::Fixup::<Self>::check(
             !matches!(
                 self.decode().opcode,
-                Opcode::Lh|
-                Opcode::Lw|
-                Opcode::Lb|
-                Opcode::Lhu|
-                Opcode::Lwr|
-                Opcode::Lbu|
-                Opcode::Lwl
+                Opcode::Lh
+                    | Opcode::Lw
+                    | Opcode::Lb
+                    | Opcode::Lhu
+                    | Opcode::Lwr
+                    | Opcode::Lbu
+                    | Opcode::Lwl
             ),
             "Impure",
             Self::next_opcode,
@@ -487,7 +488,6 @@ impl Instruction {
         if matches!(
             self.decode().opcode,
             Opcode::Jr
-                | Opcode::Jalr
                 | Opcode::Syscall
                 | Opcode::Break
                 | Opcode::Mfhi
