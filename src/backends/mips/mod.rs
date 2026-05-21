@@ -5,11 +5,11 @@ mod instruction_set;
 pub use instruction_set::Instruction;
 pub mod o32;
 
-/// Returns a PlatformSpecificSequence, of MIPS instructions, which makes sure to end in a return
+/// Returns a ExplorationPoint, of MIPS instructions, which makes sure to end in a return
 /// instruction. Makes sure that relative branches are in range, and to avoid add/subtract
 /// instructions with bounds checking.
-pub fn subroutine() -> crate::search::platform_specific::PlatformSpecificSequence<Instruction> {
-    crate::search::platform_specific::PlatformSpecificSequence::<Instruction>::new()
+pub fn subroutine() -> crate::search::platform_specific::ExplorationPoint<Instruction> {
+    crate::search::platform_specific::ExplorationPoint::<Instruction>::new()
         .add(|seq| seq.check_last(Instruction::make_jr_ra))
         .add(|seq| seq.check_all(Instruction::no_overflow_exceptions))
         .add(check_branches_are_in_range)

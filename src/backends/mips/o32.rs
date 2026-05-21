@@ -98,7 +98,7 @@ fn expect_four_parameters(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruc
 /// Searches for functions complying to the O32 calling convention
 #[derive(Clone)]
 pub struct O32<Input: Parameters, Output: ReturnValue> {
-    subroutine: crate::search::platform_specific::PlatformSpecificSequence<Instruction>,
+    subroutine: crate::search::platform_specific::ExplorationPoint<Instruction>,
     vals: std::cell::Cell<Option<usize>>,
     _phantom_data: std::marker::PhantomData<(Input, Output)>,
 }

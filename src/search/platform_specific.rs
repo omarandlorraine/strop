@@ -7,7 +7,7 @@ use crate::StaticAnalysis;
 
 /// A struct, having a sequence of instructions, and a list of static analysis passes, as members.
 #[derive(Clone)]
-pub struct PlatformSpecificSequence<I: Instruction> {
+pub struct ExplorationPoint<I: Instruction> {
     /// Sequence of instructions
     sequence: Sequence<I>,
 
@@ -15,14 +15,14 @@ pub struct PlatformSpecificSequence<I: Instruction> {
     correctness: Vec<fn(&Sequence<I>) -> StaticAnalysis<I>>,
 }
 
-impl<I: Instruction> std::fmt::Debug for PlatformSpecificSequence<I> {
+impl<I: Instruction> std::fmt::Debug for ExplorationPoint<I> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{:?}", self.sequence)
     }
 }
 
-impl<I: Instruction> PlatformSpecificSequence<I> {
-    /// Constructs a `PlatformSpecificSequence<I>`.
+impl<I: Instruction> ExplorationPoint<I> {
+    /// Constructs a `ExplorationPoint<I>`.
     pub fn new() -> Self {
         Self {
             sequence: Sequence::<I>::default(),
