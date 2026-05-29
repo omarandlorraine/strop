@@ -8,6 +8,8 @@ use crate::RunResult;
 use crate::backends::armv4t::Instruction;
 use crate::test::{Parameters, ReturnValue};
 
+type Sequence = crate::Sequence<Instruction>;
+
 const REGISTERS: [unarm::Reg; 13] = [
     unarm::Reg::R0,
     unarm::Reg::R1,
@@ -24,96 +26,83 @@ const REGISTERS: [unarm::Reg; 13] = [
     unarm::Reg::R12,
 ];
 
+/// Checks that the sequence takes the right number of arguments (that is, it reads from the
+/// correct registers).
+pub fn expect_arguments(seq: &Sequence, args: usize) -> crate::StaticAnalysis<Instruction> {
+    // don't depend on the value of the condition codes
+    crate::dataflow::uninitialized(seq, &crate::backends::armv4t::dataflow::ConditionFlags)?;
+
+    for a in &REGISTERS[..args] {
+        crate::dataflow::expect_read(seq, a)?;
+    }
+    for a in &REGISTERS[args..] {
+        crate::dataflow::uninitialized(seq, a)?;
+    }
+    Ok(())
+}
+
+/// Checks that the sequence leaves the right number of return values (that is, it writes to the
+/// correct registers).
+pub fn expect_return_values(seq: &Sequence, values: usize) -> crate::StaticAnalysis<Instruction> {
+    for a in &REGISTERS[..values] {
+        crate::dataflow::expect_write(seq, a)?;
+    }
+    for a in &REGISTERS[values..] {
+        crate::dataflow::dont_expect_write(seq, a)?;
+    }
+    Ok(())
+}
+
 /// Searches for functions complying to the Aapcs32 calling convention
 #[derive(Clone)]
 pub struct Aapcs32<Input: Parameters, Output: ReturnValue> {
-    seq: crate::Sequence<Instruction>,
+    subroutine: crate::search::platform_specific::ExplorationPoint<Instruction>,
     args: std::cell::Cell<Option<usize>>,
     vals: std::cell::Cell<Option<usize>>,
     _phantom_data: std::marker::PhantomData<(Input, Output)>,
 }
 
-impl<Input: Parameters, Output: ReturnValue> From<crate::Sequence<Instruction>>
-    for Aapcs32<Input, Output>
-{
-    fn from(seq: crate::Sequence<Instruction>) -> Self {
-        Self {
-            seq,
+impl<Input: Parameters, Output: ReturnValue> Aapcs32<Input, Output> {
+    /// Instantiates the searcher, if possible.
+    pub fn new() -> crate::RunResult<Self> {
+        let subroutine = crate::backends::armv4t::subroutine()
+            .pointless(&[
+                // Writes to condition codes are going to be ignored by the caller;
+                |seq| {
+                    crate::dataflow::dont_expect_write(
+                        seq,
+                        &crate::backends::armv4t::dataflow::ConditionFlags,
+                    )
+                },
+                |seq| crate::dataflow::allocate_registers(seq, &REGISTERS[..]),
+            ])
+            .correctness(&[
+                |seq| crate::dataflow::leave_alone_except_last(seq, &unarm::Reg::Lr),
+                |seq| crate::dataflow::leave_alone_except_last(seq, &unarm::Reg::Sp),
+                |seq| crate::dataflow::leave_alone_except_last(seq, &unarm::Reg::Pc),
+                Input::aapcs32,
+                Output::aapcs32,
+            ])
+            .to_owned();
+
+        Ok(Self {
+            subroutine,
             args: Default::default(),
             vals: Default::default(),
             _phantom_data: Default::default(),
-        }
-    }
-}
-
-impl<Input: Parameters, Output: ReturnValue> Aapcs32<Input, Output> {
-    /// returns fixups reducing the search space, such as skipping redundant encodings, or
-    /// performing dataflow analysis
-    fn reduce_search_space(&self) -> crate::StaticAnalysis<Instruction> {
-        crate::dataflow::uninitialized(
-            &self.seq,
-            &crate::backends::armv4t::dataflow::ConditionFlags,
-        )?;
-        crate::dataflow::dont_expect_write(
-            &self.seq,
-            &crate::backends::armv4t::dataflow::ConditionFlags,
-        )?;
-        if let Some(arg) = self.args.get() {
-            for a in &REGISTERS[..arg] {
-                crate::dataflow::expect_read(&self.seq, a)?;
-            }
-            for a in &REGISTERS[arg..] {
-                crate::dataflow::uninitialized(&self.seq, a)?;
-            }
-        }
-        if let Some(val) = self.vals.get() {
-            for a in &REGISTERS[..val] {
-                crate::dataflow::expect_write(&self.seq, a)?;
-            }
-            for a in &REGISTERS[val..] {
-                crate::dataflow::dont_expect_write(&self.seq, a)?;
-            }
-        }
-
-        /*
-                crate::dataflow::allocate_registers(&self.seq, &REGISTERS[..])?;
-        */
-
-        Ok(())
-    }
-
-    /// returns fixups ensuring compliance with the AAPCS32 calling convention.
-    fn correctitudes(&self) -> crate::StaticAnalysis<Instruction> {
-        self.seq.check_last(Instruction::make_bx_lr)?;
-        crate::dataflow::leave_alone_except_last(&self.seq, &unarm::Reg::Lr)?;
-        crate::dataflow::leave_alone_except_last(&self.seq, &unarm::Reg::Sp)?;
-        crate::dataflow::leave_alone_except_last(&self.seq, &unarm::Reg::Pc)?;
-
-        Ok(())
-    }
-    fn apply_all_fixups(&mut self) {
-        self.make_correct();
-        while let Err(fixup) = self.reduce_search_space() {
-            self.seq.apply(&fixup);
-            self.make_correct();
-        }
-    }
-    fn make_correct(&mut self) {
-        while let Err(fixup) = self.correctitudes() {
-            self.seq.apply(&fixup);
-        }
+        })
     }
 }
 
 impl<Input: Parameters, Output: ReturnValue> std::fmt::Display for Aapcs32<Input, Output> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}", self.seq)
+        write!(f, "{:?}", self.subroutine)
     }
 }
 
 impl<Input: Parameters, Output: ReturnValue> std::fmt::Debug for Aapcs32<Input, Output> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{:?}", self.seq)
+        write!(f, "{:?}", self.subroutine)
     }
 }
 
@@ -124,7 +113,7 @@ impl<Input: Parameters, Output: ReturnValue> crate::Callable<Input, Output>
         let mut runner = Aapcs32Runner::default();
         parameters.put(&mut runner)?;
         self.args.set(Some(runner.arg));
-        runner.call_subroutine(&self.seq)?;
+        runner.call_subroutine(&self.subroutine.to_bytes())?;
         let result = Output::get(&mut runner);
         self.vals.set(Some(runner.val));
         result
@@ -133,27 +122,20 @@ impl<Input: Parameters, Output: ReturnValue> crate::Callable<Input, Output>
 
 impl<Input: Parameters, Output: ReturnValue> crate::Traverse for Aapcs32<Input, Output> {
     fn increment(&mut self) {
-        self.seq.increment();
-        self.apply_all_fixups();
+        self.subroutine.increment();
     }
     fn mutate(&mut self) {
-        self.seq.mutate();
-        self.make_correct();
+        self.subroutine.mutate();
     }
-    fn from_bytes(bytes: &[u8]) -> Option<Self> {
-        Some(Self {
-            seq: crate::Sequence::<Instruction>::from_bytes(bytes)?,
-            _phantom_data: Default::default(),
-            args: Default::default(),
-            vals: Default::default(),
-        })
+    fn from_bytes(_bytes: &[u8]) -> Option<Self> {
+        todo!();
     }
 }
 
 impl<Input: Parameters, Output: ReturnValue> Default for Aapcs32<Input, Output> {
     fn default() -> Self {
         Self {
-            seq: crate::Sequence::<Instruction>::first(),
+            subroutine: crate::backends::armv4t::subroutine(),
             _phantom_data: Default::default(),
             args: Default::default(),
             vals: Default::default(),
@@ -162,6 +144,7 @@ impl<Input: Parameters, Output: ReturnValue> Default for Aapcs32<Input, Output> 
 }
 
 /// A basic emulator
+#[allow(missing_debug_implementations)]
 #[derive(Default)]
 pub struct Aapcs32Runner {
     /// The emulated system's memory
@@ -169,8 +152,8 @@ pub struct Aapcs32Runner {
     /// The emulated system's CPU
     pub cpu: armv4t_emu::Cpu,
 
-    pub arg: usize,
-    pub val: usize,
+    arg: usize,
+    val: usize,
 }
 
 impl crate::test::TakeParameters for Aapcs32Runner {
@@ -228,15 +211,15 @@ impl crate::test::GetReturnValues for Aapcs32Runner {
 }
 
 impl Aapcs32Runner {
-    pub fn call_subroutine(&mut self, subroutine: &crate::Sequence<Instruction>) -> RunResult<()> {
+    /// writes a subroutine to a fixed memory location, and then calls it.
+    pub fn call_subroutine(&mut self, subroutine: &[u8]) -> RunResult<()> {
         use crate::RunError;
         use armv4t_emu::Memory;
         use armv4t_emu::reg;
 
         // Write the subroutine to the beginning of the emulated CPU's address space
-        for (address, instruction) in subroutine.iter().enumerate() {
-            self.mem
-                .w32((address << 2).try_into().unwrap(), instruction.0);
+        for (address, byte) in subroutine.iter().enumerate() {
+            self.mem.w8(address.try_into().unwrap(), *byte);
         }
 
         let mode = self.cpu.mode();
@@ -247,7 +230,7 @@ impl Aapcs32Runner {
         self.cpu.reg_set(mode, reg::SP, BOTTOM_OF_STACK);
         self.cpu.reg_set(mode, reg::LR, RETURN_ADDRESS);
 
-        let end_of_subroutine = subroutine.to_bytes().len() as u32;
+        let end_of_subroutine = subroutine.len() as u32;
 
         for _ in 0..10000 {
             let pc = self.cpu.reg_get(mode, reg::PC);
