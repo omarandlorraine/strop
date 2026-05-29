@@ -1,7 +1,7 @@
-use crate::backends::mips::Instruction;
-use crate::StaticAnalysis;
-use crate::Sequence;
 use crate::Instruction as _;
+use crate::Sequence;
+use crate::StaticAnalysis;
+use crate::backends::mips::Instruction;
 use trapezoid_core::cpu::RegisterType;
 
 fn skip_this_opcode() -> StaticAnalysis<Instruction> {
@@ -108,7 +108,7 @@ fn check_for_pointless_instructions(insn: &Instruction) -> StaticAnalysis<Instru
             rs_should_not_equal_rd(insn)?;
             Ok(())
         }
-        _ => Ok(())
+        _ => Ok(()),
     }
 }
 

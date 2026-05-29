@@ -99,15 +99,17 @@ impl<I: Instruction> ExplorationPoint<I> {
 
     /// return the first static analysis pass that fires
     fn pick_pointless(&self) -> StaticAnalysis<I> {
-         if let Some(e) = self
+        if let Some(e) = self
             .pointless
             .iter()
             .map(|s| s(&self.sequence))
             .filter(|s| s.is_err())
-            .next() {e
-         } else {
-             Ok(())
-         }
+            .next()
+        {
+            e
+        } else {
+            Ok(())
+        }
     }
 
     /// Returns a `StaticAnalysis<I>` for either correctness or search culling

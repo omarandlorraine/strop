@@ -67,7 +67,6 @@ pub struct O32<Input: Parameters, Output: ReturnValue> {
 }
 
 impl<Input: Parameters, Output: ReturnValue> O32<Input, Output> {
-
     /*
        for r in [
        RegisterType::Hi,
@@ -136,8 +135,14 @@ impl<Input: Parameters, Output: ReturnValue> O32<Input, Output> {
         let subroutine = crate::backends::mips::subroutine()
             .correctness(&runner.dataflow_analyses())
             .pointless(&[allocate_temporary_registers, leave_reserved_registers_alone])
-            .correctness(&[|seq| seq.check_all(Instruction::make_pure), |seq| seq.check_all(Instruction::make_not_control_flow)])
-            .correctness(&[leave_callee_saved_registers_alone, leave_reserved_registers_alone])
+            .correctness(&[
+                |seq| seq.check_all(Instruction::make_pure),
+                |seq| seq.check_all(Instruction::make_not_control_flow),
+            ])
+            .correctness(&[
+                leave_callee_saved_registers_alone,
+                leave_reserved_registers_alone,
+            ])
             .to_owned();
         Ok(Self {
             subroutine,
@@ -340,14 +345,20 @@ impl Runner {
 
     /// Returns the dataflow-related static analysis passes, checking for number or arguments
     /// passed, number of return values in the right places, etc.
-    pub fn dataflow_analyses(&self) -> 
-    Vec<fn(&Sequence<Instruction>) -> StaticAnalysis<Instruction>> {
+    pub fn dataflow_analyses(
+        &self,
+    ) -> Vec<fn(&Sequence<Instruction>) -> StaticAnalysis<Instruction>> {
         let return_values = match self.val {
             0 => Self::expect_no_return_values,
             1 => Self::expect_one_return_value,
             _ => Self::expect_two_return_values,
         };
 
-        vec![return_values, Self::leave_ra_alone, Self::uninitialized_variables, self.args]
+        vec![
+            return_values,
+            Self::leave_ra_alone,
+            Self::uninitialized_variables,
+            self.args,
+        ]
     }
 }
