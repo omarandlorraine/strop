@@ -308,7 +308,7 @@ impl Parameters for u32 {
     }
 
     fn into_mips_o32_runner(&self) -> crate::RunResult<crate::backends::mips::o32::Runner> {
-        Ok(crate::backends::mips::o32::Runner::new1(*self as u32))
+        Ok(crate::backends::mips::o32::Runner::new1(*self))
     }
 
     fn aapcs32(seq: &crate::Sequence<crate::backends::armv4t::Instruction>) -> crate::StaticAnalysis<crate::backends::armv4t::Instruction> {

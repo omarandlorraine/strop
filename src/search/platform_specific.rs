@@ -5,6 +5,8 @@ use crate::Instruction;
 use crate::Sequence;
 use crate::StaticAnalysis;
 
+type Check<I> = fn(&Sequence<I>) -> StaticAnalysis<I>;
+
 /// A struct, having a sequence of instructions, and a list of static analysis passes, as members.
 #[derive(Clone)]
 pub struct ExplorationPoint<I: Instruction> {
@@ -13,10 +15,10 @@ pub struct ExplorationPoint<I: Instruction> {
 
     /// Static analysis functions for avoiding pointless things, such as those a traditional
     /// peephole optimizer would catch
-    pointless: Vec<fn(&Sequence<I>) -> StaticAnalysis<I>>,
+    pointless: Vec<Check<I>>,
 
     /// Static analysis functions for ensuring correctness
-    correctness: Vec<fn(&Sequence<I>) -> StaticAnalysis<I>>,
+    correctness: Vec<Check<I>>,
 }
 
 impl<I: Instruction> std::fmt::Debug for ExplorationPoint<I> {
@@ -63,19 +65,19 @@ impl<I: Instruction> ExplorationPoint<I> {
 
     /// Adds a list of static analysis passes to the search, for avoiding pointless encodings and
     /// the likes
-    pub fn pointless(&mut self, sa: &[fn(&Sequence<I>) -> StaticAnalysis<I>]) -> &mut Self {
+    pub fn pointless(&mut self, sa: &[Check<I>]) -> &mut Self {
         self.pointless.extend(sa);
         self
     }
 
     /// Adds a list of static analysis passes to the search, for ensuring correctness
-    pub fn correctness(&mut self, sa: &[fn(&Sequence<I>) -> StaticAnalysis<I>]) -> &mut Self {
+    pub fn correctness(&mut self, sa: &[Check<I>]) -> &mut Self {
         self.correctness.extend(sa);
         self
     }
 
     /// Adds one static analysis pass
-    pub fn add(&mut self, sa: fn(&Sequence<I>) -> StaticAnalysis<I>) -> &mut Self {
+    pub fn add(&mut self, sa: Check<I>) -> &mut Self {
         self.correctness.push(sa);
         self
     }
@@ -103,8 +105,7 @@ impl<I: Instruction> ExplorationPoint<I> {
             .pointless
             .iter()
             .map(|s| s(&self.sequence))
-            .filter(|s| s.is_err())
-            .next()
+            .find(|s| s.is_err())
         {
             e
         } else {

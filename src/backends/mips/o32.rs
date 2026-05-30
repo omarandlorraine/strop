@@ -109,8 +109,8 @@ impl<Input: Parameters, Output: ReturnValue> crate::Callable<Input, Output> for 
     fn call(&self, parameters: Input) -> RunResult<Output> {
         let mut runner = parameters.into_mips_o32_runner()?;
         runner.call_subroutine(&self.subroutine.to_bytes())?;
-        let result = Output::get(&mut runner);
-        result
+
+        Output::get(&mut runner)
     }
 }
 
