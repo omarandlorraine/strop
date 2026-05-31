@@ -261,8 +261,7 @@ impl crate::dataflow::DataFlow<ConditionFlags> for Instruction {
     }
 
     fn sa(&self, offset: usize) -> Fixup<Self> {
-        use crate::Instruction;
-        Fixup::new("ConditionDataflow", Self::increment, offset)
+        Fixup::new("ConditionDataflow", Self::increment_condition, offset)
     }
 }
 
