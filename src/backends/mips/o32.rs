@@ -134,10 +134,11 @@ impl<Input: Parameters, Output: ReturnValue> O32<Input, Output> {
 
         let subroutine = crate::backends::mips::subroutine()
             .correctness(&runner.dataflow_analyses())
-            .pointless(&[allocate_temporary_registers, leave_reserved_registers_alone])
+            .pointless(&[allocate_temporary_registers])
             .correctness(&[
                 |seq| seq.check_all(Instruction::make_pure),
                 |seq| seq.check_all(Instruction::make_not_control_flow),
+                leave_reserved_registers_alone,
             ])
             .correctness(&[
                 leave_callee_saved_registers_alone,
