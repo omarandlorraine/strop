@@ -5,11 +5,11 @@
 #[allow(missing_docs)]
 #[derive(Copy, Clone, Debug)]
 pub enum Triplet {
-    #[cfg(feature = "sm83")]
+    #[cfg(feature = "z80")]
     Sm83UnknownSdcc,
     #[cfg(feature = "z80")]
     Z80UnknownSdcc,
-    #[cfg(feature = "i8080")]
+    #[cfg(feature = "z80")]
     I8080UnknownSdcc,
     #[cfg(feature = "mips")]
     MipsUnknownLinuxGnu,
@@ -27,9 +27,9 @@ impl Triplet {
     /// Returns a `Vec<Triplet>` containing all the target triplets that strop knows about.
     pub fn all() -> Vec<Self> {
         vec![
-            #[cfg(feature = "i8080")]
+            #[cfg(feature = "z80")]
             Self::I8080UnknownSdcc,
-            #[cfg(feature = "sm83")]
+            #[cfg(feature = "z80")]
             Self::Sm83UnknownSdcc,
             #[cfg(feature = "mips")]
             Self::MipsUnknownLinuxGnu,
@@ -64,13 +64,13 @@ impl Triplet {
         target: C,
     ) -> Box<dyn crate::Testable> {
         match self {
-            #[cfg(feature = "sm83")]
+            #[cfg(feature = "z80")]
             Self::Sm83UnknownSdcc => Box::new(crate::search::Searcher::new(
                 crate::backends::x80::SdccCall1::<crate::backends::sm83::Instruction>::default(),
                 crate::test::FuzzTest::new(target),
             )),
 
-            #[cfg(feature = "i8080")]
+            #[cfg(feature = "z80")]
             Self::I8080UnknownSdcc => Box::new(crate::search::Searcher::new(
                 crate::backends::x80::SdccCall1::<crate::backends::i8080::Instruction>::default(),
                 crate::test::FuzzTest::new(target),
@@ -104,9 +104,9 @@ impl Triplet {
 impl std::fmt::Display for Triplet {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            #[cfg(feature = "i8080")]
+            #[cfg(feature = "z80")]
             Self::I8080UnknownSdcc => write!(f, "8080-unknown-sdcc"),
-            #[cfg(feature = "sm83")]
+            #[cfg(feature = "z80")]
             Self::Sm83UnknownSdcc => write!(f, "sm83-unknown-sdcc"),
             #[cfg(feature = "mips")]
             Self::MipsUnknownLinuxGnu => write!(f, "mips-unknown-linux-gnu"),
