@@ -55,3 +55,11 @@ command = [
     "backends::z80::tests::dd",
     "--nocapture",
 ]
+[jobs.arm_illegal]
+command = [
+"cargo","test","--","backends::arm::thumb::test::sing","--nocapture"
+]
+[jobs.arm_identity]
+command = [
+"cargo", "run", "--release", "--example", "gen", "--", "thumbv7m-unknown-linux-gnueabi"
+]
