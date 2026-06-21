@@ -21,6 +21,8 @@ pub enum Triplet {
     Armv4tNoneEabi,
     #[cfg(feature = "armv4t")]
     Armv4tUnknownLinuxGnueabi,
+    #[cfg(feature = "x86")]
+    I386UnknownLinux,
 }
 
 impl Triplet {
@@ -43,6 +45,8 @@ impl Triplet {
             Self::Armv4tUnknownLinuxGnueabi,
             #[cfg(feature = "z80")]
             Self::Z80UnknownSdcc,
+            #[cfg(feature = "x86")]
+            Self::I386UnknownLinux,
         ]
     }
 
@@ -97,6 +101,14 @@ impl Triplet {
                     crate::test::FuzzTest::new(target),
                 ))
             }
+
+            #[cfg(feature = "armv4t")]
+            Self::I386UnknownLinux => {
+                Box::new(crate::search::Searcher::new(
+                    crate::backends::x86::Aapcs32::<Input, Output>::default(),
+                    crate::test::FuzzTest::new(target),
+                ))
+            }
         }
     }
 }
@@ -120,6 +132,8 @@ impl std::fmt::Display for Triplet {
             Self::Armv4tUnknownLinuxGnueabi => write!(f, "armv4t-unknown-linux-gnueabi"),
             #[cfg(feature = "z80")]
             Self::Z80UnknownSdcc => write!(f, "z80-unknown-sdcc"),
+            #[cfg(feature = "x86")]
+            Self::I386UnknownLinux => write!(f, "i386-unknown-linux"),
         }
     }
 }

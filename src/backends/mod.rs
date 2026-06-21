@@ -20,3 +20,8 @@ pub mod z80;
 
 #[cfg(feature = "i8080")]
 pub mod i8080;
+
+#[cfg(feature = "x86")]
+pub mod x86_64;
+#[cfg(feature = "x86")]
+pub mod x86;
