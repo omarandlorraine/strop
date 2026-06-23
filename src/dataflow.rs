@@ -6,6 +6,31 @@ use crate::Sequence;
 use crate::StaticAnalysis;
 use crate::static_analysis::Fixup;
 
+/// Is the thing (register, memory location, status flag, ...) initialized or not?
+#[derive(Debug, Default)]
+pub enum DataflowState {
+    /// Uninitialized
+    #[default]
+    Uninitialized,
+    /// Initialized
+    Initialized,
+}
+
+impl DataflowState {
+    /// Sets the thing to Initialized
+    pub fn init(&mut self) {
+        *self = DataflowState::Initialized
+    }
+    /// Sets the thing to Uninitialized
+    pub fn deinit(&mut self) {
+        *self = DataflowState::Uninitialized
+    }
+    /// Returns true iff the thing is initialized
+    pub fn is_initialized(&self) -> bool {
+        matches!(self, DataflowState::Initialized)
+    }
+}
+
 /// Implement this trait on an instruction to communicate that the instruction reads from or writes
 /// to a datum of some type. For example, if you have a type representing the register file, and
 /// some type represents the machine's instruction, these methods can communicate what use the

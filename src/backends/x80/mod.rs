@@ -1,7 +1,5 @@
 //! Common code for Intel 8080-like backends, including z80 and sm83
 pub mod data;
-pub mod sdcccall1;
-pub use sdcccall1::SdccCall1;
 
 /// Trait describing the workings of an emulator. This trait is enough to be able to call a
 /// function in a few different ways.
@@ -77,16 +75,6 @@ pub trait EmuInterface: Default {
     /// Returns the value of the emulator's stack pointer
     fn get_sp(&self) -> u16;
 
-    /// Returns the value of the emulator's H register
-    fn get_h(&self) -> u8 {
-        self.get_hl().to_be_bytes()[0]
-    }
-
-    /// Returns the value of the emulator's L register
-    fn get_l(&self) -> u8 {
-        self.get_hl().to_be_bytes()[1]
-    }
-
     /// Pushes a word onto the stack
     fn push(&mut self, val: u16);
 
@@ -135,17 +123,3 @@ pub trait X80: crate::Instruction + Sized {
     // returns the length of the instruction, i.e.  the number of prefix bytes plus the opcode.
     fn instruction_length(&self) -> usize;
 }
-
-/// Associates an Instruction type with a type that can run the subroutines, passing arguments in
-/// accordance with the SDCCCALL1 calling convention
-pub trait SdccCallable: X80 {
-    /// the type of emulator used to call __sdcccall(1) functions in this instruction set.
-    type Runner: sdcccall1::SdccCall1PushPop
-        + crate::test::GetReturnValues
-        + crate::test::TakeParameters
-        + EmuInterface
-        + Default;
-}
-
-#[cfg(test)]
-pub(crate) mod tests;

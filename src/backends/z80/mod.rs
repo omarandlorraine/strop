@@ -6,6 +6,7 @@ pub(crate) mod data;
 mod emu;
 pub use emu::Emulator;
 mod sdcccall;
+pub use sdcccall::SdccCall1;
 
 #[cfg(test)]
 mod dasm;
@@ -14,13 +15,6 @@ mod dasm;
 mod tests {
     use super::Instruction;
     use crate::Instruction as _;
-    use crate::backends::x80::X80;
-
-    #[ignore]
-    #[test]
-    fn std_x80_tests() {
-        crate::backends::x80::tests::std_x80_tests::<Instruction>();
-    }
 
     #[test]
     fn unique_disassembly() {
