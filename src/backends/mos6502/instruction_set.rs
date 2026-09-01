@@ -31,6 +31,12 @@ impl<V: mos6502::Variant> Instruction<V> {
             AddressingMode::BuggyIndirect => 3,
             AddressingMode::AbsoluteIndexedIndirect => 3,
             AddressingMode::ZeroPageRelative => 3,
+            AddressingMode::BlockTransfer => todo!(),
+            AddressingMode::ImmediateZeroPage => 2,
+            AddressingMode::ImmediateZeroPageX => 3,
+            // these two should be 4, but there's not enough room in Instruction.0.
+            AddressingMode::ImmediateAbsolute => todo!(),
+            AddressingMode::ImmediateAbsoluteX => todo!(),
         }
     }
 
@@ -220,6 +226,26 @@ impl<V: mos6502::Variant> std::fmt::Display for Instruction<V> {
             Instruction::BBS(d) => write!(f, "bbs{d}"),
             Instruction::RMB(d) => write!(f, "rmb{d}"),
             Instruction::SMB(d) => write!(f, "smb{d}"),
+            Instruction::BSR => write!(f, "bsr"),
+            Instruction::TAM => write!(f, "tam"),
+            Instruction::TMA => write!(f, "tma"),
+            Instruction::TII => write!(f, "tii"),
+            Instruction::TIA => write!(f, "tia"),
+            Instruction::TAI => write!(f, "tai"),
+            Instruction::TDD => write!(f, "tdd"),
+            Instruction::TIN => write!(f, "tin"),
+            Instruction::TST => write!(f, "tst"),
+            Instruction::ST0 => write!(f, "st0"),
+            Instruction::ST1 => write!(f, "st1"),
+            Instruction::ST2 => write!(f, "st2,"),
+            Instruction::CSL => write!(f, "csl"),
+            Instruction::CSH => write!(f, "csh"),
+            Instruction::CLA => write!(f, "cla"),
+            Instruction::CLX => write!(f, "clx"),
+            Instruction::CLY => write!(f, "cly"),
+            Instruction::SXY => write!(f, "sxy"),
+            Instruction::SWAPAX => write!(f, "sax"),
+            Instruction::SAY => write!(f, "say"),
         }?;
         match self.addressing_mode() {
             AddressingMode::Accumulator => write!(f, " a"),
@@ -252,6 +278,15 @@ impl<V: mos6502::Variant> std::fmt::Display for Instruction<V> {
             AddressingMode::AbsoluteIndexedIndirect => {
                 write!(f, " (${:02x}{:02x}, x)", self.0[2], self.0[1])
             }
+            AddressingMode::BlockTransfer => todo!(), // no idea how this works
+            AddressingMode::ImmediateZeroPage => {
+                write!(f, "#${:02x}, ${:02x}", self.0[1], self.0[2])
+            }
+            AddressingMode::ImmediateZeroPageX => {
+                write!(f, "#${:02x}, ${:02x}, x", self.0[1], self.0[2])
+            }
+            AddressingMode::ImmediateAbsolute => todo!(),
+            AddressingMode::ImmediateAbsoluteX => todo!(),
         }?;
         Ok(())
     }
