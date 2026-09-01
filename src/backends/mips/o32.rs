@@ -5,241 +5,169 @@
 //! return at least one thing.
 
 use crate::RunResult;
+use crate::Sequence;
+use crate::StaticAnalysis;
 use crate::backends::mips::Instruction;
 use crate::test::{Parameters, ReturnValue};
+use trapezoid_core::cpu::RegisterType;
+
+fn allocate_temporary_registers(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+    crate::dataflow::allocate_registers(
+        seq,
+        &[
+            RegisterType::T0,
+            RegisterType::T1,
+            RegisterType::T2,
+            RegisterType::T3,
+            RegisterType::T4,
+            RegisterType::T5,
+            RegisterType::T6,
+            RegisterType::T7,
+            RegisterType::T8,
+            RegisterType::T9,
+            RegisterType::At, // this one should go last.
+        ],
+    )
+}
+
+fn leave_reserved_registers_alone(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+    for r in [
+        RegisterType::K0,
+        RegisterType::K1,
+        RegisterType::Sp,
+        RegisterType::Fp,
+        RegisterType::Gp,
+    ] {
+        crate::dataflow::leave_alone(seq, &r)?;
+    }
+    Ok(())
+}
+
+fn leave_callee_saved_registers_alone(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+    for r in [
+        RegisterType::S0,
+        RegisterType::S1,
+        RegisterType::S2,
+        RegisterType::S3,
+        RegisterType::S4,
+        RegisterType::S5,
+        RegisterType::S6,
+        RegisterType::S7,
+    ] {
+        crate::dataflow::leave_alone(seq, &r)?;
+    }
+    Ok(())
+}
 
 /// Searches for functions complying to the O32 calling convention
 #[derive(Clone)]
 pub struct O32<Input: Parameters, Output: ReturnValue> {
-    seq: crate::Sequence<Instruction>,
-    args: std::cell::Cell<Option<usize>>,
-    vals: std::cell::Cell<Option<usize>>,
+    subroutine: crate::search::platform_specific::ExplorationPoint<Instruction>,
     _phantom_data: std::marker::PhantomData<(Input, Output)>,
 }
 
 impl<Input: Parameters, Output: ReturnValue> O32<Input, Output> {
-    /// returns fixups reducing the search space, such as skipping redundant encodings, or
-    /// performing dataflow analysis
-    fn reduce_search_space(&self) -> crate::StaticAnalysis<Instruction> {
-        use trapezoid_core::cpu::RegisterType;
-        self.seq
-            .check_all(Instruction::make_not_redundantly_encoded)?;
-        crate::dataflow::allocate_registers(
-            &self.seq,
-            &[
-                RegisterType::T0,
-                RegisterType::T1,
-                RegisterType::T2,
-                RegisterType::T3,
-                RegisterType::T4,
-                RegisterType::T5,
-                RegisterType::T6,
-                RegisterType::T7,
-                RegisterType::T8,
-                RegisterType::T9,
-                RegisterType::At, // this one should go last.
-            ],
-        )?;
-        for r in [
-            RegisterType::Hi,
-            RegisterType::Lo,
-            RegisterType::V0,
-            RegisterType::V1,
-            RegisterType::T0,
-            RegisterType::T1,
-            RegisterType::T2,
-            RegisterType::T3,
-            RegisterType::T4,
-            RegisterType::T5,
-            RegisterType::T6,
-            RegisterType::T7,
-            RegisterType::T8,
-            RegisterType::T9,
-            RegisterType::At,
-        ] {
-            crate::dataflow::uninitialized(&self.seq, &r)?;
-        }
-        for r in [
-            RegisterType::Hi,
-            RegisterType::Lo,
-            RegisterType::T0,
-            RegisterType::T1,
-            RegisterType::T2,
-            RegisterType::T3,
-            RegisterType::T4,
-            RegisterType::T5,
-            RegisterType::T6,
-            RegisterType::T7,
-            RegisterType::T8,
-            RegisterType::T9,
-            RegisterType::At,
-        ] {
-            crate::dataflow::dont_expect_write(&self.seq, &r)?;
-        }
-        for r in [
-            RegisterType::S0,
-            RegisterType::S1,
-            RegisterType::S2,
-            RegisterType::S3,
-            RegisterType::S4,
-            RegisterType::S5,
-            RegisterType::S6,
-            RegisterType::S7,
-        ] {
-            crate::dataflow::leave_alone(&self.seq, &r)?;
-        }
-        if let Some(arg) = self.args.get() {
-            const ARGS: [RegisterType; 4] = [
-                RegisterType::A0,
-                RegisterType::A1,
-                RegisterType::A2,
-                RegisterType::A3,
-            ];
-            for a in &ARGS[..arg] {
-                crate::dataflow::expect_read(&self.seq, a)?;
-            }
-            for a in &ARGS[arg..] {
-                crate::dataflow::uninitialized(&self.seq, a)?;
-            }
-        }
-        if let Some(val) = self.vals.get() {
-            const VALS: [RegisterType; 2] = [RegisterType::V0, RegisterType::V1];
-            for a in &VALS[..val] {
-                crate::dataflow::expect_write(&self.seq, a)?;
-            }
-            for a in &VALS[val..] {
-                crate::dataflow::dont_expect_write(&self.seq, a)?;
-            }
-        }
-        crate::dataflow::expect_write(&self.seq, &RegisterType::V0)?;
+    /*
+       for r in [
+       RegisterType::Hi,
+       RegisterType::Lo,
+       RegisterType::T0,
+       RegisterType::T1,
+       RegisterType::T2,
+       RegisterType::T3,
+       RegisterType::T4,
+       RegisterType::T5,
+       RegisterType::T6,
+       RegisterType::T7,
+       RegisterType::T8,
+       RegisterType::T9,
+       RegisterType::At,
+       ] {
+       crate::dataflow::dont_expect_write(&self.seq, &r)?;
+       }
 
-        Ok(())
-    }
-
-    /// returns fixups ensuring compliance with the O32 calling convention.
-    fn correctitudes(&self) -> crate::StaticAnalysis<Instruction> {
-        use trapezoid_core::cpu::RegisterType;
-        // make sure the sequence ends in a `jr $ra` instruction
-        self.seq.check_last(Instruction::make_jr_ra)?;
-        self.seq
-            .check_all_but_last(Instruction::make_not_control_flow)?;
-        for r in [
-            RegisterType::K0,
-            RegisterType::K1,
-            RegisterType::Sp,
-            RegisterType::Fp,
-            RegisterType::Gp,
-        ] {
-            crate::dataflow::leave_alone(&self.seq, &r)?;
-        }
-
-        crate::dataflow::leave_alone_except_last(&self.seq, &RegisterType::Ra)?;
-
-        Ok(())
-    }
-    fn apply_all_fixups(&mut self) {
+    while let Err(fixup) = self.reduce_search_space() {
+        self.seq.apply(&fixup);
         self.make_correct();
-        while let Err(fixup) = self.reduce_search_space() {
-            self.seq.apply(&fixup);
-            self.make_correct();
-        }
     }
-    fn make_correct(&mut self) {
-        while let Err(fixup) = self.correctitudes() {
-            self.seq.apply(&fixup);
-        }
-    }
+    */
 }
 
 impl<Input: Parameters, Output: ReturnValue> std::fmt::Display for O32<Input, Output> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}", self.seq)
+        write!(f, "{:?}", self.subroutine)
     }
 }
 
 impl<Input: Parameters, Output: ReturnValue> std::fmt::Debug for O32<Input, Output> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{:?}", self.seq)
+        write!(f, "{:?}", self.subroutine)
     }
 }
 
 impl<Input: Parameters, Output: ReturnValue> crate::Callable<Input, Output> for O32<Input, Output> {
     fn call(&self, parameters: Input) -> RunResult<Output> {
-        let mut runner = O32Runner::new();
-        parameters.put(&mut runner)?;
-        self.args.set(Some(runner.arg as usize));
-        runner.call_subroutine(&self.seq.to_bytes())?;
-        let result = Output::get(&mut runner);
-        self.vals.set(Some(runner.val as usize));
-        result
+        let mut runner = parameters.into_mips_o32_runner()?;
+        runner.call_subroutine(&self.subroutine.to_bytes())?;
+
+        Output::get(&mut runner)
     }
 }
 
 impl<Input: Parameters, Output: ReturnValue> crate::Traverse for O32<Input, Output> {
     fn increment(&mut self) {
-        self.seq.increment();
-        self.apply_all_fixups();
+        self.subroutine.increment();
     }
     fn mutate(&mut self) {
-        self.seq.mutate();
-        self.make_correct();
+        self.subroutine.mutate();
     }
-    fn from_bytes(bytes: &[u8]) -> Option<Self> {
-        Some(Self {
-            seq: crate::Sequence::<Instruction>::from_bytes(bytes)?,
+    fn from_bytes(_bytes: &[u8]) -> Option<Self> {
+        todo!()
+    }
+}
+
+impl<Input: Parameters, Output: ReturnValue> O32<Input, Output> {
+    /// Instantiates the searcher, if possible.
+    pub fn new() -> crate::RunResult<Self> {
+        let mut runner = Input::default().into_mips_o32_runner()?;
+        Output::get(&mut runner)?;
+
+        let subroutine = crate::backends::mips::subroutine()
+            .correctness(&runner.dataflow_analyses())
+            .pointless(&[allocate_temporary_registers])
+            .correctness(&[
+                |seq| seq.check_all(Instruction::make_pure),
+                |seq| seq.check_all(Instruction::make_not_control_flow),
+                leave_reserved_registers_alone,
+            ])
+            .correctness(&[
+                leave_callee_saved_registers_alone,
+                leave_reserved_registers_alone,
+            ])
+            .to_owned();
+        Ok(Self {
+            subroutine,
             _phantom_data: Default::default(),
-            args: Default::default(),
-            vals: Default::default(),
         })
     }
 }
 
-impl<Input: Parameters, Output: ReturnValue> Default for O32<Input, Output> {
-    fn default() -> Self {
-        Self {
-            seq: crate::Sequence::<Instruction>::first(),
-            _phantom_data: Default::default(),
-            args: Default::default(),
-            vals: Default::default(),
-        }
-    }
-}
-
-struct O32Runner {
+/// Runs a MIPS subroutine; also conveniences O32 argument passing
+pub struct Runner {
     bus: crate::backends::mips::bus::Bus,
     cpu: trapezoid_core::cpu::Cpu,
-    arg: u8,
+    /// Static analysis passes correcting dataflow into the function
+    args: fn(&Sequence<Instruction>) -> StaticAnalysis<Instruction>,
     val: u8,
 }
 
-impl crate::test::TakeParameters for O32Runner {
-    fn put_bool(&mut self, v: bool) -> RunResult<()> {
-        self.put_argument(v as u32)
-    }
-    fn put_i8(&mut self, v: i8) -> RunResult<()> {
-        self.put_argument(v as i32 as u32)
-    }
-    fn put_u8(&mut self, v: u8) -> RunResult<()> {
-        self.put_argument(v as u32)
-    }
-    fn put_i16(&mut self, v: i16) -> RunResult<()> {
-        self.put_argument(v as i32 as u32)
-    }
-    fn put_u16(&mut self, v: u16) -> RunResult<()> {
-        self.put_argument(v as u32)
-    }
-    fn put_i32(&mut self, v: i32) -> RunResult<()> {
-        self.put_argument(v as u32)
-    }
-    fn put_u32(&mut self, v: u32) -> RunResult<()> {
-        self.put_argument(v)
-    }
-    fn put_f32(&mut self, v: f32) -> RunResult<()> {
-        self.put_argument(v.to_bits())
+impl std::fmt::Debug for Runner {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Runner").finish()
     }
 }
 
-impl crate::test::GetReturnValues for O32Runner {
+impl crate::test::GetReturnValues for Runner {
     fn get_bool(&mut self) -> RunResult<bool> {
         Ok(self.get_value()? != 0)
     }
@@ -266,15 +194,58 @@ impl crate::test::GetReturnValues for O32Runner {
     }
 }
 
-impl O32Runner {
-    pub fn new() -> Self {
+impl Runner {
+    /// Instantiates a Runner with one argument in place
+    pub fn new1(a0: u32) -> Self {
+        let mut cpu = trapezoid_core::cpu::Cpu::new();
+        cpu.registers_mut().write(RegisterType::A0, a0);
         Self {
-            cpu: trapezoid_core::cpu::Cpu::new(),
+            cpu,
             bus: crate::backends::mips::bus::Bus::new(),
-            arg: 0,
+            args: Self::expect_one_parameter,
             val: 0,
         }
     }
+    /// Instantiates a Runner with two arguments in place
+    pub fn new2(a0: u32, a1: u32) -> Self {
+        let mut cpu = trapezoid_core::cpu::Cpu::new();
+        cpu.registers_mut().write(RegisterType::A0, a0);
+        cpu.registers_mut().write(RegisterType::A1, a1);
+        Self {
+            cpu,
+            bus: crate::backends::mips::bus::Bus::new(),
+            args: Self::expect_two_parameters,
+            val: 0,
+        }
+    }
+    /// Instantiates a Runner with three arguments in place
+    pub fn new3(a0: u32, a1: u32, a2: u32) -> Self {
+        let mut cpu = trapezoid_core::cpu::Cpu::new();
+        cpu.registers_mut().write(RegisterType::A0, a0);
+        cpu.registers_mut().write(RegisterType::A1, a1);
+        cpu.registers_mut().write(RegisterType::A2, a2);
+        Self {
+            cpu,
+            bus: crate::backends::mips::bus::Bus::new(),
+            args: Self::expect_three_parameters,
+            val: 0,
+        }
+    }
+    /// Instantiates a Runner with four arguments in place
+    pub fn new4(a0: u32, a1: u32, a2: u32, a3: u32) -> Self {
+        let mut cpu = trapezoid_core::cpu::Cpu::new();
+        cpu.registers_mut().write(RegisterType::A0, a0);
+        cpu.registers_mut().write(RegisterType::A1, a1);
+        cpu.registers_mut().write(RegisterType::A2, a2);
+        cpu.registers_mut().write(RegisterType::A3, a3);
+        Self {
+            cpu,
+            bus: crate::backends::mips::bus::Bus::new(),
+            args: Self::expect_four_parameters,
+            val: 0,
+        }
+    }
+    /// writes a subroutine to the beginning of kseg1, and then calls it
     pub fn call_subroutine(&mut self, subroutine: &[u8]) -> RunResult<()> {
         self.bus.kseg1[0..subroutine.len()].copy_from_slice(subroutine);
         let end_pc = 0xBFC00000 + subroutine.len() as u32;
@@ -291,18 +262,6 @@ impl O32Runner {
         }
         Err(crate::RunError::RanAmok)
     }
-    fn put_argument(&mut self, arg: u32) -> RunResult<()> {
-        use trapezoid_core::cpu::RegisterType;
-        match self.arg {
-            0 => self.cpu.registers_mut().write(RegisterType::A0, arg),
-            1 => self.cpu.registers_mut().write(RegisterType::A1, arg),
-            2 => self.cpu.registers_mut().write(RegisterType::A2, arg),
-            3 => self.cpu.registers_mut().write(RegisterType::A3, arg),
-            _ => return Err(crate::RunError::TooManyArguments),
-        }
-        self.arg += 1;
-        Ok(())
-    }
     fn get_value(&mut self) -> RunResult<u32> {
         use trapezoid_core::cpu::RegisterType;
         let r = match self.val {
@@ -312,5 +271,95 @@ impl O32Runner {
         };
         self.val += 1;
         r
+    }
+
+    fn expect_one_parameter(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+        crate::dataflow::expect_read(seq, &RegisterType::A0)?;
+        crate::dataflow::uninitialized(seq, &RegisterType::A1)?;
+        crate::dataflow::uninitialized(seq, &RegisterType::A2)?;
+        crate::dataflow::uninitialized(seq, &RegisterType::A3)
+    }
+
+    fn expect_two_parameters(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+        crate::dataflow::expect_read(seq, &RegisterType::A0)?;
+        crate::dataflow::expect_read(seq, &RegisterType::A1)?;
+        crate::dataflow::uninitialized(seq, &RegisterType::A2)?;
+        crate::dataflow::uninitialized(seq, &RegisterType::A3)
+    }
+
+    fn expect_three_parameters(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+        crate::dataflow::expect_read(seq, &RegisterType::A0)?;
+        crate::dataflow::expect_read(seq, &RegisterType::A1)?;
+        crate::dataflow::expect_read(seq, &RegisterType::A2)?;
+        crate::dataflow::uninitialized(seq, &RegisterType::A3)
+    }
+
+    fn expect_four_parameters(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+        crate::dataflow::expect_read(seq, &RegisterType::A0)?;
+        crate::dataflow::expect_read(seq, &RegisterType::A1)?;
+        crate::dataflow::expect_read(seq, &RegisterType::A2)?;
+        crate::dataflow::expect_read(seq, &RegisterType::A3)
+    }
+
+    fn expect_no_return_values(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+        crate::dataflow::leave_alone(seq, &RegisterType::V0)?;
+        crate::dataflow::leave_alone(seq, &RegisterType::V1)
+    }
+
+    fn expect_one_return_value(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+        crate::dataflow::expect_write(seq, &RegisterType::V0)?;
+        crate::dataflow::leave_alone(seq, &RegisterType::V1)
+    }
+
+    fn expect_two_return_values(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+        crate::dataflow::expect_write(seq, &RegisterType::V0)?;
+        crate::dataflow::expect_write(seq, &RegisterType::V1)
+    }
+
+    fn leave_ra_alone(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+        // A subroutine should normally ignore its $ra.
+        crate::dataflow::leave_alone_except_last(seq, &RegisterType::Ra)
+    }
+
+    fn uninitialized_variables(seq: &Sequence<Instruction>) -> StaticAnalysis<Instruction> {
+        for r in [
+            RegisterType::Hi,
+            RegisterType::Lo,
+            RegisterType::V0,
+            RegisterType::V1,
+            RegisterType::T0,
+            RegisterType::T1,
+            RegisterType::T2,
+            RegisterType::T3,
+            RegisterType::T4,
+            RegisterType::T5,
+            RegisterType::T6,
+            RegisterType::T7,
+            RegisterType::T8,
+            RegisterType::T9,
+            RegisterType::At,
+        ] {
+            crate::dataflow::uninitialized(seq, &r)?;
+        }
+        Ok(())
+    }
+
+    /// Returns the dataflow-related static analysis passes, checking for number or arguments
+    /// passed, number of return values in the right places, etc.
+    pub fn dataflow_analyses(
+        &self,
+    ) -> Vec<fn(&Sequence<Instruction>) -> StaticAnalysis<Instruction>> {
+        let return_values = match self.val {
+            0 => Self::expect_no_return_values,
+            1 => Self::expect_one_return_value,
+            _ => Self::expect_two_return_values,
+        };
+
+        vec![
+            return_values,
+            Self::leave_ra_alone,
+            Self::uninitialized_variables,
+            self.args,
+        ]
     }
 }

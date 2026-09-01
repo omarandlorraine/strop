@@ -42,7 +42,7 @@ pub trait GetReturnValues {
 }
 
 /// Returns representative values for a given type
-pub trait Parameters: std::cmp::PartialEq + Copy + std::fmt::Debug {
+pub trait Parameters: std::cmp::PartialEq + Copy + std::fmt::Debug + Default {
     /// Returns a few representative values
     fn vals() -> Vec<Self>
     where
@@ -54,6 +54,13 @@ pub trait Parameters: std::cmp::PartialEq + Copy + std::fmt::Debug {
     /// Pushes the parameter to the stack (or register file, or whereever) in preparation for a
     /// function call
     fn put<T: TakeParameters>(&self, receiver: &mut T) -> crate::RunResult<()>;
+
+    /// Instantiates a MIPS emulator, with the parameters already put in place in accordance with
+    /// the O32 calling convention
+    fn into_mips_o32_runner(&self) -> crate::RunResult<crate::backends::mips::o32::Runner>;
+
+    /// Performs dataflow analysis on an AAPCS32 function.
+    fn aapcs32(seq: &crate::Sequence<crate::backends::armv4t::Instruction>) -> crate::StaticAnalysis<crate::backends::armv4t::Instruction>;
 }
 
 /// Compares two values
@@ -70,11 +77,18 @@ pub trait ReturnValue:
     /// Pushes the parameter to the stack (or register file, or whereever) in preparation for a
     /// function call
     fn get<T: GetReturnValues>(r: &mut T) -> crate::RunResult<Self>;
+
+    /// Performs dataflow analysis on an AAPCS32 function.
+    fn aapcs32(seq: &crate::Sequence<crate::backends::armv4t::Instruction>) -> crate::StaticAnalysis<crate::backends::armv4t::Instruction>;
 }
 
 impl ReturnValue for bool {
     fn get<T: GetReturnValues>(r: &mut T) -> crate::RunResult<bool> {
         r.get_bool()
+    }
+
+    fn aapcs32(seq: &crate::Sequence<crate::backends::armv4t::Instruction>) -> crate::StaticAnalysis<crate::backends::armv4t::Instruction> {
+        crate::backends::armv4t::aapcs32::expect_return_values(seq, 1)
     }
 }
 
@@ -82,17 +96,29 @@ impl ReturnValue for u8 {
     fn get<T: GetReturnValues>(r: &mut T) -> crate::RunResult<u8> {
         r.get_u8()
     }
+
+    fn aapcs32(seq: &crate::Sequence<crate::backends::armv4t::Instruction>) -> crate::StaticAnalysis<crate::backends::armv4t::Instruction> {
+        crate::backends::armv4t::aapcs32::expect_return_values(seq, 1)
+    }
 }
 
 impl ReturnValue for u16 {
     fn get<T: GetReturnValues>(r: &mut T) -> crate::RunResult<u16> {
         r.get_u16()
     }
+
+    fn aapcs32(seq: &crate::Sequence<crate::backends::armv4t::Instruction>) -> crate::StaticAnalysis<crate::backends::armv4t::Instruction> {
+        crate::backends::armv4t::aapcs32::expect_return_values(seq, 1)
+    }
 }
 
 impl ReturnValue for u32 {
     fn get<T: GetReturnValues>(r: &mut T) -> crate::RunResult<u32> {
         r.get_u32()
+    }
+
+    fn aapcs32(seq: &crate::Sequence<crate::backends::armv4t::Instruction>) -> crate::StaticAnalysis<crate::backends::armv4t::Instruction> {
+        crate::backends::armv4t::aapcs32::expect_return_values(seq, 1)
     }
 }
 
@@ -107,6 +133,14 @@ impl Parameters for bool {
 
     fn put<T: TakeParameters>(&self, receiver: &mut T) -> crate::RunResult<()> {
         receiver.put_bool(*self)
+    }
+
+    fn into_mips_o32_runner(&self) -> crate::RunResult<crate::backends::mips::o32::Runner> {
+        Ok(crate::backends::mips::o32::Runner::new1(*self as u32))
+    }
+
+    fn aapcs32(seq: &crate::Sequence<crate::backends::armv4t::Instruction>) -> crate::StaticAnalysis<crate::backends::armv4t::Instruction> {
+        crate::backends::armv4t::aapcs32::expect_arguments(seq, 1)
     }
 }
 
@@ -127,6 +161,14 @@ impl Parameters for u8 {
 
     fn put<T: TakeParameters>(&self, receiver: &mut T) -> crate::RunResult<()> {
         receiver.put_u8(*self)
+    }
+
+    fn into_mips_o32_runner(&self) -> crate::RunResult<crate::backends::mips::o32::Runner> {
+        Ok(crate::backends::mips::o32::Runner::new1(*self as u32))
+    }
+
+    fn aapcs32(seq: &crate::Sequence<crate::backends::armv4t::Instruction>) -> crate::StaticAnalysis<crate::backends::armv4t::Instruction> {
+        crate::backends::armv4t::aapcs32::expect_arguments(seq, 1)
     }
 }
 
@@ -150,6 +192,14 @@ impl Parameters for i8 {
     fn put<T: TakeParameters>(&self, receiver: &mut T) -> crate::RunResult<()> {
         receiver.put_i8(*self)
     }
+
+    fn into_mips_o32_runner(&self) -> crate::RunResult<crate::backends::mips::o32::Runner> {
+        Ok(crate::backends::mips::o32::Runner::new1(*self as u32))
+    }
+
+    fn aapcs32(seq: &crate::Sequence<crate::backends::armv4t::Instruction>) -> crate::StaticAnalysis<crate::backends::armv4t::Instruction> {
+        crate::backends::armv4t::aapcs32::expect_arguments(seq, 1)
+    }
 }
 
 impl Parameters for i16 {
@@ -171,6 +221,14 @@ impl Parameters for i16 {
     fn put<T: TakeParameters>(&self, receiver: &mut T) -> crate::RunResult<()> {
         receiver.put_i16(*self)
     }
+
+    fn into_mips_o32_runner(&self) -> crate::RunResult<crate::backends::mips::o32::Runner> {
+        Ok(crate::backends::mips::o32::Runner::new1(*self as u32))
+    }
+
+    fn aapcs32(seq: &crate::Sequence<crate::backends::armv4t::Instruction>) -> crate::StaticAnalysis<crate::backends::armv4t::Instruction> {
+        crate::backends::armv4t::aapcs32::expect_arguments(seq, 1)
+    }
 }
 
 impl Parameters for u16 {
@@ -190,6 +248,14 @@ impl Parameters for u16 {
 
     fn put<T: TakeParameters>(&self, receiver: &mut T) -> crate::RunResult<()> {
         receiver.put_u16(*self)
+    }
+
+    fn into_mips_o32_runner(&self) -> crate::RunResult<crate::backends::mips::o32::Runner> {
+        Ok(crate::backends::mips::o32::Runner::new1(*self as u32))
+    }
+
+    fn aapcs32(seq: &crate::Sequence<crate::backends::armv4t::Instruction>) -> crate::StaticAnalysis<crate::backends::armv4t::Instruction> {
+        crate::backends::armv4t::aapcs32::expect_arguments(seq, 1)
     }
 }
 
@@ -212,6 +278,14 @@ impl Parameters for i32 {
     fn put<T: TakeParameters>(&self, receiver: &mut T) -> crate::RunResult<()> {
         receiver.put_i32(*self)
     }
+
+    fn into_mips_o32_runner(&self) -> crate::RunResult<crate::backends::mips::o32::Runner> {
+        Ok(crate::backends::mips::o32::Runner::new1(*self as u32))
+    }
+
+    fn aapcs32(seq: &crate::Sequence<crate::backends::armv4t::Instruction>) -> crate::StaticAnalysis<crate::backends::armv4t::Instruction> {
+        crate::backends::armv4t::aapcs32::expect_arguments(seq, 1)
+    }
 }
 
 impl Parameters for u32 {
@@ -232,6 +306,14 @@ impl Parameters for u32 {
     fn put<T: TakeParameters>(&self, receiver: &mut T) -> crate::RunResult<()> {
         receiver.put_u32(*self)
     }
+
+    fn into_mips_o32_runner(&self) -> crate::RunResult<crate::backends::mips::o32::Runner> {
+        Ok(crate::backends::mips::o32::Runner::new1(*self))
+    }
+
+    fn aapcs32(seq: &crate::Sequence<crate::backends::armv4t::Instruction>) -> crate::StaticAnalysis<crate::backends::armv4t::Instruction> {
+        crate::backends::armv4t::aapcs32::expect_arguments(seq, 1)
+    }
 }
 
 impl Parameters for f32 {
@@ -245,6 +327,14 @@ impl Parameters for f32 {
 
     fn put<T: TakeParameters>(&self, receiver: &mut T) -> crate::RunResult<()> {
         receiver.put_f32(*self)
+    }
+
+    fn into_mips_o32_runner(&self) -> crate::RunResult<crate::backends::mips::o32::Runner> {
+        Ok(crate::backends::mips::o32::Runner::new1(*self as u32))
+    }
+
+    fn aapcs32(seq: &crate::Sequence<crate::backends::armv4t::Instruction>) -> crate::StaticAnalysis<crate::backends::armv4t::Instruction> {
+        crate::backends::armv4t::aapcs32::expect_arguments(seq, 1)
     }
 }
 

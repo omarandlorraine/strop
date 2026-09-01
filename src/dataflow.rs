@@ -20,7 +20,7 @@ pub trait DataFlow<Datum> {
     /// Returns a `StaticAnalysis` for advancing the instruction.
     fn sa(&self, offset: usize) -> Fixup<Self>
     where
-        Self: Sized;
+        Self: Sized + Clone;
 }
 
 /// Returns a static analysis modifying any instructions that read from or writes to `datum`.

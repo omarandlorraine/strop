@@ -1,5 +1,6 @@
 //! This module
 
+pub mod platform_specific;
 use crate::Callable;
 
 /// Searcher exists to join a tester, such as a fuzz tester, and a search space, such as an assembly-language program.

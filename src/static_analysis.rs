@@ -12,8 +12,8 @@ pub type StaticAnalysis<Instruction> = Result<(), Fixup<Instruction>>;
 
 /// An erroneous result of static analysis. Explains why a code sequence has been found to be illogical
 /// or unsuitable, and provides a way to prune such a sequence from the search.
-#[derive(Debug)]
-pub struct Fixup<Instruction> {
+#[derive(Clone, Debug)]
+pub struct Fixup<Instruction: Clone> {
     /// Specifies at what offset into this sequence the problem was found
     pub offset: usize,
     /// How to fix the problem
@@ -22,7 +22,7 @@ pub struct Fixup<Instruction> {
     pub reason: &'static str,
 }
 
-impl<Instruction> Fixup<Instruction> {
+impl<Instruction: Clone> Fixup<Instruction> {
     /// Construct a new Fixup
     pub fn new(
         reason: &'static str,

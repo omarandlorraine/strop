@@ -86,14 +86,14 @@ impl Triplet {
             Self::MipsUnknownLinuxGnu
             | Self::MipsUnknownLinuxMusl
             | Self::MipsUnknownLinuxUclibc => Box::new(crate::search::Searcher::new(
-                crate::backends::mips::o32::O32::<Input, Output>::default(),
+                crate::backends::mips::o32::O32::<Input, Output>::new().unwrap(),
                 crate::test::FuzzTest::new(target),
             )),
 
             #[cfg(feature = "armv4t")]
             Self::Armv4tNoneEabi | Self::Armv4tUnknownLinuxGnueabi => {
                 Box::new(crate::search::Searcher::new(
-                    crate::backends::armv4t::Aapcs32::<Input, Output>::default(),
+                    crate::backends::armv4t::aapcs32::Aapcs32::new().unwrap(),
                     crate::test::FuzzTest::new(target),
                 ))
             }

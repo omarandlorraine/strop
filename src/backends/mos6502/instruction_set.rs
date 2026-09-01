@@ -6,9 +6,9 @@ use mos6502::instruction::Instruction as Opcode;
 
 /// Represents a machine instruction of some variant of the 6502.
 #[derive(Copy, Clone, Default, PartialOrd, PartialEq)]
-pub struct Instruction<V: mos6502::Variant>([u8; 3], std::marker::PhantomData<V>);
+pub struct Instruction<V: Clone + mos6502::Variant>([u8; 3], std::marker::PhantomData<V>);
 
-impl<V: mos6502::Variant> Instruction<V> {
+impl<V: Clone + mos6502::Variant> Instruction<V> {
     fn valid_opcode(&self) -> bool {
         V::decode(self.0[0]).is_some()
     }
@@ -69,7 +69,7 @@ impl<V: mos6502::Variant> Instruction<V> {
     }
 }
 
-impl<V: mos6502::Variant> crate::Instruction for Instruction<V> {
+impl<V: mos6502::Variant + Clone> crate::Instruction for Instruction<V> {
     fn random() -> Self {
         let mut s = Self(
             [rand::random(), rand::random(), rand::random()],
@@ -125,7 +125,7 @@ impl<V: mos6502::Variant> crate::Instruction for Instruction<V> {
     }
 }
 
-impl<V: mos6502::Variant> std::fmt::Display for Instruction<V> {
+impl<V: Clone + mos6502::Variant> std::fmt::Display for Instruction<V> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         use mos6502::instruction::Instruction;
 
@@ -292,7 +292,7 @@ impl<V: mos6502::Variant> std::fmt::Display for Instruction<V> {
     }
 }
 
-impl<V: mos6502::Variant> std::fmt::Debug for Instruction<V> {
+impl<V: Clone + mos6502::Variant> std::fmt::Debug for Instruction<V> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         use crate::Instruction;
         let bytes = self
