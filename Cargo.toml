@@ -9,8 +9,9 @@ repository = "https://github.com/omarandlorraine/strop"
 homepage = "https://github.com/omarandlorraine/strop"
 
 [features]
-default = ["armv4t", "m6502", "z80", "mips", "sm83", "i8080"]
+default = ["arm", "armv4t", "m6502", "z80", "mips", "sm83", "i8080"]
 armv4t = ["armv4t_emu", "unarm"]
+arm = ["unarm"]
 m6502 = ["mos6502"]
 z80 = ["iz80", "dez80"]
 i8080 = ["iz80"]

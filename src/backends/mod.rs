@@ -1,5 +1,8 @@
 //! Strop's backends go in here.
 
+#[cfg(feature = "arm")]
+pub mod arm;
+
 #[cfg(feature = "armv4t")]
 pub mod armv4t;
 
