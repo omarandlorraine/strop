@@ -1,5 +1,4 @@
 //! A module for the representation of SM83 machine instructions.
-use crate::backends::x80::X80;
 use crate::backends::x80::data::InstructionData;
 
 /// Represents a SM83 machine instruction
@@ -38,6 +37,29 @@ impl Instruction {
             self.0[1] = 0;
             self.0[2] = 0;
         }
+    }
+
+    /// Makes sure that the instruction is the return instruction, `ret`.
+    pub fn make_return(&self) -> crate::StaticAnalysis<Self> {
+        const INSN: u8 = 0xc9;
+
+        crate::Fixup::<Self>::check(
+            self.0[0] == INSN,
+            "DoesNotReturn",
+            |i| {
+                if i.0[0] <= INSN {
+                    i.0[0] = INSN;
+                    Ok(())
+                } else {
+                    Err(crate::StepError::End)
+                }
+            },
+            0,
+        )
+    }
+
+    fn decode(&self) -> &'static InstructionData {
+        self.decode_inner().unwrap()
     }
 }
 
@@ -130,47 +152,5 @@ impl crate::Instruction for Instruction {
             _ => unreachable!(),
         }
         Some(insn)
-    }
-}
-
-impl X80 for Instruction {
-    type Emulator = crate::backends::sm83::emu::Emu;
-
-    fn decode(&self) -> &'static InstructionData {
-        self.decode_inner().unwrap()
-    }
-
-    fn next_opcode(&mut self) -> crate::IterationResult {
-        if self.0[0] == 0xff {
-            Err(crate::StepError::End)
-        } else if self.0[0] == 0xcb {
-            self.incr_at_offset(1);
-            Ok(())
-        } else {
-            self.incr_at_offset(0);
-            Ok(())
-        }
-    }
-
-    fn make_return(&self) -> crate::StaticAnalysis<Self> {
-        const INSN: u8 = 0xc9;
-
-        crate::Fixup::<Self>::check(
-            self.0[0] == INSN,
-            "DoesNotReturn",
-            |i| {
-                if i.0[0] <= INSN {
-                    i.0[0] = INSN;
-                    Ok(())
-                } else {
-                    Err(crate::StepError::End)
-                }
-            },
-            0,
-        )
-    }
-
-    fn instruction_length(&self) -> usize {
-        if self.0[0] == 0xcb { 2 } else { 1 }
     }
 }

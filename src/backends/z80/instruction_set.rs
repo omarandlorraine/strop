@@ -1,5 +1,4 @@
 //! A module for the representation of SM83 machine instructions.
-use crate::backends::x80::X80;
 use crate::backends::x80::data::InstructionData;
 
 /// Represents a Z80 machine instruction
@@ -196,16 +195,14 @@ impl Instruction {
             }
         }
     }
-}
 
-impl X80 for Instruction {
-    type Emulator = crate::backends::z80::emu::Emulator;
-
-    fn decode(&self) -> &'static InstructionData {
+    /// Return misc metadata for this instruction
+    pub fn decode(&self) -> &'static InstructionData {
         self.decode_inner().unwrap()
     }
 
-    fn next_opcode(&mut self) -> crate::IterationResult {
+    /// Increments the opcode, resetting the operand(s) if any to 0.
+    pub fn next_opcode(&mut self) -> crate::IterationResult {
         if self.0[0] == 0xff {
             Err(crate::StepError::End)
         } else {
@@ -214,7 +211,8 @@ impl X80 for Instruction {
         }
     }
 
-    fn make_return(&self) -> crate::StaticAnalysis<Self> {
+    /// Makes sure that the instruction is the return instruction, `ret`.
+    pub fn make_return(&self) -> crate::StaticAnalysis<Self> {
         const INSN: u8 = 0xc9;
         if self.0[0] != INSN {
             return Err(crate::Fixup::<Self> {

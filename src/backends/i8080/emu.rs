@@ -68,12 +68,6 @@ impl EmuInterface for Emulator {
     fn get_e(&self) -> u8 {
         self.cpu.immutable_registers().get8(Reg8::E)
     }
-    fn get_h(&self) -> u8 {
-        self.cpu.immutable_registers().get8(Reg8::H)
-    }
-    fn get_l(&self) -> u8 {
-        self.cpu.immutable_registers().get8(Reg8::L)
-    }
 
     fn get_pc(&self) -> u16 {
         self.cpu.immutable_registers().pc()

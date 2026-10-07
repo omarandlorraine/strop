@@ -15,7 +15,6 @@ mod test {
     #[test]
     fn opcodes() {
         use crate::Instruction as _;
-        use crate::backends::x80::X80;
         use crate::backends::z80::Instruction;
         for opcode in 0..=255 {
             if !matches!(opcode, 0xcb | 0xed)

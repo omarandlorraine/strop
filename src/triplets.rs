@@ -9,8 +9,6 @@ pub enum Triplet {
     Sm83UnknownSdcc,
     #[cfg(feature = "z80")]
     Z80UnknownSdcc,
-    #[cfg(feature = "i8080")]
-    I8080UnknownSdcc,
     #[cfg(feature = "mips")]
     MipsUnknownLinuxGnu,
     #[cfg(feature = "mips")]
@@ -27,8 +25,6 @@ impl Triplet {
     /// Returns a `Vec<Triplet>` containing all the target triplets that strop knows about.
     pub fn all() -> Vec<Self> {
         vec![
-            #[cfg(feature = "i8080")]
-            Self::I8080UnknownSdcc,
             #[cfg(feature = "sm83")]
             Self::Sm83UnknownSdcc,
             #[cfg(feature = "mips")]
@@ -66,19 +62,13 @@ impl Triplet {
         match self {
             #[cfg(feature = "sm83")]
             Self::Sm83UnknownSdcc => Box::new(crate::search::Searcher::new(
-                crate::backends::x80::SdccCall1::<crate::backends::sm83::Instruction>::default(),
-                crate::test::FuzzTest::new(target),
-            )),
-
-            #[cfg(feature = "i8080")]
-            Self::I8080UnknownSdcc => Box::new(crate::search::Searcher::new(
-                crate::backends::x80::SdccCall1::<crate::backends::i8080::Instruction>::default(),
+                crate::backends::sm83::SdccCall1::default(),
                 crate::test::FuzzTest::new(target),
             )),
 
             #[cfg(feature = "z80")]
             Self::Z80UnknownSdcc => Box::new(crate::search::Searcher::new(
-                crate::backends::x80::SdccCall1::<crate::backends::z80::Instruction>::default(),
+                crate::backends::z80::SdccCall1::default(),
                 crate::test::FuzzTest::new(target),
             )),
 
@@ -104,8 +94,6 @@ impl Triplet {
 impl std::fmt::Display for Triplet {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            #[cfg(feature = "i8080")]
-            Self::I8080UnknownSdcc => write!(f, "8080-unknown-sdcc"),
             #[cfg(feature = "sm83")]
             Self::Sm83UnknownSdcc => write!(f, "sm83-unknown-sdcc"),
             #[cfg(feature = "mips")]
