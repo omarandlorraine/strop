@@ -1,7 +1,7 @@
 //! A backend for strop, targetting 32-bit ARMs.
-
 mod arm_instructions;
 mod cpu;
+mod emulator;
 mod thumb_instructions;
 use crate::StaticAnalysis;
 pub use arm_instructions::ArmInstruction;
@@ -32,7 +32,7 @@ impl Variant {
             version: self.version,
         }
     }
-    
+
     /// Checks a Thumb instruction, to see if it is present on the given CPU variant
     pub fn check_thumb(&self, ins: &ThumbInstruction) -> StaticAnalysis<ArmInstruction> {
         use crate::Fixup;
@@ -48,7 +48,7 @@ impl Variant {
             _ => Ok(()),
         }
     }
-    
+
     /// Checks an ARM instruction, to see if it is present on the given CPU variant
     pub fn check_arm(&self, ins: &ArmInstruction) -> StaticAnalysis<ArmInstruction> {
         use crate::Fixup;

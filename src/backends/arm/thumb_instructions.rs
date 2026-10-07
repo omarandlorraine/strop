@@ -4,7 +4,7 @@ use crate::IterationResult;
 use unarm::Ins;
 
 /// Represents a Thumb instruction (being Thumb2, it may have either one or two halfwords)
-pub struct ThumbInstruction{
+pub struct ThumbInstruction {
     first: u16,
     second: u16,
 }
@@ -17,7 +17,12 @@ impl std::fmt::Display for ThumbInstruction {
 
 impl std::fmt::Debug for ThumbInstruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        write!(f, "{} ; {:#010x}", self.parse().display(&Default::default()), self.codepoint())
+        write!(
+            f,
+            "{} ; {:#010x}",
+            self.parse().display(&Default::default()),
+            self.codepoint()
+        )
     }
 }
 
@@ -45,7 +50,7 @@ impl ThumbInstruction {
         let first = self.first as u32;
         let second = self.second as u32;
         if self.is_32bit() {
-         first | (second << 16)
+            first | (second << 16)
         } else {
             first
         }
@@ -54,9 +59,9 @@ impl ThumbInstruction {
 
 impl crate::Instruction for ThumbInstruction {
     fn random() -> Self {
-        Self{
+        Self {
             first: rand::random(),
-            second: rand::random()
+            second: rand::random(),
         }
     }
     fn mutate(&mut self) {
@@ -67,7 +72,7 @@ impl crate::Instruction for ThumbInstruction {
             let mask: u16 = 1 << rand::rng().random_range(0..32);
             if rand::random() {
                 self.first ^= mask;
-            }else {
+            } else {
                 self.second ^= mask;
             }
         } else {
@@ -85,15 +90,19 @@ impl crate::Instruction for ThumbInstruction {
         }
     }
     fn first() -> Self {
-        Self { first: 0, second: 0}
+        Self {
+            first: 0,
+            second: 0,
+        }
     }
     fn increment(&mut self) -> crate::IterationResult {
         if self.is_32bit()
-            && let Some(new_second) = self.second.checked_add(1) {
-                self.second = new_second;
-                return Ok(())
-            }
-            // else fall through to incrementing .first
+            && let Some(new_second) = self.second.checked_add(1)
+        {
+            self.second = new_second;
+            return Ok(());
+        }
+        // else fall through to incrementing .first
         if let Some(new_first) = self.first.checked_add(1) {
             self.first = new_first;
             self.second = 0;
@@ -114,14 +123,14 @@ impl crate::Instruction for ThumbInstruction {
     fn from_bytes(bytes: &[u8]) -> Option<Self> {
         let a = bytes.first()?;
         let b = bytes.get(1)?;
-        let first= u16::from_le_bytes([*a, *b]);
+        let first = u16::from_le_bytes([*a, *b]);
         let s = Self { first, second: 0 };
         if s.is_32bit() {
             let c = bytes.get(2)?;
             let d = bytes.get(3)?;
             Some(Self {
                 first,
-                second:u16::from_le_bytes([*c, *d])
+                second: u16::from_le_bytes([*c, *d]),
             })
         } else {
             Some(s)
