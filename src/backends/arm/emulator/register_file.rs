@@ -172,12 +172,13 @@ impl RegisterFile {
         }
     }
 
-    fn shift_op(
+    pub fn shift_op(
         &self,
         imm: &u32,
         op: &unarm::ShiftOp,
         reg: &unarm::Reg,
     ) -> Result<u32, RegisterError> {
+        use unarm::ShiftOp;
         let rm = self.get(reg)?;
         Ok(match op {
             ShiftOp::Lsl => rm << imm,
@@ -207,13 +208,58 @@ impl RegisterFile {
         }
     }
 
+    pub fn get_misc_load_offset(
+        &mut self,
+        a: &unarm::MiscLoadOffset,
+    ) -> Result<u32, RegisterError> {
+        use unarm::MiscLoadOffset;
+        match a {
+            MiscLoadOffset::Imm(offs) => Ok(*offs as u32),
+            MiscLoadOffset::Reg { subtract, rm } => {
+                if *subtract {
+                    Ok((0 - self.get(rm)? as i32) as u32)
+                } else {
+                    self.get(rm)
+                }
+            }
+        }
+    }
+
+    pub fn get_addr_misc_load(&mut self, a: &unarm::AddrMiscLoad) -> Result<u32, RegisterError> {
+        use unarm::AddrMiscLoad;
+        match a {
+            AddrMiscLoad::Pre {
+                rn,
+                offset,
+                writeback,
+            } => {
+                let addr = self.get(rn)? + self.get_misc_load_offset(offset)?;
+                if *writeback {
+                    self.set(rn, addr);
+                }
+                Ok(addr)
+            }
+            AddrMiscLoad::Post { rn, offset } => {
+                let addr = self.get(rn)? + self.get_misc_load_offset(offset)?;
+                self.set(rn, addr);
+                Ok(addr)
+            }
+        }
+    }
+
+    pub fn get_addr_ldr_str_post(
+        &mut self,
+        a: &unarm::AddrLdrStrPost,
+    ) -> Result<u32, RegisterError> {
+        let unarm::AddrLdrStrPost { rn, offset } = a;
+        Ok(self.get(rn)?.wrapping_add(self.get_offset(offset)?))
+    }
+
     pub fn get_addr_ldr_str(&mut self, a: &unarm::AddrLdrStr) -> Result<u32, RegisterError> {
         use unarm::AddrLdrStr;
         use unarm::LdrStrOffset;
         match a {
-            AddrLdrStr::Post(unarm::AddrLdrStrPost { rn, offset }) => {
-                Ok(self.get(rn)?.wrapping_add(self.get_offset(offset)?))
-            }
+            AddrLdrStr::Post(post) => self.get_addr_ldr_str_post(post),
             AddrLdrStr::Pre {
                 rn,
                 offset,
@@ -225,6 +271,18 @@ impl RegisterFile {
                 }
                 Ok(address)
             }
+        }
+    }
+
+    pub fn op2shift(&self, o: &unarm::Op2Shift) -> Result<u32, RegisterError> {
+        use unarm::Op2Imm;
+        use unarm::Op2Shift;
+        use unarm::ShiftImm;
+        use unarm::ShiftOp;
+        use unarm::ShiftReg;
+        match o {
+            Op2Shift::Imm(imm) => Ok(*imm),
+            Op2Shift::Reg(r) => self.get(r),
         }
     }
 
