@@ -321,6 +321,19 @@ impl RegisterFile {
         }
     }
 
+    pub fn getlong(&mut self, reg_hi: &Reg, reg_lo: &Reg) -> Result<i64, RegisterError> {
+        let a_lo = self.get(reg_lo)? as u64;
+        let a_hi = self.get(reg_hi)? as u64;
+        Ok((a_hi << 32 | a_lo) as i64)
+    }
+
+    pub fn setlong(&mut self, reg_hi: &Reg, reg_lo: &Reg, val: i64) -> Result<(), RegisterError> {
+        let val_hi = (val >> 32) as u32;
+        let val_lo = (val & 0x0000_0000_ffff_ffff) as u32;
+        self.set(reg_lo, val_lo)?;
+        self.set(reg_hi, val_hi)
+    }
+
     pub fn set(&mut self, reg: &Reg, val: u32) -> Result<(), RegisterError> {
         match reg {
             Reg::R0 => self.r0.set(val),

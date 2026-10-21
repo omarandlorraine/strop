@@ -803,7 +803,14 @@ impl Cpu {
                 self.regs.set(rd, result as u32);
                 Ok(())
             }
-            Ins::Smlad { cond,rd, rn, rm, swap_rm, ra} => {
+            Ins::Smlad {
+                cond,
+                rd,
+                rn,
+                rm,
+                swap_rm,
+                ra,
+            } => {
                 let m = if *swap_rm {
                     let (left, right) = to_halfwords(self.regs.get(rm)?);
                     (right, left)
@@ -811,13 +818,184 @@ impl Cpu {
                     to_halfwords(self.regs.get(rm)?)
                 };
                 let n = to_halfwords(self.regs.get(rn)?);
-                let result = 
-                (m.0 as i32 * n.0 as i32) +
-                (m.1 as i32 * n.1 as i32) +
-                (self.regs.get(ra)? as i32);
+                let result = (m.0 as i32 * n.0 as i32)
+                    + (m.1 as i32 * n.1 as i32)
+                    + (self.regs.get(ra)? as i32);
                 self.regs.set(rd, result as u32);
                 Ok(())
             }
+            Ins::Smlal {
+                s,
+                cond,
+                rd_lo,
+                rd_hi,
+                rn,
+                rm,
+            } => {
+                let m = self.regs.get(rm)? as i32 as i64;
+                let n = self.regs.get(rn)? as i32 as i64;
+                let a = self.regs.getlong(rd_hi, rd_lo)?;
+                let result = m * n + a;
+                self.regs.setlong(rd_hi, rd_lo, result);
+                Ok(())
+            }
+            Ins::SmlalHalf { .. } => todo!("what even is this instruction?"),
+            Ins::Smlald {
+                cond,
+                rd_lo,
+                rd_hi,
+                rn,
+                rm,
+                swap_rm,
+            } => {
+                let m = if *swap_rm {
+                    let (left, right) = to_halfwords(self.regs.get(rm)?);
+                    (right, left)
+                } else {
+                    to_halfwords(self.regs.get(rm)?)
+                };
+                let n = to_halfwords(self.regs.get(rn)?);
+                let a = self.regs.getlong(rd_hi, rd_lo)?;
+                let result = (m.0 as i64 * n.0 as i64) + (m.1 as i64 * n.1 as i64) + a;
+                self.regs.setlong(rd_hi, rd_lo, result)?;
+                Ok(())
+            }
+            Ins::Smlaw {
+                cond,
+                rd,
+                rn,
+                rm,
+                rm_side,
+                ra,
+            } => {
+                let rm = to_halfwords(self.regs.get(rm)?);
+                let rn = self.regs.get(rn)? as i32;
+                let rm = match rm_side {
+                    unarm::RegSide::Bottom => rm.0,
+                    unarm::RegSide::Top => rm.1,
+                } as i32;
+
+                let result = (rm as i32) * (rn as i32) + (self.regs.get(ra)? as i32);
+                self.regs.set(rd, result as u32);
+                Ok(())
+            }
+            Ins::Smlsd { cond, rd, rn, rm, swap_rm, ra } => {
+                let m = if *swap_rm {
+                    let (left, right) = to_halfwords(self.regs.get(rm)?);
+                    (right, left)
+                } else {
+                    to_halfwords(self.regs.get(rm)?)
+                };
+                let n = to_halfwords(self.regs.get(rn)?);
+                let a = self.regs.get(ra)? as i32;
+                let result = a + ((m.0 as i32 * n.0  as i32) - (m.1 as i32 * n.1 as i32));
+                self.regs.set(rd, result as u32)?;
+                Ok(())
+            }
+            Ins::Smlsld { cond, rd_lo,rd_hi, rn, rm, swap_rm } => {
+                let m = if *swap_rm {
+                    let (left, right) = to_halfwords(self.regs.get(rm)?);
+                    (right, left)
+                } else {
+                    to_halfwords(self.regs.get(rm)?)
+                };
+                let n = to_halfwords(self.regs.get(rn)?);
+                let result = ((m.0 * n.0) - (m.1 * n.1)) as i64;
+                let a = self.regs.getlong(rd_hi, rd_lo)? + result;
+                self.regs.setlong(rd_hi, rd_lo, a)?;
+                Ok(())
+            }
+            Ins::Smmla { round, cond, rd, rn, rm, ra } => {
+                let m = self.regs.get(rm)? as i32 as i64;
+                let n = self.regs.get(rn)? as i32 as i64;
+                let product = m * n;
+                let result = self.regs.get(ra)? + (if *round { product as u64 + 0x8000_0000 } else { product  as u64} >> 32) as u32;
+                self.regs.set(rd, result);
+                Ok(())
+            }
+            Ins::Smmls { round, cond, rd, rn, rm, ra } => {
+                let m = self.regs.get(rm)? as i32 as i64;
+                let n = self.regs.get(rn)? as i32 as i64;
+                let product = m * n;
+                let result = self.regs.get(ra)? - (if *round { product as u64 + 0x8000_0000 } else { product  as u64} >> 32) as u32;
+                self.regs.set(rd, result);
+                Ok(())
+            }
+            Ins::Smmul { round, cond, rd, rn, rm } => {
+                let m = self.regs.get(rm)? as i32 as i64;
+                let n = self.regs.get(rn)? as i32 as i64;
+                let product = m * n;
+                let result = (if *round { product as u64 + 0x8000_0000 } else { product  as u64} >> 32) as u32;
+                self.regs.set(rd, result);
+                Ok(())
+            }
+            Ins::Smuad { cond, rd, rn, rm, swap_rm } => {
+                let m = if *swap_rm {
+                    let (left, right) = to_halfwords(self.regs.get(rm)?);
+                    (right, left)
+                } else {
+                    to_halfwords(self.regs.get(rm)?)
+                };
+                let n = to_halfwords(self.regs.get(rn)?);
+                let result = ((m.0 * n.0) + (m.1 * n.1)) as i32;
+                self.regs.set(rd, result as u32)?;
+                Ok(())
+            }
+            Ins::Smul { cond, rd, rn, rn_side, rm, rm_side } => {
+                let rm = to_halfwords(self.regs.get(rm)?);
+                let rn = to_halfwords(self.regs.get(rn)?);
+                let rm = match rm_side {
+                    unarm::RegSide::Bottom => rm.0,
+                    unarm::RegSide::Top => rm.1,
+                };
+                let rn = match rn_side {
+                    unarm::RegSide::Bottom => rn.0,
+                    unarm::RegSide::Top => rn.1,
+                };
+
+                let result = (rm as i32) * (rn as i32);
+                self.regs.set(rd, result as u32);
+                Ok(())
+            }
+            Ins::Smull {
+                s,
+                cond,
+                rd_lo,
+                rd_hi,
+                rn,
+                rm,
+            } => {
+                let m = self.regs.get(rm)? as i32 as i64;
+                let n = self.regs.get(rn)? as i32 as i64;
+                let result = m * n;
+                self.regs.setlong(rd_hi, rd_lo, result);
+                Ok(())
+            }
+            Ins::Smulw {
+                cond,rd,rn,rm,rm_side
+            } => {
+                let rm = to_halfwords(self.regs.get(rm)?);
+                let n = (self.regs.get(rn)? as i32);
+                let m = match rm_side {
+                    unarm::RegSide::Bottom => rm.0,
+                    unarm::RegSide::Top => rm.1,
+                } as i32;
+                self.regs.set(rd, ((m*n) >> 16 )as u32)?;
+                Ok(())
+            }
+            Ins::Smusd {cond,rd,rn,rm,swap_rm} => {
+                let m = if *swap_rm {
+                    let (left, right) = to_halfwords(self.regs.get(rm)?);
+                    (right, left)
+                } else {
+                    to_halfwords(self.regs.get(rm)?)
+                };
+                let n = to_halfwords(self.regs.get(rn)?);
+                let result = ((m.0 * n.0) - (m.1 * n.1)) as i32;
+                self.regs.set(rd, result as u32)?;
+                Ok(())
+            }
+
         }
     }
 }
