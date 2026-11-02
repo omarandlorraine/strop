@@ -241,6 +241,7 @@ impl Cpu {
                             self.memory.get32(addr)?
                         }
                     };
+                    self.regs.set(&reg, word)?;
                 }
                 if *writeback {
                     self.regs.set(rn, addr);
@@ -879,7 +880,14 @@ impl Cpu {
                 self.regs.set(rd, result as u32);
                 Ok(())
             }
-            Ins::Smlsd { cond, rd, rn, rm, swap_rm, ra } => {
+            Ins::Smlsd {
+                cond,
+                rd,
+                rn,
+                rm,
+                swap_rm,
+                ra,
+            } => {
                 let m = if *swap_rm {
                     let (left, right) = to_halfwords(self.regs.get(rm)?);
                     (right, left)
@@ -888,11 +896,18 @@ impl Cpu {
                 };
                 let n = to_halfwords(self.regs.get(rn)?);
                 let a = self.regs.get(ra)? as i32;
-                let result = a + ((m.0 as i32 * n.0  as i32) - (m.1 as i32 * n.1 as i32));
+                let result = a + ((m.0 as i32 * n.0 as i32) - (m.1 as i32 * n.1 as i32));
                 self.regs.set(rd, result as u32)?;
                 Ok(())
             }
-            Ins::Smlsld { cond, rd_lo,rd_hi, rn, rm, swap_rm } => {
+            Ins::Smlsld {
+                cond,
+                rd_lo,
+                rd_hi,
+                rn,
+                rm,
+                swap_rm,
+            } => {
                 let m = if *swap_rm {
                     let (left, right) = to_halfwords(self.regs.get(rm)?);
                     (right, left)
@@ -905,31 +920,71 @@ impl Cpu {
                 self.regs.setlong(rd_hi, rd_lo, a)?;
                 Ok(())
             }
-            Ins::Smmla { round, cond, rd, rn, rm, ra } => {
+            Ins::Smmla {
+                round,
+                cond,
+                rd,
+                rn,
+                rm,
+                ra,
+            } => {
                 let m = self.regs.get(rm)? as i32 as i64;
                 let n = self.regs.get(rn)? as i32 as i64;
                 let product = m * n;
-                let result = self.regs.get(ra)? + (if *round { product as u64 + 0x8000_0000 } else { product  as u64} >> 32) as u32;
+                let result = self.regs.get(ra)?
+                    + (if *round {
+                        product as u64 + 0x8000_0000
+                    } else {
+                        product as u64
+                    } >> 32) as u32;
                 self.regs.set(rd, result);
                 Ok(())
             }
-            Ins::Smmls { round, cond, rd, rn, rm, ra } => {
+            Ins::Smmls {
+                round,
+                cond,
+                rd,
+                rn,
+                rm,
+                ra,
+            } => {
                 let m = self.regs.get(rm)? as i32 as i64;
                 let n = self.regs.get(rn)? as i32 as i64;
                 let product = m * n;
-                let result = self.regs.get(ra)? - (if *round { product as u64 + 0x8000_0000 } else { product  as u64} >> 32) as u32;
+                let result = self.regs.get(ra)?
+                    - (if *round {
+                        product as u64 + 0x8000_0000
+                    } else {
+                        product as u64
+                    } >> 32) as u32;
                 self.regs.set(rd, result);
                 Ok(())
             }
-            Ins::Smmul { round, cond, rd, rn, rm } => {
+            Ins::Smmul {
+                round,
+                cond,
+                rd,
+                rn,
+                rm,
+            } => {
                 let m = self.regs.get(rm)? as i32 as i64;
                 let n = self.regs.get(rn)? as i32 as i64;
                 let product = m * n;
-                let result = (if *round { product as u64 + 0x8000_0000 } else { product  as u64} >> 32) as u32;
+                let result = (if *round {
+                    product as u64 + 0x8000_0000
+                } else {
+                    product as u64
+                } >> 32) as u32;
                 self.regs.set(rd, result);
                 Ok(())
             }
-            Ins::Smuad { cond, rd, rn, rm, swap_rm } => {
+            Ins::Smuad {
+                cond,
+                rd,
+                rn,
+                rm,
+                swap_rm,
+            } => {
                 let m = if *swap_rm {
                     let (left, right) = to_halfwords(self.regs.get(rm)?);
                     (right, left)
@@ -941,7 +996,14 @@ impl Cpu {
                 self.regs.set(rd, result as u32)?;
                 Ok(())
             }
-            Ins::Smul { cond, rd, rn, rn_side, rm, rm_side } => {
+            Ins::Smul {
+                cond,
+                rd,
+                rn,
+                rn_side,
+                rm,
+                rm_side,
+            } => {
                 let rm = to_halfwords(self.regs.get(rm)?);
                 let rn = to_halfwords(self.regs.get(rn)?);
                 let rm = match rm_side {
@@ -972,7 +1034,11 @@ impl Cpu {
                 Ok(())
             }
             Ins::Smulw {
-                cond,rd,rn,rm,rm_side
+                cond,
+                rd,
+                rn,
+                rm,
+                rm_side,
             } => {
                 let rm = to_halfwords(self.regs.get(rm)?);
                 let n = (self.regs.get(rn)? as i32);
@@ -980,10 +1046,16 @@ impl Cpu {
                     unarm::RegSide::Bottom => rm.0,
                     unarm::RegSide::Top => rm.1,
                 } as i32;
-                self.regs.set(rd, ((m*n) >> 16 )as u32)?;
+                self.regs.set(rd, ((m * n) >> 16) as u32)?;
                 Ok(())
             }
-            Ins::Smusd {cond,rd,rn,rm,swap_rm} => {
+            Ins::Smusd {
+                cond,
+                rd,
+                rn,
+                rm,
+                swap_rm,
+            } => {
                 let m = if *swap_rm {
                     let (left, right) = to_halfwords(self.regs.get(rm)?);
                     (right, left)
@@ -995,7 +1067,180 @@ impl Cpu {
                 self.regs.set(rd, result as u32)?;
                 Ok(())
             }
-
+            Ins::Srs { .. } => todo!("is this an alias of an stm instruction?"),
+            Ins::Ssat { cond, rd, imm, op2 } => {
+                let op2 = self.regs.op2(&unarm::Op2::ShiftImm(*op2))? as i32;
+                let imm = 1 << imm;
+                let result = if imm < 0 {
+                    if op2 < imm { imm } else { op2 }
+                } else {
+                    if op2 > imm { imm } else { op2 }
+                };
+                self.regs.set(rd, result as u32)?;
+                Ok(())
+            }
+            Ins::Ssat16 { cond, rd, imm, rn } => {
+                let (l, r) = to_halfwords(self.regs.get(rn)?);
+                let imm = 1 << imm;
+                let l = if imm < 0 {
+                    if l < imm { imm } else { l }
+                } else {
+                    if l > imm { imm } else { l }
+                };
+                let r = if imm < 0 {
+                    if r < imm { imm } else { r }
+                } else {
+                    if r > imm { imm } else { r }
+                };
+                self.regs.set(rd, from_halfwords(l, r));
+                Ok(())
+            }
+            Ins::Ssax { cond, rd, rn, rm } => {
+                let rm = to_halfwords(self.regs.get(rm)?);
+                let rn = to_halfwords(self.regs.get(rn)?);
+                self.regs.set(
+                    rd,
+                    from_halfwords(rm.1.saturating_sub(rn.0), rm.0.saturating_add(rn.1)),
+                );
+                Ok(())
+            }
+            Ins::Ssub16 { cond, rd, rm, rn } => {
+                let rm = to_halfwords(self.regs.get(rm)?);
+                let rn = to_halfwords(self.regs.get(rn)?);
+                self.regs.set(
+                    rd,
+                    from_halfwords(rm.0.saturating_sub(rn.0), rm.1.saturating_sub(rn.1)),
+                );
+                Ok(())
+            }
+            Ins::Ssub8 { cond, rd, rm, rn } => {
+                fn to_bytes(w: u32) -> (i8, i8, i8, i8) {
+                    (
+                        (w & 0x0000_00ff) as i8,
+                        (w >> 8) as i8,
+                        (w >> 16) as i8,
+                        (w >> 24) as i8,
+                    )
+                }
+                let rm = to_bytes(self.regs.get(rm)?);
+                let rn = to_bytes(self.regs.get(rn)?);
+                self.regs.set(
+                    rd,
+                    (rm.0.saturating_sub(rm.0) as u32
+                        | (rn.1.saturating_sub(rn.1) as u32) << 8
+                        | (rn.2.saturating_sub(rn.2) as u32) << 16
+                        | (rn.3.saturating_sub(rn.3) as u32) << 24),
+                );
+                Ok(())
+            }
+            Ins::Stc { .. } => unimplemented!(),
+            Ins::Stc2 { .. } => unimplemented!(),
+            Ins::Stm {
+                rn,
+                mode,
+                cond,
+                writeback,
+                regs,
+                user_mode,
+            } => {
+                // TODO: what is user_mode?
+                use unarm::LdmStmMode;
+                let mut addr = self.regs.get(rn)?;
+                for reg in regs.iter() {
+                    let word = match mode {
+                        LdmStmMode::Ia => {
+                            // increment after
+                            let word = self.memory.put32(addr, self.regs.get(&reg)?)?;
+                            addr += 4;
+                            word
+                        }
+                        LdmStmMode::Ib => {
+                            // increment before
+                            addr += 4;
+                            self.memory.put32(addr, self.regs.get(&reg)?)?
+                        }
+                        LdmStmMode::Da => {
+                            // decrement after
+                            let word = self.memory.put32(addr, self.regs.get(&reg)?)?;
+                            addr -= 4;
+                            word
+                        }
+                        LdmStmMode::Db => {
+                            // decrement before
+                            addr -= 4;
+                            self.memory.put32(addr, self.regs.get(&reg)?)?
+                        }
+                    };
+                }
+                if *writeback {
+                    self.regs.set(rn, addr);
+                }
+                Ok(())
+            }
+            Ins::Str { cond, rd, addr } => {
+                self.memory
+                    .put32(self.regs.get_addr_ldr_str(addr)?, self.regs.get(rd)?);
+                Ok(())
+            }
+            Ins::Strb { cond, rd, addr } => {
+                self.memory
+                    .put8(self.regs.get_addr_ldr_str(addr)?, self.regs.get(rd)? as u8);
+                Ok(())
+            }
+            Ins::Strbt { cond, rd, addr } => {
+                self.memory.put8(
+                    self.regs.get_addr_ldr_str_post(addr)?,
+                    self.regs.get(rd)? as u8,
+                );
+                Ok(())
+            }
+            Ins::Strd {
+                cond,
+                rd,
+                addr,
+                rd2,
+            } => {
+                let addr = self.regs.get_addr_misc_load(addr)?;
+                self.memory.put32(addr, self.regs.get(rd)?);
+                self.memory.put32(addr + 4, self.regs.get(rd2)?);
+                Ok(())
+            }
+            Ins::Strex { .. } => unimplemented!(),
+            Ins::Strexb { .. } => unimplemented!(),
+            Ins::Strexd { .. } => unimplemented!(),
+            Ins::Strexh { .. } => unimplemented!(),
+            Ins::Strt { cond, rd, addr } => {
+                self.memory
+                    .put32(self.regs.get_addr_ldr_str_post(addr)?, self.regs.get(rd)?);
+                Ok(())
+            }
+            Ins::Strh { cond, rd, addr } => {
+                self.memory.put8(
+                    self.regs.get_addr_misc_load(addr)?,
+                    self.regs.get(rd)? as u8,
+                );
+                Ok(())
+            }
+            Ins::Sub {
+                s,
+                thumb,
+                cond,
+                rd,
+                rn,
+                op2,
+            } => {
+                let n = self.regs.get(rn)?;
+                let m = self.regs.op2(op2)?;
+                let result = n - m;
+                if *s {
+                    todo!();
+                }
+                self.regs.set(rd, result);
+                Ok(())
+            }
+            Ins::Svc{..} => unimplemented!(),
+            Ins::Swp{..} => unimplemented!(),
+            Ins::Swpb{..}=>unimplemented!(),
         }
     }
 }
